@@ -1,3 +1,9 @@
+# Every text file in this repo is LF, in the repository AND in the working tree.
+# The catch-all below is load-bearing: this plugin ships extension-less shell
+# scripts (hooks/session-start, skills/subagent-driven-development/scripts/*)
+# that none of the globs cover, and bash cannot parse them with CRLF endings.
+* text=auto eol=lf
+
 # Ensure shell scripts always have LF line endings
 *.sh text eol=lf
 hooks/session-start text eol=lf
@@ -12,7 +18,7 @@ hooks/session-start text eol=lf
 *.mjs text eol=lf
 *.ts text eol=lf
 
-# Explicitly mark binary files
+# Explicitly mark binary files (last match wins, so these must stay at the end)
 *.png binary
 *.jpg binary
 *.gif binary
