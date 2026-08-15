@@ -1,0 +1,18 @@
+{
+  "name": "all-about-agents-dev",
+  "description": "Local development marketplace for the All About Agents skills library",
+  "owner": {
+    "name": "Natthamon Suphon"
+  },
+  "plugins": [
+    {
+      "name": "all-about-agents",
+      "source": "./",
+      "description": "Personal skills library for agentic engineering: brainstorming, planning, TDD, systematic debugging, codebase design, code review, and handoff workflows",
+      "version": "7.0.0",
+      "author": {
+        "name": "Natthamon Suphon"
+      }
+    }
+  ]
+}

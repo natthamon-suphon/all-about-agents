@@ -1,0 +1,19 @@
+{
+  "name": "all-about-agents",
+  "description": "Personal skills library for agentic engineering: brainstorming, planning, TDD, systematic debugging, codebase design, code review, and handoff workflows",
+  "version": "7.0.0",
+  "author": {
+    "name": "Natthamon Suphon"
+  },
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "tdd",
+    "debugging",
+    "codebase-design",
+    "code-review",
+    "planning",
+    "workflows",
+    "best-practices"
+  ]
+}

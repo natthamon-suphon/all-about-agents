@@ -28,6 +28,22 @@ Write the test first. Watch it fail. Write minimal code to pass.
 
 Thinking "skip TDD just this once"? Stop. That's rationalization.
 
+## Seams - Where Tests Go
+
+A **seam** is the public boundary you test at: the interface where you observe behavior without reaching inside. Tests live at seams, never against internals.
+
+**Test only at pre-agreed seams.** Before writing the first test for a piece of work, name the seams under test and confirm them with your human partner. No test is written at an unconfirmed seam. You can't test everything — agreeing the seams up front is how testing effort lands on critical paths and complex logic instead of every edge case.
+
+Ask: "What's the public interface, and which seams should we test?"
+
+**If you are a subagent working from a task brief**, the seams were pre-agreed when the plan was written and you were dispatched — that conversation already happened, without you in it. Test at the interface the task's acceptance criteria are phrased against.
+
+**Several seams look plausible? Choose one and proceed.** Ambiguity is the case this rule covers, not an exception to it. Take the outermost seam the acceptance criteria describe, record which one you chose and why in your report, and keep going. `NEEDS_CONTEXT` is for a brief you cannot implement — never for a seam you could have chosen. There is no human in your session to confirm with, so stalling confirms nothing and costs the task.
+
+When the shape of that interface is itself in question — how deep the module is, where the seam belongs, what the interface should expose — read `all-about-agents:codebase-design` for the vocabulary (module, interface, depth, seam, adapter). It's a reference to consult, not a session to run.
+
+**Test hard to write at the agreed seam?** That's design feedback, not a reason to test past the interface. Fix the shape.
+
 ## The Iron Law
 
 ```
@@ -191,9 +207,11 @@ After green only:
 
 Keep tests green. Don't add behavior.
 
-### Repeat
+### Repeat - One Vertical Slice at a Time
 
-Next failing test for next feature.
+Next failing test for the next behavior. One seam, one test, one minimal implementation per cycle.
+
+**Anti-pattern: horizontal slicing.** Writing all the tests first, then all the implementation. Bulk tests verify *imagined* behavior — you test the shape of things rather than what a caller can actually do, the tests go insensitive to real changes, and you commit to a test structure before understanding the implementation. Each test is a **tracer bullet**: it responds to what the last cycle taught you. Work vertically.
 
 ## Good Tests
 
@@ -224,6 +242,8 @@ When writing or changing any test, read [writing-good-tests.md](writing-good-tes
 | "TDD will slow me down" | TDD IS the pragmatic path: catches bugs before commit, prevents regressions, lets you refactor without fear. "Pragmatic" shortcuts mean debugging in production — slower, not faster. |
 | "Manual test faster" | Manual doesn't prove edge cases. You'll re-test every change. |
 | "Existing code has no tests" | You're improving it. Add tests for existing code. |
+| "Several seams are plausible, so none is pre-agreed" | You're a subagent — the plan pre-agreed them by dispatching you. Pick the outermost seam in the acceptance criteria, record it, proceed. |
+| "Choosing the seam myself substitutes my judgment for a required confirmation" | Choosing is the job. Confirmation already happened upstream; there is nobody in your session to re-confirm with. |
 
 ## Red Flags - STOP and Start Over
 
