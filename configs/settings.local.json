@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
+  "model": "opus[1m]",
+  "fallbackModel": ["fable[1m]", "sonnet[1m]"],
+  "advisorModel": "fable",
+
+  "effortLevel": "xhigh",
+  "alwaysThinkingEnabled": true,
+  "showThinkingSummaries": false,
+  "outputStyle": "Default",
+  "workflowSizeGuideline": "unrestricted",
+  "enableWorkflows": true,
+  "enableArtifact": true,
+
+  "env": {
+    "CLAUDE_CODE_EFFORT_LEVEL": "xhigh",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "opus",
+    "MAX_THINKING_TOKENS": "128000",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "128000",
+    "BASH_MAX_OUTPUT_LENGTH": "150000",
+    "MAX_MCP_OUTPUT_TOKENS": "200000",
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
+    "BASH_DEFAULT_TIMEOUT_MS": "600000",
+    "BASH_MAX_TIMEOUT_MS": "600000",
+    "MCP_TIMEOUT": "300000",
+    "MCP_TOOL_TIMEOUT": "600000",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "1",
+    "PYTHONUTF8": "1"
+  },
+
+  "autoCompactEnabled": true,
+  "precomputeCompactionEnabled": true,
+  "cleanupPeriodDays": 3650,
+  "askUserQuestionTimeout": "never",
+  "autoMemoryEnabled": true,
+  "autoMemoryDirectory": "~/.claude/memory",
+  "autoDreamEnabled": true,
+  "fileCheckpointingEnabled": true,
+  "todoFeatureEnabled": true,
+
+  "skillListingMaxDescChars": 8192,
+  "skillListingBudgetFraction": 0.05,
+
+  "attribution": {
+    "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
+    "pr": ""
+  },
+
+  "permissions": {
+    "allow": [
+      "Bash",
+      "PowerShell",
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "NotebookEdit",
+      "Grep",
+      "Glob",
+      "LS",
+      "WebFetch",
+      "WebSearch",
+      "Task",
+      "Agent",
+      "Skill",
+      "TodoWrite",
+      "mcp__graylog",
+      "mcp__atlassian",
+      "mcp__internal-apis",
+      "mcp__jenkins",
+      "mcp__context7",
+      "mcp__querybuddy-kb"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf /*)",
+      "Bash(sudo rm -rf *)",
+      "Bash(> /dev/sda)",
+      "Bash(mkfs *)",
+      "Bash(dd if=/dev/zero *)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(./secrets/**)",
+      "Read(**/secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/statusline/track-tool.js",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/statusline/track-tool.js",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+
+  "statusLine": {
+    "type": "command",
+    "command": "node ~/.claude/statusline/statusline.js",
+    "padding": 0
+  },
+
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true
+  },
+
+  "theme": "dark",
+  "verbose": true,
+  "viewMode": "verbose",
+  "spinnerTipsEnabled": true,
+  "autoUpdatesChannel": "latest",
+  "skipDangerousModePermissionPrompt": true,
+  "skipAutoPermissionPrompt": true
+}

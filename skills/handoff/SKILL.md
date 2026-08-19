@@ -27,12 +27,14 @@ If arguments were passed, treat them as a description of what the next session w
 
 ## Where it goes
 
-**Default — a document.** Write it to the OS temp directory (`$TMPDIR`, falling back to `/tmp`, or `%TEMP%` on Windows), not into the workspace. Tell your human partner the absolute path.
+**Default — a document.** Write it to `.claude/all-about-agents/<topic>/handoff.md`, where `<topic>` is the ticket id or slug this session already uses — the same directory as its spec and plan. Create the directory if it does not exist. Tell your human partner the absolute path.
+
+This file lands inside the repository, so the redaction rule above is load-bearing: check the summary for secrets before you write it.
 
 **On Claude Code, if your human partner wants the work to continue immediately**, launch a background agent seeded with the summary as its prompt. Write the summary to a file first and pass it in — a multi-paragraph prompt inlined into a shell argument breaks on the first quote, backtick, or `$`:
 
 ```bash
-claude --bg --name "Fix login bug" "$(cat "$TMPDIR/handoff-login-bug.md")"
+claude --bg --name "Fix login bug" "$(cat ".claude/all-about-agents/login-bug/handoff.md")"
 ```
 
 It starts in the current working directory and returns immediately. Always pass `--name` with a descriptive name — it sets the display name in the session list and terminal title. Your human partner manages it with `claude agents`.

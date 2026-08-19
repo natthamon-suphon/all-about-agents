@@ -3,15 +3,16 @@
 # short-lived artifacts: task briefs, implementer reports, review packages,
 # and the progress ledger. Print the plan directory's absolute path.
 #
-# One directory per plan (.all-about-agents/sdd/<plan-basename>/) so a follow-up
-# plan in the same working tree can never read or overwrite another plan's
-# artifacts. A stale ledger misread as current progress makes controllers
-# skip whole task sequences — plan-scoping removes that failure structurally.
+# One directory per plan (sdd/ beside the plan file, e.g.
+# .claude/all-about-agents/<topic>/sdd/) so a follow-up plan can never read
+# or overwrite another plan's artifacts. A stale ledger misread as current
+# progress makes controllers skip whole task sequences — plan-scoping
+# removes that failure structurally.
 #
 # The workspace lives in the working tree (not under .git/) because Claude Code
 # treats .git/ as a protected path and denies agent writes there — which blocks
 # an implementer subagent from writing its report file. A self-ignoring
-# .gitignore at .all-about-agents/sdd/ keeps every plan's workspace out of
+# .gitignore inside the sdd/ directory keeps the workspace out of
 # `git status` and out of accidental commits without modifying any tracked file.
 #
 # Single source of truth for the workspace location, so task-brief and
@@ -28,13 +29,11 @@ fi
 plan=$1
 [ -f "$plan" ] || { echo "no such plan file: $plan" >&2; exit 2; }
 
-slug=$(basename "$plan" .md)
-[ -n "$slug" ] && [ "$slug" != "." ] && [ "$slug" != ".." ] \
-  || { echo "cannot derive a workspace name from: $plan" >&2; exit 2; }
-
-root=$(git rev-parse --show-toplevel)
-base="$root/.all-about-agents/sdd"
-dir="$base/$slug"
+# Anchor on the plan's own directory, not its basename: with one directory
+# per topic (.claude/all-about-agents/<topic>/plan.md) every plan file is
+# called "plan.md", so the basename is no longer unique — the directory is.
+plan_dir=$(cd "$(dirname "$plan")" && pwd)
+dir="$plan_dir/sdd"
 mkdir -p "$dir"
-printf '*\n' > "$base/.gitignore"
+printf '*\n' > "$dir/.gitignore"
 cd "$dir" && pwd

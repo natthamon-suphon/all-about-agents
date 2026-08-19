@@ -49,6 +49,25 @@ These thoughts mean STOP—you're rationalizing:
 | "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
 | "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
 
+## Where Documents Go
+
+Every document a skill produces — spec, plan, research notes, map, workflow spec, handoff, report — goes in one place:
+
+```
+./.claude/all-about-agents/<topic>/
+```
+
+`<topic>` names the **working session** — one session, one directory, every document from it inside:
+
+- **The ticket id, if the work has one** — `PROJ-1421`, `#88`. Use it verbatim; it is the name your human partner already searches by.
+- **Otherwise a short kebab-case slug** for what the session is about — `login-rate-limit`, `csv-export`.
+
+**Choose it once, at the first document, then reuse it.** Every later skill in the same session — plan, research, map, handoff, report — writes into the directory that already exists. Never open a second directory for work already underway. If you are unsure which one is current, `ls .claude/all-about-agents/` and ask your human partner rather than guessing.
+
+Filenames inside are fixed (`design.md`, `plan.md`, `research.md`, `MAP.md`, `workflow.md`, `handoff.md`), so one look at the directory shows the whole session.
+
+These are local working documents: do not commit them, and do not scatter them into `docs/`. A user instruction naming a different location wins over this default.
+
 ## Platform Adaptation
 
 If your harness appears here, read its reference file for special instructions:

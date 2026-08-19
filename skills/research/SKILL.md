@@ -32,7 +32,7 @@ Its brief:
 1. **Investigate against primary sources** — official documentation, source code, specs, first-party APIs. Not a secondary write-up of them. Follow every claim back to the source that owns it.
 2. **Cite every claim** with the URL or file path it came from. A claim without a source does not go in the document.
 3. **Say what it could not confirm.** Gaps reported honestly are useful; gaps papered over are not.
-4. **Write the findings to a single Markdown file.** Save it where this repo already keeps such notes; match the existing convention. If there is none, use `docs/all-about-agents/research/YYYY-MM-DD-<topic>.md` and say where it went.
+4. **Write the findings to a single Markdown file.** Save it to `.claude/all-about-agents/<topic>/research.md` — the same `<topic>` directory as this work's other documents — and say where it went. If one topic needs several research questions, name them `research-<question-slug>.md` so they cannot overwrite each other.
 
 ### Step 3: Review before you rely on it
 

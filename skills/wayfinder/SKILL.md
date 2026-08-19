@@ -24,7 +24,7 @@ Every map and ticket is an issue, so it has a **name** — its title. In everyth
 
 **Ask your human partner which issue tracker this repo uses** the first time you chart a map, and record the answer in the map's Notes so later sessions don't ask again.
 
-**If they have no tracker, or don't care, use the local-markdown tracker** — no setup, no dependency: `docs/all-about-agents/wayfinder/<effort-name>/MAP.md` for the map, and one file per ticket at `tickets/<NNN>-<slug>.md` beside it. Blocking is a `Blocked by:` line listing ticket names; a claim is a `Claimed:` line; closing means moving the file to `tickets/closed/`.
+**If they have no tracker, or don't care, use the local-markdown tracker** — no setup, no dependency: `.claude/all-about-agents/<topic>/MAP.md` for the map — `<topic>` being this effort's ticket id or short slug — and one file per ticket at `.claude/all-about-agents/<topic>/tickets/<NNN>-<slug>.md`. Blocking is a `Blocked by:` line listing ticket names; a claim is a `Claimed:` line; closing means moving the file to `tickets/closed/`.
 
 On a real tracker (GitHub, Linear, Jira), use its **native** features for each of these — child issues, dependency links, assignees, labels — never a body convention that duplicates something the tracker already models. Native blocking matters most: it renders the frontier _visually_ in the tracker's own UI, so your human partner sees what's takeable without opening the map.
 
