@@ -1,0 +1,25 @@
+{
+  "all-about-agents-bootstrap": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node ./hooks/antigravity-session-start.js",
+        "timeout": 15
+      }
+    ]
+  },
+  "all-about-agents-tracker": {
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./hooks/antigravity-track-tool.js",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
