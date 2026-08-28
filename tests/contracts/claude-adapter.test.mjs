@@ -5,6 +5,7 @@ import test from "node:test";
 
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import {
+  CLAUDE_PREREQUISITES,
   CLAUDE_MODEL_POLICY,
   CLAUDE_SEMANTIC_MAPPINGS,
   renderSurface,
@@ -80,7 +81,9 @@ test("Claude semantic mappings use documented Claude tools only", () => {
 test("portable Claude render contains every native component and all canonical skills", () => {
   const result = resultFor();
   const files = fileMap(result);
-  assert.equal(result.diagnostics.length, 0);
+  const missingSkillDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "missing-skill-source");
+  assert.equal(missingSkillDiagnostics.length, core.inventory.skills.length - core.skills.length);
+  assert.ok(missingSkillDiagnostics.every((diagnostic) => diagnostic.message.includes("owner: cycle-05-skill-remediation")));
   assert.ok(files.has(".claude-plugin/plugin.json"));
   assert.ok(files.has("config/settings.json"));
   assert.ok(files.has("rules/authority-and-scope.md"));
@@ -139,6 +142,56 @@ test("Claude settings registration documents one shared CLI/Desktop config root"
   const statusline = result.registrations.find((entry) => entry.kind === "statusline-config");
   assert.equal(statusline.rootEnv, "CLAUDE_CONFIG_DIR");
   assert.equal(statusline.destination, "all-about-agents/statusline.json");
+  const resolvedRoot = result.registrations.find((entry) => entry.kind === "resolved-config-root");
+  assert.deepEqual(resolvedRoot, {
+    kind: "resolved-config-root",
+    rootEnv: "CLAUDE_CONFIG_DIR",
+    path: "C:/disposable/claude-config"
+  });
+});
+
+test("Claude plugin registration resolves through the checked-in development marketplace", () => {
+  const registration = resultFor().registrations.find((entry) => entry.kind === "plugin-registration");
+  assert.deepEqual(registration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]);
+  assert.equal(registration.command.join(" "), "claude plugin install all-about-agents@all-about-agents-dev");
+});
+
+test("Claude hook prerequisites reject a clean host without Node.js", () => {
+  assert.deepEqual(CLAUDE_PREREQUISITES, {
+    executable: "node",
+    check: ["node", "--version"],
+    minimumVersion: "22.12.0",
+    onMissing: "reject",
+    requiredBy: ["hooks/*.mjs", "statusline/statusline.mjs"]
+  });
+  const prerequisite = resultFor().registrations.find((entry) => entry.kind === "runtime-prerequisite");
+  assert.deepEqual(prerequisite, {
+    kind: "runtime-prerequisite",
+    ...CLAUDE_PREREQUISITES,
+    platforms: ["win32", "darwin", "linux"]
+  });
+});
+
+test("Claude reports every missing canonical skill source with an owning remediation ticket", () => {
+  const result = resultFor();
+  const deferredSkill = fileMap(result).get("skills/brainstorming/SKILL.md");
+  assert.match(deferredSkill, /DEFERRED: canonical source is missing/u);
+  assert.doesNotMatch(deferredSkill, /installed by the All About Agents Claude plugin/u);
+  const missing = result.diagnostics.filter((diagnostic) => diagnostic.code === "missing-skill-source");
+  assert.equal(missing.length, core.inventory.skills.length - core.skills.length);
+  assert.ok(missing.every((diagnostic) => diagnostic.severity === "error"));
+  assert.ok(missing.every((diagnostic) => diagnostic.sourcePath === "core/inventory.json"));
+  assert.ok(missing.every((diagnostic) => /owner: cycle-05-skill-remediation \(T017-T043\)/u.test(diagnostic.message)));
+});
+
+test("Claude read-only roles cannot receive Bash or write tools", () => {
+  const files = fileMap(resultFor());
+  for (const role of ["investigator", "verifier", "reviewer", "security-reviewer"]) {
+    const frontmatter = files.get(`agents/${role}.md`).split("---\n")[1];
+    assert.match(frontmatter, /disallowedTools:/u, `${role} must declare native restrictions`);
+    const tools = frontmatter.match(/^tools:\n([\s\S]*?)(?:^disallowedTools:|$)/mu)?.[1] || "";
+    assert.doesNotMatch(tools, /^\s+- (?:Bash|Write|Edit|Agent)\s*$/mu, `${role} received a mutating native tool`);
+  }
 });
 
 test("Claude adapter satisfies the shared renderSurface action contract", () => {
@@ -151,7 +204,7 @@ test("Claude adapter satisfies the shared renderSurface action contract", () => 
     homeDir: "C:/Users/tester"
   });
   assert.ok(result.files.length > 0);
-  assert.equal(result.diagnostics.length, 0);
+  assert.equal(result.diagnostics.filter((diagnostic) => diagnostic.code === "missing-skill-source").length, core.inventory.skills.length - core.skills.length);
   assert.ok(result.registrations.some((entry) => entry.kind === "plugin-registration"));
 });
 
@@ -181,6 +234,19 @@ test("Claude ownership manifest documents roots, mappings, and native validation
   assert.deepEqual(manifest.semanticCapabilities["web-primary-sources"], ["WebSearch", "WebFetch"]);
   assert.deepEqual(manifest.actions["aaa:design"], "commands/design.md");
   assert.deepEqual(manifest.nativeValidation.command, ["claude", "plugin", "validate", ".", "--strict"]);
+  assert.deepEqual(manifest.pluginRegistration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]);
+  assert.deepEqual(manifest.preflight, CLAUDE_PREREQUISITES);
+  assert.deepEqual(manifest.profiles.portable.settings.permissions, {
+    defaultMode: "default",
+    deny: ["Bash(rm -rf /)", "Bash(rm -rf ~)", "Bash(git push --force*)", "Bash(git reset --hard*)"]
+  });
+  assert.deepEqual(manifest.profiles.template.settings.permissions, {
+    defaultMode: "bypassPermissions",
+    deny: ["Bash(rm -rf /)", "Bash(rm -rf ~)", "Bash(git push --force*)", "Bash(git reset --hard*)"]
+  });
+  for (const profile of Object.values(manifest.profiles)) {
+    assert.equal(Object.keys(profile.settings).some((key) => key.includes(".")), false);
+  }
   assert.match(manifest.rootInstructionContext, /not emitted/u);
 });
 
@@ -194,6 +260,9 @@ test("Claude render is deterministic and matches the checked-in portable snapsho
   assert.deepEqual(snapshot.paths, first.files.map((file) => file.relativePath));
   assert.equal(snapshot.fileCount, first.files.length);
   assert.deepEqual(snapshot.settings, JSON.parse(fileMap(first).get("config/settings.json")));
+  assert.deepEqual(snapshot.content, Object.fromEntries([".claude-plugin/plugin.json", "agents/investigator.md", "config/settings.json", "hooks/hooks.json"].map((path) => [path, fileMap(first).get(path)])));
+  assert.deepEqual(snapshot.ownershipHashes, Object.fromEntries(first.ownership.map((entry) => [entry.relativePath, entry.sha256])));
+  assert.deepEqual(snapshot.registration, first.registrations.find((entry) => entry.kind === "resolved-config-root"));
 });
 
 test("template Claude snapshot keeps the approved model and permission shape", async () => {
@@ -202,4 +271,7 @@ test("template Claude snapshot keeps the approved model and permission shape", a
   const snapshot = JSON.parse(await readFile(resolve(process.cwd(), "tests/snapshots/claude/template.json"), "utf8"));
   assert.deepEqual(snapshot.settings, JSON.parse(files.get("config/settings.json")));
   assert.deepEqual(snapshot.paths, result.files.map((file) => file.relativePath));
+  assert.deepEqual(snapshot.content, Object.fromEntries([".claude-plugin/plugin.json", "agents/investigator.md", "config/settings.json", "hooks/hooks.json"].map((path) => [path, files.get(path)])));
+  assert.deepEqual(snapshot.ownershipHashes, Object.fromEntries(result.ownership.map((entry) => [entry.relativePath, entry.sha256])));
+  assert.deepEqual(snapshot.registration, result.registrations.find((entry) => entry.kind === "resolved-config-root"));
 });

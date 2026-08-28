@@ -12,6 +12,18 @@ const CLAUDE_SURFACE = "claude";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
 const CONTROL_OR_ANSI = /[\u0000-\u001f\u007f]|\u001b\[[0-?]*[ -/]*[@-~]/u;
 
+/** Static installer preflight for the Node.js entrypoint used by every hook. */
+export const CLAUDE_PREREQUISITES = Object.freeze({
+  executable: "node",
+  check: Object.freeze(["node", "--version"]),
+  minimumVersion: "22.12.0",
+  onMissing: "reject",
+  requiredBy: Object.freeze(["hooks/*.mjs", "statusline/statusline.mjs"])
+});
+
+const READ_ONLY_NATIVE_TOOLS = Object.freeze(["Agent", "Bash", "Edit", "Write"]);
+const READ_ONLY_ROLE_NAMES = new Set(["investigator", "verifier", "reviewer", "security-reviewer"]);
+
 /**
  * The names at this boundary are intentionally Claude-native. The core only
  * supplies semantic capability identifiers; this table is the adapter's
@@ -78,7 +90,8 @@ const DEFAULT_ROLES = Object.freeze({
   investigator: Object.freeze({
     description: "Reproduce an internal problem and rank evidence-backed hypotheses.",
     capabilities: ["repository-read", "filesystem-read", "test-execution"],
-    tools: ["Read", "Glob", "Grep", "Bash"]
+    tools: ["Read", "Glob", "Grep"],
+    readOnly: true
   }),
   architect: Object.freeze({
     description: "Design modules, interfaces, seams, invariants, and risks.",
@@ -93,17 +106,20 @@ const DEFAULT_ROLES = Object.freeze({
   verifier: Object.freeze({
     description: "Run fresh black-box checks without changing implementation files.",
     capabilities: ["repository-read", "test-execution", "evaluation"],
-    tools: ["Read", "Glob", "Grep", "Bash"]
+    tools: ["Read", "Glob", "Grep"],
+    readOnly: true
   }),
   reviewer: Object.freeze({
     description: "Review specifications, diffs, tests, and maintainability evidence.",
     capabilities: ["repository-read", "evaluation", "schema-validation"],
-    tools: ["Read", "Glob", "Grep", "Bash"]
+    tools: ["Read", "Glob", "Grep"],
+    readOnly: true
   }),
   "security-reviewer": Object.freeze({
     description: "Check threat paths, secrets, containment, and emergency guardrails.",
     capabilities: ["repository-read", "evaluation", "schema-validation"],
-    tools: ["Read", "Glob", "Grep", "Bash"]
+    tools: ["Read", "Glob", "Grep"],
+    readOnly: true
   })
 });
 
@@ -206,9 +222,15 @@ function canonicalSkillIds(core) {
 }
 
 function renderSkill(name, record) {
+  const hasSource = Boolean(record && typeof record.content === "string" && record.content.trim().length > 0);
   const description = record?.description || `Canonical ${name} skill.`;
-  const body = stripFrontmatter(record?.content || `This canonical skill is installed by the All About Agents Claude plugin.\n`);
-  return ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${body}`);
+  const body = hasSource
+    ? stripFrontmatter(record.content)
+    : "DEFERRED: canonical source is missing.\nOwner: cycle-05-skill-remediation (T017-T043).\n";
+  return {
+    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${body}`),
+    hasSource
+  };
 }
 
 function renderRule(rule) {
@@ -223,7 +245,8 @@ function renderRule(rule) {
 }
 
 function renderAgent(name, role) {
-  const fallback = DEFAULT_ROLES[name] || DEFAULT_ROLES.reviewer;
+  const defaultRole = DEFAULT_ROLES[name];
+  const fallback = defaultRole || DEFAULT_ROLES.reviewer;
   const description = role?.description || role?.purpose || fallback.description;
   const semanticNames = [
     ...(Array.isArray(role?.capabilities) ? role.capabilities : []),
@@ -237,7 +260,12 @@ function renderAgent(name, role) {
     Array.isArray(role?.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
   const body = role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.\n`;
-  return ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\nmodel: inherit\ntools:\n${tools.map((tool) => `  - ${tool}`).join("\n")}\n---\n\n${body}`);
+  const readOnly = role?.readOnly === true || defaultRole?.readOnly === true || role?.mutationScope === "none" || READ_ONLY_ROLE_NAMES.has(name);
+  const allowedTools = readOnly ? tools.filter((tool) => !READ_ONLY_NATIVE_TOOLS.includes(tool)) : tools;
+  const restriction = readOnly
+    ? `disallowedTools:\n${READ_ONLY_NATIVE_TOOLS.map((tool) => `  - ${tool}`).join("\n")}\n`
+    : "";
+  return ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\nmodel: inherit\ntools:\n${allowedTools.map((tool) => `  - ${tool}`).join("\n")}\n${restriction}---\n\n${body}`);
 }
 
 function renderCommand(command) {
@@ -289,7 +317,12 @@ function mappingsDocument() {
     "|---|---|"
   ];
   for (const key of Object.keys(CLAUDE_SEMANTIC_MAPPINGS).sort()) lines.push(`| ${key} | ${CLAUDE_SEMANTIC_MAPPINGS[key].join(", ")} |`);
-  lines.push("", "Settings are shared by Claude Code CLI and Claude Desktop local Code through `CLAUDE_CONFIG_DIR`.", "The plugin never loads a root `CLAUDE.md`; rules are emitted as independent files under `rules/`.");
+  lines.push(
+    "",
+    "Settings are shared by Claude Code CLI and Claude Desktop local Code through `CLAUDE_CONFIG_DIR`.",
+    "Read-only agents use Claude's `disallowedTools` for `Agent`, `Bash`, `Edit`, and `Write`.",
+    "The plugin never loads a root `CLAUDE.md`; rules are emitted as independent files under `rules/`."
+  );
   return ensureText(lines.join("\n"));
 }
 
@@ -327,7 +360,12 @@ export function renderClaude(input = {}) {
   for (const [fileName, source] of Object.entries(HOOK_SOURCES)) addFile(files, `hooks/${fileName}`, source, 0o755);
   addFile(files, "statusline/statusline.mjs", STATUSLINE_SOURCE_TEXT, 0o755);
 
-  for (const skill of canonicalSkillIds(core)) addFile(files, `skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill)));
+  const missingSkills = [];
+  for (const skill of canonicalSkillIds(core)) {
+    const rendered = renderSkill(skill, skillRecords.get(skill));
+    if (!rendered.hasSource) missingSkills.push(skill);
+    addFile(files, `skills/${skill}/SKILL.md`, rendered.content);
+  }
   for (const rule of [...core.rules].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `rules/${rule.id}.md`, renderRule(rule));
 
   const roleNames = [...new Set([...Object.keys(DEFAULT_ROLES), ...roleRecords.keys()])].sort();
@@ -343,7 +381,13 @@ export function renderClaude(input = {}) {
         kind: "plugin-registration",
         relativePath: ".claude-plugin/plugin.json",
         scope: "user",
-        command: ["claude", "plugin", "install", "all-about-agents@local"]
+        marketplace: "all-about-agents-dev",
+        command: ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]
+      },
+      {
+        kind: "runtime-prerequisite",
+        ...CLAUDE_PREREQUISITES,
+        platforms: ["win32", "darwin", "linux"]
       },
       {
         kind: "settings",
@@ -370,9 +414,17 @@ export function renderClaude(input = {}) {
         path: configRoot
       }
     ],
-    diagnostics: profile === "template"
-      ? [{ code: "experimental-advisor", severity: "warning", message: "Fable advisor access is experimental and may be unavailable; the primary/fallback chain remains unchanged.", sourcePath: "config/settings.json" }]
-      : [],
+    diagnostics: [
+      ...missingSkills.map((skill) => ({
+        code: "missing-skill-source",
+        severity: "error",
+        message: `Canonical skill '${skill}' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.`,
+        sourcePath: "core/inventory.json"
+      })),
+      ...(profile === "template"
+        ? [{ code: "experimental-advisor", severity: "warning", message: "Fable advisor access is experimental and may be unavailable; the primary/fallback chain remains unchanged.", sourcePath: "config/settings.json" }]
+        : [])
+    ],
     ownership: makeOwnership(files)
   };
   const validation = validateRenderResult(result);

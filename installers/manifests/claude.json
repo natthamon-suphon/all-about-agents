@@ -5,6 +5,10 @@
   "productVersion": "2.1.248",
   "package": "all-about-agents",
   "pluginManifest": ".claude-plugin/plugin.json",
+  "pluginRegistration": {
+    "marketplace": "all-about-agents-dev",
+    "command": ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]
+  },
   "configRoot": {
     "environment": "CLAUDE_CONFIG_DIR",
     "fallback": "~/.claude",
@@ -27,7 +31,10 @@
         "model": "claude-opus-5",
         "fallbackModel": ["claude-sonnet-5"],
         "env": {"CLAUDE_CODE_EFFORT_LEVEL": "xhigh"},
-        "permissions.defaultMode": "default"
+        "permissions": {
+          "defaultMode": "default",
+          "deny": ["Bash(rm -rf /)", "Bash(rm -rf ~)", "Bash(git push --force*)", "Bash(git reset --hard*)"]
+        }
       }
     },
     "template": {
@@ -36,7 +43,10 @@
         "fallbackModel": ["claude-sonnet-5"],
         "advisorModel": "claude-fable-5",
         "env": {"CLAUDE_CODE_EFFORT_LEVEL": "max"},
-        "permissions.defaultMode": "bypassPermissions"
+        "permissions": {
+          "defaultMode": "bypassPermissions",
+          "deny": ["Bash(rm -rf /)", "Bash(rm -rf ~)", "Bash(git push --force*)", "Bash(git reset --hard*)"]
+        }
       },
       "experimental": ["advisorModel"]
     }
@@ -69,6 +79,10 @@
     "aaa:resume": "commands/resume.md",
     "aaa:verify": "commands/verify.md"
   },
+  "readOnlyRoles": {
+    "roles": ["investigator", "verifier", "reviewer", "security-reviewer"],
+    "disallowedTools": ["Agent", "Bash", "Edit", "Write"]
+  },
   "ownedPaths": [
     ".claude-plugin/plugin.json",
     "skills/{skill}/SKILL.md",
@@ -86,6 +100,13 @@
     "command": ["claude", "plugin", "validate", ".", "--strict"],
     "warningsAreFailures": true,
     "requiredWhenAvailable": true
+  },
+  "preflight": {
+    "executable": "node",
+    "check": ["node", "--version"],
+    "minimumVersion": "22.12.0",
+    "onMissing": "reject",
+    "requiredBy": ["hooks/*.mjs", "statusline/statusline.mjs"]
   },
   "rootInstructionContext": "not emitted; plugin-root CLAUDE.md is not a plugin context"
 }
