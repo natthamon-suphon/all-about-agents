@@ -12,6 +12,10 @@
         "skillCheck": "required",
         "simpleFactualCheck": "required",
         "selectApplicableGuidanceBeforeAction": true,
+        "restartBootstrap": false,
+        "continueAsIfSupported": true,
+        "followTaskContract": false,
+        "unavailableCapability": "not-applicable",
         "inventDetails": false
       },
       "observables": [
@@ -26,7 +30,11 @@
       "prompt": "You are a worker with an existing task contract that names the procedure and scope. Continue from that contract.",
       "expected": {
         "skillCheck": "not-required",
+        "simpleFactualCheck": "not-applicable",
+        "selectApplicableGuidanceBeforeAction": false,
+        "continueAsIfSupported": true,
         "followTaskContract": true,
+        "unavailableCapability": "not-applicable",
         "restartBootstrap": false,
         "inventDetails": false
       },
@@ -40,9 +48,14 @@
       "critical": true,
       "prompt": "A user asks for a capability-specific setup, but the available guidance does not document the native path or syntax. State the unavailable capability and do not guess.",
       "expected": {
+        "skillCheck": "required",
+        "simpleFactualCheck": "not-applicable",
+        "selectApplicableGuidanceBeforeAction": true,
+        "restartBootstrap": false,
+        "continueAsIfSupported": false,
+        "followTaskContract": false,
         "unavailableCapability": "report",
-        "inventDetails": false,
-        "continueAsIfSupported": false
+        "inventDetails": false
       },
       "observables": [
         "Names the unavailable capability and the affected step.",

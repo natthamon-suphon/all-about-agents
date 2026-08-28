@@ -20,6 +20,7 @@ test("T004 creates every owned artifact", async () => {
 });
 
 const skillPath = resolve(process.cwd(), "core/skills/using-all-about-agents/SKILL.md");
+const unconditionalAgentRequirement = /(?:\b(?:must|always|required|mandatory|unconditionally)\b[^.\n]{0,80}\b(?:agent|worker|subagent)\b|\b(?:agent|worker|subagent)\b[^.\n]{0,80}\b(?:must|always|required|mandatory|unconditionally)\b[^.\n]{0,80}\b(?:every|all|any|each)\s+(?:task|request|conversation|change|job)\b|\b(?:every|all|any|each)\s+(?:task|request|conversation|change|job)\b[^.\n]{0,80}\b(?:requires?|needs?|must|always)\b[^.\n]{0,80}\b(?:agent|worker|subagent)\b)/iu;
 
 test("bootstrap skill has a concise portable contract", async () => {
   const skill = await readFile(skillPath, "utf8");
@@ -28,14 +29,39 @@ test("bootstrap skill has a concise portable contract", async () => {
   assert.ok(closing > 0, "frontmatter must close");
   const frontmatter = skill.slice(4, closing);
   assert.match(frontmatter, /^name:\s*using-all-about-agents\s*$/mu);
+  assert.equal((frontmatter.match(/^description\s*:/gmu) ?? []).length, 1, "frontmatter must define one description");
   const description = frontmatter.match(/^description:\s*(.+)$/mu)?.[1] ?? "";
   assert.match(description, /^Use when\b/u, "description must lead with its trigger");
+  assert.match(frontmatter, /^\s+-\s+adapter-capability-guidance\s*$/mu, "adapter capability guidance must be referenced");
   const body = skill.slice(closing + "\n---\n".length).trim();
   assert.ok(body.split(/\s+/u).length <= 500, "bootstrap body must stay under 500 words");
   for (const forbidden of [/\.claude/iu, /\.codex/iu, /\.gemini/iu, /\bRead\b/u, /\bspawn_agent\b/u, /\binvoke_subagent\b/u]) {
     assert.doesNotMatch(skill, forbidden, `portable skill contains forbidden vendor detail: ${forbidden}`);
   }
-  assert.doesNotMatch(skill, /\b(?:must|always|unconditionally|required)\b[^.\n]{0,80}\b(?:agent|worker|subagent)\b/iu, "bootstrap must not require a worker unconditionally");
+  assert.equal(unconditionalAgentRequirement.test("An agent is mandatory for every task"), true, "detector must cover equivalent mandatory wording");
+  assert.doesNotMatch(skill, unconditionalAgentRequirement, "bootstrap must not require a worker unconditionally");
+});
+
+test("pressure fallback covers missing selected-adapter guidance", async () => {
+  const skill = await readFile(skillPath, "utf8");
+  assert.match(skill, /When selected adapter guidance, native paths, or syntax are unavailable,/iu);
+  assert.match(skill, /name the unavailable capability and affected step, then stop or ask for direction\./iu);
+  assert.match(skill, /Do not continue as if supported or invent a path or syntax\./iu);
+});
+
+test("fresh implementation routing precedes the first implementation action", async () => {
+  const skill = await readFile(skillPath, "utf8");
+  assert.match(skill, /For a fresh implementation request, complete the applicability check before the first implementation action\./u);
+});
+
+test("simple factual routing still checks applicability before answering", async () => {
+  const skill = await readFile(skillPath, "utf8");
+  assert.match(skill, /For a simple factual response, complete the applicability check before answering\./u);
+});
+
+test("assigned workers follow their contract without restarting bootstrap", async () => {
+  const skill = await readFile(skillPath, "utf8");
+  assert.match(skill, /An already-dispatched worker must follow its task contract without restarting this bootstrap\./u);
 });
 
 const evaluationPath = resolve(process.cwd(), "core/evals/skill-routing/using-all-about-agents.json");
@@ -47,6 +73,16 @@ const requiredCaseIds = [
 
 test("routing evaluation defines the required scenarios", async () => {
   const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
+  const requiredExpectedKeys = [
+    "skillCheck",
+    "simpleFactualCheck",
+    "selectApplicableGuidanceBeforeAction",
+    "restartBootstrap",
+    "continueAsIfSupported",
+    "followTaskContract",
+    "unavailableCapability",
+    "inventDetails"
+  ];
   assert.equal(evaluation.schemaVersion, 1);
   assert.equal(evaluation.skill, "using-all-about-agents");
   assert.deepEqual(evaluation.cases.map((entry) => entry.id), requiredCaseIds);
@@ -55,14 +91,47 @@ test("routing evaluation defines the required scenarios", async () => {
     assert.equal(entry.critical, true, `${entry.id} must be critical`);
     assert.equal(typeof entry.prompt, "string");
     assert.equal(typeof entry.expected, "object");
+    for (const key of requiredExpectedKeys) assert.ok(Object.hasOwn(entry.expected, key), `${entry.id} is missing expected.${key}`);
+    assert.ok(Array.isArray(entry.observables) && entry.observables.length > 0, `${entry.id} must define nonempty observables`);
+    assert.ok(entry.observables.every((observable) => typeof observable === "string" && observable.trim().length > 0), `${entry.id} observables must be nonempty strings`);
   }
   const trigger = evaluation.cases[0];
+  assert.deepEqual(trigger.expected, {
+    skillCheck: "required",
+    simpleFactualCheck: "required",
+    selectApplicableGuidanceBeforeAction: true,
+    restartBootstrap: false,
+    continueAsIfSupported: true,
+    followTaskContract: false,
+    unavailableCapability: "not-applicable",
+    inventDetails: false
+  });
   assert.equal(trigger.expected.skillCheck, "required");
   assert.equal(trigger.expected.simpleFactualCheck, "required");
   const worker = evaluation.cases[1];
+  assert.deepEqual(worker.expected, {
+    skillCheck: "not-required",
+    simpleFactualCheck: "not-applicable",
+    selectApplicableGuidanceBeforeAction: false,
+    continueAsIfSupported: true,
+    followTaskContract: true,
+    unavailableCapability: "not-applicable",
+    restartBootstrap: false,
+    inventDetails: false
+  });
   assert.equal(worker.expected.skillCheck, "not-required");
   assert.equal(worker.expected.followTaskContract, true);
   const pressure = evaluation.cases[2];
+  assert.deepEqual(pressure.expected, {
+    skillCheck: "required",
+    simpleFactualCheck: "not-applicable",
+    selectApplicableGuidanceBeforeAction: true,
+    restartBootstrap: false,
+    continueAsIfSupported: false,
+    followTaskContract: false,
+    unavailableCapability: "report",
+    inventDetails: false
+  });
   assert.equal(pressure.expected.unavailableCapability, "report");
   assert.equal(pressure.expected.inventDetails, false);
 });
