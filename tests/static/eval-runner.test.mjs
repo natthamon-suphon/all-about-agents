@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { test } from "node:test";
-import { runEvaluationBatch, validateResultEnvelope } from "../../core/evals/runner.mjs";
+import { readContainedUtf8Jsonl, runEvaluationBatch, validateResultEnvelope } from "../../core/evals/runner.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
 import { main as cliMain } from "../../scripts/aaa.mjs";
 
@@ -61,6 +61,20 @@ test("result envelopes remain anonymized and reject secret-bearing values", () =
   assert.ok(result.errors.some((error) => error.keyword === "redaction"));
 });
 
+test("result envelopes reject sensitive metadata keys unless their values are redacted", () => {
+  for (const key of ["password", "pass_word", "token", "apiKey", "api-key", "secret", "authorization", "AUTH_TOKEN"]) {
+    const sensitive = envelope("sample-sensitive");
+    sensitive.metadata[key] = "present-but-not-redacted";
+    const rejected = validateResultEnvelope(sensitive);
+    assert.equal(rejected.valid, false, `sensitive metadata key accepted: ${key}`);
+    assert.ok(rejected.errors.some((error) => error.keyword === "redaction"), `missing redaction error: ${key}`);
+
+    const redacted = envelope("sample-redacted");
+    redacted.metadata[key] = "[REDACTED]";
+    assert.equal(validateResultEnvelope(redacted).valid, true, `redacted metadata key rejected: ${key}`);
+  }
+});
+
 test("evaluation batch rejects a malformed result envelope", async () => {
   await withTempRoot(async (root) => {
     await assert.rejects(
@@ -88,6 +102,48 @@ test("evaluation batch rejects output traversal", async () => {
       }),
       /contained evaluation directory/
     );
+  });
+});
+
+test("evaluation batch rejects an allowed root whose junction escapes the repository", async (t) => {
+  const allowedParent = resolve(process.cwd(), ".aaa");
+  const allowedRoot = resolve(allowedParent, "eval-runs");
+  const outside = await mkdtemp(join(tmpdir(), "aaa-outside-"));
+  let junctionCreated = false;
+  try {
+    await mkdir(allowedParent, { recursive: true });
+    try {
+      await symlink(outside, allowedRoot, "junction");
+      junctionCreated = true;
+    } catch (error) {
+      if (error?.code === "EPERM" || error?.code === "EACCES") {
+        t.skip(`junction creation unavailable: ${error.code}`);
+        return;
+      }
+      throw error;
+    }
+    await assert.rejects(
+      runEvaluationBatch({
+        cases: [envelope("sample-junction")],
+        variant: "candidate",
+        samples: 1,
+        executeSample: async (caseRecord) => caseRecord,
+        outputDir: resolve(allowedRoot, "escaped")
+      }),
+      /contained evaluation directory/
+    );
+  } finally {
+    if (junctionCreated) await rm(allowedRoot, { force: true, recursive: false });
+    await rm(allowedParent, { force: true, recursive: true });
+    await rm(outside, { force: true, recursive: true });
+  }
+});
+
+test("contained JSONL input rejects malformed UTF-8 before parsing", async () => {
+  await withTempRoot(async (root) => {
+    const input = resolve(root, "invalid-utf8.jsonl");
+    await writeFile(input, Uint8Array.from([0x7b, 0xff, 0x0a]));
+    await assert.rejects(readContainedUtf8Jsonl(input), /UTF-8/);
   });
 });
 

@@ -1,6 +1,7 @@
 import { mkdir, readFile, realpath, rename, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, relative, resolve, sep } from "node:path";
+import { TextDecoder } from "node:util";
 import envelopeSchema from "./result-envelope.schema.json" with { type: "json" };
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 
@@ -11,6 +12,21 @@ const SECRET_PATTERNS = [
   /(?:[A-Za-z]:\\Users\\|\/(?:Users|home)\/)[^\s"'`]+/iu,
   /\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/u
 ];
+
+const SENSITIVE_METADATA_KEYS = new Set([
+  "password",
+  "passwd",
+  "pwd",
+  "token",
+  "apikey",
+  "secret",
+  "authorization",
+  "authtoken",
+  "accesstoken",
+  "refreshtoken",
+  "clientsecret",
+  "privatekey"
+]);
 
 function isWithin(child, parent) {
   const childPath = resolve(child);
@@ -42,16 +58,23 @@ export async function assertContainedOutputDir(outputDir) {
     throw new Error("outputDir must be a contained evaluation directory");
   }
   const target = resolve(process.cwd(), outputDir);
-  const repositoryRoots = [resolve(process.cwd(), ".aaa", "eval-runs"), resolve(process.cwd(), "tests", ".tmp")];
+  const repositoryRoot = resolve(process.cwd());
+  const repositoryRoots = [
+    { logical: resolve(repositoryRoot, ".aaa", "eval-runs"), intendedParent: repositoryRoot },
+    { logical: resolve(repositoryRoot, "tests", ".tmp"), intendedParent: repositoryRoot }
+  ];
   const temporaryRoot = resolve(tmpdir());
-  const allowedByRepository = repositoryRoots.some((root) => isWithin(target, root));
+  const allowedByRepository = repositoryRoots.some(({ logical }) => isWithin(target, logical));
   const allowedByTemporary = isWithin(target, temporaryRoot) && target.toLowerCase().split(/[\\/]/u).includes("eval-runs");
   if (!allowedByRepository && !allowedByTemporary) throw new Error("outputDir must be a contained evaluation directory");
   const existingParent = await nearestExistingParent(target);
   const realTarget = existingParent.logical === target ? existingParent.real : resolve(existingParent.real, relative(existingParent.logical, target));
-  const realRepositoryRoots = await Promise.all(repositoryRoots.map(async (root) => (await nearestExistingParent(root)).real));
+  const realRepositoryRoots = await Promise.all(repositoryRoots.map(async ({ logical, intendedParent }) => ({
+    root: (await nearestExistingParent(logical)).real,
+    intendedParent: (await nearestExistingParent(intendedParent)).real
+  })));
   const realTemporaryRoot = (await nearestExistingParent(temporaryRoot)).real;
-  const realRepositoryAllowed = realRepositoryRoots.some((root) => isWithin(realTarget, root));
+  const realRepositoryAllowed = realRepositoryRoots.some(({ root, intendedParent }) => isWithin(root, intendedParent) && isWithin(realTarget, root));
   const realTemporaryAllowed = isWithin(realTarget, realTemporaryRoot) && realTarget.toLowerCase().split(/[\\/]/u).includes("eval-runs");
   if (!realRepositoryAllowed && !realTemporaryAllowed) throw new Error("outputDir must be a contained evaluation directory");
   await mkdir(target, { recursive: true });
@@ -77,10 +100,33 @@ function collectSecretErrors(value, path, errors) {
   }
 }
 
+function normalizeMetadataKey(key) {
+  return String(key).toLowerCase().replace(/[^a-z0-9]/gu, "");
+}
+
+function collectSensitiveMetadataKeyErrors(value, path, errors) {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectSensitiveMetadataKeyErrors(item, `${path}/${index}`, errors));
+    return;
+  }
+  if (value === null || typeof value !== "object") return;
+  for (const [key, child] of Object.entries(value)) {
+    const pointerKey = String(key).replaceAll("~", "~0").replaceAll("/", "~1");
+    const childPath = `${path}/${pointerKey}`;
+    if (SENSITIVE_METADATA_KEYS.has(normalizeMetadataKey(key)) && child !== "[REDACTED]") {
+      errors.push({ sourcePath: "core/evals/result-envelope.schema.json", jsonPointer: childPath, keyword: "redaction", message: "sensitive metadata keys must use [REDACTED] values" });
+    }
+    collectSensitiveMetadataKeyErrors(child, childPath, errors);
+  }
+}
+
 export function validateResultEnvelope(value) {
   const result = validateSchema({ schema: envelopeSchema, value, sourcePath: "core/evals/result-envelope.schema.json" });
   const errors = [...result.errors];
   collectSecretErrors(value, "", errors);
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    collectSensitiveMetadataKeyErrors(value.metadata, "/metadata", errors);
+  }
   return { valid: errors.length === 0, errors };
 }
 
@@ -136,7 +182,13 @@ export async function readContainedUtf8Jsonl(inputPath) {
   const realRepositoryRoot = (await nearestExistingParent(repositoryRoot)).real;
   const realTemporaryRoot = (await nearestExistingParent(temporaryRoot)).real;
   if (!isWithin(realTarget, realRepositoryRoot) && !isWithin(realTarget, realTemporaryRoot)) throw new Error("input JSONL path must be contained");
-  const text = await readFile(target, "utf8");
+  const bytes = await readFile(target);
+  let text;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch (error) {
+    throw new Error("input JSONL must be valid UTF-8", { cause: error });
+  }
   if (text.length > 2_000_000) throw new Error("input JSONL is too large");
   return text;
 }

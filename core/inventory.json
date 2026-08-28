@@ -263,7 +263,9 @@
     {
       "name": "test-driven-development",
       "source": "skills/test-driven-development/SKILL.md",
-      "assets": [],
+      "assets": [
+        "skills/test-driven-development/writing-good-tests.md"
+      ],
       "scripts": [],
       "auditDisposition": {
         "status": "stable",
@@ -369,7 +371,9 @@
     {
       "name": "zero-downtime-migrations",
       "source": "skills/zero-downtime-migrations/SKILL.md",
-      "assets": [],
+      "assets": [
+        "skills/zero-downtime-migrations/postgres-contracts-examples.md"
+      ],
       "scripts": [],
       "auditDisposition": {
         "status": "stable",
@@ -1147,6 +1151,14 @@
       }
     },
     {
+      "path": "skills/test-driven-development/writing-good-tests.md",
+      "kind": "asset",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
       "path": "skills/threat-modeling-and-security/SKILL.md",
       "kind": "source",
       "auditDisposition": {
@@ -1309,6 +1321,14 @@
     {
       "path": "skills/zero-downtime-migrations/SKILL.md",
       "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/zero-downtime-migrations/postgres-contracts-examples.md",
+      "kind": "asset",
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."
@@ -1584,4 +1604,3 @@
     ]
   }
 }
-
