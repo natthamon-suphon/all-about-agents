@@ -141,8 +141,7 @@ function graphErrors(workflow, roles = {}) {
     const onFailure = typeof gate === "string" ? null : gate.onFailure;
     if (state && !stateSet.has(state)) errors.push(`gate ${gate.id} names unknown state ${state}`);
     if (onFailure && !stateSet.has(onFailure)) errors.push(`gate ${gate.id} stops at unknown state ${onFailure}`);
-    const explicitTerminalFailures = new Set(workflow.recovery?.terminalFailureStates || []);
-    if (state && onFailure && onFailure !== state && !explicitTerminalFailures.has(onFailure)) errors.push(`gate ${gate.id} does not stop at the smallest responsible state`);
+    if (state && onFailure && onFailure !== state) errors.push(`gate ${gate.id} does not stop at the smallest responsible state`);
   }
   errors.push(...recoveryErrors(workflow));
   return errors;
@@ -199,6 +198,11 @@ test("workflow graph checks reject skipped approval, unreachable states, missing
   const wrongWorkflowRole = structuredClone(record);
   wrongWorkflowRole.transitions[3].allowedRoles = ["reviewer"];
   assert.ok(graphErrors(wrongWorkflowRole).some((error) => /role reviewer is not allowed by workflow design-change/u.test(error)));
+
+  const gateBypass = structuredClone(record);
+  gateBypass.recovery.terminalFailureStates = ["plan"];
+  gateBypass.gates[0].onFailure = "plan";
+  assert.ok(graphErrors(gateBypass).some((error) => /gate context-evidence does not stop at the smallest responsible state/u.test(error)));
 });
 
 test("compaction and resume verify durable workflow state from disk", async () => {
@@ -220,11 +224,10 @@ test("compaction and resume verify durable workflow state from disk", async () =
 
       await writeFile(path, `${JSON.stringify(durable)}\n`, "utf8");
       const resumed = JSON.parse(await readFile(path, "utf8"));
-      assert.equal(resumed.workflowId, id);
-      assert.ok(record.states.map(stateId).includes(resumed.state));
-      assert.equal(Number.isInteger(resumed.revision) && resumed.revision > 0, true);
-      assert.equal(resumed.revision, expectedRevision);
+      const acceptsDiskCheckpoint = (checkpoint) => checkpoint?.workflowId === id && record.states.map(stateId).includes(checkpoint.state) && Number.isInteger(checkpoint.revision) && checkpoint.revision === expectedRevision && Array.isArray(checkpoint.evidence);
+      assert.equal(acceptsDiskCheckpoint(resumed), true);
       assert.deepEqual(resumed, durable);
+      assert.equal(acceptsDiskCheckpoint(conversationSummary), false);
       assert.notDeepEqual(resumed, conversationSummary, `${id} resume trusted conversation summary`);
 
       await rm(path);
@@ -236,7 +239,7 @@ test("compaction and resume verify durable workflow state from disk", async () =
       const staleValid = { ...durable, revision: expectedRevision - 1 };
       await writeFile(path, `${JSON.stringify(staleValid)}\n`, "utf8");
       const staleDisk = JSON.parse(await readFile(path, "utf8"));
-      assert.notEqual(staleDisk.revision, expectedRevision, `${id} wrong-revision durable state was accepted`);
+      assert.equal(acceptsDiskCheckpoint(staleDisk), false, `${id} wrong-revision durable state was accepted`);
     }
   } finally {
     await rm(root, { recursive: true, force: true });
