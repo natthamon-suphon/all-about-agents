@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "surface": "claude",
+  "checkedAt": "2026-08-28",
+  "productVersion": "2.1.248",
+  "capabilities": [
+    {
+      "feature": "model.primary",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-model-policy-claude.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "2.1.248",
+      "value": "claude-opus-5",
+      "notes": "Documented pinned Claude model ID."
+    },
+    {
+      "feature": "model.fallback",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-model-policy-claude.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "2.1.248",
+      "value": [
+        "claude-sonnet-5"
+      ],
+      "notes": "Documented fallback chain, tried for qualifying server failures."
+    },
+    {
+      "feature": "model.advisor",
+      "support": "supported",
+      "stability": "experimental",
+      "source": "research-model-policy-claude.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "2.1.248",
+      "value": "claude-fable-5",
+      "notes": "Documented experimental Fable advisor; access and consent may be required."
+    },
+    {
+      "feature": "effort.max",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-model-policy-claude.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "2.1.248",
+      "value": {
+        "environment": "CLAUDE_CODE_EFFORT_LEVEL",
+        "value": "max"
+      },
+      "notes": "Persistent max effort is documented through the environment setting, not effortLevel."
+    },
+    {
+      "feature": "agents.discovery",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-claude-code.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "2.1.248",
+      "value": {
+        "global": "~/.claude/agents/",
+        "project": ".claude/agents/",
+        "plugin": "agents/",
+        "format": "Markdown YAML frontmatter"
+      },
+      "notes": "Documented user, project, and plugin custom-agent discovery."
+    },
+    {
+      "feature": "hooks.lifecycle",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-claude-code.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "2.1.248",
+      "value": {
+        "events": [
+          "SessionStart",
+          "SessionEnd",
+          "SubagentStart",
+          "PreToolUse",
+          "PermissionRequest",
+          "PostToolUse",
+          "PreCompact",
+          "PostCompact",
+          "UserPromptSubmit",
+          "SubagentStop",
+          "Stop"
+        ],
+        "handlers": [
+          "command",
+          "mcp_tool"
+        ]
+      },
+      "notes": "Documented lifecycle events and handler types."
+    },
+    {
+      "feature": "rules.instructions",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-claude-code.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "2.1.248",
+      "value": {
+        "global": "~/.claude/CLAUDE.md",
+        "rules": "~/.claude/rules/*.md",
+        "project": "CLAUDE.md or .claude/CLAUDE.md"
+      },
+      "notes": "CLAUDE.md and rules are documented instruction surfaces."
+    },
+    {
+      "feature": "skills.discovery",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-claude-code.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "2.1.248",
+      "value": {
+        "global": "~/.claude/skills/<skill-name>/SKILL.md",
+        "plugin": "skills/<skill-name>/SKILL.md"
+      },
+      "notes": "Folder-based SKILL.md discovery is documented."
+    },
+    {
+      "feature": "commands.legacy",
+      "support": "supported",
+      "stability": "manual",
+      "source": "research-claude-code.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "2.1.248",
+      "value": ".claude/commands/*.md",
+      "notes": "Legacy commands still work; new reusable behavior should use skills."
+    },
+    {
+      "feature": "statusline.native",
+      "support": "unknown",
+      "stability": "unknown",
+      "source": "research-claude-code.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "2.1.248",
+      "value": null,
+      "notes": "The approved Claude records do not establish a native statusline configuration contract."
+    },
+    {
+      "feature": "install.user-plugin",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-claude-code.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "2.1.248",
+      "value": {
+        "scope": "user",
+        "command": "claude plugin install <plugin>@<marketplace>"
+      },
+      "notes": "User-scoped plugin installation is documented."
+    }
+  ]
+}

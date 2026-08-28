@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "surface": "antigravity-2",
+  "checkedAt": "2026-08-28",
+  "productVersion": "unknown",
+  "capabilities": [
+    {
+      "feature": "model.desktop",
+      "support": "manual",
+      "stability": "manual",
+      "source": "research-model-policy-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "displayName": "Gemini 3.7 Flash",
+        "thinkingLevel": "High",
+        "applyVia": "Desktop model selector / Model Usage settings"
+      },
+      "notes": "Documented Desktop UI selection; no public Desktop model slug is established."
+    },
+    {
+      "feature": "effort.desktop",
+      "support": "manual",
+      "stability": "manual",
+      "source": "research-model-policy-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": "High",
+      "notes": "Desktop documents Low, Medium, and High; max is not documented."
+    },
+    {
+      "feature": "agents.discovery",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "global": "~/.gemini/config/agents/",
+        "workspace": ".agents/agents/",
+        "format": "Markdown YAML frontmatter",
+        "tools": "surface-specific exact identifiers"
+      },
+      "notes": "Documented custom-agent locations and required Markdown format."
+    },
+    {
+      "feature": "hooks.lifecycle",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "events": [
+          "PreToolUse",
+          "PostToolUse",
+          "PreInvocation",
+          "PostInvocation",
+          "Stop"
+        ],
+        "handler": "command"
+      },
+      "notes": "Documented Antigravity hook events and command handler."
+    },
+    {
+      "feature": "rules.instructions",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "global": "~/.gemini/GEMINI.md",
+        "workspace": ".agents/rules/",
+        "plugin": "rules/*.md"
+      },
+      "notes": "Documented global, workspace, and plugin rule surfaces."
+    },
+    {
+      "feature": "skills.discovery",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "global": "~/.gemini/config/skills/<skill>/",
+        "workspace": ".agents/skills/<skill>/",
+        "entry": "SKILL.md"
+      },
+      "notes": "Folder-based SKILL.md discovery is documented for Antigravity 2.0."
+    },
+    {
+      "feature": "commands.native",
+      "support": "unknown",
+      "stability": "unknown",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": null,
+      "notes": "The approved records do not establish a Desktop command/command-file contract."
+    },
+    {
+      "feature": "statusline.native",
+      "support": "unknown",
+      "stability": "unknown",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": null,
+      "notes": "The approved records do not establish a native Desktop statusline contract."
+    },
+    {
+      "feature": "install.global-plugin",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "path": "~/.gemini/config/plugins/<plugin>/",
+        "manifest": "plugin.json"
+      },
+      "notes": "Documented Antigravity 2.0 global plugin location."
+    },
+    {
+      "feature": "desktop.model-persistence",
+      "support": "unknown",
+      "stability": "unknown",
+      "source": "research-model-policy-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "nativeConfigKey": null,
+        "persistence": "unknown"
+      },
+      "notes": "Public Desktop docs do not document a persisted key, file path, or slug; no persistence claim is made."
+    }
+  ]
+}

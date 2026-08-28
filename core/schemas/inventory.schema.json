@@ -1,0 +1,290 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "All About Agents baseline inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "capturedAt",
+    "repository",
+    "skills",
+    "skillSources",
+    "sourceFiles",
+    "legacyRoles",
+    "hooks",
+    "configs",
+    "statusline",
+    "setupScripts",
+    "auditDisposition"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "capturedAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "repository": {
+      "const": "all-about-agents"
+    },
+    "skills": {
+      "type": "array",
+      "minItems": 28,
+      "maxItems": 28,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      }
+    },
+    "skillSources": {
+      "type": "array",
+      "minItems": 28,
+      "maxItems": 28,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "source",
+          "assets",
+          "scripts",
+          "auditDisposition"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "scripts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "auditDisposition": {
+            "$ref": "#/$defs/auditDisposition"
+          }
+        }
+      }
+    },
+    "sourceFiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "kind",
+          "auditDisposition"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "source",
+              "asset",
+              "script",
+              "config",
+              "manifest",
+              "test",
+              "metadata"
+            ]
+          },
+          "auditDisposition": {
+            "$ref": "#/$defs/auditDisposition"
+          }
+        }
+      }
+    },
+    "legacyRoles": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "files",
+          "auditDisposition"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "files": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "string"
+            }
+          },
+          "auditDisposition": {
+            "$ref": "#/$defs/auditDisposition"
+          }
+        }
+      }
+    },
+    "hooks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "events",
+          "auditDisposition"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "auditDisposition": {
+            "$ref": "#/$defs/auditDisposition"
+          }
+        }
+      }
+    },
+    "configs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "surface",
+          "auditDisposition"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "claude",
+              "codex",
+              "antigravity-2",
+              "agy",
+              "repository"
+            ]
+          },
+          "auditDisposition": {
+            "$ref": "#/$defs/auditDisposition"
+          }
+        }
+      }
+    },
+    "statusline": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "surface",
+          "auditDisposition"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "surface": {
+            "type": "string"
+          },
+          "auditDisposition": {
+            "$ref": "#/$defs/auditDisposition"
+          }
+        }
+      }
+    },
+    "setupScripts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "platform",
+          "auditDisposition"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "win32",
+              "darwin",
+              "all"
+            ]
+          },
+          "auditDisposition": {
+            "$ref": "#/$defs/auditDisposition"
+          }
+        }
+      }
+    },
+    "auditDisposition": {
+      "$ref": "#/$defs/auditDisposition"
+    }
+  },
+  "$defs": {
+    "auditDisposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "stable",
+            "experimental",
+            "manual",
+            "unsupported",
+            "unknown"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1587 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-28",
+  "repository": "all-about-agents",
+  "skills": [
+    "brainstorming",
+    "codebase-design",
+    "dispatching-parallel-agents",
+    "executing-plans",
+    "finishing-a-development-branch",
+    "handoff",
+    "improve-codebase-architecture",
+    "interviewing",
+    "loop-me",
+    "nano-image-generator",
+    "performance-profiling-and-benchmarking",
+    "receiving-code-review",
+    "requesting-code-review",
+    "research",
+    "resolving-merge-conflicts",
+    "session-compaction-resilience",
+    "subagent-driven-development",
+    "systematic-debugging",
+    "test-driven-development",
+    "threat-modeling-and-security",
+    "using-all-about-agents",
+    "using-git-worktrees",
+    "verification-before-completion",
+    "wait-what",
+    "wayfinder",
+    "writing-plans",
+    "writing-skills",
+    "zero-downtime-migrations"
+  ],
+  "skillSources": [
+    {
+      "name": "brainstorming",
+      "source": "skills/brainstorming/SKILL.md",
+      "assets": [
+        "skills/brainstorming/spec-document-reviewer-prompt.md",
+        "skills/brainstorming/visual-companion.md"
+      ],
+      "scripts": [
+        "skills/brainstorming/scripts/frame-template.html",
+        "skills/brainstorming/scripts/helper.js",
+        "skills/brainstorming/scripts/server.cjs",
+        "skills/brainstorming/scripts/start-server.sh",
+        "skills/brainstorming/scripts/stop-server.sh"
+      ],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "codebase-design",
+      "source": "skills/codebase-design/SKILL.md",
+      "assets": [
+        "skills/codebase-design/DEEPENING.md",
+        "skills/codebase-design/DESIGN-IT-TWICE.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "dispatching-parallel-agents",
+      "source": "skills/dispatching-parallel-agents/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "executing-plans",
+      "source": "skills/executing-plans/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "finishing-a-development-branch",
+      "source": "skills/finishing-a-development-branch/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "handoff",
+      "source": "skills/handoff/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "improve-codebase-architecture",
+      "source": "skills/improve-codebase-architecture/SKILL.md",
+      "assets": [
+        "skills/improve-codebase-architecture/HTML-REPORT.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "interviewing",
+      "source": "skills/interviewing/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "loop-me",
+      "source": "skills/loop-me/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "nano-image-generator",
+      "source": "skills/nano-image-generator/SKILL.md",
+      "assets": [],
+      "scripts": [
+        "skills/nano-image-generator/scripts/generate_image.py"
+      ],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "performance-profiling-and-benchmarking",
+      "source": "skills/performance-profiling-and-benchmarking/SKILL.md",
+      "assets": [
+        "skills/performance-profiling-and-benchmarking/profiling-recipes.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "receiving-code-review",
+      "source": "skills/receiving-code-review/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "requesting-code-review",
+      "source": "skills/requesting-code-review/SKILL.md",
+      "assets": [
+        "skills/requesting-code-review/code-reviewer.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "research",
+      "source": "skills/research/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "resolving-merge-conflicts",
+      "source": "skills/resolving-merge-conflicts/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "session-compaction-resilience",
+      "source": "skills/session-compaction-resilience/SKILL.md",
+      "assets": [
+        "skills/session-compaction-resilience/snapshot-template.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "subagent-driven-development",
+      "source": "skills/subagent-driven-development/SKILL.md",
+      "assets": [
+        "skills/subagent-driven-development/implementer-prompt.md",
+        "skills/subagent-driven-development/re-review-prompt.md",
+        "skills/subagent-driven-development/task-reviewer-prompt.md"
+      ],
+      "scripts": [
+        "skills/subagent-driven-development/scripts/review-package",
+        "skills/subagent-driven-development/scripts/review-package.js",
+        "skills/subagent-driven-development/scripts/sdd-workspace",
+        "skills/subagent-driven-development/scripts/sdd-workspace.js",
+        "skills/subagent-driven-development/scripts/task-brief",
+        "skills/subagent-driven-development/scripts/task-brief.js"
+      ],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "systematic-debugging",
+      "source": "skills/systematic-debugging/SKILL.md",
+      "assets": [
+        "skills/systematic-debugging/CREATION-LOG.md",
+        "skills/systematic-debugging/condition-based-waiting-example.ts",
+        "skills/systematic-debugging/condition-based-waiting.md",
+        "skills/systematic-debugging/defense-in-depth.md",
+        "skills/systematic-debugging/feedback-loops.md",
+        "skills/systematic-debugging/find-polluter.sh",
+        "skills/systematic-debugging/root-cause-tracing.md",
+        "skills/systematic-debugging/test-academic.md",
+        "skills/systematic-debugging/test-pressure-1.md",
+        "skills/systematic-debugging/test-pressure-2.md",
+        "skills/systematic-debugging/test-pressure-3.md"
+      ],
+      "scripts": [
+        "skills/systematic-debugging/scripts/hitl-loop.template.sh"
+      ],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "test-driven-development",
+      "source": "skills/test-driven-development/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "threat-modeling-and-security",
+      "source": "skills/threat-modeling-and-security/SKILL.md",
+      "assets": [
+        "skills/threat-modeling-and-security/stride-checklist.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "using-all-about-agents",
+      "source": "skills/using-all-about-agents/SKILL.md",
+      "assets": [
+        "skills/using-all-about-agents/references/antigravity-tools.md",
+        "skills/using-all-about-agents/references/codex-tools.md",
+        "skills/using-all-about-agents/references/gemini-tools.md",
+        "skills/using-all-about-agents/references/pi-tools.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "using-git-worktrees",
+      "source": "skills/using-git-worktrees/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "verification-before-completion",
+      "source": "skills/verification-before-completion/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "wait-what",
+      "source": "skills/wait-what/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "wayfinder",
+      "source": "skills/wayfinder/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "writing-plans",
+      "source": "skills/writing-plans/SKILL.md",
+      "assets": [
+        "skills/writing-plans/plan-document-reviewer-prompt.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "writing-skills",
+      "source": "skills/writing-skills/SKILL.md",
+      "assets": [
+        "skills/writing-skills/anthropic-best-practices.md",
+        "skills/writing-skills/graphviz-conventions.dot",
+        "skills/writing-skills/persuasion-principles.md",
+        "skills/writing-skills/render-graphs.js",
+        "skills/writing-skills/testing-skills-with-subagents.md",
+        "skills/writing-skills/examples/CLAUDE_MD_TESTING.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "zero-downtime-migrations",
+      "source": "skills/zero-downtime-migrations/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Current public skill retained in the unified baseline."
+      }
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": ".claude-plugin/plugin.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": ".gitattributes",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": ".gitignore",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": ".idea/.gitignore",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "unknown",
+        "reason": "Repository documentation or IDE metadata is not a native capability claim."
+      }
+    },
+    {
+      "path": ".idea/all-about-agents.iml",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "unknown",
+        "reason": "Repository documentation or IDE metadata is not a native capability claim."
+      }
+    },
+    {
+      "path": ".idea/misc.xml",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "unknown",
+        "reason": "Repository documentation or IDE metadata is not a native capability claim."
+      }
+    },
+    {
+      "path": ".idea/modules.xml",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "unknown",
+        "reason": "Repository documentation or IDE metadata is not a native capability claim."
+      }
+    },
+    {
+      "path": ".idea/vcs.xml",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "unknown",
+        "reason": "Repository documentation or IDE metadata is not a native capability claim."
+      }
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "AGENTS.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "CLAUDE.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "LICENSE",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "agents/README.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/codebase-architect.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/codebase-architect.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/deep-investigator.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/deep-investigator.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/generalist.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/generalist.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/implementer.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/implementer.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/security-auditor.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/security-auditor.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/task-reviewer.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "agents/task-reviewer.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained for staged migration."
+      }
+    },
+    {
+      "path": "configs/CLAUDE.local.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing baseline integration surface; native behavior requires later qualification."
+      }
+    },
+    {
+      "path": "configs/GEMINI.local.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing baseline integration surface; native behavior requires later qualification."
+      }
+    },
+    {
+      "path": "configs/settings.local.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing baseline integration surface; native behavior requires later qualification."
+      }
+    },
+    {
+      "path": "docs/antigravity.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "unknown",
+        "reason": "Repository documentation or IDE metadata is not a native capability claim."
+      }
+    },
+    {
+      "path": "hooks/antigravity-hooks.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "hooks/antigravity-session-start.js",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "hooks/antigravity-track-tool.js",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "hooks/hooks.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "hooks/run-hook.cmd",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "hooks/session-start",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "package.json",
+      "kind": "config",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "scripts/aaa.mjs",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "scripts/lint-shell.sh",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "setup/setup-antigravity.ps1",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing baseline integration surface; native behavior requires later qualification."
+      }
+    },
+    {
+      "path": "setup/setup-antigravity.sh",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing baseline integration surface; native behavior requires later qualification."
+      }
+    },
+    {
+      "path": "setup/setup-guide-antigravity.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing baseline integration surface; native behavior requires later qualification."
+      }
+    },
+    {
+      "path": "skills/brainstorming/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/brainstorming/scripts/frame-template.html",
+      "kind": "asset",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/brainstorming/scripts/helper.js",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/brainstorming/scripts/server.cjs",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/brainstorming/scripts/start-server.sh",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/brainstorming/scripts/stop-server.sh",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/brainstorming/spec-document-reviewer-prompt.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/brainstorming/visual-companion.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/codebase-design/DEEPENING.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/codebase-design/DESIGN-IT-TWICE.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/codebase-design/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/dispatching-parallel-agents/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/executing-plans/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/finishing-a-development-branch/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/handoff/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/improve-codebase-architecture/HTML-REPORT.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/improve-codebase-architecture/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/interviewing/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/loop-me/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/nano-image-generator/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/nano-image-generator/scripts/generate_image.py",
+      "kind": "asset",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/performance-profiling-and-benchmarking/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/performance-profiling-and-benchmarking/profiling-recipes.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/receiving-code-review/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/requesting-code-review/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/requesting-code-review/code-reviewer.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/research/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/resolving-merge-conflicts/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/session-compaction-resilience/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/session-compaction-resilience/snapshot-template.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/subagent-driven-development/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/subagent-driven-development/implementer-prompt.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/subagent-driven-development/re-review-prompt.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/subagent-driven-development/scripts/review-package",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/subagent-driven-development/scripts/review-package.js",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/subagent-driven-development/scripts/sdd-workspace",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/subagent-driven-development/scripts/sdd-workspace.js",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/subagent-driven-development/scripts/task-brief",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/subagent-driven-development/scripts/task-brief.js",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/subagent-driven-development/task-reviewer-prompt.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/CREATION-LOG.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/condition-based-waiting-example.ts",
+      "kind": "asset",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/condition-based-waiting.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/defense-in-depth.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/feedback-loops.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/find-polluter.sh",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/root-cause-tracing.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/scripts/hitl-loop.template.sh",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/test-academic.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/test-pressure-1.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/test-pressure-2.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/systematic-debugging/test-pressure-3.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/test-driven-development/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/threat-modeling-and-security/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/threat-modeling-and-security/stride-checklist.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/using-all-about-agents/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/using-all-about-agents/references/antigravity-tools.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/using-all-about-agents/references/codex-tools.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/using-all-about-agents/references/gemini-tools.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/using-all-about-agents/references/pi-tools.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/using-git-worktrees/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/verification-before-completion/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/wait-what/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/wayfinder/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/writing-plans/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/writing-plans/plan-document-reviewer-prompt.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/writing-skills/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/writing-skills/anthropic-best-practices.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/writing-skills/examples/CLAUDE_MD_TESTING.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/writing-skills/graphviz-conventions.dot",
+      "kind": "asset",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/writing-skills/persuasion-principles.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/writing-skills/render-graphs.js",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/writing-skills/testing-skills-with-subagents.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "skills/zero-downtime-migrations/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "statusline/statusline.js",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing baseline integration surface; native behavior requires later qualification."
+      }
+    },
+    {
+      "path": "statusline/track-tool.js",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing baseline integration surface; native behavior requires later qualification."
+      }
+    },
+    {
+      "path": "tests/helpers/temp-root.mjs",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "tests/static/repository-layout.test.mjs",
+      "kind": "test",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "tests/static/runtime.test.mjs",
+      "kind": "test",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    }
+  ],
+  "legacyRoles": [
+    {
+      "name": "codebase-architect",
+      "files": [
+        "agents/codebase-architect.json",
+        "agents/codebase-architect.md"
+      ],
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained until the canonical role replacement qualifies."
+      }
+    },
+    {
+      "name": "deep-investigator",
+      "files": [
+        "agents/deep-investigator.json",
+        "agents/deep-investigator.md"
+      ],
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained until the canonical role replacement qualifies."
+      }
+    },
+    {
+      "name": "generalist",
+      "files": [
+        "agents/generalist.json",
+        "agents/generalist.md"
+      ],
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained until the canonical role replacement qualifies."
+      }
+    },
+    {
+      "name": "implementer",
+      "files": [
+        "agents/implementer.json",
+        "agents/implementer.md"
+      ],
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained until the canonical role replacement qualifies."
+      }
+    },
+    {
+      "name": "security-auditor",
+      "files": [
+        "agents/security-auditor.json",
+        "agents/security-auditor.md"
+      ],
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained until the canonical role replacement qualifies."
+      }
+    },
+    {
+      "name": "task-reviewer",
+      "files": [
+        "agents/task-reviewer.json",
+        "agents/task-reviewer.md"
+      ],
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Legacy role retained until the canonical role replacement qualifies."
+      }
+    }
+  ],
+  "hooks": [
+    {
+      "path": "hooks/hooks.json",
+      "events": [
+        "SessionStart",
+        "PreToolUse",
+        "PostToolUse"
+      ],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Existing hook configuration is retained for audit."
+      }
+    },
+    {
+      "path": "hooks/antigravity-hooks.json",
+      "events": [
+        "PreInvocation",
+        "PostToolUse"
+      ],
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Native Antigravity event contract requires later qualification."
+      }
+    },
+    {
+      "path": "hooks/antigravity-session-start.js",
+      "events": [
+        "PreInvocation"
+      ],
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing hook is retained; documented invocation numbering defect is not silently claimed fixed."
+      }
+    },
+    {
+      "path": "hooks/antigravity-track-tool.js",
+      "events": [
+        "PostToolUse"
+      ],
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing hook requires native qualification."
+      }
+    },
+    {
+      "path": "hooks/session-start",
+      "events": [
+        "SessionStart"
+      ],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Existing shell hook is retained for audit."
+      }
+    },
+    {
+      "path": "hooks/run-hook.cmd",
+      "events": [
+        "command"
+      ],
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Windows launcher retained; native hook invocation requires later qualification."
+      }
+    }
+  ],
+  "configs": [
+    {
+      "path": ".claude-plugin/plugin.json",
+      "surface": "claude",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Existing Claude manifest."
+      }
+    },
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "surface": "claude",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Existing Claude marketplace metadata."
+      }
+    },
+    {
+      "path": "configs/CLAUDE.local.md",
+      "surface": "claude",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing local configuration source; not live user configuration."
+      }
+    },
+    {
+      "path": "configs/GEMINI.local.md",
+      "surface": "antigravity-2",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing local configuration source; native persistence is not inferred."
+      }
+    },
+    {
+      "path": "configs/settings.local.json",
+      "surface": "antigravity-2",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing local configuration source; native schema requires later qualification."
+      }
+    }
+  ],
+  "statusline": [
+    {
+      "path": "statusline/statusline.js",
+      "surface": "claude",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Repository statusline source; native install/runtime status is not claimed."
+      }
+    },
+    {
+      "path": "statusline/track-tool.js",
+      "surface": "claude",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Repository statusline helper; native install/runtime status is not claimed."
+      }
+    }
+  ],
+  "setupScripts": [
+    {
+      "path": "setup/setup-antigravity.ps1",
+      "platform": "win32",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing setup script retained for migration audit."
+      }
+    },
+    {
+      "path": "setup/setup-antigravity.sh",
+      "platform": "darwin",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing setup script retained for migration audit."
+      }
+    },
+    {
+      "path": "setup/setup-guide-antigravity.md",
+      "platform": "all",
+      "auditDisposition": {
+        "status": "manual",
+        "reason": "Existing setup guide retained for migration audit."
+      }
+    }
+  ],
+  "auditDisposition": {
+    "status": "stable",
+    "reason": "Immutable repository baseline captured from tracked paths on 2026-08-28; native capability claims live only in adapter records.",
+    "unknowns": [
+      "Antigravity Desktop persisted model/config key is undocumented.",
+      "Antigravity CLI folder-based standalone skill discovery conflicts across approved records.",
+      "Codex automatic model fallback is undocumented and unsupported."
+    ]
+  }
+}
+

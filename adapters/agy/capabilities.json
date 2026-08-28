@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "surface": "agy",
+  "checkedAt": "2026-08-28",
+  "productVersion": "unknown",
+  "capabilities": [
+    {
+      "feature": "model.cli",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-model-policy-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": "gemini-3.7-flash-high",
+      "notes": "Documented stable agy model slug."
+    },
+    {
+      "feature": "effort.cli",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-model-policy-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": "high",
+      "notes": "Documented --effort value; max is not documented."
+    },
+    {
+      "feature": "agents.discovery",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "global": "~/.gemini/config/agents/",
+        "workspace": ".agents/agents/",
+        "format": "Markdown YAML frontmatter",
+        "invocation": "invoke_subagent"
+      },
+      "notes": "Documented CLI custom-agent locations and invocation."
+    },
+    {
+      "feature": "hooks.lifecycle",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "events": [
+          "PreToolUse",
+          "PostToolUse",
+          "PreInvocation",
+          "PostInvocation",
+          "Stop"
+        ],
+        "handler": "command"
+      },
+      "notes": "CLI uses Antigravity plugin hooks; do not substitute Gemini CLI event names."
+    },
+    {
+      "feature": "rules.instructions",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "global": "~/.gemini/GEMINI.md",
+        "workspace": ".agents/rules/",
+        "settings": "~/.gemini/antigravity-cli/settings.json"
+      },
+      "notes": "Documented CLI global/context and settings surfaces."
+    },
+    {
+      "feature": "skills.discovery",
+      "support": "unknown",
+      "stability": "unknown",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "documentedShapes": [
+          "flat Markdown under .agents/skills/",
+          "folder SKILL.md"
+        ],
+        "global": "~/.gemini/antigravity-cli/skills/"
+      },
+      "notes": "Official records conflict on flat Markdown versus folder SKILL.md CLI shape; acceptance test required."
+    },
+    {
+      "feature": "commands.plugin",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "commands": [
+          "agy plugin list",
+          "agy plugin install <path>",
+          "agy plugin enable <name>",
+          "agy plugin disable <name>",
+          "agy plugin uninstall <name>"
+        ]
+      },
+      "notes": "Documented CLI plugin management commands."
+    },
+    {
+      "feature": "statusline.native",
+      "support": "unknown",
+      "stability": "unknown",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": null,
+      "notes": "The approved records do not establish a native agy statusline contract."
+    },
+    {
+      "feature": "install.plugin",
+      "support": "supported",
+      "stability": "stable",
+      "source": "research-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "command": "agy plugin install <local-or-remote-path>",
+        "path": "~/.gemini/antigravity-cli/plugins/<name>/"
+      },
+      "notes": "Documented CLI staging and installation command."
+    },
+    {
+      "feature": "model.persistence-json",
+      "support": "unknown",
+      "stability": "unknown",
+      "source": "research-model-policy-antigravity.md",
+      "checkedAt": "2026-08-28",
+      "productVersion": "unknown",
+      "value": {
+        "nativeConfigKey": null,
+        "persistenceVia": "/model command"
+      },
+      "notes": "Persistence through /model is documented, but its on-disk JSON key is not."
+    }
+  ]
+}
