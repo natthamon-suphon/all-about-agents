@@ -253,17 +253,42 @@ function renderAgentsDocument(core) {
     ""
   );
   for (const command of [...core.commands].sort((left, right) => compareCodePoints(String(left.actionId), String(right.actionId)))) {
-    const description = command.presentation?.help || command.presentation?.label || `Dispatch ${command.actionId} through its canonical workflow.`;
     lines.push(
       `### ${command.actionId}`,
       "",
       `- action: ${command.actionId}`,
       `- workflowId: ${command.workflowId}`,
-      `- description: ${description}`,
+      `- description: ${command.presentation.help}`,
       ""
     );
   }
   return ensureText(lines.join("\n"));
+}
+
+function validateCommandPresentation(commands) {
+  const errors = [];
+  commands.forEach((command, index) => {
+    const path = `/commands/${index}/presentation`;
+    const presentation = command.presentation;
+    if (presentation === null || typeof presentation !== "object" || Array.isArray(presentation)) {
+      errors.push({
+        code: "invalid-command-presentation",
+        message: "presentation must be an object",
+        path
+      });
+      return;
+    }
+    for (const field of ["label", "help"]) {
+      if (typeof presentation[field] !== "string" || presentation[field].trim().length === 0) {
+        errors.push({
+          code: "invalid-command-presentation",
+          message: `presentation.${field} must be a non-empty string`,
+          path: `${path}/${field}`
+        });
+      }
+    }
+  });
+  if (errors.length > 0) throw new AdapterContractError(errors);
 }
 
 function capabilityGuidance() {
@@ -293,6 +318,7 @@ export function renderCodex(input = {}) {
   }
   const commandValidation = validateCommandRecords(core.commands, core.workflows);
   if (!commandValidation.valid) throw new AdapterContractError(commandValidation.errors);
+  validateCommandPresentation(core.commands);
   const profile = profileId(input.profile ?? "portable");
   const files = [];
   addFile(files, ".codex-plugin/plugin.json", renderJson(pluginManifest()));

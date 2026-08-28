@@ -184,6 +184,52 @@ test("Codex AGENTS.md maps every canonical action to its workflow and descriptio
   }
 });
 
+test("Codex rejects malformed canonical command presentation metadata", () => {
+  const malformedCases = [
+    {
+      name: "missing presentation",
+      field: "presentation",
+      mutate: ({ presentation: _presentation, ...command }) => command
+    },
+    {
+      name: "empty label",
+      field: "presentation.label",
+      mutate: (command) => ({ ...command, presentation: { ...command.presentation, label: "" } })
+    },
+    {
+      name: "whitespace help",
+      field: "presentation.help",
+      mutate: (command) => ({ ...command, presentation: { ...command.presentation, help: String.fromCharCode(32, 9, 13, 10, 32) } })
+    },
+    {
+      name: "non-string label",
+      field: "presentation.label",
+      mutate: (command) => ({ ...command, presentation: { ...command.presentation, label: false } })
+    },
+    {
+      name: "non-string help",
+      field: "presentation.help",
+      mutate: (command) => ({ ...command, presentation: { ...command.presentation, help: 42 } })
+    }
+  ];
+
+  for (const { name, field, mutate } of malformedCases) {
+    const malformedCore = {
+      ...core,
+      commands: core.commands.map((command, index) => index === 0 ? mutate(command) : command)
+    };
+    let thrown;
+    try {
+      resultFor("portable", { core: malformedCore });
+    } catch (error) {
+      thrown = error;
+    }
+    assert.ok(thrown, name);
+    assert.ok(thrown instanceof AdapterContractError, name);
+    assert.ok(thrown.errors.some((entry) => entry.path === `/commands/0/${field.replace(".", "/")}`), name);
+  }
+});
+
 test("Codex rejects a canonical command set with a missing action mapping", () => {
   const incompleteCore = { ...core, commands: core.commands.slice(1) };
   assert.throws(
