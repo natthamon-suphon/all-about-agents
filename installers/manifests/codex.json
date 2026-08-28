@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "surface": "codex",
+  "product": "Codex CLI and Desktop",
+  "productVersion": "unknown",
+  "package": "all-about-agents",
+  "pluginManifest": ".codex-plugin/plugin.json",
+  "configRoot": {
+    "environment": "CODEX_HOME",
+    "fallback": "~/.codex",
+    "sharedBy": ["codex-cli", "codex-desktop"]
+  },
+  "components": {
+    "pluginManifest": ".codex-plugin/plugin.json",
+    "instructions": "AGENTS.md",
+    "skills": ".agents/skills/{skill}/SKILL.md",
+    "agents": ".codex/agents/{role}.toml",
+    "primaryConfig": "config.toml",
+    "alternateConfig": "terra-max.config.toml",
+    "manualDesktop": "docs/manual-desktop.md"
+  },
+  "profiles": {
+    "portable": {
+      "config": {
+        "model": "gpt-5.6-sol",
+        "model_reasoning_effort": "max",
+        "sandbox_mode": "workspace-write",
+        "approval_policy": "on-request"
+      },
+      "alternate": {
+        "name": "terra-max",
+        "model": "gpt-5.6-terra",
+        "model_reasoning_effort": "max"
+      }
+    },
+    "template": {
+      "config": {
+        "model": "gpt-5.6-sol",
+        "model_reasoning_effort": "max",
+        "sandbox_mode": "danger-full-access",
+        "approval_policy": "never"
+      },
+      "alternate": {
+        "name": "terra-max",
+        "model": "gpt-5.6-terra",
+        "model_reasoning_effort": "max"
+      }
+    }
+  },
+  "semanticCapabilities": {
+    "repository-read": ["AGENTS.md"],
+    "repository-write": ["AGENTS.md"],
+    "web-primary-sources": ["web_search"],
+    "isolated-write": ["workspace-write"],
+    "command-execution": ["shell"],
+    "filesystem-read": ["AGENTS.md"],
+    "filesystem-write": ["workspace-write"],
+    "git-read": ["git"],
+    "git-write": ["git"],
+    "test-execution": ["shell"],
+    "external-research": ["web_search"],
+    "evaluation": ["shell"],
+    "role-dispatch": ["agents"],
+    "workflow-state": ["AGENTS.md"],
+    "schema-validation": ["shell"],
+    "native-rendering": ["plugin"]
+  },
+  "actions": {
+    "aaa:design": "AGENTS.md",
+    "aaa:build": "AGENTS.md",
+    "aaa:fix": "AGENTS.md",
+    "aaa:review": "AGENTS.md",
+    "aaa:audit": "AGENTS.md",
+    "aaa:improve-skill": "AGENTS.md",
+    "aaa:resume": "AGENTS.md",
+    "aaa:verify": "AGENTS.md"
+  },
+  "ownedPaths": [
+    ".codex-plugin/plugin.json",
+    "AGENTS.md",
+    ".agents/skills/{skill}/SKILL.md",
+    ".codex/agents/{role}.toml",
+    "config.toml",
+    "terra-max.config.toml",
+    "docs/manual-desktop.md"
+  ],
+  "nativeValidation": {
+    "command": ["codex", "doctor", "--json", "--no-color"],
+    "requiredWhenAvailable": true
+  }
+}
