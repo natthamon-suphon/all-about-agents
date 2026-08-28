@@ -27,7 +27,7 @@ const requiredOutputs = [
 
 const expectedBaselineFiles = new Map([
   ["skills/test-driven-development/writing-good-tests.md", { kind: "asset", status: "stable" }],
-  ["skills/zero-downtime-migrations/postgres-contracts-examples.md", { kind: "asset", status: "stable" }],
+  ["skills/zero-downtime-migrations/postgres-expand-contract-examples.md", { kind: "asset", status: "stable" }],
   ["agents/codebase-architect.json", { kind: "config", status: "manual" }],
   ["agents/codebase-architect.md", { kind: "source", status: "manual" }],
   ["agents/deep-investigator.json", { kind: "config", status: "manual" }],
@@ -57,6 +57,133 @@ const expectedBaselineFiles = new Map([
   ["setup/setup-antigravity.sh", { kind: "script", status: "manual" }],
   ["setup/setup-guide-antigravity.md", { kind: "source", status: "manual" }]
 ]);
+
+const expectedBaselinePaths = `
+.claude-plugin/marketplace.json
+.claude-plugin/plugin.json
+.gitattributes
+.gitignore
+.idea/.gitignore
+.idea/all-about-agents.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.pre-commit-config.yaml
+AGENTS.md
+CLAUDE.md
+LICENSE
+agents/README.md
+agents/codebase-architect.json
+agents/codebase-architect.md
+agents/deep-investigator.json
+agents/deep-investigator.md
+agents/generalist.json
+agents/generalist.md
+agents/implementer.json
+agents/implementer.md
+agents/security-auditor.json
+agents/security-auditor.md
+agents/task-reviewer.json
+agents/task-reviewer.md
+configs/CLAUDE.local.md
+configs/GEMINI.local.md
+configs/settings.local.json
+docs/antigravity.md
+hooks/antigravity-hooks.json
+hooks/antigravity-session-start.js
+hooks/antigravity-track-tool.js
+hooks/hooks.json
+hooks/run-hook.cmd
+hooks/session-start
+package.json
+scripts/aaa.mjs
+scripts/lint-shell.sh
+setup/setup-antigravity.ps1
+setup/setup-antigravity.sh
+setup/setup-guide-antigravity.md
+skills/brainstorming/SKILL.md
+skills/brainstorming/scripts/frame-template.html
+skills/brainstorming/scripts/helper.js
+skills/brainstorming/scripts/server.cjs
+skills/brainstorming/scripts/start-server.sh
+skills/brainstorming/scripts/stop-server.sh
+skills/brainstorming/spec-document-reviewer-prompt.md
+skills/brainstorming/visual-companion.md
+skills/codebase-design/DEEPENING.md
+skills/codebase-design/DESIGN-IT-TWICE.md
+skills/codebase-design/SKILL.md
+skills/dispatching-parallel-agents/SKILL.md
+skills/executing-plans/SKILL.md
+skills/finishing-a-development-branch/SKILL.md
+skills/handoff/SKILL.md
+skills/improve-codebase-architecture/HTML-REPORT.md
+skills/improve-codebase-architecture/SKILL.md
+skills/interviewing/SKILL.md
+skills/loop-me/SKILL.md
+skills/nano-image-generator/SKILL.md
+skills/nano-image-generator/scripts/generate_image.py
+skills/performance-profiling-and-benchmarking/SKILL.md
+skills/performance-profiling-and-benchmarking/profiling-recipes.md
+skills/receiving-code-review/SKILL.md
+skills/requesting-code-review/SKILL.md
+skills/requesting-code-review/code-reviewer.md
+skills/research/SKILL.md
+skills/resolving-merge-conflicts/SKILL.md
+skills/session-compaction-resilience/SKILL.md
+skills/session-compaction-resilience/snapshot-template.md
+skills/subagent-driven-development/SKILL.md
+skills/subagent-driven-development/implementer-prompt.md
+skills/subagent-driven-development/re-review-prompt.md
+skills/subagent-driven-development/scripts/review-package
+skills/subagent-driven-development/scripts/review-package.js
+skills/subagent-driven-development/scripts/sdd-workspace
+skills/subagent-driven-development/scripts/sdd-workspace.js
+skills/subagent-driven-development/scripts/task-brief
+skills/subagent-driven-development/scripts/task-brief.js
+skills/subagent-driven-development/task-reviewer-prompt.md
+skills/systematic-debugging/CREATION-LOG.md
+skills/systematic-debugging/SKILL.md
+skills/systematic-debugging/condition-based-waiting-example.ts
+skills/systematic-debugging/condition-based-waiting.md
+skills/systematic-debugging/defense-in-depth.md
+skills/systematic-debugging/feedback-loops.md
+skills/systematic-debugging/find-polluter.sh
+skills/systematic-debugging/root-cause-tracing.md
+skills/systematic-debugging/scripts/hitl-loop.template.sh
+skills/systematic-debugging/test-academic.md
+skills/systematic-debugging/test-pressure-1.md
+skills/systematic-debugging/test-pressure-2.md
+skills/systematic-debugging/test-pressure-3.md
+skills/test-driven-development/SKILL.md
+skills/test-driven-development/writing-good-tests.md
+skills/threat-modeling-and-security/SKILL.md
+skills/threat-modeling-and-security/stride-checklist.md
+skills/using-all-about-agents/SKILL.md
+skills/using-all-about-agents/references/antigravity-tools.md
+skills/using-all-about-agents/references/codex-tools.md
+skills/using-all-about-agents/references/gemini-tools.md
+skills/using-all-about-agents/references/pi-tools.md
+skills/using-git-worktrees/SKILL.md
+skills/verification-before-completion/SKILL.md
+skills/wait-what/SKILL.md
+skills/wayfinder/SKILL.md
+skills/writing-plans/SKILL.md
+skills/writing-plans/plan-document-reviewer-prompt.md
+skills/writing-skills/SKILL.md
+skills/writing-skills/anthropic-best-practices.md
+skills/writing-skills/examples/CLAUDE_MD_TESTING.md
+skills/writing-skills/graphviz-conventions.dot
+skills/writing-skills/persuasion-principles.md
+skills/writing-skills/render-graphs.js
+skills/writing-skills/testing-skills-with-subagents.md
+skills/zero-downtime-migrations/SKILL.md
+skills/zero-downtime-migrations/postgres-expand-contract-examples.md
+statusline/statusline.js
+statusline/track-tool.js
+tests/helpers/temp-root.mjs
+tests/static/repository-layout.test.mjs
+tests/static/runtime.test.mjs
+`.trim().split(/\r?\n/u);
 
 test("T002 creates every owned artifact", async () => {
   assert.ok(requiredOutputs.length > 0);
@@ -115,7 +242,15 @@ test("inventory validates against its strict schema and accounts for existing so
 
 test("inventory preserves the immutable baseline path and category contract", async () => {
   const inventory = JSON.parse(await readFile(resolve(process.cwd(), "core/inventory.json"), "utf8"));
-  assert.equal(inventory.sourceFiles.length, 124);
+  function assertBaselinePaths(value) {
+    assert.deepEqual(value.sourceFiles.map((entry) => entry.path), expectedBaselinePaths);
+  }
+
+  assertBaselinePaths(inventory);
+  const substituted = JSON.parse(JSON.stringify(inventory));
+  substituted.sourceFiles[0].path = "baseline/substituted-unlisted-path";
+  assert.throws(() => assertBaselinePaths(substituted));
+  for (const path of expectedBaselinePaths) await access(resolve(process.cwd(), path));
   const sourceFiles = new Map(inventory.sourceFiles.map((entry) => [entry.path, entry]));
   for (const [path, expected] of expectedBaselineFiles) {
     const entry = sourceFiles.get(path);

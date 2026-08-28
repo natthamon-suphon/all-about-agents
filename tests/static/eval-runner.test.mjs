@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -106,14 +107,18 @@ test("evaluation batch rejects output traversal", async () => {
 });
 
 test("evaluation batch rejects an allowed root whose junction escapes the repository", async (t) => {
-  const allowedParent = resolve(process.cwd(), ".aaa");
-  const allowedRoot = resolve(allowedParent, "eval-runs");
+  const allowedParent = resolve(process.cwd(), ".aaa", "eval-runs");
+  const disposableRoot = resolve(allowedParent, `.t002-junction-${process.pid}-${randomUUID()}`);
+  const sentinel = resolve(allowedParent, `.t002-sentinel-${process.pid}-${randomUUID()}`);
   const outside = await mkdtemp(join(tmpdir(), "aaa-outside-"));
   let junctionCreated = false;
+  let sentinelCreated = false;
   try {
     await mkdir(allowedParent, { recursive: true });
+    await writeFile(sentinel, "preserve-existing-evaluation-data", "utf8");
+    sentinelCreated = true;
     try {
-      await symlink(outside, allowedRoot, "junction");
+      await symlink(outside, disposableRoot, "junction");
       junctionCreated = true;
     } catch (error) {
       if (error?.code === "EPERM" || error?.code === "EACCES") {
@@ -128,14 +133,54 @@ test("evaluation batch rejects an allowed root whose junction escapes the reposi
         variant: "candidate",
         samples: 1,
         executeSample: async (caseRecord) => caseRecord,
-        outputDir: resolve(allowedRoot, "escaped")
+        outputDir: resolve(disposableRoot, "escaped")
       }),
       /contained evaluation directory/
     );
   } finally {
-    if (junctionCreated) await rm(allowedRoot, { force: true, recursive: false });
-    await rm(allowedParent, { force: true, recursive: true });
+    if (junctionCreated) await rm(disposableRoot, { force: true, recursive: false });
+    if (sentinelCreated) {
+      assert.equal(await readFile(sentinel, "utf8"), "preserve-existing-evaluation-data");
+      await rm(sentinel, { force: true });
+    }
     await rm(outside, { force: true, recursive: true });
+  }
+});
+
+test("evaluation batch rejects a dangling allowed-root junction before any external mkdir", async (t) => {
+  const allowedParent = resolve(process.cwd(), ".aaa", "eval-runs");
+  const danglingRoot = resolve(allowedParent, `.t002-dangling-${process.pid}-${randomUUID()}`);
+  const outsideParent = await mkdtemp(join(tmpdir(), "aaa-dangling-outside-"));
+  const outsideTarget = resolve(outsideParent, "dangling-target");
+  let junctionCreated = false;
+  try {
+    await mkdir(allowedParent, { recursive: true });
+    await mkdir(outsideTarget);
+    try {
+      await symlink(outsideTarget, danglingRoot, "junction");
+      junctionCreated = true;
+    } catch (error) {
+      if (error?.code === "EPERM" || error?.code === "EACCES") {
+        t.skip(`junction creation unavailable: ${error.code}`);
+        return;
+      }
+      throw error;
+    }
+    await rm(outsideTarget, { force: true, recursive: true });
+    await assert.rejects(
+      runEvaluationBatch({
+        cases: [envelope("sample-dangling-junction")],
+        variant: "candidate",
+        samples: 1,
+        executeSample: async (caseRecord) => caseRecord,
+        outputDir: resolve(danglingRoot, "escaped")
+      }),
+      /contained evaluation directory/
+    );
+    await assert.rejects(readFile(outsideTarget), /ENOENT|no such file/i);
+  } finally {
+    if (junctionCreated) await rm(danglingRoot, { force: true, recursive: false });
+    await rm(outsideParent, { force: true, recursive: true });
   }
 });
 

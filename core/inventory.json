@@ -372,7 +372,7 @@
       "name": "zero-downtime-migrations",
       "source": "skills/zero-downtime-migrations/SKILL.md",
       "assets": [
-        "skills/zero-downtime-migrations/postgres-contracts-examples.md"
+        "skills/zero-downtime-migrations/postgres-expand-contract-examples.md"
       ],
       "scripts": [],
       "auditDisposition": {
@@ -1327,7 +1327,7 @@
       }
     },
     {
-      "path": "skills/zero-downtime-migrations/postgres-contracts-examples.md",
+      "path": "skills/zero-downtime-migrations/postgres-expand-contract-examples.md",
       "kind": "asset",
       "auditDisposition": {
         "status": "stable",

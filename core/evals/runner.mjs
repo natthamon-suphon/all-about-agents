@@ -1,4 +1,4 @@
-import { mkdir, readFile, realpath, rename, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, realpath, rename, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import { TextDecoder } from "node:util";
@@ -53,6 +53,22 @@ async function nearestExistingParent(path) {
   }
 }
 
+async function hasSymlinkComponent(path, boundary) {
+  let candidate = resolve(path);
+  const stop = resolve(boundary);
+  while (true) {
+    try {
+      if ((await lstat(candidate)).isSymbolicLink()) return true;
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+    if (candidate === stop) return false;
+    const parent = resolve(candidate, "..");
+    if (parent === candidate || !isWithin(parent, stop)) return false;
+    candidate = parent;
+  }
+}
+
 export async function assertContainedOutputDir(outputDir) {
   if (typeof outputDir !== "string" || outputDir.trim().length === 0 || hasTraversalSegment(outputDir)) {
     throw new Error("outputDir must be a contained evaluation directory");
@@ -64,9 +80,16 @@ export async function assertContainedOutputDir(outputDir) {
     { logical: resolve(repositoryRoot, "tests", ".tmp"), intendedParent: repositoryRoot }
   ];
   const temporaryRoot = resolve(tmpdir());
-  const allowedByRepository = repositoryRoots.some(({ logical }) => isWithin(target, logical));
+  const repositoryCandidates = repositoryRoots.filter(({ logical }) => isWithin(target, logical));
+  const allowedByRepository = repositoryCandidates.length > 0;
   const allowedByTemporary = isWithin(target, temporaryRoot) && target.toLowerCase().split(/[\\/]/u).includes("eval-runs");
   if (!allowedByRepository && !allowedByTemporary) throw new Error("outputDir must be a contained evaluation directory");
+  for (const { intendedParent } of repositoryCandidates) {
+    if (await hasSymlinkComponent(target, intendedParent)) throw new Error("outputDir must be a contained evaluation directory");
+  }
+  if (allowedByTemporary && await hasSymlinkComponent(target, temporaryRoot)) {
+    throw new Error("outputDir must be a contained evaluation directory");
+  }
   const existingParent = await nearestExistingParent(target);
   const realTarget = existingParent.logical === target ? existingParent.real : resolve(existingParent.real, relative(existingParent.logical, target));
   const realRepositoryRoots = await Promise.all(repositoryRoots.map(async ({ logical, intendedParent }) => ({
