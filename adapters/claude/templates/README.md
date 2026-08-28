@@ -1,6 +1,8 @@
 # Claude fixture templates
 
-The adapter renders a complete Claude plugin package from the canonical core.
+The adapter renders a structural Claude plugin fixture from the canonical core.
+When canonical sources are unavailable, the fixture is intentionally incomplete
+and marked for deferral by hard diagnostics.
 Its output uses the documented plugin component directories (`skills/`,
 `agents/`, `commands/`, and `hooks/`) plus installer-owned `rules/` and
 `config/` overlays. The `portable` and `template` profiles differ only in

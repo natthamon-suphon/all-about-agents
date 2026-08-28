@@ -29,6 +29,13 @@ test("T008 creates every owned artifact", async () => {
   }
 });
 
+test("Claude template documentation matches the deferred current core output", async () => {
+  const readme = await readFile(resolve(process.cwd(), "adapters/claude/templates/README.md"), "utf8");
+  assert.match(readme, /structural Claude plugin fixture/u);
+  assert.match(readme, /explicit deferred files/u);
+  assert.doesNotMatch(readme, /renders a complete Claude plugin package/u);
+});
+
 const core = await loadCore(process.cwd());
 
 function resultFor(profileId = "portable", overrides = {}) {
