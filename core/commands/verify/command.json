@@ -1,0 +1,29 @@
+{
+  "$schema": "../../schemas/command.schema.json",
+  "id": "verify",
+  "actionId": "aaa:verify",
+  "workflowId": "release-qualification",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "request": { "type": "string", "minLength": 1 }
+    },
+    "required": ["request"],
+    "additionalProperties": false
+  },
+  "result": {
+    "type": "object",
+    "properties": {
+      "status": { "type": "string" },
+      "workflowId": { "type": "string" },
+      "artifacts": { "type": "array" },
+      "diagnostics": { "type": "array" }
+    },
+    "required": ["status", "workflowId"],
+    "additionalProperties": false
+  },
+  "presentation": {
+    "label": "Verify",
+    "help": "Run deterministic and release-qualification checks with evidence."
+  }
+}
