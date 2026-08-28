@@ -1,0 +1,18 @@
+{
+  "name": "all-about-agents",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "test": "node --test",
+    "test:static": "node --test tests/static/runtime.test.mjs tests/static/repository-layout.test.mjs",
+    "test:contracts": "node --test",
+    "test:integration": "node --test",
+    "validate": "node scripts/aaa.mjs validate",
+    "doctor": "node scripts/aaa.mjs doctor"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
