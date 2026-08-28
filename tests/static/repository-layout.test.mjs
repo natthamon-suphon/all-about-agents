@@ -5,6 +5,8 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 const legacyTopLevelDirectories = [
+  ".claude-plugin",
+  ".idea",
   "agents",
   "configs",
   "docs",

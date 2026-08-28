@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 
@@ -18,6 +19,19 @@ const HELP_TEXT = [
 
 const ACTIONS = new Set(["install", "doctor", "validate", "diff", "eval"]);
 
+function hasValidFoundation(cwd) {
+  try {
+    const packagePath = resolve(cwd, "package.json");
+    if (!existsSync(packagePath)) {
+      return false;
+    }
+    const packageJson = JSON.parse(readFileSync(packagePath, "utf8"));
+    return packageJson.type === "module" && packageJson.engines?.node === ">=22.12.0";
+  } catch {
+    return false;
+  }
+}
+
 export function main(args, output = process.stdout, errorOutput = process.stderr) {
   const [action, ...rest] = args;
   if (action === undefined || action === "-h" || action === "--help") {
@@ -37,6 +51,11 @@ export function main(args, output = process.stdout, errorOutput = process.stderr
   if (rest.length > 0) {
     errorOutput.write(`Unexpected arguments for ${action}: ${rest.join(" ")}\n`);
     return 2;
+  }
+
+  if (!hasValidFoundation(process.cwd())) {
+    errorOutput.write("Foundation validation failed: package metadata is missing or invalid\n");
+    return 1;
   }
 
   return 0;

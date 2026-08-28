@@ -143,3 +143,20 @@ test("CLI returns exit code 2 for an unknown action", () => {
   assert.equal(result.status, 2);
   assert.match(result.stderr, /Unknown action: unknown/);
 });
+
+test("CLI returns exit code 1 when repository validation fails", async () => {
+  const root = await mkdtemp(join(tmpdir(), "aaa-invalid-root-"));
+  try {
+    for (const action of ["validate", "doctor"]) {
+      const result = spawnSync(
+        process.execPath,
+        [resolve(process.cwd(), "scripts/aaa.mjs"), action],
+        { cwd: root, encoding: "utf8" }
+      );
+      assert.equal(result.status, 1, `${action} should report failure`);
+      assert.match(result.stderr, /Foundation validation failed/);
+    }
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+});
