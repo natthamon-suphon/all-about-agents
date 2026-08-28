@@ -100,6 +100,13 @@ test("loadCore rejects unknown fields and vendor tool names in portable metadata
       entry.jsonPointer === "/arguments/operation" &&
       entry.keyword === "vendorTool"
     ));
+    for (const [index, name] of ["MultiEdit", "Agent", "Skill", "TodoWrite", "PowerShell"].entries()) {
+      assert.ok(error.errors.some((entry) =>
+        entry.sourcePath === "core/commands/native-names.json" &&
+        entry.jsonPointer === `/arguments/nested/${index}` &&
+        entry.keyword === "vendorTool"
+      ), `nested vendor tool ${name} was not rejected`);
+    }
     return true;
   });
 });
