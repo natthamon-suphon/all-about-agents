@@ -1,0 +1,17 @@
+{
+  "id": "long-task-state",
+  "title": "Long-task state",
+  "description": "Persist task state and resume only from verified evidence.",
+  "purpose": "Keep long-running work recoverable across interruption and context changes.",
+  "requirements": [
+    "long-task-state/ledger: Maintain a durable task ledger with status, scope, owner, commands, evidence, blockers, and next action.",
+    "long-task-state/checkpoint: Checkpoint task state and material evidence before compaction, handoff, or any interruption.",
+    "long-task-state/resume-verified: Resume from verified filesystem and command state, not stale conversation memory.",
+    "long-task-state/continue-or-stop: After resuming, recheck dependencies and stop on contradictory status, missing evidence, or changed scope."
+  ],
+  "invariants": [
+    "Maintain a durable task ledger, checkpoint before compaction, and resume from verified filesystem state."
+  ],
+  "capabilities": ["workflow-state", "filesystem-read", "schema-validation", "repository-write"],
+  "tags": ["ledger", "checkpoint", "resume"]
+}

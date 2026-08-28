@@ -1,0 +1,17 @@
+{
+  "id": "cross-platform-execution",
+  "title": "Cross-platform execution",
+  "description": "Keep native execution bounded by safe arguments, portable paths, and verified prerequisites.",
+  "purpose": "Make behavior reliable across supported operating systems without guessing native details.",
+  "requirements": [
+    "cross-platform-execution/native-boundary: Use the selected platform adapter for native execution and keep canonical rules free of paths, tools, and syntax tied to one product.",
+    "cross-platform-execution/safe-quoting: Quote arguments for the active platform, preserve Unicode and whitespace, and reject ambiguous or shell-interpreted input.",
+    "cross-platform-execution/prerequisites: Verify required runtimes, permissions, and capabilities before execution; report unsupported or unavailable prerequisites.",
+    "cross-platform-execution/paths: Canonicalize paths and confirm containment before reading or writing any destination."
+  ],
+  "invariants": [
+    "Use native platform adapters, safe quoting, Unicode-safe paths, and verified prerequisites."
+  ],
+  "capabilities": ["command-execution", "filesystem-read", "filesystem-write", "schema-validation"],
+  "tags": ["platform", "quoting", "paths"]
+}

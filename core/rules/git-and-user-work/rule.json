@@ -1,0 +1,17 @@
+{
+  "id": "git-and-user-work",
+  "title": "Git and user work",
+  "description": "Protect user changes and require precise authority for repository operations.",
+  "purpose": "Keep task changes reviewable without discarding unrelated work.",
+  "requirements": [
+    "git-and-user-work/preserve-work: Preserve unrelated files and all uncommitted user work unless exact destructive discard authority is explicit.",
+    "git-and-user-work/stage-exact: Inspect the diff and stage only files that belong to the active task.",
+    "git-and-user-work/commit-authority: Commit, push, history rewrite, and destructive discard each require explicit user authority; do not infer one from another.",
+    "git-and-user-work/report-repository-state: Report branch, dirty state, conflicts, and verification evidence before claiming a repository operation succeeded."
+  ],
+  "invariants": [
+    "Preserve unrelated and uncommitted work; stage exact files; require explicit commit, push, history rewrite, or destructive discard authority."
+  ],
+  "capabilities": ["git-read", "git-write", "repository-read", "repository-write"],
+  "tags": ["git", "user-work"]
+}

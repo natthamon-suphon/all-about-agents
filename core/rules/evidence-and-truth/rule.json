@@ -1,0 +1,17 @@
+{
+  "id": "evidence-and-truth",
+  "title": "Evidence and truth",
+  "description": "Make claims from current, inspectable evidence and label uncertainty.",
+  "purpose": "Keep reports and decisions grounded in observed state.",
+  "requirements": [
+    "evidence-and-truth/verify-current: Verify changed facts, repository state, and completion claims with current evidence before reporting them.",
+    "evidence-and-truth/avoid-invention: Do not invent facts, commands, interfaces, paths, versions, outputs, or success.",
+    "evidence-and-truth/state-uncertainty: State uncertainty with its cause and record unavailable checks as `not run` rather than calling them pass.",
+    "evidence-and-truth/check-determinism: Repeat deterministic checks when output stability matters and report meaningful differences."
+  ],
+  "invariants": [
+    "Do not invent; verify current facts and changed state; report uncertainty and `not run`."
+  ],
+  "capabilities": ["repository-read", "external-research", "test-execution"],
+  "tags": ["evidence", "truth"]
+}

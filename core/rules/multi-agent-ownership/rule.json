@@ -1,0 +1,17 @@
+{
+  "id": "multi-agent-ownership",
+  "title": "Multi-agent ownership",
+  "description": "Make delegation bounded, non-overlapping, and independently reviewable.",
+  "purpose": "Preserve clear authority and evidence when multiple workers contribute.",
+  "requirements": [
+    "multi-agent-ownership/dispatch-purpose: Delegate only when the work benefits from separate context, expertise, or independent verification.",
+    "multi-agent-ownership/isolate-writers: Give each worker a bounded input, output, and authority contract; never assign overlapping writers.",
+    "multi-agent-ownership/preserve-coordination: Keep the coordinator responsible for scope, integration, and final disposition of worker results.",
+    "multi-agent-ownership/independent-evidence: Require independent evidence review for behavior, permissions, destructive actions, and release claims."
+  ],
+  "invariants": [
+    "Delegate only when useful, isolate context and writes, prohibit overlapping writers, and require independent evidence review."
+  ],
+  "capabilities": ["role-dispatch", "workflow-state", "repository-read", "isolated-write"],
+  "tags": ["delegation", "ownership"]
+}

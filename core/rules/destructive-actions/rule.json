@@ -1,0 +1,17 @@
+{
+  "id": "destructive-actions",
+  "title": "Destructive actions",
+  "description": "Resolve targets and enforce safety boundaries before irreversible mutation.",
+  "purpose": "Prevent ambiguous, catastrophic, or unowned changes.",
+  "requirements": [
+    "destructive-actions/resolve-target: Resolve exact files, directories, resources, and mutation boundaries before any destructive or irreversible operation.",
+    "destructive-actions/preserve-denies: Retain emergency denies for catastrophic, secret-exposing, or out-of-scope operations even when broad authority is available.",
+    "destructive-actions/installer-owned-overwrite: An installer-authoritative overwrite may replace only a declared owned destination after containment and payload validation; preserve every unowned neighbor.",
+    "destructive-actions/stop-on-uncertainty: Stop before mutation when a target, containment check, authorization, or validation result is missing or ambiguous."
+  ],
+  "invariants": [
+    "Resolve exact targets and retain emergency denies even under full access."
+  ],
+  "capabilities": ["filesystem-read", "filesystem-write", "isolated-write", "schema-validation"],
+  "tags": ["destructive-actions", "containment", "ownership"]
+}

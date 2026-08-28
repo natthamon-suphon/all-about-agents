@@ -1,0 +1,17 @@
+{
+  "id": "implementation-quality",
+  "title": "Implementation quality",
+  "description": "Use real contracts, focused changes, explicit errors, and evidence-backed verification.",
+  "purpose": "Deliver maintainable behavior without masking the root cause.",
+  "requirements": [
+    "implementation-quality/read-contracts: Read the real files, schemas, interfaces, and tests before describing or changing behavior.",
+    "implementation-quality/root-cause: Fix the root cause supported by evidence instead of masking symptoms or adding unrelated refactoring.",
+    "implementation-quality/smallest-diff: Make the smallest sound change that satisfies the contract and keeps interfaces clear.",
+    "implementation-quality/error-paths: Handle expected errors explicitly, leave no placeholders or dead code, and verify failure paths as well as success."
+  ],
+  "invariants": [
+    "Read real contracts, fix the root cause, keep the smallest sound diff, handle errors, and leave no placeholders."
+  ],
+  "capabilities": ["repository-read", "repository-write", "test-execution", "schema-validation"],
+  "tags": ["quality", "root-cause"]
+}
