@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { readContainedUtf8Jsonl, runEvaluationBatch } from "../core/evals/runner.mjs";
+import { loadCore } from "../installers/lib/load-core.mjs";
 
 const HELP_TEXT = [
   "Usage: node scripts/aaa.mjs <action>",
@@ -61,6 +62,73 @@ function parseEvalArgs(args) {
 function readCanonicalSkills(cwd) {
   const inventory = JSON.parse(readFileSync(resolve(cwd, "core/inventory.json"), "utf8"));
   return Array.isArray(inventory.skills) ? inventory.skills : [];
+}
+
+function parseValidateArgs(args) {
+  const values = new Map();
+  const allowed = new Set(["--scope", "--skill", "--format"]);
+  for (let index = 0; index < args.length; index += 1) {
+    const option = args[index];
+    if (!option.startsWith("--")) throw new Error(`Unexpected argument for validate: ${option}`);
+    if (!allowed.has(option)) throw new Error(`Unknown validate option: ${option}`);
+    if (values.has(option)) throw new Error(`Duplicate option: ${option}`);
+    const value = args[index + 1];
+    if (value === undefined || value.startsWith("--")) throw new Error(`Missing value for ${option}`);
+    values.set(option, value);
+    index += 1;
+  }
+  const scope = values.get("--scope") || null;
+  const skill = values.get("--skill") || null;
+  const format = values.get("--format") || "text";
+  if (scope !== null && scope !== "core" && scope !== "skill") throw new Error("--scope must be core or skill");
+  if (scope === "skill" && skill === null) throw new Error("--scope skill requires --skill SKILL_NAME");
+  if (scope !== "skill" && skill !== null) throw new Error("--skill requires --scope skill");
+  if (format !== "json" && format !== "text") throw new Error("--format must be json or text");
+  return { scope, skill, format };
+}
+
+function emitValidationResult(result, output, errorOutput) {
+  if (result.valid) {
+    if (result.format === "json") output.write(`${JSON.stringify({ valid: true, scope: result.scope, ...(result.skill ? { skill: result.skill } : {}) })}\n`);
+    else output.write(`valid scope=${result.scope}${result.skill ? ` skill=${result.skill}` : ""}\n`);
+    return 0;
+  }
+  const details = result.errors || [];
+  if (result.format === "json") output.write(`${JSON.stringify({ valid: false, scope: result.scope, ...(result.skill ? { skill: result.skill } : {}), errors: details })}\n`);
+  else for (const error of details) errorOutput.write(`${error.sourcePath || "<core>"}#${error.jsonPointer || ""} ${error.keyword || "validation"}: ${error.message}\n`);
+  return 1;
+}
+
+async function validate(args, output, errorOutput) {
+  let options;
+  try {
+    options = parseValidateArgs(args);
+  } catch (error) {
+    errorOutput.write(`${error.message}\n`);
+    return 2;
+  }
+  if (!hasValidFoundation(process.cwd())) {
+    errorOutput.write("Foundation validation failed: package metadata is missing or invalid\n");
+    return 1;
+  }
+  if (options.scope === null) return 0;
+  try {
+    const core = await loadCore(process.cwd());
+    if (options.scope === "core") return emitValidationResult({ valid: true, scope: "core", format: options.format }, output, errorOutput);
+    const skill = core.skills.find((entry) => entry.id === options.skill);
+    const errors = [];
+    if (!skill) {
+      errors.push({ sourcePath: "core/skills", jsonPointer: "", keyword: "reference", message: `canonical skill ${options.skill} was not found` });
+    } else {
+      const evaluations = core.evals.filter((entry) => entry.skill === options.skill || entry.skillId === options.skill || entry.skill === skill.id || entry.skillId === skill.id);
+      if (evaluations.length === 0) errors.push({ sourcePath: "core/evals", jsonPointer: "", keyword: "reference", message: `evaluation cases for ${options.skill} were not found` });
+      else if (!evaluations.some((entry) => Array.isArray(entry.cases) && entry.cases.length > 0)) errors.push({ sourcePath: "core/evals", jsonPointer: "", keyword: "cases", message: `evaluation cases for ${options.skill} are empty` });
+    }
+    return emitValidationResult({ valid: errors.length === 0, scope: "skill", skill: options.skill, errors, format: options.format }, output, errorOutput);
+  } catch (error) {
+    const errors = Array.isArray(error.errors) ? error.errors : [{ sourcePath: "core", jsonPointer: "", keyword: "load", message: error.message }];
+    return emitValidationResult({ valid: false, scope: options.scope, ...(options.skill ? { skill: options.skill } : {}), errors, format: options.format }, output, errorOutput);
+  }
 }
 
 async function evaluate(args, output, errorOutput) {
@@ -126,6 +194,8 @@ export async function main(args, output = process.stdout, errorOutput = process.
   }
 
   if (action === "eval") return evaluate(rest, output, errorOutput);
+
+  if (action === "validate") return validate(rest, output, errorOutput);
 
   if (rest.length > 0) {
     errorOutput.write(`Unexpected arguments for ${action}: ${rest.join(" ")}\n`);

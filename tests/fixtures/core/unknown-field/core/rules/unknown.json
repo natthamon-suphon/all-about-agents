@@ -1,0 +1,6 @@
+{
+  "id": "unknown",
+  "requirements": ["Reject undeclared fields."],
+  "capabilities": ["Read"],
+  "unexpected": true
+}

@@ -1,0 +1,7 @@
+{
+  "id": "z-command",
+  "actionId": "aaa:verify",
+  "workflowId": "z-flow",
+  "arguments": {},
+  "result": {}
+}

@@ -1,0 +1,10 @@
+{
+  "id": "z-flow",
+  "initialState": "start",
+  "states": ["start", "done"],
+  "transitions": [{ "from": "start", "to": "done", "on": "verified" }],
+  "gates": ["evidence"],
+  "recovery": "Return to start and record the failure.",
+  "allowedRoles": ["reviewer"],
+  "successCriteria": ["The result is recorded."]
+}

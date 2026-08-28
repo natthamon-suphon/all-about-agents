@@ -1,0 +1,7 @@
+{
+  "id": "a-command",
+  "actionId": "aaa:review",
+  "workflowId": "a-flow",
+  "arguments": {},
+  "result": {}
+}

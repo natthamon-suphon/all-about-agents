@@ -1,0 +1,7 @@
+{
+  "id": "z-rule",
+  "title": "Keep writes isolated",
+  "requirements": ["Write only within the selected scope."],
+  "capabilities": ["isolated-write"],
+  "skills": ["beta"]
+}

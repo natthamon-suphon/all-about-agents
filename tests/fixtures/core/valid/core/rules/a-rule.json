@@ -1,0 +1,7 @@
+{
+  "id": "a-rule",
+  "title": "Read repository evidence",
+  "requirements": ["Use repository evidence before changing behavior."],
+  "capabilities": ["repository-read"],
+  "skills": ["alpha"]
+}

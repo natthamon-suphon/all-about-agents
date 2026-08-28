@@ -1,0 +1,11 @@
+{
+  "id": "reviewer",
+  "purpose": "Inspect work and report evidence-backed findings.",
+  "invariants": ["Do not mutate repository files."],
+  "dispatchCriteria": ["A review or audit is requested."],
+  "mutationScope": "none",
+  "inputContract": { "diff": "text" },
+  "outputContract": { "findings": "array" },
+  "capabilities": ["repository-read"],
+  "requiredSkills": ["beta"]
+}

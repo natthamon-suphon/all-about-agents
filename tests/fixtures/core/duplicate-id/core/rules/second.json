@@ -1,0 +1,5 @@
+{
+  "id": "same-rule",
+  "requirements": ["The second definition."],
+  "capabilities": ["repository-read"]
+}

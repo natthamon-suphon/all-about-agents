@@ -1,0 +1,6 @@
+{
+  "id": "broken",
+  "requirements": ["Use the referenced skill."],
+  "capabilities": ["repository-read"],
+  "skills": ["missing-skill"]
+}
