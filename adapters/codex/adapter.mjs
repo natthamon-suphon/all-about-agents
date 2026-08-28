@@ -1,9 +1,9 @@
 import { homedir } from "node:os";
-import { join, posix } from "node:path";
+import { posix, win32 } from "node:path";
 
 import { createHash } from "node:crypto";
 import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
-import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
+import { AdapterContractError, renderSurface as validateSurface, validateCommandRecords, validateRenderResult } from "../shared/adapter-contract.mjs";
 
 const CODEX_SURFACE = "codex";
 const ACTION_IDS = Object.freeze([
@@ -51,6 +51,10 @@ const DEFAULT_ROLES = Object.freeze({
   "security-reviewer": Object.freeze({ description: "Check threat paths, secrets, containment, and emergency guardrails.", capabilities: ["repository-read", "evaluation", "schema-validation"] })
 });
 
+function compareCodePoints(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 export const CODEX_MODEL_POLICY = Object.freeze({
   portable: Object.freeze({
     model: "gpt-5.6-sol",
@@ -73,7 +77,7 @@ export const CODEX_MODEL_POLICY = Object.freeze({
 /** Resolve the documented Codex configuration root without reading or writing it. */
 export function resolveCodexHome({ env = process.env, homeDir = homedir(), platform = process.platform } = {}) {
   const configured = env && typeof env.CODEX_HOME === "string" ? env.CODEX_HOME.trim() : "";
-  return configured || (platform === "win32" ? join(homeDir, ".codex") : posix.join(homeDir, ".codex"));
+  return configured || (platform === "win32" ? win32.join(homeDir, ".codex") : posix.join(homeDir, ".codex"));
 }
 
 function profileId(profile) {
@@ -90,7 +94,7 @@ function makeOwnership(files) {
   return files.map((file) => ({
     relativePath: file.relativePath,
     sha256: createHash("sha256").update(file.content).digest("hex")
-  })).sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+  })).sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
 }
 
 function configFor(model, profile, includePermissions = true) {
@@ -122,15 +126,22 @@ function stripFrontmatter(value) {
 function canonicalSkillIds(core) {
   const fromInventory = Array.isArray(core?.inventory?.skills) ? core.inventory.skills : [];
   const fromRecords = Array.isArray(core?.skills) ? core.skills.map((record) => record?.id ?? record?.name) : [];
-  return [...new Set([...fromInventory, ...fromRecords].filter((id) => typeof id === "string" && id.length > 0))].sort();
+  return [...new Set([...fromInventory, ...fromRecords].filter((id) => typeof id === "string" && id.length > 0))].sort(compareCodePoints);
 }
 
 function renderSkill(name, record) {
+  const hasSource = typeof record?.content === "string" && record.content.trim().length > 0;
   const description = record?.description || `Canonical ${name} skill.`;
-  const source = typeof record?.content === "string" && record.content.trim().length > 0
+  const source = hasSource
     ? stripFrontmatter(record.content)
     : "DEFERRED: canonical source is missing.\nOwner: cycle-05-skill-remediation (T017-T043).\n";
-  return ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${source}`);
+  const guidanceReference = name === "using-all-about-agents"
+    ? "\nSee [Codex adapter capability guidance](./references/adapter-capability-guidance.md).\n"
+    : "";
+  return {
+    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${source}${guidanceReference}`),
+    hasSource
+  };
 }
 
 function renderRole(name, role) {
@@ -229,7 +240,7 @@ function renderAgentsDocument(core) {
     "## Canonical rules",
     ""
   ];
-  for (const rule of [...(core.rules || [])].sort((left, right) => String(left.id).localeCompare(String(right.id)))) {
+  for (const rule of [...(core.rules || [])].sort((left, right) => compareCodePoints(String(left.id), String(right.id)))) {
     lines.push(`### ${rule.title || rule.id}`, "", rule.description || rule.purpose || "Canonical portable rule.");
     if (Array.isArray(rule.requirements)) for (const requirement of rule.requirements) lines.push(`- ${requirement}`);
     if (Array.isArray(rule.invariants)) for (const invariant of rule.invariants) lines.push(`- ${invariant}`);
@@ -239,11 +250,38 @@ function renderAgentsDocument(core) {
     "## Canonical actions",
     "",
     "Actions dispatch their declared workflow; reusable procedures belong in skills. No repository recurrence definition is emitted; configure recurring operation through a supported product surface.",
-    "",
-    ...ACTION_IDS.map((actionId) => `- ${actionId}`),
     ""
   );
+  for (const command of [...core.commands].sort((left, right) => compareCodePoints(String(left.actionId), String(right.actionId)))) {
+    const description = command.presentation?.help || command.presentation?.label || `Dispatch ${command.actionId} through its canonical workflow.`;
+    lines.push(
+      `### ${command.actionId}`,
+      "",
+      `- action: ${command.actionId}`,
+      `- workflowId: ${command.workflowId}`,
+      `- description: ${description}`,
+      ""
+    );
+  }
   return ensureText(lines.join("\n"));
+}
+
+function capabilityGuidance() {
+  return ensureText([
+    "# Codex adapter capability guidance",
+    "",
+    "This package is the Codex adapter's documented surface map.",
+    "",
+    "- `CODEX_HOME` selects the shared Codex CLI/Desktop configuration root; the fallback is the user's `.codex` directory.",
+    "- `AGENTS.md` is rendered as a regular instruction file for the canonical rules and action-to-workflow mappings.",
+    "- Skills are packaged under `.agents/skills/<skill>/SKILL.md`; missing canonical sources remain marked `DEFERRED`.",
+    "- Custom roles are standalone custom-agent TOML files under `.codex/agents/<role>.toml`.",
+    "- The primary overlay uses Sol/max; `terra-max.config.toml` is an explicit Terra/max CLI alternative.",
+    "- Codex Desktop Terra/max selection is manual in its model controls.",
+    "",
+    "This adapter does not define repository schedules or a native statusline. If a selected Codex capability, path, syntax, or product surface is unavailable, report that condition and stop or ask for direction rather than inferring support.",
+    ""
+  ].join("\n"));
 }
 
 /** Render the initial deterministic Codex policy overlays. */
@@ -253,23 +291,27 @@ export function renderCodex(input = {}) {
   for (const collection of ["rules", "skills", "workflows", "commands"]) {
     if (!Array.isArray(core[collection])) throw new TypeError(`core.${collection} must be an array`);
   }
+  const commandValidation = validateCommandRecords(core.commands, core.workflows);
+  if (!commandValidation.valid) throw new AdapterContractError(commandValidation.errors);
   const profile = profileId(input.profile ?? "portable");
   const files = [];
   addFile(files, ".codex-plugin/plugin.json", renderJson(pluginManifest()));
   addFile(files, "AGENTS.md", renderAgentsDocument(core));
+  addFile(files, ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md", capabilityGuidance());
   addFile(files, "docs/manual-desktop.md", desktopInstructions());
   addFile(files, "config.toml", configFor("gpt-5.6-sol", profile));
   addFile(files, "terra-max.config.toml", configFor("gpt-5.6-terra", profile, false));
   const skillRecords = new Map(core.skills.map((record) => [record.id || record.name, record]));
   const missingSkills = [];
   for (const skill of canonicalSkillIds(core)) {
-    if (!skillRecords.has(skill)) missingSkills.push(skill);
-    addFile(files, `.agents/skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill)));
+    const rendered = renderSkill(skill, skillRecords.get(skill));
+    if (!rendered.hasSource) missingSkills.push({ skill, hasRecord: skillRecords.has(skill) });
+    addFile(files, `.agents/skills/${skill}/SKILL.md`, rendered.content);
   }
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
-  const roleNames = [...new Set([...Object.keys(DEFAULT_ROLES), ...roleRecords.keys()])].sort();
+  const roleNames = [...new Set([...Object.keys(DEFAULT_ROLES), ...roleRecords.keys()])].sort(compareCodePoints);
   for (const roleName of roleNames) addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName)));
-  files.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+  files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   for (const file of files) {
     if (file.relativePath.endsWith(".toml")) parseCodexToml(new TextDecoder().decode(file.content));
   }
@@ -336,10 +378,10 @@ export function renderCodex(input = {}) {
         path: configRoot
       }
     ],
-    diagnostics: missingSkills.map((skill) => ({
+    diagnostics: missingSkills.map(({ skill, hasRecord }) => ({
       code: "missing-skill-source",
       severity: "error",
-      message: `Canonical skill '${skill}' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.`,
+      message: `Canonical skill '${skill}' ${hasRecord ? "has no usable source content" : "has no source record"}; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.`,
       sourcePath: "core/inventory.json"
     })),
     ownership: makeOwnership(files)

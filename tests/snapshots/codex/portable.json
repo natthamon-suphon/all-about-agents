@@ -1,56 +1,614 @@
 {
-  "fileCount": 40,
-  "paths": [
-    ".agents/skills/brainstorming/SKILL.md",
-    ".agents/skills/codebase-design/SKILL.md",
-    ".agents/skills/dispatching-parallel-agents/SKILL.md",
-    ".agents/skills/executing-plans/SKILL.md",
-    ".agents/skills/finishing-a-development-branch/SKILL.md",
-    ".agents/skills/handoff/SKILL.md",
-    ".agents/skills/improve-codebase-architecture/SKILL.md",
-    ".agents/skills/interviewing/SKILL.md",
-    ".agents/skills/loop-me/SKILL.md",
-    ".agents/skills/nano-image-generator/SKILL.md",
-    ".agents/skills/performance-profiling-and-benchmarking/SKILL.md",
-    ".agents/skills/receiving-code-review/SKILL.md",
-    ".agents/skills/requesting-code-review/SKILL.md",
-    ".agents/skills/research/SKILL.md",
-    ".agents/skills/resolving-merge-conflicts/SKILL.md",
-    ".agents/skills/session-compaction-resilience/SKILL.md",
-    ".agents/skills/subagent-driven-development/SKILL.md",
-    ".agents/skills/systematic-debugging/SKILL.md",
-    ".agents/skills/test-driven-development/SKILL.md",
-    ".agents/skills/threat-modeling-and-security/SKILL.md",
-    ".agents/skills/using-all-about-agents/SKILL.md",
-    ".agents/skills/using-git-worktrees/SKILL.md",
-    ".agents/skills/verification-before-completion/SKILL.md",
-    ".agents/skills/wait-what/SKILL.md",
-    ".agents/skills/wayfinder/SKILL.md",
-    ".agents/skills/writing-plans/SKILL.md",
-    ".agents/skills/writing-skills/SKILL.md",
-    ".agents/skills/zero-downtime-migrations/SKILL.md",
-    ".codex-plugin/plugin.json",
-    ".codex/agents/architect.toml",
-    ".codex/agents/implementer.toml",
-    ".codex/agents/investigator.toml",
-    ".codex/agents/researcher.toml",
-    ".codex/agents/reviewer.toml",
-    ".codex/agents/security-reviewer.toml",
-    ".codex/agents/verifier.toml",
-    "AGENTS.md",
-    "config.toml",
-    "docs/manual-desktop.md",
-    "terra-max.config.toml"
+  "fileCount": 41,
+  "files": [
+    {
+      "relativePath": ".agents/skills/brainstorming/SKILL.md",
+      "sha256": "fdc3d52a080443d2d4521fbe040339821103ddde0b4411bc2b78c83b53c94253",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/codebase-design/SKILL.md",
+      "sha256": "f7ebc05e24729ebc2c27142ff6bd215aa626087a7f7351da235b6be496830b61",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/dispatching-parallel-agents/SKILL.md",
+      "sha256": "da02a4d2fafd88a4bc157ca72257e48e57731519e1cda8af88cea4a4a7728a49",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/executing-plans/SKILL.md",
+      "sha256": "4b6662b89f7afc1b8898b91aaf8c7a34d7a3cf60f0ee33f0efee80bd162167ed",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/finishing-a-development-branch/SKILL.md",
+      "sha256": "aa63af768fa2c8e33d29f9993b2adaf148a58f489159897aab6867c52dc786c7",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/handoff/SKILL.md",
+      "sha256": "9733bb184cb88b692e7657f70ef4b640167c78e68c5e877c2ee642066703ac05",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/improve-codebase-architecture/SKILL.md",
+      "sha256": "60a160521e84972f5e5d9e35d5e8ca9520a552bda18f32d9ec9b6a7573f76bb5",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/interviewing/SKILL.md",
+      "sha256": "5fea42eb3633744e41989b3cbdd27033a3801b13b50d97730b5f1aa509d51714",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/loop-me/SKILL.md",
+      "sha256": "8fec320b22e4e0b249a1db664a67abc79fce74c47149b85b85899181937cfb9a",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/nano-image-generator/SKILL.md",
+      "sha256": "b08b2a00c7a6cdb3f827ff203a6b94de024197eda47d1dcf04eaf070785bf1a6",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/performance-profiling-and-benchmarking/SKILL.md",
+      "sha256": "0a75db5f60e4f41c5d42fdde3b847a8377ede6eef88d855f0013a01fa067266f",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/receiving-code-review/SKILL.md",
+      "sha256": "707d99346f7dafc6df4e1cc7fc128f63e738cb2d8cbc1e37efe3cf82bbde8e77",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/requesting-code-review/SKILL.md",
+      "sha256": "70b1598da549bef2c8d06e2747563121c01a30e0c3748c04048b9f62fe60bc0a",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/research/SKILL.md",
+      "sha256": "f2d71ac9fa9b44cd81b4492e427644211fc5ce6a5413ba66d38da98a0c6dc486",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/resolving-merge-conflicts/SKILL.md",
+      "sha256": "b943a203182ebb5a0ecb87fcc5a805a3b0520077f29706c8c176fec41d2c53af",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/session-compaction-resilience/SKILL.md",
+      "sha256": "6239a998406557b23dca02f414adbee9aca6e32f2192687b33c490e44fce2f9c",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/subagent-driven-development/SKILL.md",
+      "sha256": "369c828c2e606d9381d2c2ad0364857c6bce864102352617856998e16008c5b9",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/systematic-debugging/SKILL.md",
+      "sha256": "6346f60df20af05d6396e0565d000a8b55d62b6f1b487e9e3744f55e0a7406e7",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/test-driven-development/SKILL.md",
+      "sha256": "818252c64df614ef60307667c1b8f28cb581e4c5c5b8f5da3c9229c32f7f9b1e",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/threat-modeling-and-security/SKILL.md",
+      "sha256": "9483d551d38a0189abb53f6bd9834d8f6c7ac89a2be3c5646258b782f45407ea",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/using-all-about-agents/SKILL.md",
+      "sha256": "19bf2f2a073d4bd7b365d943f8b4f8f15e5e6dfd71938f6c9d853671d6cd59e2",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
+      "sha256": "921f5b1a8dfcf9381b621f817217db19d23dc8aa9d2e75ea863d5ba07a22e2c4",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/using-git-worktrees/SKILL.md",
+      "sha256": "ef0336895b84077b06b80553201f46777c301b2acbde0dd2d83b7e1ae82a56ff",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/verification-before-completion/SKILL.md",
+      "sha256": "b3b81f972133e02dc7f203f1c5104343b76885fcab5b9cfd9bd82b650a94b425",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/wait-what/SKILL.md",
+      "sha256": "3c24dc15b9bb12451c85e43e41df9c39282f56776b12b400ce132eea6f873253",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/wayfinder/SKILL.md",
+      "sha256": "edd3a1bcfbdbdd860cfb45a1404ea7dc58fdd1359f8cba1a9043582672987bd2",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/writing-plans/SKILL.md",
+      "sha256": "54e63d12d0991d0551ca387708f0540a5b1a4a83d654a35dc404a3c59d123df0",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/writing-skills/SKILL.md",
+      "sha256": "a35dd207262684d595fcb0a30f34ff74e3cda775e379e738f2a987f9e27496bc",
+      "mode": null
+    },
+    {
+      "relativePath": ".agents/skills/zero-downtime-migrations/SKILL.md",
+      "sha256": "43df891910b69fcf506f5a12a04b3806d0768afbf1d3a92cec277d70ea9ac95b",
+      "mode": null
+    },
+    {
+      "relativePath": ".codex-plugin/plugin.json",
+      "sha256": "cbb2dec01497ad11ee629d7dc88b9000272cdbb37c26cb2501dd82e12e676d4d",
+      "mode": null
+    },
+    {
+      "relativePath": ".codex/agents/architect.toml",
+      "sha256": "d9e895c191021307746ea66c39374f8ff5509dfa1c45a6b9aad2bf334d6e2dd0",
+      "mode": null
+    },
+    {
+      "relativePath": ".codex/agents/implementer.toml",
+      "sha256": "b1a01187ac1d6815d90a5621b84b20914192ff2292bde6f8a367a90439cc21f7",
+      "mode": null
+    },
+    {
+      "relativePath": ".codex/agents/investigator.toml",
+      "sha256": "215f2d81c6fb940ea555c28424b474a2453fb09c0e1087924b4b326d87caa100",
+      "mode": null
+    },
+    {
+      "relativePath": ".codex/agents/researcher.toml",
+      "sha256": "87c057beed5c2cbce5d64ebe759e85545acb4f845ff33b0b858e3f7e3effe677",
+      "mode": null
+    },
+    {
+      "relativePath": ".codex/agents/reviewer.toml",
+      "sha256": "e903259c9dd01198beb531f15da0048a6408184e2f1980b115f9d01034e19881",
+      "mode": null
+    },
+    {
+      "relativePath": ".codex/agents/security-reviewer.toml",
+      "sha256": "30fcfe8db35e41e1cba772a8718dda5a8fc8b650bff5eeabab7c7db4dcfcf165",
+      "mode": null
+    },
+    {
+      "relativePath": ".codex/agents/verifier.toml",
+      "sha256": "7b56cdc6da5e8473d7ee2a50804341fc3d4fa93e76aee2db61e8ca98184b9781",
+      "mode": null
+    },
+    {
+      "relativePath": "AGENTS.md",
+      "sha256": "6867d7e91515915d59058e0423555cf38778844e2c7ab3ce9738fa192b6e784f",
+      "mode": null
+    },
+    {
+      "relativePath": "config.toml",
+      "sha256": "fa648b06b9b1795a4534083ec97981ad20e8a172f5bc131fc242a1121e46c3c9",
+      "mode": null
+    },
+    {
+      "relativePath": "docs/manual-desktop.md",
+      "sha256": "95e3a8c7537460e49b098997886adf71b29c2253bb53b591a9fc2740b4e9f10e",
+      "mode": null
+    },
+    {
+      "relativePath": "terra-max.config.toml",
+      "sha256": "f4625e0b7fc0e73d92028a964be76042953f46135838a5f95fcf009905f913b2",
+      "mode": null
+    }
   ],
-  "content": {
-    ".codex-plugin/plugin.json": "{\n  \"description\": \"Portable all-about-agents skills for Codex CLI and Desktop.\",\n  \"name\": \"all-about-agents\",\n  \"skills\": \"./.agents/skills\",\n  \"version\": \"1.0.0\"\n}\n",
-    ".codex/agents/investigator.toml": "name = \"investigator\"\ndescription = \"Reproduce an internal problem and rank evidence-backed hypotheses.\"\ndeveloper_instructions = \"Semantic capabilities: repository-read, filesystem-read, test-execution.\"\n",
-    "config.toml": "approval_policy = \"on-request\"\nmodel = \"gpt-5.6-sol\"\nmodel_reasoning_effort = \"max\"\nsandbox_mode = \"workspace-write\"\n",
-    "docs/manual-desktop.md": "# Codex Desktop manual setup\n\nThe shared default uses gpt-5.6-sol with max reasoning.\n\nTo use the explicit alternate in Codex Desktop, select gpt-5.6-terra and max reasoning in the Desktop model controls for the current thread.\n\nDesktop model selection is manual because no documented Desktop profile selector is assumed by this adapter.\n"
-  },
-  "registration": {
-    "kind": "resolved-config-root",
-    "rootEnv": "CODEX_HOME",
-    "path": "C:/disposable/codex-home"
-  }
+  "ownership": [
+    {
+      "relativePath": ".agents/skills/brainstorming/SKILL.md",
+      "sha256": "fdc3d52a080443d2d4521fbe040339821103ddde0b4411bc2b78c83b53c94253"
+    },
+    {
+      "relativePath": ".agents/skills/codebase-design/SKILL.md",
+      "sha256": "f7ebc05e24729ebc2c27142ff6bd215aa626087a7f7351da235b6be496830b61"
+    },
+    {
+      "relativePath": ".agents/skills/dispatching-parallel-agents/SKILL.md",
+      "sha256": "da02a4d2fafd88a4bc157ca72257e48e57731519e1cda8af88cea4a4a7728a49"
+    },
+    {
+      "relativePath": ".agents/skills/executing-plans/SKILL.md",
+      "sha256": "4b6662b89f7afc1b8898b91aaf8c7a34d7a3cf60f0ee33f0efee80bd162167ed"
+    },
+    {
+      "relativePath": ".agents/skills/finishing-a-development-branch/SKILL.md",
+      "sha256": "aa63af768fa2c8e33d29f9993b2adaf148a58f489159897aab6867c52dc786c7"
+    },
+    {
+      "relativePath": ".agents/skills/handoff/SKILL.md",
+      "sha256": "9733bb184cb88b692e7657f70ef4b640167c78e68c5e877c2ee642066703ac05"
+    },
+    {
+      "relativePath": ".agents/skills/improve-codebase-architecture/SKILL.md",
+      "sha256": "60a160521e84972f5e5d9e35d5e8ca9520a552bda18f32d9ec9b6a7573f76bb5"
+    },
+    {
+      "relativePath": ".agents/skills/interviewing/SKILL.md",
+      "sha256": "5fea42eb3633744e41989b3cbdd27033a3801b13b50d97730b5f1aa509d51714"
+    },
+    {
+      "relativePath": ".agents/skills/loop-me/SKILL.md",
+      "sha256": "8fec320b22e4e0b249a1db664a67abc79fce74c47149b85b85899181937cfb9a"
+    },
+    {
+      "relativePath": ".agents/skills/nano-image-generator/SKILL.md",
+      "sha256": "b08b2a00c7a6cdb3f827ff203a6b94de024197eda47d1dcf04eaf070785bf1a6"
+    },
+    {
+      "relativePath": ".agents/skills/performance-profiling-and-benchmarking/SKILL.md",
+      "sha256": "0a75db5f60e4f41c5d42fdde3b847a8377ede6eef88d855f0013a01fa067266f"
+    },
+    {
+      "relativePath": ".agents/skills/receiving-code-review/SKILL.md",
+      "sha256": "707d99346f7dafc6df4e1cc7fc128f63e738cb2d8cbc1e37efe3cf82bbde8e77"
+    },
+    {
+      "relativePath": ".agents/skills/requesting-code-review/SKILL.md",
+      "sha256": "70b1598da549bef2c8d06e2747563121c01a30e0c3748c04048b9f62fe60bc0a"
+    },
+    {
+      "relativePath": ".agents/skills/research/SKILL.md",
+      "sha256": "f2d71ac9fa9b44cd81b4492e427644211fc5ce6a5413ba66d38da98a0c6dc486"
+    },
+    {
+      "relativePath": ".agents/skills/resolving-merge-conflicts/SKILL.md",
+      "sha256": "b943a203182ebb5a0ecb87fcc5a805a3b0520077f29706c8c176fec41d2c53af"
+    },
+    {
+      "relativePath": ".agents/skills/session-compaction-resilience/SKILL.md",
+      "sha256": "6239a998406557b23dca02f414adbee9aca6e32f2192687b33c490e44fce2f9c"
+    },
+    {
+      "relativePath": ".agents/skills/subagent-driven-development/SKILL.md",
+      "sha256": "369c828c2e606d9381d2c2ad0364857c6bce864102352617856998e16008c5b9"
+    },
+    {
+      "relativePath": ".agents/skills/systematic-debugging/SKILL.md",
+      "sha256": "6346f60df20af05d6396e0565d000a8b55d62b6f1b487e9e3744f55e0a7406e7"
+    },
+    {
+      "relativePath": ".agents/skills/test-driven-development/SKILL.md",
+      "sha256": "818252c64df614ef60307667c1b8f28cb581e4c5c5b8f5da3c9229c32f7f9b1e"
+    },
+    {
+      "relativePath": ".agents/skills/threat-modeling-and-security/SKILL.md",
+      "sha256": "9483d551d38a0189abb53f6bd9834d8f6c7ac89a2be3c5646258b782f45407ea"
+    },
+    {
+      "relativePath": ".agents/skills/using-all-about-agents/SKILL.md",
+      "sha256": "19bf2f2a073d4bd7b365d943f8b4f8f15e5e6dfd71938f6c9d853671d6cd59e2"
+    },
+    {
+      "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
+      "sha256": "921f5b1a8dfcf9381b621f817217db19d23dc8aa9d2e75ea863d5ba07a22e2c4"
+    },
+    {
+      "relativePath": ".agents/skills/using-git-worktrees/SKILL.md",
+      "sha256": "ef0336895b84077b06b80553201f46777c301b2acbde0dd2d83b7e1ae82a56ff"
+    },
+    {
+      "relativePath": ".agents/skills/verification-before-completion/SKILL.md",
+      "sha256": "b3b81f972133e02dc7f203f1c5104343b76885fcab5b9cfd9bd82b650a94b425"
+    },
+    {
+      "relativePath": ".agents/skills/wait-what/SKILL.md",
+      "sha256": "3c24dc15b9bb12451c85e43e41df9c39282f56776b12b400ce132eea6f873253"
+    },
+    {
+      "relativePath": ".agents/skills/wayfinder/SKILL.md",
+      "sha256": "edd3a1bcfbdbdd860cfb45a1404ea7dc58fdd1359f8cba1a9043582672987bd2"
+    },
+    {
+      "relativePath": ".agents/skills/writing-plans/SKILL.md",
+      "sha256": "54e63d12d0991d0551ca387708f0540a5b1a4a83d654a35dc404a3c59d123df0"
+    },
+    {
+      "relativePath": ".agents/skills/writing-skills/SKILL.md",
+      "sha256": "a35dd207262684d595fcb0a30f34ff74e3cda775e379e738f2a987f9e27496bc"
+    },
+    {
+      "relativePath": ".agents/skills/zero-downtime-migrations/SKILL.md",
+      "sha256": "43df891910b69fcf506f5a12a04b3806d0768afbf1d3a92cec277d70ea9ac95b"
+    },
+    {
+      "relativePath": ".codex-plugin/plugin.json",
+      "sha256": "cbb2dec01497ad11ee629d7dc88b9000272cdbb37c26cb2501dd82e12e676d4d"
+    },
+    {
+      "relativePath": ".codex/agents/architect.toml",
+      "sha256": "d9e895c191021307746ea66c39374f8ff5509dfa1c45a6b9aad2bf334d6e2dd0"
+    },
+    {
+      "relativePath": ".codex/agents/implementer.toml",
+      "sha256": "b1a01187ac1d6815d90a5621b84b20914192ff2292bde6f8a367a90439cc21f7"
+    },
+    {
+      "relativePath": ".codex/agents/investigator.toml",
+      "sha256": "215f2d81c6fb940ea555c28424b474a2453fb09c0e1087924b4b326d87caa100"
+    },
+    {
+      "relativePath": ".codex/agents/researcher.toml",
+      "sha256": "87c057beed5c2cbce5d64ebe759e85545acb4f845ff33b0b858e3f7e3effe677"
+    },
+    {
+      "relativePath": ".codex/agents/reviewer.toml",
+      "sha256": "e903259c9dd01198beb531f15da0048a6408184e2f1980b115f9d01034e19881"
+    },
+    {
+      "relativePath": ".codex/agents/security-reviewer.toml",
+      "sha256": "30fcfe8db35e41e1cba772a8718dda5a8fc8b650bff5eeabab7c7db4dcfcf165"
+    },
+    {
+      "relativePath": ".codex/agents/verifier.toml",
+      "sha256": "7b56cdc6da5e8473d7ee2a50804341fc3d4fa93e76aee2db61e8ca98184b9781"
+    },
+    {
+      "relativePath": "AGENTS.md",
+      "sha256": "6867d7e91515915d59058e0423555cf38778844e2c7ab3ce9738fa192b6e784f"
+    },
+    {
+      "relativePath": "config.toml",
+      "sha256": "fa648b06b9b1795a4534083ec97981ad20e8a172f5bc131fc242a1121e46c3c9"
+    },
+    {
+      "relativePath": "docs/manual-desktop.md",
+      "sha256": "95e3a8c7537460e49b098997886adf71b29c2253bb53b591a9fc2740b4e9f10e"
+    },
+    {
+      "relativePath": "terra-max.config.toml",
+      "sha256": "f4625e0b7fc0e73d92028a964be76042953f46135838a5f95fcf009905f913b2"
+    }
+  ],
+  "registrations": [
+    {
+      "kind": "plugin-package",
+      "relativePath": ".codex-plugin/plugin.json",
+      "packageRoot": "."
+    },
+    {
+      "kind": "instructions",
+      "relativePath": "AGENTS.md",
+      "rootEnv": "CODEX_HOME",
+      "destination": "AGENTS.md",
+      "consumers": [
+        "codex-cli",
+        "codex-desktop"
+      ]
+    },
+    {
+      "kind": "skills",
+      "relativeDirectory": ".agents/skills",
+      "destination": ".agents/skills",
+      "consumers": [
+        "codex-cli",
+        "codex-desktop"
+      ]
+    },
+    {
+      "kind": "agents",
+      "relativeDirectory": ".codex/agents",
+      "destination": ".codex/agents",
+      "consumers": [
+        "codex-cli",
+        "codex-desktop"
+      ],
+      "format": "toml"
+    },
+    {
+      "kind": "agents",
+      "relativeDirectory": ".codex/agents",
+      "rootEnv": "CODEX_HOME",
+      "destination": "agents",
+      "format": "toml"
+    },
+    {
+      "kind": "config",
+      "relativePath": "config.toml",
+      "rootEnv": "CODEX_HOME",
+      "destination": "config.toml",
+      "consumers": [
+        "codex-cli",
+        "codex-desktop"
+      ]
+    },
+    {
+      "kind": "profile",
+      "name": "terra-max",
+      "relativePath": "terra-max.config.toml",
+      "rootEnv": "CODEX_HOME",
+      "destination": "terra-max.config.toml",
+      "consumers": [
+        "codex-cli"
+      ]
+    },
+    {
+      "kind": "manual-step",
+      "surface": "codex-desktop",
+      "id": "terra-max-model",
+      "instruction": "Select gpt-5.6-terra and max reasoning in the Desktop model controls."
+    },
+    {
+      "kind": "resolved-config-root",
+      "rootEnv": "CODEX_HOME",
+      "path": "C:/disposable/codex-home"
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'brainstorming' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'codebase-design' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'dispatching-parallel-agents' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'executing-plans' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'finishing-a-development-branch' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'handoff' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'improve-codebase-architecture' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'interviewing' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'loop-me' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'nano-image-generator' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'performance-profiling-and-benchmarking' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'receiving-code-review' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'requesting-code-review' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'research' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'resolving-merge-conflicts' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'session-compaction-resilience' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'subagent-driven-development' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'systematic-debugging' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'test-driven-development' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'threat-modeling-and-security' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'using-git-worktrees' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'verification-before-completion' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'wait-what' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'wayfinder' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'writing-plans' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'writing-skills' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    },
+    {
+      "code": "missing-skill-source",
+      "severity": "error",
+      "message": "Canonical skill 'zero-downtime-migrations' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
+      "sourcePath": "core/inventory.json"
+    }
+  ]
 }

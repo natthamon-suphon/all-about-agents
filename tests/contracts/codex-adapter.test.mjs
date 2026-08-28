@@ -1,26 +1,34 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { access, lstat, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join, posix, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
+import { promisify } from "node:util";
 
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { AdapterContractError } from "../../adapters/shared/adapter-contract.mjs";
 
 const adapter = await import("../../adapters/codex/adapter.mjs");
 const core = await loadCore(process.cwd());
+const execFileAsync = promisify(execFile);
 
 function fileMap(result) {
   return new Map(result.files.map((file) => [file.relativePath, new TextDecoder().decode(file.content)]));
 }
 
 function snapshotProjection(result) {
-  const files = fileMap(result);
   return {
     fileCount: result.files.length,
-    paths: result.files.map((file) => file.relativePath),
-    content: Object.fromEntries([".codex-plugin/plugin.json", ".codex/agents/investigator.toml", "config.toml", "docs/manual-desktop.md"].map((path) => [path, files.get(path)])),
-    registration: result.registrations.find((entry) => entry.kind === "resolved-config-root")
+    files: result.files.map((file) => ({
+      relativePath: file.relativePath,
+      sha256: createHash("sha256").update(file.content).digest("hex"),
+      mode: file.mode
+    })),
+    ownership: result.ownership,
+    registrations: result.registrations,
+    diagnostics: result.diagnostics
   };
 }
 
@@ -59,6 +67,10 @@ test("Codex resolves CODEX_HOME with an explicit override and platform default",
   assert.equal(
     adapter.resolveCodexHome({ env: {}, homeDir: "/Users/tester", platform: "darwin" }),
     "/Users/tester/.codex"
+  );
+  assert.equal(
+    adapter.resolveCodexHome({ env: {}, homeDir: "C:\\Users\\tester", platform: "win32" }),
+    "C:\\Users\\tester\\.codex"
   );
 });
 
@@ -133,10 +145,69 @@ test("Codex preserves supplied skill content and marks missing canonical skills 
   assert.ok(missing.every((diagnostic) => diagnostic.sourcePath === "core/inventory.json"));
 });
 
-test("Codex AGENTS.md remains a regular file when checkout symlinks are unavailable", async () => {
+test("Codex reports absent and whitespace canonical skill sources separately", () => {
+  const absent = resultFor();
+  assert.ok(absent.diagnostics.some((diagnostic) => /brainstorming/u.test(diagnostic.message) && /no source record/u.test(diagnostic.message)));
+  const whitespaceCore = {
+    ...core,
+    skills: [...core.skills, { id: "brainstorming", description: "Whitespace source", content: " \r\n\t " }]
+  };
+  const whitespace = resultFor("portable", { core: whitespaceCore });
+  const diagnostics = whitespace.diagnostics.filter((diagnostic) => /brainstorming/u.test(diagnostic.message));
+  assert.equal(diagnostics.length, 1);
+  assert.equal(diagnostics[0].code, "missing-skill-source");
+  assert.match(diagnostics[0].message, /no usable source content/u);
+  assert.match(fileMap(whitespace).get(".agents/skills/brainstorming/SKILL.md"), /DEFERRED: canonical source is missing/u);
+});
+
+test("Codex bootstrap skill links to a resolvable factual capability guide", () => {
+  const files = fileMap(resultFor());
+  const skillPath = ".agents/skills/using-all-about-agents/SKILL.md";
+  const guidancePath = ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md";
+  const skill = files.get(skillPath);
+  const link = skill.match(/\[Codex adapter capability guidance\]\(([^)]+)\)/u)?.[1];
+  assert.ok(link);
+  assert.equal(posix.normalize(posix.join(posix.dirname(skillPath), link)), guidancePath);
+  const guidance = files.get(guidancePath);
+  assert.ok(guidance);
+  assert.match(guidance, /CODEX_HOME/u);
+  assert.match(guidance, /AGENTS\.md/u);
+  assert.match(guidance, /standalone custom-agent TOML/u);
+  assert.match(guidance, /Desktop.*manual/u);
+  assert.doesNotMatch(guidance, /Claude|spawn_agent|mcp__/iu);
+});
+
+test("Codex AGENTS.md maps every canonical action to its workflow and description", () => {
+  const agents = fileMap(resultFor()).get("AGENTS.md");
+  for (const command of core.commands) {
+    assert.match(agents, new RegExp(`- action: ${command.actionId}\\n- workflowId: ${command.workflowId}\\n- description: ${command.presentation.help}`, "u"));
+  }
+});
+
+test("Codex rejects a canonical command set with a missing action mapping", () => {
+  const incompleteCore = { ...core, commands: core.commands.slice(1) };
+  assert.throws(
+    () => resultFor("portable", { core: incompleteCore }),
+    /missing canonical action|missing native action mapping|invalid command/iu
+  );
+});
+
+test("Codex AGENTS.md remains a regular file in a Windows checkout with core.symlinks=false", async (t) => {
   const agents = resultFor().files.find((file) => file.relativePath === "AGENTS.md");
   const root = await mkdtemp(join(tmpdir(), "all-about-agents-codex-"));
   try {
+    try {
+      await execFileAsync("git", ["init", "--quiet"], { cwd: root });
+      await execFileAsync("git", ["config", "core.symlinks", "false"], { cwd: root });
+    } catch (error) {
+      if (error?.code === "ENOENT") {
+        t.skip("Git executable unavailable");
+        return;
+      }
+      throw error;
+    }
+    const { stdout } = await execFileAsync("git", ["config", "--get", "core.symlinks"], { cwd: root });
+    assert.equal(stdout.trim(), "false");
     await writeFile(join(root, "AGENTS.md"), agents.content);
     const stat = await lstat(join(root, "AGENTS.md"));
     assert.equal(stat.isFile(), true);

@@ -9,6 +9,9 @@ The shared `config.toml` overlay uses Sol with Max reasoning. The explicit
 Max reasoning keys; it is selected manually with the CLI profile mechanism.
 Desktop Terra/Max selection remains a manual model-control step.
 
+The generated bootstrap skill links to the factual adapter guide at
+`.agents/skills/using-all-about-agents/references/adapter-capability-guidance.md`.
+
 When a canonical skill source is not present yet, its rendered `SKILL.md` is
 marked `DEFERRED` and the result reports the owning cycle-05 remediation
 diagnostic. This keeps the full public skill inventory visible without
