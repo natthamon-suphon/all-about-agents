@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# Generate a review package: commit list, stat summary, and the net
-# diff with extended context, written to a file the reviewer reads in one
-# call. Using the recorded per-task BASE (not HEAD~1) keeps multi-commit
-# tasks intact.
-#
-# Usage: review-package PLAN_FILE BASE HEAD [OUTFILE]
-# Default OUTFILE: <plan-directory>/sdd/review-<base7>..<head7>.diff
-# (named per range, so a re-review after fixes gets a distinct fresh file).
+# Generate a review package: commit list, stat summary, and net diff. Cross-platform wrapper delegating to Node.js when available.
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if command -v node >/dev/null 2>&1; then
+  exec node "${SCRIPT_DIR}/review-package.js" "$@"
+fi
 
 if [ $# -lt 3 ] || [ $# -gt 4 ]; then
   echo "usage: review-package PLAN_FILE BASE HEAD [OUTFILE]" >&2
@@ -25,7 +24,7 @@ git rev-parse --verify --quiet "$head" >/dev/null || { echo "bad HEAD: $head" >&
 if [ $# -eq 4 ]; then
   out=$4
 else
-  dir=$("$(cd "$(dirname "$0")" && pwd)/sdd-workspace" "$plan")
+  dir=$("${SCRIPT_DIR}/sdd-workspace" "$plan")
   out="$dir/review-$(git rev-parse --short "$base")..$(git rev-parse --short "$head").diff"
 fi
 

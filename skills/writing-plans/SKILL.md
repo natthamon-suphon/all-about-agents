@@ -66,6 +66,14 @@ independently testable deliverable.
 
 **Tech Stack:** [Key technologies/libraries]
 
+## System Invariants & Pre-Conditions
+
+[List system invariants, pre-conditions, and post-conditions that must hold true before and after tasks.]
+
+## Pre-Mortem & Failure Mitigations
+
+[State the most likely failure modes (race conditions, unhandled errors, stale cache, schema drift) and the design mitigations in place.]
+
 ## Global Constraints
 
 [The spec's project-wide requirements — version floors, dependency limits,

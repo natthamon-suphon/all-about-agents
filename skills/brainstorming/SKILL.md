@@ -117,6 +117,7 @@ After writing the spec document, look at it with fresh eyes:
 2. **Internal consistency:** Do any sections contradict each other? Does the architecture match the feature descriptions?
 3. **Scope check:** Is this focused enough for a single implementation plan, or does it need decomposition?
 4. **Ambiguity check:** Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
+5. **State Invariants & Pre-Mortem:** Explicitly list pre-conditions, post-conditions, and run a pre-mortem test (what subtle failure mode in production could break this design, and how is it mitigated?).
 
 Fix any issues inline. No need to re-review — just fix and move on.
 

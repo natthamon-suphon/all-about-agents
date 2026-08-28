@@ -47,8 +47,16 @@ Antigravity discovers customizations across several scopes:
 ## Subagent Support & Execution
 
 Antigravity handles subagents via `invoke_subagent`:
-* **`self`**: Full capability subagent that inherits tools, workspace permissions, and model configuration.
-* **`research`**: Read-only subagent for large codebase exploration or external web research.
+* **Pre-configured Roles** (defined in `agents/`):
+  * `implementer`: Fast TDD coding with full write access.
+  * `task-reviewer`: Read-only gatekeeper for spec compliance & code quality.
+  * `deep-investigator`: Read-only root cause forensics & web research.
+  * `security-auditor`: Read-only STRIDE threat modeling & vulnerability analysis.
+  * `codebase-architect`: Read-only module depth & seam analysis.
+  * `generalist`: General-purpose worker fallback.
+* **Built-in Fallbacks**:
+  * **`self`**: Full capability subagent that inherits tools, workspace permissions, and model configuration.
+  * **`research`**: Read-only subagent for large codebase exploration or external web research.
 * **Parallel Execution**: Multiple subagents can be launched concurrently in a single `invoke_subagent` call.
 * **Reactive Wakeup**: The parent agent is automatically resumed when a subagent sends a message or completes—**no polling loops needed**.
 

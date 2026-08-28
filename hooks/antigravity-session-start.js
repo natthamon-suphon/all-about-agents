@@ -28,8 +28,9 @@ process.stdin.on('end', () => {
       let candidates = [
         path.resolve(__dirname, '../skills/using-all-about-agents/SKILL.md'),
         path.resolve(__dirname, './skills/using-all-about-agents/SKILL.md'),
+        path.resolve(process.cwd(), 'skills/using-all-about-agents/SKILL.md'),
         path.join(process.env.USERPROFILE || process.env.HOME || '', '.gemini', 'config', 'plugins', 'all-about-agents', 'skills', 'using-all-about-agents', 'SKILL.md'),
-        'c:/Users/natth/Workspaces/all-about-agents/skills/using-all-about-agents/SKILL.md'
+        path.join(process.env.USERPROFILE || process.env.HOME || '', '.gemini', 'config', 'skills', 'using-all-about-agents', 'SKILL.md')
       ];
 
       let skillContent = '';

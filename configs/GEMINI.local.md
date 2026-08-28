@@ -158,3 +158,24 @@ conflict, choose quality and say in one line why it took the extra space.
   - "Using <span style="background: linear-gradient(90deg, #ff0055, #ff7700, #ffcc00, #00cc66, #0099ff, #7a00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold;">brainstorming</span> to explore requirements."
   - "Invoking subagent <span style="background: linear-gradient(90deg, #ff0055, #ff7700, #ffcc00, #00cc66, #0099ff, #7a00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold;">research</span> for deep code analysis."
 
+## 17. Multi-Agent Isolation & Context Cleanliness
+
+- When delegating to subagents, construct isolated, self-contained briefs containing only the necessary task requirements, interfaces, and diff files.
+- NEVER paste accumulated session history or prior conversational turns into subagent dispatch prompts. Subagents must operate with clean context.
+- Use read-only subagents (`task-reviewer`, `security-auditor`, `deep-investigator`) for verification, audit, and research to prevent unintended codebase mutations.
+
+## 18. State Invariants & Pre-Mortem Thinking
+
+- For any non-trivial architecture or design decision, explicitly state system pre-conditions, post-conditions, and invariants before writing code.
+- Conduct a pre-mortem test: assume the design or fix failed in production. Identify the most probable subtle failure mode (race condition, stale cache, schema drift, IDOR) and mitigate it in the design.
+
+## 19. Long-Running Task Ledger Protocol
+
+- For tasks requiring more than 3 steps, maintain a persistent ledger (`progress.md` or `SNAPSHOT.md`) on disk to ensure recovery across context compactions.
+- Trust git commits and disk ledgers over transient conversational memory.
+
+## 20. Cross-Platform Path & Environment Hygiene
+
+- Always standardize file paths using forward slashes (`/`) for cross-platform compatibility across Windows, macOS, and Linux.
+- Before executing scripts or tool commands, verify prerequisites dynamically without assuming fixed global path strings.
+
