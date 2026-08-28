@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "surface": "claude",
+  "product": "Claude Code",
+  "productVersion": "2.1.248",
+  "package": "all-about-agents",
+  "pluginManifest": ".claude-plugin/plugin.json",
+  "configRoot": {
+    "environment": "CLAUDE_CONFIG_DIR",
+    "fallback": "~/.claude",
+    "sharedBy": ["claude-code-cli", "claude-desktop-local-code"]
+  },
+  "components": {
+    "skills": "skills/{skill}/SKILL.md",
+    "agents": "agents/{role}.md",
+    "commands": "commands/{command}.md",
+    "rules": "rules/{rule}.md",
+    "hooks": "hooks/hooks.json",
+    "hookScripts": "hooks/{name}.mjs",
+    "statusline": "statusline/statusline.mjs",
+    "settingsOverlay": "config/settings.json",
+    "statuslineConfig": "config/statusline.json"
+  },
+  "profiles": {
+    "portable": {
+      "settings": {
+        "model": "claude-opus-5",
+        "fallbackModel": ["claude-sonnet-5"],
+        "env": {"CLAUDE_CODE_EFFORT_LEVEL": "xhigh"},
+        "permissions.defaultMode": "default"
+      }
+    },
+    "template": {
+      "settings": {
+        "model": "claude-opus-5",
+        "fallbackModel": ["claude-sonnet-5"],
+        "advisorModel": "claude-fable-5",
+        "env": {"CLAUDE_CODE_EFFORT_LEVEL": "max"},
+        "permissions.defaultMode": "bypassPermissions"
+      },
+      "experimental": ["advisorModel"]
+    }
+  },
+  "semanticCapabilities": {
+    "repository-read": ["Read", "Glob", "Grep"],
+    "repository-write": ["Write", "Edit"],
+    "web-primary-sources": ["WebSearch", "WebFetch"],
+    "isolated-write": ["Write", "Edit", "Bash"],
+    "command-execution": ["Bash"],
+    "filesystem-read": ["Read", "Glob", "Grep"],
+    "filesystem-write": ["Write", "Edit"],
+    "git-read": ["Bash"],
+    "git-write": ["Bash"],
+    "test-execution": ["Bash"],
+    "external-research": ["WebSearch", "WebFetch"],
+    "evaluation": ["Bash", "Read"],
+    "role-dispatch": ["Agent"],
+    "workflow-state": ["Read", "Write"],
+    "schema-validation": ["Bash"],
+    "native-rendering": ["Skill"]
+  },
+  "actions": {
+    "aaa:design": "commands/design.md",
+    "aaa:build": "commands/build.md",
+    "aaa:fix": "commands/fix.md",
+    "aaa:review": "commands/review.md",
+    "aaa:audit": "commands/audit.md",
+    "aaa:improve-skill": "commands/improve-skill.md",
+    "aaa:resume": "commands/resume.md",
+    "aaa:verify": "commands/verify.md"
+  },
+  "ownedPaths": [
+    ".claude-plugin/plugin.json",
+    "skills/{skill}/SKILL.md",
+    "agents/{role}.md",
+    "commands/{command}.md",
+    "rules/{rule}.md",
+    "hooks/hooks.json",
+    "hooks/{name}.mjs",
+    "statusline/statusline.mjs",
+    "config/settings.json",
+    "config/statusline.json",
+    "docs/semantic-mappings.md"
+  ],
+  "nativeValidation": {
+    "command": ["claude", "plugin", "validate", ".", "--strict"],
+    "warningsAreFailures": true,
+    "requiredWhenAvailable": true
+  },
+  "rootInstructionContext": "not emitted; plugin-root CLAUDE.md is not a plugin context"
+}

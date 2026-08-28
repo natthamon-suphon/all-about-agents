@@ -1,0 +1,205 @@
+import assert from "node:assert/strict";
+import { access, readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import test from "node:test";
+
+import { loadCore } from "../../installers/lib/load-core.mjs";
+import {
+  CLAUDE_MODEL_POLICY,
+  CLAUDE_SEMANTIC_MAPPINGS,
+  renderSurface,
+  renderClaude,
+  resolveClaudeConfigDir
+} from "../../adapters/claude/adapter.mjs";
+import { AdapterContractError } from "../../adapters/shared/adapter-contract.mjs";
+
+const requiredOutputs = [
+  "adapters/claude/adapter.mjs",
+  "adapters/claude/templates/",
+  "installers/manifests/claude.json",
+  "tests/contracts/claude-adapter.test.mjs",
+  "tests/snapshots/claude/"
+];
+
+test("T008 creates every owned artifact", async () => {
+  assert.ok(requiredOutputs.length > 0);
+  for (const relativePath of requiredOutputs) {
+    await access(resolve(process.cwd(), relativePath));
+  }
+});
+
+const core = await loadCore(process.cwd());
+
+function resultFor(profileId = "portable", overrides = {}) {
+  return renderClaude({
+    core,
+    profile: { id: profileId },
+    statuslineName: "ทีม Claude",
+    env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude-config" },
+    platform: "win32",
+    homeDir: "C:/Users/tester",
+    ...overrides
+  });
+}
+
+function fileMap(result) {
+  return new Map(result.files.map((file) => [file.relativePath, new TextDecoder().decode(file.content)]));
+}
+
+test("Claude model policy uses exact documented template fields", () => {
+  assert.deepEqual(CLAUDE_MODEL_POLICY.template, {
+    model: "claude-opus-5",
+    fallbackModel: ["claude-sonnet-5"],
+    advisorModel: "claude-fable-5",
+    env: { CLAUDE_CODE_EFFORT_LEVEL: "max" }
+  });
+  assert.equal(Object.hasOwn(CLAUDE_MODEL_POLICY.template, "effortLevel"), false);
+  assert.equal(CLAUDE_MODEL_POLICY.template.fallbackModel.includes("claude-fable-5"), false);
+});
+
+test("Claude config root honors CLAUDE_CONFIG_DIR for CLI and Desktop shared settings", () => {
+  assert.equal(
+    resolveClaudeConfigDir({ env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude config" }, homeDir: "C:/Users/tester", platform: "win32" }),
+    "C:/disposable/claude config"
+  );
+  assert.equal(
+    resolveClaudeConfigDir({ env: {}, homeDir: "/Users/tester", platform: "darwin" }),
+    "/Users/tester/.claude"
+  );
+});
+
+test("Claude semantic mappings use documented Claude tools only", () => {
+  assert.deepEqual(CLAUDE_SEMANTIC_MAPPINGS["repository-read"], ["Read", "Glob", "Grep"]);
+  assert.deepEqual(CLAUDE_SEMANTIC_MAPPINGS["web-primary-sources"], ["WebSearch", "WebFetch"]);
+  const serialized = JSON.stringify(CLAUDE_SEMANTIC_MAPPINGS);
+  for (const forbidden of ["spawn_agent", "invoke_subagent", "view_file", "grep_search", "mcp__"]) {
+    assert.equal(serialized.includes(forbidden), false, `mapping contains non-Claude tool ${forbidden}`);
+  }
+});
+
+test("portable Claude render contains every native component and all canonical skills", () => {
+  const result = resultFor();
+  const files = fileMap(result);
+  assert.equal(result.diagnostics.length, 0);
+  assert.ok(files.has(".claude-plugin/plugin.json"));
+  assert.ok(files.has("config/settings.json"));
+  assert.ok(files.has("rules/authority-and-scope.md"));
+  assert.ok(files.has("hooks/hooks.json"));
+  assert.ok(files.has("statusline/statusline.mjs"));
+  assert.ok(files.has("commands/design.md"));
+  for (const role of ["researcher", "investigator", "architect", "implementer", "verifier", "reviewer", "security-reviewer"]) {
+    assert.ok(files.has(`agents/${role}.md`), `missing native agent ${role}`);
+  }
+  for (const skill of core.inventory.skills) {
+    assert.ok(files.has(`skills/${skill}/SKILL.md`), `missing canonical skill ${skill}`);
+  }
+  assert.equal(files.has("CLAUDE.md"), false);
+  assert.equal(files.has(".claude/CLAUDE.md"), false);
+  assert.equal(files.has("AGENTS.md"), false);
+});
+
+test("template Claude render emits full-access settings without unsupported effortLevel", () => {
+  const files = fileMap(resultFor("template"));
+  const settings = JSON.parse(files.get("config/settings.json"));
+  assert.equal(settings.model, "claude-opus-5");
+  assert.deepEqual(settings.fallbackModel, ["claude-sonnet-5"]);
+  assert.equal(settings.advisorModel, "claude-fable-5");
+  assert.equal(settings.env.CLAUDE_CODE_EFFORT_LEVEL, "max");
+  assert.equal(Object.hasOwn(settings, "effortLevel"), false);
+  assert.equal(settings.fallbackModel.includes("claude-fable-5"), false);
+  assert.equal(settings.permissions.defaultMode, "bypassPermissions");
+  assert.ok(settings.permissions.deny.length > 0);
+});
+
+test("Claude hooks use exec-form commands with argument arrays and plugin-root paths", () => {
+  const hooks = JSON.parse(fileMap(resultFor()).get("hooks/hooks.json")).hooks;
+  for (const groups of Object.values(hooks)) {
+    for (const group of groups) {
+      for (const hook of group.hooks) {
+        assert.equal(hook.type, "command");
+        assert.equal(typeof hook.command, "string");
+        assert.ok(Array.isArray(hook.args));
+        assert.ok(hook.args.some((argument) => argument.includes("${CLAUDE_PLUGIN_ROOT}")));
+        assert.equal(hook.command.includes("${CLAUDE_PLUGIN_ROOT}"), false);
+      }
+    }
+  }
+});
+
+test("Claude settings registration documents one shared CLI/Desktop config root", () => {
+  const result = resultFor();
+  const registration = result.registrations.find((entry) => entry.kind === "settings");
+  assert.deepEqual(registration, {
+    kind: "settings",
+    relativePath: "config/settings.json",
+    rootEnv: "CLAUDE_CONFIG_DIR",
+    destination: "settings.json",
+    consumers: ["claude-code-cli", "claude-desktop-local-code"]
+  });
+  const statusline = result.registrations.find((entry) => entry.kind === "statusline-config");
+  assert.equal(statusline.rootEnv, "CLAUDE_CONFIG_DIR");
+  assert.equal(statusline.destination, "all-about-agents/statusline.json");
+});
+
+test("Claude adapter satisfies the shared renderSurface action contract", () => {
+  const result = renderSurface({
+    core,
+    profile: { id: "portable" },
+    statuslineName: "",
+    env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude-config" },
+    platform: "win32",
+    homeDir: "C:/Users/tester"
+  });
+  assert.ok(result.files.length > 0);
+  assert.equal(result.diagnostics.length, 0);
+  assert.ok(result.registrations.some((entry) => entry.kind === "plugin-registration"));
+});
+
+test("Claude adapter rejects an incomplete native action mapping", () => {
+  assert.throws(
+    () => renderSurface({
+      core,
+      profile: { id: "portable" },
+      statuslineName: "",
+      capabilityRecord: { actionMappings: {} }
+    }),
+    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "missing-native-mapping")
+  );
+});
+
+test("Claude adapter rejects unsafe statusline display names", () => {
+  assert.throws(() => resultFor("portable", { statuslineName: `${"a".repeat(65)}` }), /64 Unicode code points/u);
+  assert.throws(() => resultFor("portable", { statuslineName: "ok\u001b[31m" }), /control or ANSI/u);
+  assert.throws(() => resultFor("portable", { statuslineName: "\nunsafe" }), /control or ANSI/u);
+});
+
+test("Claude ownership manifest documents roots, mappings, and native validation", async () => {
+  const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/claude.json"), "utf8"));
+  assert.equal(manifest.surface, "claude");
+  assert.equal(manifest.configRoot.environment, "CLAUDE_CONFIG_DIR");
+  assert.deepEqual(manifest.configRoot.sharedBy, ["claude-code-cli", "claude-desktop-local-code"]);
+  assert.deepEqual(manifest.semanticCapabilities["web-primary-sources"], ["WebSearch", "WebFetch"]);
+  assert.deepEqual(manifest.actions["aaa:design"], "commands/design.md");
+  assert.deepEqual(manifest.nativeValidation.command, ["claude", "plugin", "validate", ".", "--strict"]);
+  assert.match(manifest.rootInstructionContext, /not emitted/u);
+});
+
+test("Claude render is deterministic and matches the checked-in portable snapshot", async () => {
+  const first = resultFor();
+  const second = resultFor();
+  assert.deepEqual(first.files.map((file) => ({ ...file, content: [...file.content] })), second.files.map((file) => ({ ...file, content: [...file.content] })));
+  assert.deepEqual(first.registrations, second.registrations);
+  assert.deepEqual(first.ownership, second.ownership);
+  const snapshot = JSON.parse(await readFile(resolve(process.cwd(), "tests/snapshots/claude/portable.json"), "utf8"));
+  assert.deepEqual(snapshot.paths, first.files.map((file) => file.relativePath));
+  assert.equal(snapshot.fileCount, first.files.length);
+  assert.deepEqual(snapshot.settings, JSON.parse(fileMap(first).get("config/settings.json")));
+});
+
+test("template Claude snapshot keeps the approved model and permission shape", async () => {
+  const result = resultFor("template");
+  const files = fileMap(result);
+  const snapshot = JSON.parse(await readFile(resolve(process.cwd(), "tests/snapshots/claude/template.json"), "utf8"));
+  assert.deepEqual(snapshot.settings, JSON.parse(files.get("config/settings.json")));
+  assert.deepEqual(snapshot.paths, result.files.map((file) => file.relativePath));
+});
