@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 
@@ -22,6 +21,15 @@ const requiredSequences = {
   "review-and-audit": ["resolve-scope", "gather-evidence", "correctness-security-architecture-review", "prioritized-findings", "explicit-not-run"],
   "improve-skill": ["baseline-control", "failure-rationalization-capture", "smallest-wording-resource-change", "repeated-adversarial-evaluation", "cross-harness-qualification"],
   "release-qualification": ["static-validation", "deterministic-contracts", "native-integration", "repeated-behavioral-evaluation", "evidence-limitation-report"]
+};
+
+const mutatingEdges = {
+  "design-change": new Set(["approve-design->write-review-spec", "write-review-spec->plan"]),
+  "implement-change": new Set(["red-test->scoped-implementation", "scoped-implementation->green-refactor"]),
+  "fix-bug": new Set(["regression-red->smallest-fix", "smallest-fix->green"]),
+  "review-and-audit": new Set(),
+  "improve-skill": new Set(["failure-rationalization-capture->smallest-wording-resource-change", "smallest-wording-resource-change->repeated-adversarial-evaluation"]),
+  "release-qualification": new Set(["repeated-behavioral-evaluation->evidence-limitation-report"])
 };
 
 const requiredOutputs = [
@@ -56,8 +64,12 @@ function outgoing(workflow, from) {
   return workflow.transitions.filter((transition) => transition.from === from);
 }
 
-function isMutatingTransition(transition) {
-  return /(?:write|apply|change|patch|update|record|implement|fix|report)/iu.test(transition.on || "");
+function edgeId(transition) {
+  return `${transition.from}->${transition.to}`;
+}
+
+function isMutatingTransition(workflow, transition) {
+  return mutatingEdges[workflow.id]?.has(edgeId(transition)) === true;
 }
 
 function recoveryErrors(workflow) {
@@ -81,6 +93,8 @@ function graphErrors(workflow, roles = {}) {
   const errors = [];
   const states = workflow.states.map(stateId);
   const stateSet = new Set(states);
+  const workflowRoles = new Set(Array.isArray(workflow.allowedRoles) ? workflow.allowedRoles : []);
+  if (!Array.isArray(workflow.allowedRoles)) errors.push("workflow allowedRoles is not an array");
   if (!stateSet.has(workflow.initialState)) errors.push("initial state is not declared");
   if (stateSet.size !== states.length) errors.push("duplicate state ID");
   const terminalStates = new Set(workflow.states.filter((state) => typeof state === "object" && state.terminal === true).map(stateId));
@@ -107,20 +121,28 @@ function graphErrors(workflow, roles = {}) {
   }
   for (const transition of workflow.transitions) {
     if (!stateSet.has(transition.from)) errors.push(`transition starts at unknown state ${transition.from}`);
+    if (terminalStates.has(transition.from)) errors.push(`terminal state ${transition.from} has outgoing transition`);
+    for (const roleId of transition.allowedRoles || []) {
+      if (!workflowRoles.has(roleId)) errors.push(`role ${roleId} is not allowed by workflow ${workflow.id}`);
+      if (workflowRoles.size === 0) errors.push(`empty workflow allowedRoles denies role ${roleId}`);
+    }
     if (transition.command && transition.requiresApproval !== true) errors.push(`command ${transition.command} skips approval`);
-    if (isMutatingTransition(transition) && transition.requiresApproval !== true && (!Array.isArray(transition.allowedRoles) || transition.allowedRoles.length === 0)) {
+    if (isMutatingTransition(workflow, transition) && transition.requiresApproval !== true && (!Array.isArray(transition.allowedRoles) || transition.allowedRoles.length === 0)) {
       errors.push(`mutating transition ${transition.id || transition.on} is unauthorized`);
     }
-    if (isMutatingTransition(transition)) for (const roleId of transition.allowedRoles || []) {
+    if (isMutatingTransition(workflow, transition)) for (const roleId of transition.allowedRoles || []) {
       if (roles[roleId]?.mutationScope === "none") errors.push(`mutating transition ${transition.id || transition.on} is assigned to read-only role ${roleId}`);
     }
   }
+  const expectedEdges = requiredSequences[workflow.id]?.slice(0, -1).map((from, index) => `${from}->${requiredSequences[workflow.id][index + 1]}`) || [];
+  if (JSON.stringify(workflow.transitions.map(edgeId)) !== JSON.stringify(expectedEdges)) errors.push("transition edge chain differs from canonical sequence");
   for (const gate of workflow.gates) {
     const state = typeof gate === "string" ? null : gate.state;
     const onFailure = typeof gate === "string" ? null : gate.onFailure;
     if (state && !stateSet.has(state)) errors.push(`gate ${gate.id} names unknown state ${state}`);
     if (onFailure && !stateSet.has(onFailure)) errors.push(`gate ${gate.id} stops at unknown state ${onFailure}`);
-    if (state && onFailure && onFailure !== state && !terminalStates.has(onFailure)) errors.push(`gate ${gate.id} does not stop at the smallest responsible state`);
+    const explicitTerminalFailures = new Set(workflow.recovery?.terminalFailureStates || []);
+    if (state && onFailure && onFailure !== state && !explicitTerminalFailures.has(onFailure)) errors.push(`gate ${gate.id} does not stop at the smallest responsible state`);
   }
   errors.push(...recoveryErrors(workflow));
   return errors;
@@ -135,6 +157,9 @@ test("canonical workflows validate against the strict schema and expose the six 
     assert.equal(record.initialState, requiredSequences[id][0]);
     assert.deepEqual(record.states.map(stateId).filter((state) => requiredSequences[id].includes(state)), requiredSequences[id]);
     assert.ok(record.allowedRoles instanceof Array, `${id} must declare allowedRoles`);
+    assert.deepEqual(record.allowedRoles, [], `${id} must deny by default until canonical roles are bound`);
+    assert.equal(record.recovery?.durableState?.revision?.field, "revision", `${id} must declare its durable revision field`);
+    assert.equal(record.recovery?.durableState?.revision?.positiveInteger, true, `${id} must require positive durable revisions`);
     assert.ok(record.successCriteria instanceof Array || typeof record.successCriteria === "string", `${id} must declare successCriteria`);
   }
 });
@@ -150,14 +175,30 @@ test("workflow graph checks reject skipped approval, unreachable states, missing
   bad.states.push({ id: "orphan", description: "Unreachable test state." });
   bad.states.find((state) => state.id === "plan").stopCondition = "";
   bad.transitions.push({ id: "bad-command", from: "approve-design", to: "plan", on: "write-plan", command: "design", requiresApproval: false });
-  bad.transitions.push({ id: "bad-mutation", from: "approve-design", to: "plan", on: "apply-change", requiresApproval: false, allowedRoles: ["reviewer"] });
+  const badMutation = bad.transitions.find((transition) => edgeId(transition) === "approve-design->write-review-spec");
+  badMutation.requiresApproval = false;
+  badMutation.allowedRoles = ["reviewer"];
+  bad.transitions.push({ id: "terminal-bypass", from: "plan", to: "discover-context", on: "restart" });
   bad.recovery.durableState.writeBeforeCompaction = false;
   const errors = graphErrors(bad, { reviewer: { mutationScope: "none" } });
   assert.ok(errors.some((error) => /unreachable state orphan/u.test(error)));
   assert.ok(errors.some((error) => /command design skips approval/u.test(error)));
-  assert.ok(errors.some((error) => /mutating transition bad-mutation is assigned to read-only role reviewer/u.test(error)));
+  assert.ok(errors.some((error) => /mutating transition design-approved is assigned to read-only role reviewer/u.test(error)));
   assert.ok(errors.some((error) => /terminal state plan has no stop condition/u.test(error)));
+  assert.ok(errors.some((error) => /terminal state plan has outgoing transition/u.test(error)));
+  assert.ok(errors.some((error) => /empty workflow allowedRoles denies role reviewer/u.test(error)));
+  assert.ok(errors.some((error) => /transition edge chain differs from canonical sequence/u.test(error)));
   assert.ok(errors.some((error) => /recovery has no durable state/u.test(error)));
+
+  const noApproval = structuredClone(record);
+  const designWrite = noApproval.transitions.find((transition) => edgeId(transition) === "approve-design->write-review-spec");
+  designWrite.requiresApproval = false;
+  designWrite.allowedRoles = [];
+  assert.ok(graphErrors(noApproval).some((error) => /mutating transition design-approved is unauthorized/u.test(error)));
+
+  const wrongWorkflowRole = structuredClone(record);
+  wrongWorkflowRole.transitions[3].allowedRoles = ["reviewer"];
+  assert.ok(graphErrors(wrongWorkflowRole).some((error) => /role reviewer is not allowed by workflow design-change/u.test(error)));
 });
 
 test("compaction and resume verify durable workflow state from disk", async () => {
@@ -168,13 +209,34 @@ test("compaction and resume verify durable workflow state from disk", async () =
       assert.equal(record.recovery?.durableState?.required, true, `${id} must require durable state`);
       assert.equal(record.recovery?.resume?.verifyFromDisk, true, `${id} must verify disk state on resume`);
       assert.equal(record.recovery?.compaction?.conversationSummaryIsAuthoritative, false, `${id} must distrust summaries`);
-      const path = resolve(root, `${id}.json`);
-      const durable = { workflowId: id, state: record.initialState, checkpoint: `disk-${id}`, revision: 1 };
+      const configuredPath = record.recovery.durableState.path.replace("{workflowId}", id);
+      assert.equal(configuredPath, `.aaa/state/workflows/${id}.json`, `${id} durable path drifted from the configured contract`);
+      for (const state of record.states) assert.equal(state.durableOutput, record.recovery.durableState.path, `${id} state ${stateId(state)} does not use configured durable path`);
+      const path = resolve(root, configuredPath);
+      await mkdir(dirname(path), { recursive: true });
+      const expectedRevision = 2;
+      const durable = { workflowId: id, state: record.initialState, checkpoint: `disk-${id}`, revision: expectedRevision, evidence: [] };
+      const conversationSummary = { workflowId: id, state: "stale-summary", checkpoint: "stale", revision: 99 };
+
       await writeFile(path, `${JSON.stringify(durable)}\n`, "utf8");
-      const conversationSummary = { workflowId: id, state: "stale-summary", checkpoint: "stale", revision: 0 };
       const resumed = JSON.parse(await readFile(path, "utf8"));
+      assert.equal(resumed.workflowId, id);
+      assert.ok(record.states.map(stateId).includes(resumed.state));
+      assert.equal(Number.isInteger(resumed.revision) && resumed.revision > 0, true);
+      assert.equal(resumed.revision, expectedRevision);
       assert.deepEqual(resumed, durable);
       assert.notDeepEqual(resumed, conversationSummary, `${id} resume trusted conversation summary`);
+
+      await rm(path);
+      await assert.rejects(readFile(path, "utf8"), /ENOENT/u, `${id} missing durable state was accepted`);
+
+      await writeFile(path, "{\n", "utf8");
+      await assert.rejects((async () => JSON.parse(await readFile(path, "utf8")))(), SyntaxError, `${id} malformed durable state was accepted`);
+
+      const staleValid = { ...durable, revision: expectedRevision - 1 };
+      await writeFile(path, `${JSON.stringify(staleValid)}\n`, "utf8");
+      const staleDisk = JSON.parse(await readFile(path, "utf8"));
+      assert.notEqual(staleDisk.revision, expectedRevision, `${id} wrong-revision durable state was accepted`);
     }
   } finally {
     await rm(root, { recursive: true, force: true });

@@ -72,7 +72,8 @@
       "path": ".aaa/state/workflows/{workflowId}.json",
       "writeOnEveryTransition": true,
       "writeBeforeCompaction": true,
-      "fields": ["workflowId", "state", "revision", "evidence"]
+      "fields": ["workflowId", "state", "revision", "evidence"],
+      "revision": { "field": "revision", "positiveInteger": true }
     },
     "compaction": {
       "checkpointRequired": true,
