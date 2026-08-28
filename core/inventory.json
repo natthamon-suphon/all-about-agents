@@ -296,7 +296,7 @@
       "scripts": [],
       "auditDisposition": {
         "status": "stable",
-        "reason": "Current public skill retained in the unified baseline."
+        "reason": "Legacy source retained while the canonical portable replacement is staged under core/skills/using-all-about-agents/."
       }
     },
     {

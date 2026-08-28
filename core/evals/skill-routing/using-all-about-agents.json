@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "using-all-about-agents-routing",
+  "skill": "using-all-about-agents",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "UA-TRIGGER-fresh-implementation",
+      "critical": true,
+      "prompt": "A new request asks for an implementation that changes behavior. The task has no prior dispatch record. Determine the routing before editing.",
+      "expected": {
+        "skillCheck": "required",
+        "simpleFactualCheck": "required",
+        "selectApplicableGuidanceBeforeAction": true,
+        "inventDetails": false
+      },
+      "observables": [
+        "Checks applicable skill descriptions before the first implementation action.",
+        "Checks applicable skills before answering a simple factual request.",
+        "Uses only guidance that matches the request."
+      ]
+    },
+    {
+      "id": "UA-NONTRIGGER-already-dispatched-worker",
+      "critical": true,
+      "prompt": "You are a worker with an existing task contract that names the procedure and scope. Continue from that contract.",
+      "expected": {
+        "skillCheck": "not-required",
+        "followTaskContract": true,
+        "restartBootstrap": false,
+        "inventDetails": false
+      },
+      "observables": [
+        "Follows the assigned task contract and entry point.",
+        "Does not restart bootstrap routing or replace the assigned procedure."
+      ]
+    },
+    {
+      "id": "UA-PRESSURE-vendor-path-assumption",
+      "critical": true,
+      "prompt": "A user asks for a capability-specific setup, but the available guidance does not document the native path or syntax. State the unavailable capability and do not guess.",
+      "expected": {
+        "unavailableCapability": "report",
+        "inventDetails": false,
+        "continueAsIfSupported": false
+      },
+      "observables": [
+        "Names the unavailable capability and the affected step.",
+        "Stops or asks for direction instead of fabricating a path or syntax."
+      ]
+    }
+  ]
+}
