@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { access, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
+import { join } from "node:path";
 import test from "node:test";
 
 const requiredOutputs = [
@@ -87,6 +90,16 @@ test("loadCore rejects unknown fields and vendor tool names in portable metadata
       entry.jsonPointer === "/capabilities/0" &&
       entry.keyword === "vendorTool"
     ));
+    assert.ok(error.errors.some((entry) =>
+      entry.sourcePath === "core/skills/alpha/SKILL.md" &&
+      entry.jsonPointer === "/frontmatter/capabilities" &&
+      entry.keyword === "frontmatterType"
+    ));
+    assert.ok(error.errors.some((entry) =>
+      entry.sourcePath === "core/commands/unknown-command.json" &&
+      entry.jsonPointer === "/arguments/operation" &&
+      entry.keyword === "vendorTool"
+    ));
     return true;
   });
 });
@@ -110,4 +123,38 @@ test("validate accepts the exact core scope and rejects incomplete skill scope",
   assert.equal(await main(["validate", "--scope", "core"], output, errors), 0);
   assert.equal(await main(["validate", "--scope", "skill"], output, errors), 2);
   assert.equal(await main(["validate", "--scope", "other"], output, errors), 2);
+});
+
+test("skill validation requires the exact skill to be listed in inventory.skills", async () => {
+  const root = await mkdtemp(join(tmpdir(), "aaa-t003-inventory-membership-"));
+  try {
+    await mkdir(resolve(root, "core/skills/requested"), { recursive: true });
+    await mkdir(resolve(root, "core/evals"), { recursive: true });
+    await writeFile(resolve(root, "package.json"), JSON.stringify({ type: "module", engines: { node: ">=22.12.0" } }));
+    await writeFile(resolve(root, "core/inventory.json"), JSON.stringify({ schemaVersion: 1, skills: ["other"] }));
+    await writeFile(resolve(root, "core/skills/requested/SKILL.md"), "---\nname: requested\ndescription: A requested skill.\n---\n\nContent.\n");
+    await writeFile(resolve(root, "core/evals/requested.json"), JSON.stringify({ id: "requested", skill: "requested", cases: ["case"] }));
+    const result = spawnSync(process.execPath, [resolve(process.cwd(), "scripts/aaa.mjs"), "validate", "--scope", "skill", "--skill", "requested"], { cwd: root, encoding: "utf8" });
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stderr, /inventory\.skills/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("loadCore validates inventory against its strict schema when the schema is present", async () => {
+  const root = await mkdtemp(join(tmpdir(), "aaa-t003-inventory-schema-"));
+  try {
+    await mkdir(resolve(root, "core/schemas"), { recursive: true });
+    const schema = await readFile(resolve(process.cwd(), "core/schemas/inventory.schema.json"), "utf8");
+    await writeFile(resolve(root, "core/schemas/inventory.schema.json"), schema);
+    await writeFile(resolve(root, "core/inventory.json"), JSON.stringify({ schemaVersion: 1, skills: [], unexpected: true }));
+    const { loadCore } = await loader();
+    await assert.rejects(loadCore(root), (error) => {
+      assert.ok(error.errors.some((entry) => entry.sourcePath === "core/inventory.json" && entry.jsonPointer === "/unexpected" && entry.keyword === "additionalProperties"));
+      return true;
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

@@ -117,9 +117,12 @@ async function validate(args, output, errorOutput) {
     if (options.scope === "core") return emitValidationResult({ valid: true, scope: "core", format: options.format }, output, errorOutput);
     const skill = core.skills.find((entry) => entry.id === options.skill);
     const errors = [];
+    if (!Array.isArray(core.inventory?.skills) || !core.inventory.skills.includes(options.skill)) {
+      errors.push({ sourcePath: "core/inventory.json", jsonPointer: "/skills", keyword: "reference", message: `skill ${options.skill} is not listed in inventory.skills` });
+    }
     if (!skill) {
       errors.push({ sourcePath: "core/skills", jsonPointer: "", keyword: "reference", message: `canonical skill ${options.skill} was not found` });
-    } else {
+    } else if (errors.length === 0) {
       const evaluations = core.evals.filter((entry) => entry.skill === options.skill || entry.skillId === options.skill || entry.skill === skill.id || entry.skillId === skill.id);
       if (evaluations.length === 0) errors.push({ sourcePath: "core/evals", jsonPointer: "", keyword: "reference", message: `evaluation cases for ${options.skill} were not found` });
       else if (!evaluations.some((entry) => Array.isArray(entry.cases) && entry.cases.length > 0)) errors.push({ sourcePath: "core/evals", jsonPointer: "", keyword: "cases", message: `evaluation cases for ${options.skill} are empty` });

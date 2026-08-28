@@ -28,7 +28,7 @@ export const SEMANTIC_CAPABILITIES = Object.freeze([
 
 const CAPABILITY_SET = new Set(SEMANTIC_CAPABILITIES);
 const VENDOR_TOOL_VALUES = new Set(["Read", "Write", "Edit", "Bash", "Glob", "Grep", "LS", "NotebookEdit", "WebFetch", "WebSearch", "Task"]);
-const VENDOR_TOOL_PATTERN = /(?:^|[^a-z0-9])(?:spawn_agent|invoke_subagent|run_command|view_file|grep_search|find_by_name|list_dir|mcp__[a-z0-9_:-]+)(?:$|[^a-z0-9])/u;
+const VENDOR_TOOL_PATTERN = /(?:^|[^a-z0-9])(?:spawn_agent|invoke_subagent|run_command|view_file|grep_search|find_by_name|list_dir|write_to_file|replace_file_content|search_web|read_url_content|ask_question|manage_subagents|manage_task|generate_image|mcp__[a-z0-9_:-]+)(?:$|[^a-z0-9])/u;
 const VENDOR_FIELD_NAMES = new Set(["tool", "tools", "nativeTool", "nativeTools", "vendorTool", "vendorTools"]);
 
 function compareText(left, right) {
@@ -186,7 +186,7 @@ function capabilityErrors(record, sourcePath) {
         }
       });
     }
-    if (Array.isArray(value)) value.forEach((item, index) => visit(item, pointerJoin(path, index), keyName));
+    if (Array.isArray(value)) value.forEach((item, index) => visit(item, pointerJoin(path, index), ""));
     else if (value && typeof value === "object") for (const [key, child] of Object.entries(value)) visit(child, pointerJoin(path, key), key);
   }
   visit(record, "");
@@ -214,6 +214,7 @@ function parseSkillMarkdown(text, sourcePath, errors) {
     } else {
       const frontLines = lines.slice(1, end);
       const allowed = new Set(["name", "description", "capabilities", "requiredCapabilities", "references", "requiredSkills", "evaluationCases"]);
+      const listFields = new Set(["capabilities", "requiredCapabilities", "references", "requiredSkills", "evaluationCases"]);
       let activeList = null;
       for (let index = 0; index < frontLines.length; index += 1) {
         const line = frontLines[index];
@@ -232,6 +233,9 @@ function parseSkillMarkdown(text, sourcePath, errors) {
         const [, key, rawValue] = fieldMatch;
         if (!allowed.has(key)) {
           errors.push(errorRecord(sourcePath, pointerJoin("/frontmatter", key), "additionalProperties", `property ${key} is not declared`));
+        }
+        if (listFields.has(key) && rawValue.trim() !== "") {
+          errors.push(errorRecord(sourcePath, pointerJoin("/frontmatter", key), "frontmatterType", `${key} must be a YAML list`));
         }
         if (rawValue.trim() === "") {
           frontmatter[key] = [];
@@ -402,7 +406,15 @@ export async function loadCore(root) {
   const errors = [];
   const inventoryPath = resolve(coreRoot, "inventory.json");
   const inventory = await readJson(inventoryPath, toPortablePath(repositoryRoot, inventoryPath), errors);
-  if (inventory !== null) validateInventory(inventory, toPortablePath(repositoryRoot, inventoryPath), errors);
+  const inventorySourcePath = toPortablePath(repositoryRoot, inventoryPath);
+  if (inventory !== null) {
+    validateInventory(inventory, inventorySourcePath, errors);
+    const inventorySchemaPath = resolve(coreRoot, "schemas", "inventory.schema.json");
+    if (await pathExists(inventorySchemaPath)) {
+      const inventorySchema = await readJson(inventorySchemaPath, toPortablePath(repositoryRoot, inventorySchemaPath), errors);
+      if (inventorySchema) errors.push(...validateSchema({ schema: inventorySchema, value: inventory, sourcePath: inventorySourcePath }).errors);
+    }
+  }
 
   const [rules, roles, skills, workflows, commands, evals] = await Promise.all([
     loadJsonCollection(repositoryRoot, coreRoot, "rules", "rule", errors),

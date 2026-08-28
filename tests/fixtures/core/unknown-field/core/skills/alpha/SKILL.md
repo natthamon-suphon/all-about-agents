@@ -1,8 +1,7 @@
 ---
 name: alpha
 description: Use when repository evidence must be gathered.
-capabilities:
-  - repository-read
+capabilities: Read
 ---
 
 Gather evidence.
