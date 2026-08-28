@@ -189,31 +189,60 @@ test("Codex rejects malformed canonical command presentation metadata", () => {
     {
       name: "missing presentation",
       field: "presentation",
+      message: "presentation hints are required",
       mutate: ({ presentation: _presentation, ...command }) => command
+    },
+    {
+      name: "missing presentation.label",
+      field: "presentation.label",
+      message: "presentation.label must be a non-empty string",
+      mutate: ({ presentation, ...command }) => ({ ...command, presentation: { help: presentation.help } })
+    },
+    {
+      name: "missing presentation.help",
+      field: "presentation.help",
+      message: "presentation.help must be a non-empty string",
+      mutate: ({ presentation, ...command }) => ({ ...command, presentation: { label: presentation.label } })
     },
     {
       name: "empty label",
       field: "presentation.label",
+      message: "presentation.label must be a non-empty string",
       mutate: (command) => ({ ...command, presentation: { ...command.presentation, label: "" } })
+    },
+    {
+      name: "empty help",
+      field: "presentation.help",
+      message: "presentation.help must be a non-empty string",
+      mutate: (command) => ({ ...command, presentation: { ...command.presentation, help: "" } })
+    },
+    {
+      name: "whitespace label",
+      field: "presentation.label",
+      message: "presentation.label must be a non-empty string",
+      mutate: (command) => ({ ...command, presentation: { ...command.presentation, label: String.fromCharCode(32, 9, 13, 10, 32) } })
     },
     {
       name: "whitespace help",
       field: "presentation.help",
+      message: "presentation.help must be a non-empty string",
       mutate: (command) => ({ ...command, presentation: { ...command.presentation, help: String.fromCharCode(32, 9, 13, 10, 32) } })
     },
     {
       name: "non-string label",
       field: "presentation.label",
+      message: "presentation.label must be a non-empty string",
       mutate: (command) => ({ ...command, presentation: { ...command.presentation, label: false } })
     },
     {
       name: "non-string help",
       field: "presentation.help",
+      message: "presentation.help must be a non-empty string",
       mutate: (command) => ({ ...command, presentation: { ...command.presentation, help: 42 } })
     }
   ];
 
-  for (const { name, field, mutate } of malformedCases) {
+  for (const { name, field, message, mutate } of malformedCases) {
     const malformedCore = {
       ...core,
       commands: core.commands.map((command, index) => index === 0 ? mutate(command) : command)
@@ -226,7 +255,7 @@ test("Codex rejects malformed canonical command presentation metadata", () => {
     }
     assert.ok(thrown, name);
     assert.ok(thrown instanceof AdapterContractError, name);
-    assert.ok(thrown.errors.some((entry) => entry.path === `/commands/0/${field.replace(".", "/")}`), name);
+    assert.ok(thrown.errors.some((entry) => entry.path === `/commands/0/${field.replace(".", "/")}` && entry.message === message), name);
   }
 });
 
