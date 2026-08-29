@@ -143,10 +143,12 @@ test("Desktop agent templates use only the published frontmatter fields", () => 
 
 test("read-only Desktop agents cannot execute commands", () => {
   const files = fileMap(resultFor());
-  for (const role of ["architect", "verifier", "reviewer", "security-reviewer"]) {
+  const mutationTools = /(?:run_command|write_to_file|replace_file_content|multi_replace_file_content)/u;
+  for (const role of ["investigator", "architect", "verifier", "reviewer", "security-reviewer"]) {
     const content = files.get(`.agents/plugins/all-about-agents/agents/${role}.md`);
     assert.ok(content, role);
     assert.doesNotMatch(content, /run_command/u, `${role} must not receive command execution`);
+    assert.doesNotMatch(content, mutationTools, `${role} must not receive mutation-capable tools`);
     assert.match(content, /^commandExecutionPolicy: off$/mu, `${role} must disable command execution`);
   }
   const implementer = files.get(".agents/plugins/all-about-agents/agents/implementer.md");
@@ -333,6 +335,11 @@ test("Desktop render is deterministic and matches both checked-in snapshots", as
     assert.deepEqual(snapshot.diagnostics, first.registrations.filter((entry) => entry.kind === "unsupported-diagnostic"));
     assert.deepEqual(snapshot.actionDiagnostics, first.diagnostics.filter((entry) => entry.code === "desktop-action-unknown"));
     assert.ok(snapshot.contentHashes, `${profile} snapshot must pin rendered body hashes`);
+    assert.deepEqual(
+      Object.keys(snapshot.contentHashes).sort(),
+      first.ownership.map((entry) => entry.relativePath).sort(),
+      `${profile} snapshot must pin every generated file hash`
+    );
     const bodyExpectations = new Map([
       [".agents/plugins/all-about-agents/rules/adapter-capability-guidance.md", /Plugins page[\s\S]*omits[\s\S]*agents\//iu],
       [".agents/plugins/all-about-agents/rules/model-selection.md", /Gemini 3\.7 Flash Medium[\s\S]*Gemini 3\.7 Flash High[\s\S]*unsupported/iu],
@@ -347,6 +354,11 @@ test("Desktop render is deterministic and matches both checked-in snapshots", as
       assert.equal(snapshot.contentHashes[path], ownership.sha256, `${profile} snapshot hash drift for ${path}`);
       assert.equal(sha256(file.content), ownership.sha256, `${profile} ownership hash drift for ${path}`);
       assert.match(new TextDecoder().decode(file.content), expected, `${profile} body contract drift for ${path}`);
+    }
+    for (const ownership of first.ownership) {
+      const file = first.files.find((entry) => entry.relativePath === ownership.relativePath);
+      assert.equal(snapshot.contentHashes[ownership.relativePath], ownership.sha256, `${profile} snapshot hash drift for ${ownership.relativePath}`);
+      assert.equal(sha256(file.content), snapshot.contentHashes[ownership.relativePath], `${profile} rendered body drift for ${ownership.relativePath}`);
     }
   }
 });
