@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 import agyBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
+import agyEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
 
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, roleCapabilities, SEMANTIC_CAPABILITIES, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { classifyEmergencyAction } from "../../installers/lib/emergency-policy.mjs";
 
 const SURFACE = "agy";
 const PLUGIN_ROOT = "";
@@ -403,6 +405,30 @@ function hookDocument() {
   };
 }
 
+/** Normalize only the documented agy PreToolUse fields. */
+export function normalizeAgyEmergencyRequest(request) {
+  if (!request || typeof request !== "object" || Array.isArray(request) || !request.toolCall || typeof request.toolCall !== "object" || Array.isArray(request.toolCall)) return null;
+  if (typeof request.toolCall.name !== "string" || !request.toolCall.args || typeof request.toolCall.args !== "object" || Array.isArray(request.toolCall.args)) return null;
+  const name = request.toolCall.name.toLowerCase();
+  const args = request.toolCall.args;
+  return {
+    capability: name.includes("run_command") ? "command-execution" : name.includes("write") || name.includes("edit") ? "filesystem-write" : "filesystem-read",
+    command: typeof args.CommandLine === "string" ? args.CommandLine : "",
+    paths: typeof args.filePath === "string" ? [args.filePath] : [],
+    gitOperation: typeof args.CommandLine === "string" ? args.CommandLine : null,
+    secretOperation: name.includes("read") ? { operation: "read" } : null
+  };
+}
+
+export function mapAgyEmergencyDecision(classification) {
+  return classification?.decision === "deny" ? { decision: "deny", reason: classification.reason } : {};
+}
+
+export function classifyAgyEmergencyRequest(request) {
+  const normalized = normalizeAgyEmergencyRequest(request);
+  return normalized ? classifyEmergencyAction(normalized) : { decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." };
+}
+
 function validateAgyContent(files) {
   const decoder = new TextDecoder("utf-8", { fatal: true });
   for (const file of files) {
@@ -501,6 +527,7 @@ export function renderAgy(input = {}) {
   addFile(files, "plugin.json", renderPluginManifest());
   addFile(files, "README.md", renderPackageReadme());
   addFile(files, "hooks.json", renderJson(hookDocument()));
+  addFile(files, "emergency-guard.json", renderJson(agyEmergencyTemplate));
   addFile(files, "settings.overlay.json", renderSettingsOverlay(profile));
   addFile(files, "rules/adapter-capability-guidance.md", renderCapabilityGuidance());
   addFile(files, "rules/model-selection.md", renderModelRule());
@@ -538,6 +565,12 @@ export function renderAgy(input = {}) {
       severity: "warning",
       message: `${agyBootstrapTemplate.probe.reason} Status: ${agyBootstrapTemplate.probe.status}. Manual sequence: ${agyBootstrapTemplate.probe.manualSequence.join(" ")}`,
       sourcePath: "research-t013-antigravity-agy-hooks.md"
+    },
+    {
+      code: "agy-emergency-guard-probe-required",
+      severity: "warning",
+      message: "agy emergency guard output is documented but executable package-root resolution remains unverified; automatic hook execution is disabled.",
+      sourcePath: "research-t014-pretool-hooks.md"
     },
     {
       code: "agy-layout-conflict",
@@ -633,6 +666,16 @@ export function renderAgy(input = {}) {
           status: "not run",
           manualSequence: [...agyBootstrapTemplate.probe.manualSequence]
         }
+      },
+      {
+        kind: "emergency-guard",
+        surface: SURFACE,
+        relativePath: "emergency-guard.json",
+        enabled: false,
+        automatic: false,
+        automaticHookExecution: false,
+        probeRequired: agyEmergencyTemplate.probeRequired,
+        status: agyEmergencyTemplate.probe.status
       },
       {
         kind: "runtime-prerequisite",

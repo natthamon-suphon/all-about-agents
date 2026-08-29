@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "surface": "antigravity-2",
+  "module": "emergency-guard",
+  "event": "PreToolUse",
+  "automatic": false,
+  "probeRequired": true,
+  "probe": {
+    "status": "not run",
+    "reason": "The target Antigravity Desktop build does not have a verified hook command package-root resolution contract.",
+    "manualSequence": [
+      "Record the installed Antigravity Desktop version and platform.",
+      "Review the documented PreToolUse payload and package-root resolution.",
+      "On a disposable package, perform an explicit deny-output probe before proposing an executable handler."
+    ]
+  },
+  "contentRef": "core/hooks/emergency-guard.json",
+  "failureMode": "fail-open",
+  "input": {
+    "format": "json-object",
+    "documentedFields": [
+      "toolCall.name",
+      "toolCall.args",
+      "stepIdx"
+    ]
+  },
+  "denyOutput": {
+    "decision": "deny",
+    "reason": "{{boundedReason}}"
+  }
+}
+

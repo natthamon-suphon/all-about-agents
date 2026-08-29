@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "surface": "agy",
+  "module": "emergency-guard",
+  "event": "PreToolUse",
+  "automatic": false,
+  "probeRequired": true,
+  "probe": {
+    "status": "not run",
+    "reason": "The installed agy CLI does not have a verified PreToolUse executable package-root contract.",
+    "manualSequence": [
+      "Record the installed agy version and platform.",
+      "Review the documented PreToolUse payload and package-root resolution.",
+      "On a disposable package, perform an explicit probe before proposing an executable handler."
+    ]
+  },
+  "contentRef": "core/hooks/emergency-guard.json",
+  "failureMode": "fail-open",
+  "input": {
+    "format": "json-object",
+    "documentedFields": [
+      "toolCall.name",
+      "toolCall.args",
+      "stepIdx"
+    ]
+  },
+  "denyOutput": {
+    "decision": "deny",
+    "reason": "{{boundedReason}}"
+  }
+}
+

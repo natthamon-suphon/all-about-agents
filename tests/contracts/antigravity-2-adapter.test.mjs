@@ -228,6 +228,42 @@ test("Desktop hooks remain probe-required without an automatic command", () => {
   assert.equal(registration.probe.status, "not run");
 });
 
+test("Desktop emergency guard is consumed as a disabled probe-only native contract", () => {
+  const result = resultFor();
+  const files = fileMap(result);
+  const guard = JSON.parse(files.get(".agents/plugins/all-about-agents/hooks/emergency-guard.json"));
+  assert.equal(guard.event, "PreToolUse");
+  assert.equal(guard.automatic, false);
+  assert.equal(guard.probeRequired, true);
+  assert.equal(guard.probe.status, "not run");
+  assert.doesNotMatch(JSON.stringify(guard), /"command"\s*:|\.\/hooks|\$PLUGIN_ROOT|%PLUGIN_ROOT%/iu);
+  const registration = result.registrations.find((entry) => entry.kind === "emergency-guard");
+  assert.equal(registration.enabled, false);
+  assert.equal(registration.automatic, false);
+  assert.equal(registration.probeRequired, true);
+  assert.ok(result.diagnostics.some((entry) => entry.code === "desktop-emergency-guard-probe-required"));
+});
+
+test("Desktop emergency normalization uses documented toolCall fields and maps only deny", () => {
+  const normalized = adapter.normalizeAntigravityEmergencyRequest({
+    toolCall: { name: "run_command", args: { CommandLine: "git push origin main --force", Cwd: "C:/disposable" } },
+    stepIdx: 1
+  });
+  assert.deepEqual(normalized, {
+    capability: "command-execution",
+    command: "git push origin main --force",
+    paths: [],
+    gitOperation: "git push origin main --force",
+    secretOperation: null
+  });
+  assert.deepEqual(adapter.mapAntigravityEmergencyDecision(adapter.classifyAntigravityEmergencyRequest({
+    toolCall: { name: "run_command", args: { CommandLine: "git push origin main --force" } },
+    stepIdx: 1
+  })), { decision: "deny", reason: "Denied: force-push would rewrite shared Git history." });
+  assert.deepEqual(adapter.mapAntigravityEmergencyDecision({ decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." }), {});
+  assert.equal(adapter.normalizeAntigravityEmergencyRequest({ toolCall: { name: "run_command", args: [] } }), null);
+});
+
 test("Desktop manifest documents workspace/global discovery and no serialized settings or CLI registration", async () => {
   const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/antigravity-2.json"), "utf8"));
   assert.equal(manifest.surface, "antigravity-2");

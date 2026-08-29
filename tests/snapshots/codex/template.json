@@ -1,5 +1,5 @@
 {
-  "fileCount": 44,
+  "fileCount": 47,
   "files": [
     {
       "relativePath": ".agents/skills/brainstorming/SKILL.md",
@@ -212,8 +212,23 @@
       "mode": 493
     },
     {
+      "relativePath": "hooks/emergency-guard.json",
+      "sha256": "f3a4bb8ac32be47d3f9204a114a854dfaeb0d88701f1386f598d9ccd2b24d2fd",
+      "mode": null
+    },
+    {
+      "relativePath": "hooks/emergency-guard.mjs",
+      "sha256": "3d3013780751f3c238f77abd8b3eaf16431cd36c09b9c90c6eb96e29c8e71885",
+      "mode": 493
+    },
+    {
+      "relativePath": "hooks/emergency-policy.mjs",
+      "sha256": "1abe40537eb0509746c69c431a1c525d593aa417efd30e55eeccc76188b0fcd5",
+      "mode": 493
+    },
+    {
       "relativePath": "hooks/hooks.json",
-      "sha256": "dbed6eb086d542bf56699230b69d433f7472ed806d1d6392323e6f0b731006be",
+      "sha256": "f4c7261fd2d9863ccf1ea036d2d50d345108f131207c5f1a5f0acce97f1c20b4",
       "mode": null
     },
     {
@@ -392,8 +407,20 @@
       "sha256": "846d4f13a17f6ea7b42318b1400fa9442241c2342ff375ac64bb52eff60188c6"
     },
     {
+      "relativePath": "hooks/emergency-guard.json",
+      "sha256": "f3a4bb8ac32be47d3f9204a114a854dfaeb0d88701f1386f598d9ccd2b24d2fd"
+    },
+    {
+      "relativePath": "hooks/emergency-guard.mjs",
+      "sha256": "3d3013780751f3c238f77abd8b3eaf16431cd36c09b9c90c6eb96e29c8e71885"
+    },
+    {
+      "relativePath": "hooks/emergency-policy.mjs",
+      "sha256": "1abe40537eb0509746c69c431a1c525d593aa417efd30e55eeccc76188b0fcd5"
+    },
+    {
       "relativePath": "hooks/hooks.json",
-      "sha256": "dbed6eb086d542bf56699230b69d433f7472ed806d1d6392323e6f0b731006be"
+      "sha256": "f4c7261fd2d9863ccf1ea036d2d50d345108f131207c5f1a5f0acce97f1c20b4"
     },
     {
       "relativePath": "terra-max.config.toml",

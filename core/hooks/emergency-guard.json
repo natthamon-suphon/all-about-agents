@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "emergency-guard",
+  "description": "Classify only catastrophic, secret-exposing, or guardrail-bypassing actions before native execution.",
+  "failureMode": "fail-open",
+  "defaultDecision": "allow",
+  "reasonLimit": 160,
+  "orderedRuleIds": [
+    "filesystem-root-erasure",
+    "raw-disk-destruction",
+    "git-force-push",
+    "git-history-rewrite",
+    "git-discard-uncommitted",
+    "secret-credential-access",
+    "secret-output-or-transmission",
+    "guardrail-bypass"
+  ],
+  "rules": [
+    { "id": "filesystem-root-erasure", "decision": "deny" },
+    { "id": "raw-disk-destruction", "decision": "deny" },
+    { "id": "git-force-push", "decision": "deny" },
+    { "id": "git-history-rewrite", "decision": "deny" },
+    { "id": "git-discard-uncommitted", "decision": "deny" },
+    { "id": "secret-credential-access", "decision": "deny" },
+    { "id": "secret-output-or-transmission", "decision": "deny" },
+    { "id": "guardrail-bypass", "decision": "deny" }
+  ]
+}

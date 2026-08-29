@@ -8,6 +8,7 @@
     ".agents/plugins/all-about-agents/agents/security-reviewer.md",
     ".agents/plugins/all-about-agents/agents/verifier.md",
     ".agents/plugins/all-about-agents/hooks.json",
+    ".agents/plugins/all-about-agents/hooks/emergency-guard.json",
     ".agents/plugins/all-about-agents/plugin.json",
     ".agents/plugins/all-about-agents/rules/adapter-capability-guidance.md",
     ".agents/plugins/all-about-agents/rules/authority-and-scope.md",
@@ -50,7 +51,7 @@
     ".agents/plugins/all-about-agents/skills/writing-skills/SKILL.md",
     ".agents/plugins/all-about-agents/skills/zero-downtime-migrations/SKILL.md"
   ],
-  "fileCount": 49,
+  "fileCount": 50,
   "model": {
     "kind": "manual-model-selection",
     "surface": "antigravity-2-desktop",
@@ -142,6 +143,7 @@
     ".agents/plugins/all-about-agents/agents/security-reviewer.md": "98a9f0c4872fb04d2626dbb11226ba02b6ddfca8d67d90ee9169289a19cba0ac",
     ".agents/plugins/all-about-agents/agents/verifier.md": "7fa3632531ff028818ad80158b4e765d2a34b62dfc909fc382575869dd90d3f0",
     ".agents/plugins/all-about-agents/hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
+    ".agents/plugins/all-about-agents/hooks/emergency-guard.json": "dd227c66da1a11e53512a853cd7f59cbd86b886bb988131369f47e92d8d28859",
     ".agents/plugins/all-about-agents/plugin.json": "6c9c8a61e842f1857dac5ee03a6457ccc84ba5f168a550732e9e9eb0a979c3ed",
     ".agents/plugins/all-about-agents/rules/adapter-capability-guidance.md": "c874eadeecfc185a97d8c80b9c26a84b098eb9c2df3e6f1ee2b536f34fb281dd",
     ".agents/plugins/all-about-agents/rules/authority-and-scope.md": "e954e78589912467fcc0f1e273cd7f7028efb014152ec22e9cdd6e99c821764f",
@@ -185,3 +187,4 @@
     ".agents/plugins/all-about-agents/skills/zero-downtime-migrations/SKILL.md": "61aff185e0e1718553a051a1d1f8c57431ddc8e2112b26af3539b11a4be4122d"
   }
 }
+

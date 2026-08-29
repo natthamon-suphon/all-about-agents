@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "surface": "codex",
+  "module": "emergency-guard",
+  "event": "PreToolUse",
+  "automatic": true,
+  "probeRequired": false,
+  "nativeMatcher": ".*",
+  "commandContract": "package-root",
+  "trustRequired": true,
+  "command": "node \"$PLUGIN_ROOT/hooks/emergency-guard.mjs\" --surface codex --policy-path \"$PLUGIN_ROOT/hooks/emergency-guard.json\"",
+  "commandWindows": "node \"%PLUGIN_ROOT%/hooks/emergency-guard.mjs\" --surface codex --policy-path \"%PLUGIN_ROOT%/hooks/emergency-guard.json\"",
+  "contentRef": "core/hooks/emergency-guard.json",
+  "failureMode": "fail-open",
+  "input": {
+    "format": "json-object",
+    "documentedFields": [
+      "hook_event_name",
+      "tool_name",
+      "tool_input",
+      "tool_use_id"
+    ]
+  },
+  "denyOutput": {
+    "hookSpecificOutput": {
+      "hookEventName": "PreToolUse",
+      "permissionDecision": "deny",
+      "permissionDecisionReason": "{{boundedReason}}"
+    }
+  }
+}

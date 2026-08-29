@@ -107,6 +107,42 @@ test("agy hooks are disabled until the explicit lifecycle probe is complete", ()
   assert.equal(resultFor().registrations.find((entry) => entry.kind === "hook-contract").automaticHookExecution, false);
 });
 
+test("agy emergency guard is consumed as a disabled probe-only native contract", () => {
+  const result = resultFor();
+  const files = fileMap(result);
+  const guard = JSON.parse(files.get("emergency-guard.json"));
+  assert.equal(guard.event, "PreToolUse");
+  assert.equal(guard.automatic, false);
+  assert.equal(guard.probeRequired, true);
+  assert.equal(guard.probe.status, "not run");
+  assert.doesNotMatch(JSON.stringify(guard), /"command"\s*:|\.\/hooks|\$PLUGIN_ROOT|%PLUGIN_ROOT%/iu);
+  const registration = result.registrations.find((entry) => entry.kind === "emergency-guard");
+  assert.equal(registration.enabled, false);
+  assert.equal(registration.automatic, false);
+  assert.equal(registration.probeRequired, true);
+  assert.ok(result.diagnostics.some((entry) => entry.code === "agy-emergency-guard-probe-required"));
+});
+
+test("agy emergency normalization uses documented toolCall fields and maps only deny", () => {
+  const normalized = adapter.normalizeAgyEmergencyRequest({
+    toolCall: { name: "run_command", args: { CommandLine: "git push origin main --force", Cwd: "C:/disposable" } },
+    stepIdx: 1
+  });
+  assert.deepEqual(normalized, {
+    capability: "command-execution",
+    command: "git push origin main --force",
+    paths: [],
+    gitOperation: "git push origin main --force",
+    secretOperation: null
+  });
+  assert.deepEqual(adapter.mapAgyEmergencyDecision(adapter.classifyAgyEmergencyRequest({
+    toolCall: { name: "run_command", args: { CommandLine: "git push origin main --force" } },
+    stepIdx: 1
+  })), { decision: "deny", reason: "Denied: force-push would rewrite shared Git history." });
+  assert.deepEqual(adapter.mapAgyEmergencyDecision({ decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." }), {});
+  assert.equal(adapter.normalizeAgyEmergencyRequest({ toolCall: { name: "run_command", args: [] } }), null);
+});
+
 test("agy settings overlays use only documented sparse keys and preserve emergency denies", () => {
   const allowed = new Set(["toolPermission", "artifactReviewPolicy", "allowNonWorkspaceAccess", "enableTerminalSandbox", "permissions"]);
   for (const profile of ["portable", "template"]) {

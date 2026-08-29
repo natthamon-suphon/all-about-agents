@@ -360,6 +360,22 @@ test("Codex plugin hooks invoke the rendered runtime and require trust plus Node
   assert.ok(result.registrations.some((entry) => entry.kind === "runtime-prerequisite" && entry.onMissing === "unavailable"));
 });
 
+test("Codex emergency guard uses documented CLI command forms and canonical policy", async () => {
+  const result = resultFor();
+  const files = fileMap(result);
+  const hooks = JSON.parse(files.get("hooks/hooks.json")).hooks;
+  const guard = hooks.PreToolUse[0].hooks[0];
+  assert.ok(guard.command.includes('"$PLUGIN_ROOT/hooks/emergency-guard.mjs" --surface codex'));
+  assert.ok(guard.command.includes('--policy-path "$PLUGIN_ROOT/hooks/emergency-guard.json"'));
+  assert.ok(guard.commandWindows.includes('"%PLUGIN_ROOT%/hooks/emergency-guard.mjs" --surface codex'));
+  assert.equal(files.get("hooks/emergency-guard.mjs"), await readFile(resolve(process.cwd(), "core/hooks/emergency-guard.mjs"), "utf8"));
+  assert.equal(files.get("hooks/emergency-policy.mjs"), await readFile(resolve(process.cwd(), "installers/lib/emergency-policy.mjs"), "utf8"));
+  assert.deepEqual(JSON.parse(files.get("hooks/emergency-guard.json")).orderedRuleIds, [
+    "filesystem-root-erasure", "raw-disk-destruction", "git-force-push", "git-history-rewrite",
+    "git-discard-uncommitted", "secret-credential-access", "secret-output-or-transmission", "guardrail-bypass"
+  ]);
+});
+
 test("Codex adapter satisfies the shared renderSurface action contract", () => {
   const result = adapter.renderSurface({
     core,

@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { join, posix } from "node:path";
 
 import claudeBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
+import claudeEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
 
 import { renderJson } from "../shared/render-utils.mjs";
 import {
@@ -17,6 +18,9 @@ const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
 const CONTROL_OR_ANSI = /[\u0000-\u001f\u007f]|\u001b\[[0-?]*[ -/]*[@-~]/u;
 const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
 const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.json", import.meta.url), "utf8");
+const EMERGENCY_GUARD_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.mjs", import.meta.url), "utf8");
+const EMERGENCY_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.json", import.meta.url), "utf8");
+const EMERGENCY_POLICY_SOURCE = readFileSync(new URL("../../installers/lib/emergency-policy.mjs", import.meta.url), "utf8");
 
 /** Static installer preflight for the Node.js entrypoint used by every hook. */
 export const CLAUDE_PREREQUISITES = Object.freeze({
@@ -129,12 +133,6 @@ const DEFAULT_ROLES = Object.freeze({
 });
 
 const HOOK_SOURCES = Object.freeze({
-  "emergency-guard.mjs": `#!/usr/bin/env node
-// Native permissions.deny remains authoritative; this hook only parses input and fails open.
-const chunks = [];
-for await (const chunk of process.stdin) chunks.push(chunk);
-try { JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"); } catch { /* fail open */ }
-`,
   "activity-audit.mjs": `#!/usr/bin/env node
 // Activity audit is optional and intentionally emits no arguments or results.
 const chunks = [];
@@ -294,9 +292,21 @@ function hookConfig() {
     ],
     timeout: 10
   };
+  const emergencyCommand = {
+    type: "command",
+    command: "node",
+    args: [
+      `${"${CLAUDE_PLUGIN_ROOT}"}/hooks/emergency-guard.mjs`,
+      "--surface",
+      "claude",
+      "--policy-path",
+      `${"${CLAUDE_PLUGIN_ROOT}"}/hooks/emergency-guard.json`
+    ],
+    timeout: 10
+  };
   return { hooks: {
     [claudeBootstrapTemplate.event]: [{ matcher: claudeBootstrapTemplate.nativeMatcher, hooks: [bootstrapCommand] }],
-    PreToolUse: [{ matcher: ".*", hooks: [command("emergency-guard.mjs")] }],
+    PreToolUse: [{ matcher: claudeEmergencyTemplate.nativeMatcher, hooks: [emergencyCommand] }],
     PostToolUse: [{ matcher: ".*", hooks: [command("activity-audit.mjs")] }],
     PreCompact: [{ matcher: ".*", hooks: [command("pre-compact.mjs")] }]
   } };
@@ -377,6 +387,9 @@ export function renderClaude(input = {}) {
   addFile(files, "hooks/hooks.json", renderJson(hookConfig()));
   addFile(files, "hooks/bootstrap.json", BOOTSTRAP_CONFIG_SOURCE);
   addFile(files, `hooks/${claudeBootstrapTemplate.module}.mjs`, BOOTSTRAP_SOURCE, 0o755);
+  addFile(files, "hooks/emergency-guard.json", EMERGENCY_CONFIG_SOURCE);
+  addFile(files, "hooks/emergency-guard.mjs", EMERGENCY_GUARD_SOURCE, 0o755);
+  addFile(files, "hooks/emergency-policy.mjs", EMERGENCY_POLICY_SOURCE, 0o755);
   for (const [fileName, source] of Object.entries(HOOK_SOURCES)) addFile(files, `hooks/${fileName}`, source, 0o755);
   addFile(files, "statusline/statusline.mjs", STATUSLINE_SOURCE_TEXT, 0o755);
 

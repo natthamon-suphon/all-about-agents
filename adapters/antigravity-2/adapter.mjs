@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 
 import antigravityBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
+import antigravityEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { classifyEmergencyAction } from "../../installers/lib/emergency-policy.mjs";
 
 const SURFACE = "antigravity-2";
 const DESKTOP_SURFACE = "antigravity-2-desktop";
@@ -296,6 +298,30 @@ function hooksDocument() {
   };
 }
 
+/** Normalize only the documented Antigravity Desktop PreToolUse fields. */
+export function normalizeAntigravityEmergencyRequest(request) {
+  if (!request || typeof request !== "object" || Array.isArray(request) || !request.toolCall || typeof request.toolCall !== "object" || Array.isArray(request.toolCall)) return null;
+  if (typeof request.toolCall.name !== "string" || !request.toolCall.args || typeof request.toolCall.args !== "object" || Array.isArray(request.toolCall.args)) return null;
+  const name = request.toolCall.name.toLowerCase();
+  const args = request.toolCall.args;
+  return {
+    capability: name.includes("run_command") ? "command-execution" : name.includes("write") || name.includes("edit") ? "filesystem-write" : "filesystem-read",
+    command: typeof args.CommandLine === "string" ? args.CommandLine : "",
+    paths: typeof args.filePath === "string" ? [args.filePath] : [],
+    gitOperation: typeof args.CommandLine === "string" ? args.CommandLine : null,
+    secretOperation: name.includes("read") ? { operation: "read" } : null
+  };
+}
+
+export function mapAntigravityEmergencyDecision(classification) {
+  return classification?.decision === "deny" ? { decision: "deny", reason: classification.reason } : {};
+}
+
+export function classifyAntigravityEmergencyRequest(request) {
+  const normalized = normalizeAntigravityEmergencyRequest(request);
+  return normalized ? classifyEmergencyAction(normalized) : { decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." };
+}
+
 /** Render the documented Antigravity 2.0 Desktop package without native settings writes. */
 export function renderAntigravity(input = {}) {
   coreShape(input.core);
@@ -309,6 +335,7 @@ export function renderAntigravity(input = {}) {
 
   addFile(files, `${PLUGIN_ROOT}/plugin.json`, renderJson({ name: "all-about-agents" }));
   addFile(files, `${PLUGIN_ROOT}/hooks.json`, renderJson(hooksDocument()));
+  addFile(files, `${PLUGIN_ROOT}/hooks/emergency-guard.json`, renderJson(antigravityEmergencyTemplate));
   addFile(files, `${PLUGIN_ROOT}/rules/adapter-capability-guidance.md`, capabilityGuidance());
   addFile(files, `${PLUGIN_ROOT}/rules/model-selection.md`, modelRule());
   addFile(files, `${PLUGIN_ROOT}/rules/permission-safety.md`, permissionRule());
@@ -339,6 +366,12 @@ export function renderAntigravity(input = {}) {
     severity: "warning",
     message: "Desktop Gemini 3.7 Flash High is not a documented selector value; use the manual Gemini 3.7 Flash Medium step.",
     sourcePath: "research-antigravity-2.md"
+  });
+  diagnostics.push({
+    code: "desktop-emergency-guard-probe-required",
+    severity: "warning",
+    message: "Desktop emergency guard output is documented but executable package-root resolution remains unverified; automatic hook execution is disabled.",
+    sourcePath: "research-t014-pretool-hooks.md"
   });
   for (const actionId of ACTION_IDS) diagnostics.push({
     code: "desktop-action-unknown",
@@ -396,6 +429,16 @@ export function renderAntigravity(input = {}) {
           reason: antigravityBootstrapTemplate.probe.reason,
           manualSequence: [...antigravityBootstrapTemplate.probe.manualSequence]
         }
+      },
+      {
+        kind: "emergency-guard",
+        surface: DESKTOP_SURFACE,
+        relativePath: `${PLUGIN_ROOT}/hooks/emergency-guard.json`,
+        enabled: false,
+        automatic: false,
+        automaticHookExecution: false,
+        probeRequired: antigravityEmergencyTemplate.probeRequired,
+        status: antigravityEmergencyTemplate.probe.status
       },
       {
         kind: "runtime-prerequisite",

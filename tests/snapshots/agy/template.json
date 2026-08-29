@@ -1,4 +1,5 @@
 {
+  "fileCount": 54,
   "paths": [
     "README.md",
     "agents/architect/agent.md",
@@ -8,6 +9,7 @@
     "agents/reviewer/agent.md",
     "agents/security-reviewer/agent.md",
     "agents/verifier/agent.md",
+    "emergency-guard.json",
     "hooks.json",
     "plugin.json",
     "rules/adapter-capability-guidance.md",
@@ -54,7 +56,6 @@
     "skills/writing-skills/SKILL.md",
     "skills/zero-downtime-migrations/SKILL.md"
   ],
-  "fileCount": 53,
   "ownership": [
     {
       "relativePath": "README.md",
@@ -87,6 +88,10 @@
     {
       "relativePath": "agents/verifier/agent.md",
       "sha256": "145fba95a78f4625d5efa22765ae3f294b07c08ed3c44fee73ebba28ac236cb2"
+    },
+    {
+      "relativePath": "emergency-guard.json",
+      "sha256": "c10172f609495f8b3546b54cdcd9b1bcc496d55d31b5ec76ee66dbe7789c952a"
     },
     {
       "relativePath": "hooks.json",
@@ -367,6 +372,16 @@
       }
     },
     {
+      "kind": "emergency-guard",
+      "surface": "agy",
+      "relativePath": "emergency-guard.json",
+      "enabled": false,
+      "automatic": false,
+      "automaticHookExecution": false,
+      "probeRequired": true,
+      "status": "not run"
+    },
+    {
       "kind": "runtime-prerequisite",
       "executable": "node",
       "check": [
@@ -421,6 +436,12 @@
       "severity": "warning",
       "message": "The installed agy CLI does not have a verified PreInvocation payload contract for automatic bootstrap. Status: not run. Manual sequence: Record the installed agy version and platform. Review the installed agy hook documentation for the complete lifecycle payload schema. On a disposable package, perform an explicit probe and record the observed first-invocation fields before proposing an executable handler.",
       "sourcePath": "research-t013-antigravity-agy-hooks.md"
+    },
+    {
+      "code": "agy-emergency-guard-probe-required",
+      "severity": "warning",
+      "message": "agy emergency guard output is documented but executable package-root resolution remains unverified; automatic hook execution is disabled.",
+      "sourcePath": "research-t014-pretool-hooks.md"
     },
     {
       "code": "agy-layout-conflict",
@@ -792,6 +813,7 @@
     "agents/reviewer/agent.md": "dd77861e28449aaa5e0da997b587a3bdc945a16441410789d65559a06737fac8",
     "agents/security-reviewer/agent.md": "73cb4bc29dd8c2a9d9a1182178cf10ad4484ab89d1358a3f4ab40d2bbcbbd521",
     "agents/verifier/agent.md": "145fba95a78f4625d5efa22765ae3f294b07c08ed3c44fee73ebba28ac236cb2",
+    "emergency-guard.json": "c10172f609495f8b3546b54cdcd9b1bcc496d55d31b5ec76ee66dbe7789c952a",
     "hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
     "plugin.json": "756ec24b1703be2d650e94914f6f7668ba98a1dd746cda65a42e8025e2ba6ead",
     "rules/adapter-capability-guidance.md": "c3404bc788386ad577338bbf5ecf52185dd164edc4b41d02deb5f050ba7d088a",
@@ -839,3 +861,4 @@
     "skills/zero-downtime-migrations/SKILL.md": "61aff185e0e1718553a051a1d1f8c57431ddc8e2112b26af3539b11a4be4122d"
   }
 }
+
