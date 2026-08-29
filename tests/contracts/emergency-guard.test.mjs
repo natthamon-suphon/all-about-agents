@@ -137,16 +137,17 @@ test("all emergency fixtures agree across canonical and four documented adapter 
       tool_input: { ...(command ? { command } : {}), ...(path ? { file_path: path } : {}) }
     };
     const claudeNormalized = normalizeNativeRequest("claude", claudeRequest);
+    const codexNormalized = normalizeNativeRequest("codex", claudeRequest);
     const antigravityRequest = {
       toolCall: { name: command ? "run_command" : "read_file", args: { ...(command ? { CommandLine: command } : {}), ...(path ? { filePath: path } : {}) } },
       stepIdx: 1
     };
     const antigravityNormalized = normalizeAntigravityEmergencyRequest(antigravityRequest);
     const agyNormalized = normalizeAgyEmergencyRequest(antigravityRequest);
-    assert.ok(claudeNormalized && antigravityNormalized && agyNormalized, entry.id);
+    assert.ok(claudeNormalized && codexNormalized && antigravityNormalized && agyNormalized, entry.id);
     const canonical = classifyEmergencyAction({ ...action, policy: emergencyPolicy });
     assert.deepEqual({ decision: canonical.decision, ruleId: canonical.ruleId }, entry.expected, entry.id);
-    const normalizedInputs = [claudeNormalized, antigravityNormalized, agyNormalized];
+    const normalizedInputs = [claudeNormalized, codexNormalized, antigravityNormalized, agyNormalized];
     for (const normalized of normalizedInputs) {
       const classification = classifyEmergencyAction({
         ...normalized,

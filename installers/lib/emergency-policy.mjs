@@ -43,6 +43,12 @@ function commandTokens(value) {
   const tokens = [];
   let current = "";
   let quote = "";
+  const flush = () => {
+    if (current.length > 0) {
+      tokens.push(current);
+      current = "";
+    }
+  };
   for (let index = 0; index < source.length; index += 1) {
     const character = source[index];
     if (quote) {
@@ -55,15 +61,20 @@ function commandTokens(value) {
       continue;
     }
     if (/\s/u.test(character)) {
-      if (current.length > 0) {
-        tokens.push(current);
-        current = "";
-      }
+      flush();
+      continue;
+    }
+    // Split shell operators even when the caller omitted surrounding spaces.
+    // This is lexical inspection only; no shell is ever invoked here.
+    if (character === ";" || character === "&" || character === "|" || character === "<" || character === ">") {
+      flush();
+      const next = source[index + 1];
+      if ((character === "&" && next === "&") || (character === "|" && next === "|") || (character === ">" && next === ">") || (character === "<" && next === "<")) index += 1;
       continue;
     }
     current += character;
   }
-  if (current.length > 0) tokens.push(current);
+  flush();
   return tokens;
 }
 
@@ -100,8 +111,20 @@ function isPathLikeToken(value) {
       || /^(?:\.env(?:\.example)?|\.ssh|\.aws|credentials?(?:\.json)?|id_(?:rsa|dsa|ecdsa|ed25519)|private[_-]?key)$/iu.test(lower));
 }
 
+function optionPathValue(value) {
+  const candidate = text(value).trim();
+  const match = /^--?[A-Za-z][A-Za-z0-9_-]*(?:=|:)(.+)$/u.exec(candidate);
+  return match && isPathLikeToken(match[1]) ? match[1] : "";
+}
+
 export function extractCandidatePaths(command) {
-  return [...new Set(commandTokens(command).filter(isPathLikeToken))];
+  const candidates = [];
+  for (const token of commandTokens(command)) {
+    if (isPathLikeToken(token)) candidates.push(token);
+    const optionValue = optionPathValue(token);
+    if (optionValue) candidates.push(optionValue);
+  }
+  return [...new Set(candidates)];
 }
 
 function valuesFromPaths(paths) {
@@ -117,14 +140,37 @@ function valuesFromPaths(paths) {
 function operationText(value) {
   if (typeof value === "string") return normalized(value);
   if (!isPlainObject(value)) return "";
+  const resourceValues = [];
+  for (const resource of [value.resource, ...(Array.isArray(value.resources) ? value.resources : [])]) {
+    if (typeof resource === "string") resourceValues.push(resource);
+    else if (isPlainObject(resource)) {
+      for (const key of ["path", "resolvedPath", "filePath", "uri", "target"]) {
+        if (typeof resource[key] === "string") resourceValues.push(resource[key]);
+      }
+    }
+  }
   return normalized([
     value.operation,
     value.action,
     value.kind,
     value.command,
     value.target,
-    value.resource
+    ...resourceValues
   ].filter((entry) => typeof entry === "string").join(" "));
+}
+
+function operationPaths(value) {
+  if (!isPlainObject(value)) return [];
+  const paths = [];
+  for (const resource of [value.resource, ...(Array.isArray(value.resources) ? value.resources : [])]) {
+    if (typeof resource === "string") paths.push(resource);
+    else if (isPlainObject(resource)) {
+      for (const key of ["path", "resolvedPath", "filePath", "uri", "target"]) {
+        if (typeof resource[key] === "string") paths.push(resource[key]);
+      }
+    }
+  }
+  return paths;
 }
 
 function cleanPath(value) {
@@ -137,11 +183,21 @@ function pathKey(value) {
   return clean;
 }
 
+function isUnsafeNativeNamespace(value) {
+  const raw = text(value).trim().replace(/^['"]|['"]$/gu, "");
+  if (!raw) return false;
+  const native = raw.replaceAll("/", "\\").toLowerCase();
+  if (["\\??\\", "\\\\??\\", "\\?\\", "\\\\?\\", "\\.\\", "\\\\.\\", "\\device\\", "\\\\device\\"].some((prefix) => native.startsWith(prefix))) return true;
+  const clean = cleanPath(raw).toLowerCase();
+  return ["/??/", "//??/", "/?./", "//?./", "/?/", "//?/", "/./", "//./", "/device/", "//device/"].some((prefix) => clean.startsWith(prefix));
+}
+
 function isAbsolute(value) {
   return ABSOLUTE_PATH.test(cleanPath(value));
 }
 
 function isContained(root, target) {
+  if (isUnsafeNativeNamespace(root) || isUnsafeNativeNamespace(target)) return false;
   const rootRaw = pathKey(root);
   const targetRaw = pathKey(target);
   const rootKey = rootRaw === "/" || /^[a-z]:\/$/u.test(rootRaw) ? rootRaw : rootRaw.replace(/\/+$/u, "");
@@ -154,6 +210,7 @@ function isContained(root, target) {
 }
 
 function isDesignatedNarrowRoot(rootValue, root) {
+  if (isUnsafeNativeNamespace(root)) return false;
   const designation = normalized(rootValue.designation);
   const kind = normalized(rootValue.kind || rootValue.scope);
   const designated = rootValue.disposable === true || designation === "disposable" || kind === "disposable";
@@ -176,6 +233,7 @@ function verifiedDisposableTargets(rootValue, pathEntries) {
   const attestation = rootValue.allTargetsContained === true
     || rootValue.containsAll === true
     || rootValue.targetsContained === true;
+  if (isUnsafeNativeNamespace(root) || pathEntries.some((entry) => isUnsafeNativeNamespace(entry.path))) return false;
   if (!resolved || !attestation || !isAbsolute(root) || pathEntries.length === 0 || !isDesignatedNarrowRoot(rootValue, root)) return false;
   if (/(?:^|\/)\.\.?(?:\/|$)/u.test(cleanPath(root))) return false;
   const declaredTargets = Array.isArray(rootValue.targets) ? rootValue.targets.map((entry) => cleanPath(typeof entry === "string" ? entry : entry?.resolvedPath || entry?.path)).filter(Boolean) : null;
@@ -207,7 +265,7 @@ function recursiveErase(command, capability) {
 
 function hasRawDiskDestruction(command, capability, operation) {
   const all = `${normalized(command)} ${normalized(capability)} ${operationText(operation)}`;
-  return /(?:\b(?:format|fdisk|diskpart|mkfs|dd|wipefs|clear[-_ ]disk|remove[-_ ]partition)\b|(?:raw|physical)[-_ ]?(?:disk|device)|(?:partition|volume)[-_ ]?(?:delete|destroy|format)|\\\\\.\\[a-z]:)/u.test(all)
+  return /(?:\b(?:format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|clear[-_ ]disk|remove[-_ ]partition)\b|\bdiskutil\s+(?:erase(?:disk|volume)|partitiondisk)\b|(?:raw|physical)[-_ ]?(?:disk|device)|(?:partition|volume)[-_ ]?(?:delete|destroy|format)|\\\\\.\\[a-z]:|>{1,2}\s*(?:\/dev\/[^\s]+|[\\/]{1,2}(?:\?\?|[.?]|device)[\\/][^\s]+))/u.test(all)
     && !/\b(?:format|formatting)\s+(?:text|json|date|number)/u.test(all);
 }
 
@@ -215,7 +273,7 @@ function hasForcePush(command, operation) {
   const all = `${normalized(command)} ${operationText(operation)}`;
   const invocation = gitInvocation(command);
   if (invocation?.subcommand === "push") {
-    return invocation.args.some((argument) => /^--force(?:-with-lease)?$/u.test(argument) || /^-f+$/u.test(argument) || /^\+[^:]+:[^:]+$/u.test(argument));
+    return invocation.args.some((argument) => /^--force(?:-with-lease)?(?:=.*)?$/u.test(argument) || /^-f+$/u.test(argument) || /^\+[^:]+:[^:]+$/u.test(argument));
   }
   return /\bforce[-_ ]?push\b/u.test(all);
 }
@@ -232,8 +290,9 @@ function hasHistoryRewrite(command, operation) {
 function hasDiscard(command, operation) {
   const all = `${normalized(command)} ${operationText(operation)}`;
   const invocation = gitInvocation(command);
-  const discard = invocation?.subcommand === "clean" && invocation.args.some((argument) => /^-[a-z]*f[a-z]*$/u.test(argument))
-    || ["checkout", "restore"].includes(invocation?.subcommand) && invocation.args.includes("--")
+  const forceFlag = (argument) => /^-[a-z]*f[a-z]*$/u.test(argument) || /^--force(?:=.*)?$/u.test(argument);
+  const discard = invocation?.subcommand === "clean" && invocation.args.some(forceFlag)
+    || ["checkout", "restore"].includes(invocation?.subcommand) && invocation.args.some((argument) => argument === "--" || forceFlag(argument) || argument === "--discard-changes")
     || invocation?.subcommand === "reset" && invocation.args.includes("--hard")
     || invocation?.subcommand === "stash" && ["drop", "clear"].includes(invocation.args[0]);
   return discard
@@ -267,7 +326,7 @@ function hasSecretOutput(command, capability, operation, pathEntries) {
 
 function hasGuardrailBypass(command, capability, operation) {
   const all = `${normalized(command)} ${normalized(capability)} ${operationText(operation)}`;
-  return /(?:dangerously-skip-permissions|dangerously-bypass|bypass[-_ ]?permissions|full[-_ ]?access|disable[-_ ]?(?:safety|guard|hook|deny)|skip[-_ ]?(?:safety|guard|hook|verification)|hooks?\s+(?:off|disable)|permissions?\s+(?:off|disable)|--no-verify\b|(?:approval[-_ ]policy|sandbox)\s+(?:never|danger-full-access)|--no-sandbox\b)/u.test(all);
+  return /(?:dangerously-skip-permissions|dangerously-bypass|bypass[-_ ]?permissions|full[-_ ]?access|disable[-_ ]?(?:safety|guard|hook|deny)|skip[-_ ]?(?:safety|guard|hook|verification)|hooks?\s+(?:off|disable)|permissions?\s+(?:off|disable)|--no-verify\b|(?:approval[-_ ]policy|sandbox)\s*(?:=|\s+)\s*(?:never|danger-full-access)\b|--no-sandbox\b)/u.test(all);
 }
 
 function ruleIds(policy) {
@@ -287,7 +346,7 @@ function decision(reasonId) {
  */
 export function classifyEmergencyAction(input = {}) {
   const { capability = "", command = "", paths = [], gitOperation = null, secretOperation = null, verifiedDisposableRoot = null, policy = null } = isPlainObject(input) ? input : {};
-  const pathEntries = [...valuesFromPaths(paths), ...valuesFromPaths(extractCandidatePaths(command))]
+  const pathEntries = [...valuesFromPaths(paths), ...valuesFromPaths(extractCandidatePaths(command)), ...valuesFromPaths(operationPaths(secretOperation))]
     .filter((entry, index, entries) => entries.findIndex((candidate) => cleanPath(candidate.path) === cleanPath(entry.path)) === index);
   const checks = {
     "filesystem-root-erasure": () => {
