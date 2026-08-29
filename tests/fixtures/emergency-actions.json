@@ -111,5 +111,64 @@
     ,{ "id": "agy-dynamic-bypass-value", "action": { "command": "agy --bypass-permissions $MODE" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
     ,{ "id": "agy-dynamic-bypass-concat", "action": { "command": "agy --bypass${PERMISSIONS}" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
     ,{ "id": "powershell-dynamic-recurse-value", "action": { "command": "Remove-Item -Recurse:$flag C:/tmp/project", "paths": ["C:/tmp/project"] }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "shell-payload-filesystem-erasure", "action": { "command": "sh -c 'rm -rf /'" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "shell-payload-force-push", "action": { "command": "sh -c 'git push origin main --force'" }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "shell-payload-discard", "action": { "command": "sh -c 'git restore .'" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "shell-payload-environment-output", "action": { "command": "sh -c 'env'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "bash-payload-environment-output", "action": { "command": "bash -c 'env'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "powershell-expression-sandbox-value", "action": { "command": "codex --sandbox (Get-Variable POLICY).Value" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "powershell-expression-approval-value", "action": { "command": "codex --approval-policy=(Get-Variable POLICY).Value" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "agy-dynamic-bypass-dash-variable", "action": { "command": "agy --bypass-$P" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "agy-dynamic-bypass-expression", "action": { "command": "agy --bypass-(Get-Variable POLICY).Value" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "format-text-in-echo-is-benign", "action": { "command": "echo \"format text\"" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "format-text-in-git-message-is-benign", "action": { "command": "git commit -m \"format text\"" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "format-script-name-is-benign", "action": { "command": "npm run format" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "standalone-disk-format-remains-denied", "action": { "command": "format C:" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "shell-payload-sudo-filesystem-erasure", "action": { "command": "sudo sh -c 'rm -rf /'" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "shell-payload-cmd-force-push", "action": { "command": "cmd /c \"git push origin main --force\"" }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "shell-payload-pwsh-discard", "action": { "command": "pwsh -Command \"git restore .\"" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "shell-payload-dynamic", "action": { "command": "sh -c \"$PAYLOAD\"" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "shell-payload-cmd-dynamic", "action": { "command": "cmd /c %PAYLOAD%" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "shell-payload-pwsh-expression-dynamic", "action": { "command": "pwsh -Command (Get-Variable PAYLOAD).Value" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "discard-checkout-readme", "action": { "command": "git checkout README" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "discard-checkout-main-readme", "action": { "command": "git checkout main README" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "discard-checkout-pathspec-file", "action": { "command": "git checkout --pathspec-from-file=.paths" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "discard-checkout-index-force", "action": { "command": "git checkout-index --force README" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "discard-read-tree-update", "action": { "command": "git read-tree -m -u HEAD" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "structured-git-push-force", "action": { "command": "git push origin main --force", "gitOperation": { "push": { "args": ["--force"] } } }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "structured-git-rebase", "action": { "command": "git rebase main", "gitOperation": { "rebase": { "args": ["main"] } } }, "expected": { "decision": "deny", "ruleId": "git-history-rewrite" } }
+    ,{ "id": "dynamic-force-flag", "action": { "command": "git push origin main --$FORCE" }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "escaped-force-flag-backslash", "action": { "command": "git push origin main \\--force" }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "escaped-force-flag-caret", "action": { "command": "git push origin main ^--force" }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "escaped-force-flag-backtick", "action": { "command": "git push origin main --for`ce" }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "dynamic-git-command", "action": { "command": "git $SUBCOMMAND origin main --force" }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "escaped-git-command", "action": { "command": "g\\it push origin main --force" }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "raw-disk-dotnet-write-byte", "action": { "command": "[IO.File]::WriteByte('/dev/sda', 1)" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-disk-dotnet-open", "action": { "command": "[IO.File]::Open('/dev/sda','Create')" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-disk-dotnet-copy", "action": { "command": "[IO.File]::Copy('/tmp/input','/dev/sda')" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-disk-dotnet-create", "action": { "command": "[IO.File]::Create('/dev/sda')" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-disk-dotnet-append", "action": { "command": "[IO.File]::AppendAllText('/dev/sda','x')" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-disk-move-item", "action": { "command": "Move-Item -Path C:/tmp/input -Destination /dev/sda" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-disk-dynamic-device", "action": { "command": "dd if=/dev/$DISK of=/dev/sda" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "dynamic-recursive-flag", "action": { "command": "rm $FLAGS /tmp/project" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "dynamic-recursive-executable", "action": { "command": "$COMMAND -rf /" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "dynamic-recursive-exclamation", "action": { "command": "rm -!FLAGS! /tmp/project" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "dynamic-disposable-target-exclamation", "action": { "command": "rm -rf /tmp/aaa-disposable/!TARGET!", "paths": ["/tmp/aaa-disposable/!TARGET!"], "verifiedDisposableRoot": { "resolvedPath": "/tmp/aaa-disposable", "resolved": true, "allTargetsContained": true, "designation": "disposable", "targets": ["/tmp/aaa-disposable/!TARGET!"] } }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "dynamic-disposable-target-glob", "action": { "command": "rm -rf /tmp/aaa-disposable/*", "paths": ["/tmp/aaa-disposable/*"], "verifiedDisposableRoot": { "resolvedPath": "/tmp/aaa-disposable", "resolved": true, "allTargetsContained": true, "designation": "disposable", "targets": ["/tmp/aaa-disposable/*"] } }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "guardrail-dynamic-exclamation", "action": { "command": "codex --sandbox !POLICY!" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "guardrail-dynamic-caret", "action": { "command": "codex --sandbox ^never" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "guardrail-dynamic-backslash", "action": { "command": "codex --sandbox \\never" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "agy-dynamic-bypass-caret", "action": { "command": "agy --bypass-^$P" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "secret-sudo-printenv", "action": { "command": "sudo printenv" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "secret-command-printenv", "action": { "command": "command printenv" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "secret-powershell-env-provider", "action": { "command": "Get-Content Env:API_TOKEN" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "secret-cmd-delayed-expansion", "action": { "command": "cmd /v:on /c echo !API_TOKEN!" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "secret-export-all", "action": { "command": "export -p" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "secret-node-process-env", "action": { "command": "node -e \"console.log(process.env.API_TOKEN)\"" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "secret-dotnet-environment", "action": { "command": "[Environment]::GetEnvironmentVariable('API_TOKEN')" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "secret-dynamic-get-content", "action": { "command": "Get-Content $PATH" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "structured-secret-target", "action": { "command": "cat /tmp/.env", "secretOperation": { "operation": "read", "target": "/tmp/.env" } }, "expected": { "decision": "deny", "ruleId": "secret-credential-access" } }
+    ,{ "id": "structured-secret-resource-url", "action": { "command": "cat /tmp/.env", "secretOperation": { "operation": "read", "resource": { "url": "/tmp/.env" } } }, "expected": { "decision": "deny", "ruleId": "secret-credential-access" } }
+    ,{ "id": "structured-secret-resource-name", "action": { "command": "print API_TOKEN", "secretOperation": { "operation": "print", "resource": { "name": "API_TOKEN" } } }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
   ]
 }

@@ -169,13 +169,76 @@ function commandSegments(value) {
   return segments;
 }
 
+const SHELL_INTERPRETERS = new Set(["sh", "bash", "dash", "zsh", "ksh", "fish", "cmd", "cmd.exe", "powershell", "powershell.exe", "pwsh", "pwsh.exe"]);
+const SHELL_COMMAND_OPTIONS = new Set(["-c", "--command", "-command", "/c", "/k", "/command"]);
+
+function commandVariants(value) {
+  const variants = [];
+  const seen = new Set();
+  const visit = (source, depth) => {
+    if (depth > 8) return;
+    for (const segment of commandSegments(source)) {
+      const key = segment;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      variants.push(segment);
+      const tokens = commandTokens(segment);
+      for (let index = 0; index < tokens.length; index += 1) {
+        if (!SHELL_INTERPRETERS.has(tokenName(tokens[index]))) continue;
+        for (let optionIndex = index + 1; optionIndex < tokens.length; optionIndex += 1) {
+          const option = normalized(tokens[optionIndex]);
+          if (!SHELL_COMMAND_OPTIONS.has(option)) continue;
+          const payload = text(tokens[optionIndex + 1]).trim();
+          if (payload) visit(payload, depth + 1);
+          break;
+        }
+      }
+    }
+  };
+  visit(value, 0);
+  return variants;
+}
+
+function hasDynamicShellPayload(value) {
+  const seen = new Set();
+  const visit = (source, depth) => {
+    if (depth > 8) return false;
+    for (const segment of commandSegments(source)) {
+      const key = `${depth}:${segment}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const tokens = commandTokens(segment);
+      for (let index = 0; index < tokens.length; index += 1) {
+        if (!SHELL_INTERPRETERS.has(tokenName(tokens[index]))) continue;
+        let foundOption = false;
+        for (let optionIndex = index + 1; optionIndex < tokens.length; optionIndex += 1) {
+          const option = normalized(tokens[optionIndex]);
+          if (!SHELL_COMMAND_OPTIONS.has(option)) continue;
+          foundOption = true;
+          const payload = text(tokens[optionIndex + 1]).trim();
+          if (!payload || hasDynamicPathSyntax(payload)) return true;
+          if (visit(payload, depth + 1)) return true;
+          break;
+        }
+        if (!foundOption) continue;
+      }
+    }
+    return false;
+  };
+  return visit(value, 0);
+}
+
 function tokenName(value) {
   return normalized(value).split(/[\\/]/u).at(-1) || "";
 }
 
 function gitInvocation(command) {
   const tokens = commandTokens(command);
-  const executableIndex = tokens.findIndex((token) => tokenName(token) === "git" || tokenName(token) === "git.exe");
+  const gitName = (token) => {
+    const raw = normalized(token).replace(/[\\^`]/gu, "");
+    return /(?:^|[:/])git(?:[.]exe)?$/u.test(raw) ? "git" : tokenName(token);
+  };
+  const executableIndex = tokens.findIndex((token) => gitName(token) === "git" || gitName(token) === "git.exe");
   if (executableIndex < 0) return null;
   let index = executableIndex + 1;
   while (index < tokens.length) {
@@ -191,6 +254,21 @@ function gitInvocation(command) {
   }
   const subcommand = tokenName(tokens[index] || "");
   return subcommand ? { subcommand, args: tokens.slice(index + 1).map(normalized) } : null;
+}
+
+function structuredGitRecords(value) {
+  const records = [];
+  const visit = (node, key, depth) => {
+    if (!isPlainObject(node) || depth > 4) return;
+    const command = text(node.command) || text(node.operation) || text(node.subcommand) || key;
+    const args = Array.isArray(node.args) ? node.args.filter((entry) => typeof entry === "string").map(normalized) : [];
+    records.push({ label: normalized(`${key} ${command}`), command, args: node.force === true ? [...args, "--force"] : args });
+    for (const [childKey, child] of Object.entries(node)) {
+      if (isPlainObject(child)) visit(child, childKey, depth + 1);
+    }
+  };
+  visit(value, "", 0);
+  return records;
 }
 
 function pathTokenValue(value) {
@@ -239,7 +317,7 @@ function operationText(value) {
   for (const resource of [value.resource, ...(Array.isArray(value.resources) ? value.resources : [])]) {
     if (typeof resource === "string") resourceValues.push(resource);
     else if (isPlainObject(resource)) {
-      for (const key of ["path", "resolvedPath", "filePath", "uri", "target"]) {
+      for (const key of ["path", "resolvedPath", "filePath", "uri", "target", "url", "name"]) {
         if (typeof resource[key] === "string") resourceValues.push(resource[key]);
       }
     }
@@ -249,6 +327,7 @@ function operationText(value) {
     value.action,
     value.kind,
     value.command,
+    value.path,
     value.target,
     ...resourceValues
   ].filter((entry) => typeof entry === "string").join(" "));
@@ -260,11 +339,12 @@ function operationPaths(value) {
   for (const resource of [value.resource, ...(Array.isArray(value.resources) ? value.resources : [])]) {
     if (typeof resource === "string") paths.push(resource);
     else if (isPlainObject(resource)) {
-      for (const key of ["path", "resolvedPath", "filePath", "uri", "target"]) {
+      for (const key of ["path", "resolvedPath", "filePath", "uri", "target", "url", "name"]) {
         if (typeof resource[key] === "string") paths.push(resource[key]);
       }
     }
   }
+  for (const key of ["path", "target"]) if (typeof value[key] === "string") paths.push(value[key]);
   return paths;
 }
 
@@ -274,7 +354,7 @@ function cleanPath(value) {
 
 function hasDynamicPathSyntax(value) {
   const raw = text(value).trim();
-  return /(?:\$\{|\$\(|\$[A-Za-z_][A-Za-z0-9_]*|%[A-Za-z_][A-Za-z0-9_]*%|`)/u.test(raw);
+  return /(?:\$\{|\$\(|\(|\$[A-Za-z_][A-Za-z0-9_]*|%[A-Za-z_][A-Za-z0-9_]*%|![A-Za-z_][A-Za-z0-9_]*!|[*{}^]|`)/u.test(raw);
 }
 
 function isPublicExampleArtifact(value) {
@@ -362,61 +442,109 @@ function isRecursiveFlag(value) {
 }
 
 function recursiveErase(command, capability) {
-  const tokens = commandTokens(command);
+  const variants = commandVariants(command);
   const commandText = normalized(command);
   const capabilityText = normalized(capability);
   const recursiveCommands = new Set(["rm", "rmdir", "rd", "del", "erase", "shred", "remove-item"]);
-  const recursiveIndex = tokens.findIndex((token) => recursiveCommands.has(tokenName(token)));
-  const findIndex = tokens.findIndex((token) => tokenName(token) === "find");
-  const recursiveCommand = recursiveIndex >= 0 && tokens.slice(recursiveIndex + 1).some(isRecursiveFlag);
-  const findDelete = findIndex >= 0 && tokens.slice(findIndex + 1).some((token) => normalized(token) === "-delete");
+  const dynamicToken = (token) => /(?:\$|%[A-Za-z_]|![A-Za-z_]|`|[{}^])/u.test(text(token));
+  const recursiveCommand = variants.some((variant) => {
+    const tokens = commandTokens(variant);
+    const recursiveIndex = tokens.findIndex((token) => recursiveCommands.has(tokenName(token)));
+    if (recursiveIndex >= 0) {
+      const argumentsAfterCommand = tokens.slice(recursiveIndex + 1);
+      return argumentsAfterCommand.some(isRecursiveFlag) || argumentsAfterCommand.some(dynamicToken);
+    }
+    const dynamicExecutable = tokens.findIndex((token) => dynamicToken(token) && !token.startsWith("-"));
+    return dynamicExecutable >= 0 && tokens.slice(dynamicExecutable + 1).some((token) => isRecursiveFlag(token) || dynamicToken(token));
+  });
+  const findDelete = variants.some((variant) => {
+    const tokens = commandTokens(variant);
+    const findIndex = tokens.findIndex((token) => tokenName(token) === "find");
+    return findIndex >= 0 && tokens.slice(findIndex + 1).some((token) => normalized(token) === "-delete");
+  });
   return recursiveCommand || findDelete || /(?:recursive|erase|wipe|delete[-_ ]all|filesystem[-_ ]root)/u.test(capabilityText) || /(?:^|\s)filesystem[-_ ]root(?:\s|$)/u.test(commandText);
 }
 
 function hasRawDiskDestruction(command, capability, operation) {
   const rawDevicePath = /(?:\/dev\/[^\s"']+|[\\/]{1,2}(?:\?\?|[.?]|device)[\\/][^\s"']+)/u;
-  const destructiveUtility = /(?:\b(?:format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]partition|remove-volume|blkdiscard)\b|\bdiskutil\s+(?:erase(?:disk|volume)|partitiondisk|apfs\s+(?:deletevolume|resizecontainer))\b|\b(?:hdparm)\b[^;|&]*\bsecurity[-_ ]?erase\b|\b(?:mdadm)\b[^;|&]*\bzero[-_ ]?superblock\b|(?:raw|physical)[-_ ]?(?:disk|device)|(?:partition|volume)[-_ ]?(?:delete|destroy|format)|\\\\\.\\[a-z]:)/u;
+  const destructiveUtility = /(?:\b(?:fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]partition|remove-volume|blkdiscard)\b|\bdiskutil\s+(?:erase(?:disk|volume)|partitiondisk|apfs\s+(?:deletevolume|resizecontainer))\b|\b(?:hdparm)\b[^;|&]*\bsecurity[-_ ]?erase\b|\b(?:mdadm)\b[^;|&]*\bzero[-_ ]?superblock\b|(?:raw|physical)[-_ ]?(?:disk|device)|(?:partition|volume)[-_ ]?(?:delete|destroy|format)|\\\\\.\\[a-z]:)/u;
+  const formatCommand = (segment) => {
+    const tokens = commandTokens(segment);
+    const executable = tokenName(tokens[0] || "");
+    if (executable !== "format" && executable !== "format.exe" && executable !== "format.com") return false;
+    return !(tokens.length === 2 && ["text", "json", "date", "number"].includes(normalized(tokens[1])));
+  };
   const isUnsafeSegment = (segment) => {
     const value = normalized(segment).trim();
-    const rawDeviceOperation = rawDevicePath.test(value) && /(?:>{1,2}|\b(?:set-content|out-file|add-content|copy-item|format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]partition|writeall(?:text|bytes|lines)|filestream|file[.]open)\b)/u.test(value);
-    return rawDeviceOperation || destructiveUtility.test(value) && !/^format(?:ting)?\s+(?:text|json|date|number)$/u.test(value);
+    const rawDeviceOperation = rawDevicePath.test(value) && /(?:>{1,2}|\b(?:set-content|out-file|add-content|copy-item|move-item|format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]partition|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]copy|file[.]create|appendalltext)\b|\bfile\]::(?:open|copy|create|writebyte|appendalltext)\b)/u.test(value);
+    return formatCommand(value) || rawDeviceOperation || destructiveUtility.test(value);
   };
-  if (commandSegments(command).some(isUnsafeSegment)) return true;
+  if (commandVariants(command).some(isUnsafeSegment)) return true;
   return isUnsafeSegment(`${normalized(capability)} ${operationText(operation)}`);
 }
 
 function hasForcePush(command, operation) {
   const all = `${normalized(command)} ${operationText(operation)}`;
-  const invocation = gitInvocation(command);
-  if (invocation?.subcommand === "push") {
-    return invocation.args.some((argument) => /^--(?:force(?:-with-lease)?|mirror)(?:=.*)?$/u.test(argument) || /^-f+$/u.test(argument) || /^\+.+/u.test(argument));
-  }
+  const forceArgument = (argument) => {
+    const value = normalized(argument);
+    const unescaped = value.replace(/[\\^`]/gu, "");
+    return /^--(?:force(?:-with-lease)?|mirror)(?:=.*)?$/u.test(unescaped)
+      || /^-f+$/u.test(unescaped)
+      || /^\+.+/u.test(unescaped)
+      || /(?:force|mirror)/u.test(unescaped) && /[\$%{}!`^\\]/u.test(value)
+      || /^--[\$%{}!`^\\(]/u.test(value);
+  };
+  if (commandVariants(command).some((variant) => {
+    const invocation = gitInvocation(variant);
+    return invocation?.subcommand === "push" && invocation.args.some(forceArgument);
+  })) return true;
+  if (structuredGitRecords(operation).some((record) => /(?:^|\s)push(?:\s|$)/u.test(record.label) && record.args.some(forceArgument))) return true;
+  if (/(?:\bgit\b|\bgit[.$%!?`^\\])/u.test(all) && /\bpush\b/u.test(all) && /(?:force|mirror|\+\S+)/u.test(all) && /[\$%{}!`^\\]/u.test(all)) return true;
+  if (/\b(?:git|git[.$%!?`^\\])\s+[$%{}!`^\\(]/u.test(all) && /(?:force|mirror|\+\S+)/u.test(all)) return true;
   return /\bforce[-_ ]?push\b/u.test(all);
 }
 
 function hasHistoryRewrite(command, operation) {
   const all = `${normalized(command)} ${operationText(operation)}`;
-  const invocation = gitInvocation(command);
-  return ["rebase", "filter-branch", "filter-repo", "replace"].includes(invocation?.subcommand)
-    || invocation?.subcommand === "reflog" && invocation.args[0] === "expire"
-    || invocation?.subcommand === "commit" && invocation.args.includes("--amend")
+  const historyRewrite = commandVariants(command).some((variant) => {
+    const invocation = gitInvocation(variant);
+    return ["rebase", "filter-branch", "filter-repo", "replace"].includes(invocation?.subcommand)
+      || invocation?.subcommand === "reflog" && invocation.args[0] === "expire"
+      || invocation?.subcommand === "commit" && invocation.args.includes("--amend");
+  });
+  return historyRewrite || structuredGitRecords(operation).some((record) => /(?:^|\s)(?:rebase|filter-branch|filter-repo|replace)(?:\s|$)/u.test(record.label))
     || /\b(?:history[-_ ]rewrite|rewrite[-_ ]history|amend[-_ ]commit)\b/u.test(all);
 }
 
 function hasDiscard(command, operation) {
   const all = `${normalized(command)} ${operationText(operation)}`;
-  const invocation = gitInvocation(command);
   const forceFlag = (argument) => /^-[a-z]*f[a-z]*$/u.test(argument) || /^--force(?:=.*)?$/u.test(argument);
-  const pathArgument = (argument) => argument === "." || argument === ".." || /[\\/]/u.test(argument) || /\.[a-z0-9]{1,32}$/u.test(argument);
-  const discard = invocation?.subcommand === "clean" && invocation.args.some(forceFlag)
-    || invocation?.subcommand === "clean" && invocation.args.some((argument) => argument === "." || argument === "..")
-    || ["checkout", "restore"].includes(invocation?.subcommand) && invocation.args.some((argument) => argument === "--" || forceFlag(argument) || argument === "--discard-changes" || argument === "." || argument === "..")
-    || invocation?.subcommand === "restore" && (invocation.args.some((argument) => argument === "--staged" || argument === "--worktree" || argument.startsWith("--source")) || invocation.args.some((argument) => !argument.startsWith("-")))
-    || invocation?.subcommand === "checkout" && invocation.args.some((argument) => !argument.startsWith("-") && pathArgument(argument))
-    || invocation?.subcommand === "switch" && invocation.args.some((argument) => forceFlag(argument) || argument === "--discard-changes")
-    || invocation?.subcommand === "reset" && invocation.args.includes("--hard")
-    || invocation?.subcommand === "stash" && ["drop", "clear"].includes(invocation.args[0]);
-  return discard
+  const pathArgument = (argument) => argument === "." || argument === ".." || /[\\/]/u.test(argument) || /\.[a-z0-9]{1,32}$/u.test(argument)
+    || /^(?:readme|license|copying|changelog|dockerfile|makefile)$/iu.test(argument);
+  const discard = commandVariants(command).some((variant) => {
+    const invocation = gitInvocation(variant);
+    const nonOptions = invocation?.args.filter((argument) => !argument.startsWith("-")) || [];
+    return invocation?.subcommand === "clean" && invocation.args.some(forceFlag)
+      || invocation?.subcommand === "clean" && invocation.args.some((argument) => argument === "." || argument === "..")
+      || ["checkout", "restore"].includes(invocation?.subcommand) && invocation.args.some((argument) => argument === "--" || forceFlag(argument) || argument === "--discard-changes" || argument === "." || argument === "..")
+      || invocation?.subcommand === "restore" && (invocation.args.some((argument) => argument === "--staged" || argument === "--worktree" || argument.startsWith("--source")) || invocation.args.some((argument) => !argument.startsWith("-")))
+      || invocation?.subcommand === "checkout" && (nonOptions.length > 1 || nonOptions.some(pathArgument) || invocation.args.some((argument) => argument.startsWith("--pathspec-from-file")))
+      || invocation?.subcommand === "checkout-index" && invocation.args.some(forceFlag)
+      || invocation?.subcommand === "read-tree" && invocation.args.includes("-m") && invocation.args.includes("-u")
+      || invocation?.subcommand === "switch" && invocation.args.some((argument) => forceFlag(argument) || argument === "--discard-changes")
+      || invocation?.subcommand === "reset" && invocation.args.includes("--hard")
+      || invocation?.subcommand === "stash" && ["drop", "clear"].includes(invocation.args[0]);
+  });
+  const structuredDiscard = structuredGitRecords(operation).some((record) => {
+    const args = record.args;
+    const label = record.label;
+    const nonOptions = args.filter((argument) => !argument.startsWith("-"));
+    return /(?:^|\s)(?:checkout|restore)(?:\s|$)/u.test(label) && (nonOptions.length > 1 || nonOptions.some(pathArgument) || args.some((argument) => argument.startsWith("--pathspec-from-file") || argument === "--staged" || argument === "--worktree" || argument.startsWith("--source")))
+      || /(?:^|\s)checkout-index(?:\s|$)/u.test(label) && args.some(forceFlag)
+      || /(?:^|\s)read-tree(?:\s|$)/u.test(label) && args.includes("-m") && args.includes("-u")
+      || /(?:^|\s)switch(?:\s|$)/u.test(label) && args.some((argument) => forceFlag(argument) || argument === "--discard-changes");
+  });
+  return discard || structuredDiscard
     || /\b(?:discard[-_ ]uncommitted|drop[-_ ]changes|delete[-_ ]uncommitted)\b/u.test(all);
 }
 
@@ -438,21 +566,40 @@ function hasSecretOutput(command, capability, operation, pathEntries) {
     const traversal = /(?:^|\/)\.\.?(?:\/|$)/u.test(path);
     return traversal || SECRET_PATH.test(path) && !isPublicExampleArtifact(path);
   });
-  const secretMarker = /(?:\$[a-z_][a-z0-9_]*|%[a-z_][a-z0-9_]*%|token|secret|password|private[_-]?key|credential)/u.test(all);
-  const environmentDump = commandSegments(command).some((segment) => ["printenv", "env"].includes(tokenName(commandTokens(segment)[0])))
+  const secretMarker = /(?:\$[a-z_][a-z0-9_]*|%[a-z_][a-z0-9_]*%|![a-z_][a-z0-9_]*!|token|secret|password|private[_-]?key|credential|env:|process[.]env|environment[.]getenvironmentvariable|environment\]::getenvironmentvariable)/u.test(all);
+  const commandAfterWrappers = (tokens) => {
+    let index = 0;
+    while (index < tokens.length && ["sudo", "command", "builtin"].includes(tokenName(tokens[index]))) index += 1;
+    return { name: tokenName(tokens[index] || ""), args: tokens.slice(index + 1).map(normalized) };
+  };
+  const environmentDump = commandVariants(command).some((segment) => {
+    const commandInfo = commandAfterWrappers(commandTokens(segment));
+    return ["printenv", "env"].includes(commandInfo.name)
+      || commandInfo.name === "export" && commandInfo.args.includes("-p")
+      || commandInfo.name === "set" && (commandInfo.args.length === 0 || commandInfo.args.every((argument) => !argument.includes("=")));
+  })
     || commandSegments(operationText(operation)).some((segment) => ["printenv", "env"].includes(tokenName(commandTokens(segment)[0])))
     || /(?:\$\(|`)\s*(?:printenv|env)\b/u.test(normalized(command));
-  return environmentDump
-    || secretPath && /(?:print|printf|echo|cat|type|write|send|post|put|upload|curl|wget|invoke-webrequest|scp|nc|transmit|log)/u.test(all)
-    || secretMarker && /(?:echo|printf|printenv|set\b|env\b|curl|wget|invoke-webrequest|scp|nc|transmit|upload|send|post|put|log)/u.test(all);
+  const environmentProvider = /\benv\s*:/u.test(all) && /(?:get-content|get-item|cat|type|read|print|echo|write|copy|export)/u.test(all);
+  const processEnvironment = /(?:process[.]env|environment[.]getenvironmentvariable|environment\]::getenvironmentvariable)/u.test(all);
+  const dynamicSecretRead = commandVariants(command).some((segment) => {
+    const tokens = commandTokens(segment);
+    const commandInfo = commandAfterWrappers(tokens);
+    return ["cat", "type", "get-content"].includes(commandInfo.name) && commandInfo.args.some(hasDynamicPathSyntax);
+  });
+  return environmentDump || environmentProvider || processEnvironment || dynamicSecretRead
+    || secretPath && /(?:print|printf|echo|cat|type|get-content|write|send|post|put|upload|curl|wget|invoke-webrequest|scp|nc|transmit|log)/u.test(all)
+    || secretMarker && /(?:echo|print|printf|printenv|set\b|env\b|export\b|curl|wget|invoke-webrequest|scp|nc|transmit|upload|send|post|log)/u.test(all);
 }
 
 function hasGuardrailBypass(command, capability, operation) {
   const all = `${normalized(command)} ${normalized(capability)} ${operationText(operation)}`;
   const scan = all.replace(/["']/gu, "");
-  return /(?:dangerously-skip-permissions|dangerously-bypass|bypass[-_ ]?permissions|full[-_ ]?access|disable[-_ ]?(?:safety|guard|hook|deny)|skip[-_ ]?(?:safety|guard|hook|verification)|hooks?\s+(?:off|disable)|permissions?\s+(?:off|disable)|--no-verify\b|(?:approval[-_ ]policy|sandbox)\s*(?:=|:|\s+)\s*(?:never|danger-full-access)\b|--no-sandbox\b)/u.test(scan)
-    || /--(?:approval[-_ ]?policy|sandbox|bypass(?:[-_ ]?permissions)?)(?:\s*(?:=|:)\s*|\s+)[`$%]/u.test(scan)
-    || /--bypass(?:[-_ ]?permissions)?[`$%{]/u.test(scan);
+  return hasDynamicShellPayload(command)
+    || /(?:dangerously-skip-permissions|dangerously-bypass|bypass[-_ ]?permissions|full[-_ ]?access|disable[-_ ]?(?:safety|guard|hook|deny)|skip[-_ ]?(?:safety|guard|hook|verification)|hooks?\s+(?:off|disable)|permissions?\s+(?:off|disable)|--no-verify\b|(?:approval[-_ ]policy|sandbox)\s*(?:=|:|\s+)\s*(?:never|danger-full-access)\b|--no-sandbox\b)/u.test(scan)
+    || /--(?:approval[-_ ]?policy|sandbox|bypass(?:[-_ ]?permissions)?)(?:\s*(?:=|:)\s*|\s+)[`$%!^\\({]/u.test(scan)
+    || /--bypass(?:[-_ ]?permissions)?(?:[-_ ]+)[`$%!^\\({]/u.test(scan)
+    || /--bypass(?:[-_ ]?permissions)?[`$%!^\\{(]/u.test(scan);
 }
 
 function ruleIds(policy) {

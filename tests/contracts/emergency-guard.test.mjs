@@ -137,6 +137,44 @@ test("emergency policy does not exempt a benign format segment from later raw-di
   }
 });
 
+test("emergency policy recursively inspects shell interpreter payloads without executing them", () => {
+  const cases = [
+    ["sh -c 'rm -rf /'", "filesystem-root-erasure"],
+    ["sh -c 'git push origin main --force'", "git-force-push"],
+    ["sh -c 'git restore .'", "git-discard-uncommitted"],
+    ["bash -c 'env'", "secret-output-or-transmission"]
+  ];
+  for (const [command, ruleId] of cases) {
+    const result = classifyEmergencyAction({ command });
+    assert.deepEqual({ decision: result.decision, ruleId: result.ruleId }, { decision: "deny", ruleId }, command);
+  }
+});
+
+test("emergency policy does not treat format-like arguments as raw-disk operations", () => {
+  for (const command of ['echo "format text"', 'git commit -m "format text"', "npm run format"]) {
+    const result = classifyEmergencyAction({ command });
+    assert.deepEqual({ decision: result.decision, ruleId: result.ruleId }, { decision: "allow", ruleId: null }, command);
+  }
+  const destructive = classifyEmergencyAction({ command: "format C:" });
+  assert.deepEqual({ decision: destructive.decision, ruleId: destructive.ruleId }, { decision: "deny", ruleId: "raw-disk-destruction" });
+});
+
+test("emergency policy classifies structured Git operation metadata", () => {
+  const forcePush = classifyEmergencyAction({ command: "git status", gitOperation: { push: { args: ["--force"] } } });
+  assert.deepEqual({ decision: forcePush.decision, ruleId: forcePush.ruleId }, { decision: "deny", ruleId: "git-force-push" });
+  const rebase = classifyEmergencyAction({ command: "git status", gitOperation: { rebase: { args: ["main"] } } });
+  assert.deepEqual({ decision: rebase.decision, ruleId: rebase.ruleId }, { decision: "deny", ruleId: "git-history-rewrite" });
+  const discard = classifyEmergencyAction({ command: "git status", gitOperation: { checkout: { args: ["README"] } } });
+  assert.deepEqual({ decision: discard.decision, ruleId: discard.ruleId }, { decision: "deny", ruleId: "git-discard-uncommitted" });
+});
+
+test("emergency policy classifies structured secret operation resources", () => {
+  const resourceUrl = classifyEmergencyAction({ command: "read", secretOperation: { operation: "read", resource: { url: "/tmp/.env" } } });
+  assert.deepEqual({ decision: resourceUrl.decision, ruleId: resourceUrl.ruleId }, { decision: "deny", ruleId: "secret-credential-access" });
+  const resourceName = classifyEmergencyAction({ command: "print", secretOperation: { operation: "print", resource: { name: "API_TOKEN" } } });
+  assert.deepEqual({ decision: resourceName.decision, ruleId: resourceName.ruleId }, { decision: "deny", ruleId: "secret-output-or-transmission" });
+});
+
 function firstFixturePath(action) {
   const first = Array.isArray(action.paths) ? action.paths[0] : null;
   return typeof first === "string" ? first : first && typeof first === "object" ? first.resolvedPath || first.path || first.filePath || "" : "";
