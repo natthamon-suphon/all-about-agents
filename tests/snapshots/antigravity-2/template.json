@@ -75,5 +75,21 @@
     "status": "unsupported",
     "source": "research-antigravity-2.md",
     "manual_step": "Open the Desktop model selector and choose the currently offered Gemini 3.7 Flash Medium; do not enter a model key or persist the choice outside the conversation."
-  }]
+  }],
+  "actionDiagnostics": [
+    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:design has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
+    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:build has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
+    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:fix has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
+    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:review has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
+    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:audit has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
+    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:improve-skill has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
+    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:resume has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
+    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:verify has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"}
+  ],
+  "contentHashes": {
+    ".agents/plugins/all-about-agents/rules/adapter-capability-guidance.md": "067cfcfb38dcb78663530f4debaab42ea74b6e49208ef5822e3cbb53b725eb80",
+    ".agents/plugins/all-about-agents/rules/model-selection.md": "5558fa6f85d26f1e027ef9c087e835df6bc7483e6ad580bbcb5716b7fa79be92",
+    ".agents/plugins/all-about-agents/rules/permission-safety.md": "fbbcd87452fe38d10dfcc333cbd621cb392087c14e6e76326a86c4233ec048c4",
+    ".agents/plugins/all-about-agents/agents/architect.md": "e2255ab6e9d81bbf6ffceec5681a1ab5480be1d8520aded3cb16f8ec95f9e32c"
+  }
 }

@@ -13,7 +13,12 @@
     "pluginManifest": ".agents/plugins/<plugin>/plugin.json",
     "skills": ".agents/plugins/<plugin>/skills/{skill}/SKILL.md",
     "rules": ".agents/plugins/<plugin>/rules/{rule}.md",
-    "agents": ".agents/plugins/<plugin>/agents/{role}.md",
+    "agents": {
+      "path": ".agents/plugins/<plugin>/agents/{role}.md",
+      "status": "ambiguous",
+      "documentation": "The Desktop Plugins page omits agents/; the Desktop Subagents page separately documents plugins/<plugin>/agents/.",
+      "manualVerification": "Verify agent discovery in a real Desktop session before relying on this optional package directory."
+    },
     "hooks": ".agents/plugins/<plugin>/hooks.json"
   },
   "profiles": {
@@ -68,14 +73,62 @@
     "native-rendering": ["write_to_file"]
   },
   "actions": {
-    "aaa:design": "manual Desktop conversation action",
-    "aaa:build": "manual Desktop conversation action",
-    "aaa:fix": "manual Desktop conversation action",
-    "aaa:review": "manual Desktop conversation action",
-    "aaa:audit": "manual Desktop conversation action",
-    "aaa:improve-skill": "manual Desktop conversation action",
-    "aaa:resume": "manual Desktop conversation action",
-    "aaa:verify": "manual Desktop conversation action"
+    "aaa:design": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-antigravity-2.md",
+      "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:design only after verifying the Desktop UI; no native action mapping is claimed."
+    },
+    "aaa:build": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-antigravity-2.md",
+      "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:build only after verifying the Desktop UI; no native action mapping is claimed."
+    },
+    "aaa:fix": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-antigravity-2.md",
+      "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:fix only after verifying the Desktop UI; no native action mapping is claimed."
+    },
+    "aaa:review": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-antigravity-2.md",
+      "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:review only after verifying the Desktop UI; no native action mapping is claimed."
+    },
+    "aaa:audit": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-antigravity-2.md",
+      "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:audit only after verifying the Desktop UI; no native action mapping is claimed."
+    },
+    "aaa:improve-skill": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-antigravity-2.md",
+      "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:improve-skill only after verifying the Desktop UI; no native action mapping is claimed."
+    },
+    "aaa:resume": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-antigravity-2.md",
+      "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:resume only after verifying the Desktop UI; no native action mapping is claimed."
+    },
+    "aaa:verify": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-antigravity-2.md",
+      "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:verify only after verifying the Desktop UI; no native action mapping is claimed."
+    }
   },
   "ownedPaths": [
     ".agents/plugins/<plugin>/plugin.json",
@@ -86,7 +139,42 @@
   ],
   "nativeValidation": {
     "status": "not run",
-    "reason": "Desktop launch and UI acceptance require a real Antigravity 2.0 Desktop session."
+    "product": "Antigravity 2.0 Desktop",
+    "productVersion": "unknown",
+    "platform": "unknown",
+    "reason": "Desktop launch and UI acceptance require a real Antigravity 2.0 Desktop session.",
+    "manualAcceptanceChecklist": [
+      {
+        "id": "launch-and-discovery",
+        "command": "Desktop: launch Antigravity 2.0 and open a disposable project containing .agents/plugins/all-about-agents/plugin.json.",
+        "expected": "The package is discoverable from the workspace without automatic installation or a generated settings file."
+      },
+      {
+        "id": "skill-and-rule-discovery",
+        "command": "Desktop: inspect the discovered plugin and verify all skills, rules, hooks.json, and plugin.json are visible.",
+        "expected": "Documented plugin components are loaded; the agent layout caveat is shown for agents/."
+      },
+      {
+        "id": "agent-tool-safety",
+        "command": "Desktop: invoke each role from a disposable project and inspect the available tools before any action.",
+        "expected": "Read-only architect, verifier, reviewer, and security-reviewer roles do not expose run_command; implementer retains only its documented command workflow."
+      },
+      {
+        "id": "model-policy",
+        "command": "Desktop: open the conversation model selector, choose Gemini 3.7 Flash Medium, and start a second user message.",
+        "expected": "Medium is selectable and remains sticky only within that conversation; Gemini 3.7 Flash High is not offered and no cross-session persistence is claimed."
+      },
+      {
+        "id": "permission-deny",
+        "command": "Desktop: review the project security preset and manually exercise the documented Deny rules for command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).",
+        "expected": "Deny > Ask > Allow is shown and each emergency rule blocks the matching request."
+      },
+      {
+        "id": "hooks-contract",
+        "command": "Desktop: inspect hooks.json and, only with an explicitly approved local handler, verify each documented hook decision in a disposable project.",
+        "expected": "The packaged hook contract remains disabled and inert; no command handler is auto-installed or executed."
+      }
+    ]
   },
   "installation": {
     "registration": "Desktop workspace plugin discovery",

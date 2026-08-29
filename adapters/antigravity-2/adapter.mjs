@@ -19,6 +19,12 @@ const DESKTOP_TOOLS = Object.freeze([
   "manage_subagents", "ask_permission", "list_permissions"
 ]);
 
+const FORBIDDEN_DESKTOP_CONTENT = Object.freeze([
+  Object.freeze({ label: "agy CLI path or settings", pattern: /(?:antigravity-cli|agy)[/\\]/iu }),
+  Object.freeze({ label: "agy CLI model slug", pattern: /gemini-3\.7-flash-high/iu }),
+  Object.freeze({ label: "agy CLI option", pattern: /--(?:model|effort|agent|sandbox|dangerously-skip-permissions)\b/iu })
+]);
+
 /** Semantic-to-native mappings from the documented Desktop tool vocabulary. */
 export const ANTIGRAVITY_SEMANTIC_MAPPINGS = Object.freeze({
   "repository-read": Object.freeze(["view_file", "list_dir", "find_by_name", "grep_search"]),
@@ -41,8 +47,12 @@ export const ANTIGRAVITY_SEMANTIC_MAPPINGS = Object.freeze({
 
 export const ANTIGRAVITY_ACTION_MAPPINGS = Object.freeze(Object.fromEntries(
   ACTION_IDS.map((actionId) => [actionId, Object.freeze({
-    supported: true,
-    native: "manual Desktop conversation action"
+    supported: false,
+    support: "manual-unknown",
+    status: "unknown",
+    source: "research-antigravity-2.md",
+    reason: "No documented Desktop prompt or workflow mapping is published for this canonical action.",
+    manualStep: `Use a manually authored Desktop prompt or workflow for ${actionId} only after verifying the Desktop UI; no native action mapping is claimed.`
   })])
 ));
 
@@ -160,7 +170,9 @@ function renderAgent(name, role) {
   let tools = [...new Set(capabilities.flatMap((capability) => ANTIGRAVITY_SEMANTIC_MAPPINGS[capability] || []))];
   if (tools.length === 0 && !role) tools = [...ANTIGRAVITY_SEMANTIC_MAPPINGS["repository-read"]];
   const readOnly = role?.readOnly === true || fallback.readOnly === true || role?.mutationScope === "none";
-  if (readOnly) tools = tools.filter((tool) => !["write_to_file", "replace_file_content", "multi_replace_file_content"].includes(tool));
+  if (readOnly) tools = tools.filter((tool) => ![
+    "write_to_file", "replace_file_content", "multi_replace_file_content", "run_command"
+  ].includes(tool));
   tools = tools.filter((tool) => DESKTOP_TOOLS.includes(tool)).sort();
   const commandExecutionPolicy = tools.includes("run_command") ? "sandbox" : "off";
   const lines = [
@@ -186,6 +198,18 @@ function addFile(files, relativePath, content, mode = null) {
   files.push({ relativePath, content: new TextEncoder().encode(ensureText(content)), mode });
 }
 
+function validateDesktopContent(files) {
+  const decoder = new TextDecoder();
+  for (const file of files) {
+    const content = decoder.decode(file.content);
+    for (const forbidden of FORBIDDEN_DESKTOP_CONTENT) {
+      if (forbidden.pattern.test(content)) {
+        throw new TypeError(`Antigravity Desktop render rejected forbidden Desktop content (${forbidden.label}) in ${file.relativePath}`);
+      }
+    }
+  }
+}
+
 function ownership(files) {
   return files.map((file) => ({
     relativePath: file.relativePath,
@@ -206,7 +230,9 @@ function capabilityGuidance() {
     "",
     "This package targets the Antigravity 2.0 Desktop plugin contract.",
     "Workspace discovery uses `.agents/plugins/<plugin>/`; global discovery uses `~/.gemini/config/plugins/<plugin>/`.",
-    "Skills use `skills/<skill>/SKILL.md`; rules use `rules/<rule>.md`; agents use `agents/<role>.md`.",
+    "Skills use `skills/<skill>/SKILL.md`; rules use `rules/<rule>.md`.",
+    "The Desktop Plugins page omits `agents/`; the Desktop Subagents page separately documents `agents/<role>.md`.",
+    "Plugin-agent packaging is ambiguous and not guaranteed by the Plugins layout; verify agent discovery manually before relying on it.",
     "The published Desktop tools are the exact names used in agent frontmatter and semantic mappings.",
     "No serialized application preferences, cross-conversation model key, or command-line option is part of this package.",
     ""
@@ -284,6 +310,7 @@ export function renderAntigravity(input = {}) {
   const roleNames = [...new Set([...Object.keys(DEFAULT_ROLES), ...roleRecords.keys()])].sort();
   for (const role of roleNames) addFile(files, `${PLUGIN_ROOT}/agents/${role}.md`, renderAgent(role, roleRecords.get(role)));
   files.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+  validateDesktopContent(files);
 
   const diagnostics = [];
   for (const skill of skillIds(input.core)) {
@@ -298,6 +325,12 @@ export function renderAntigravity(input = {}) {
     code: "desktop-model-high-unsupported",
     severity: "warning",
     message: "Desktop Gemini 3.7 Flash High is not a documented selector value; use the manual Gemini 3.7 Flash Medium step.",
+    sourcePath: "research-antigravity-2.md"
+  });
+  for (const actionId of ACTION_IDS) diagnostics.push({
+    code: "desktop-action-unknown",
+    severity: "warning",
+    message: `${actionId} has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.`,
     sourcePath: "research-antigravity-2.md"
   });
 
