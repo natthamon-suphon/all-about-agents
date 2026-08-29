@@ -4,6 +4,7 @@ import { posix, win32 } from "node:path";
 import { createHash } from "node:crypto";
 import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
 import { AdapterContractError, renderSurface as validateSurface, validateCommandRecords, validateRenderResult } from "../shared/adapter-contract.mjs";
+import { assertCanonicalRoleRecords, hasScopedMutation, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const CODEX_SURFACE = "codex";
 const ACTION_IDS = Object.freeze([
@@ -97,15 +98,28 @@ function makeOwnership(files) {
   })).sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
 }
 
-function configFor(model, profile, includePermissions = true) {
-  if (!includePermissions) return renderToml(CODEX_MODEL_POLICY.alternate);
-  const policy = CODEX_MODEL_POLICY[profile];
-  return renderToml({
-    approval_policy: policy.approval_policy,
-    model: model ?? policy.model,
-    model_reasoning_effort: policy.model_reasoning_effort,
-    sandbox_mode: policy.sandbox_mode
-  });
+function configFor(model, profile, includePermissions = true, roleRecords = []) {
+  const policy = includePermissions ? CODEX_MODEL_POLICY[profile] : CODEX_MODEL_POLICY.alternate;
+  const root = renderToml(includePermissions
+    ? {
+      approval_policy: policy.approval_policy,
+      model: model ?? policy.model,
+      model_reasoning_effort: policy.model_reasoning_effort,
+      sandbox_mode: policy.sandbox_mode
+    }
+    : {
+      model: model ?? policy.model,
+      model_reasoning_effort: policy.model_reasoning_effort
+    });
+  const registrations = [...roleRecords]
+    .sort((left, right) => compareCodePoints(left.id, right.id))
+    .map((role) => [
+      "",
+      `[agents.${role.id}]`,
+      `config_file = ${JSON.stringify(`agents/${role.id}.config.toml`)}`,
+      `description = ${JSON.stringify(role.description || role.purpose || `Canonical ${role.id} role.`)}`
+    ].join("\n"));
+  return ensureText(`${root.trimEnd()}${registrations.join("\n")}\n`);
 }
 
 function ensureText(value) {
@@ -145,12 +159,13 @@ function renderSkill(name, record) {
 }
 
 function renderRole(name, role) {
-  const fallback = DEFAULT_ROLES[name] || DEFAULT_ROLES.reviewer;
+  const fallback = DEFAULT_ROLES[name] || Object.freeze({ description: "Unknown role; no native capabilities are granted.", capabilities: [] });
   const description = role?.description || role?.purpose || fallback.description;
   const capabilities = role
     ? [
       ...(Array.isArray(role.capabilities) ? role.capabilities : []),
-      ...(Array.isArray(role.requiredCapabilities) ? role.requiredCapabilities : [])
+      ...(Array.isArray(role.requiredCapabilities) ? role.requiredCapabilities : []),
+      ...(Array.isArray(role.allowedCapabilities) ? role.allowedCapabilities : [])
     ]
     : fallback.capabilities;
   const roleContext = [
@@ -166,6 +181,12 @@ function renderRole(name, role) {
     `developer_instructions = ${JSON.stringify(instructions)}`,
     ""
   ].join("\n"));
+}
+
+function renderRoleConfig(role) {
+  const readOnly = isRoleReadOnly(role);
+  const sandboxMode = readOnly || !hasScopedMutation(role) ? "read-only" : "workspace-write";
+  return renderToml({ sandbox_mode: sandboxMode });
 }
 
 function pluginManifest() {
@@ -217,16 +238,27 @@ function parseTomlValue(raw, lineNumber) {
 export function parseCodexToml(value) {
   if (typeof value !== "string") throw new TypeError("TOML document must be a string");
   const result = {};
+  let target = result;
   const lines = value.replace(/\r\n?/gu, "\n").split("\n");
   if (lines.at(-1) !== "") throw new SyntaxError("TOML document must end with a newline");
   lines.slice(0, -1).forEach((line, index) => {
     const trimmed = line.trim();
     if (trimmed === "" || trimmed.startsWith("#")) return;
+    const section = /^\[([A-Za-z0-9_.-]+)\]$/u.exec(trimmed);
+    if (section) {
+      target = result;
+      for (const segment of section[1].split(".")) {
+        if (!Object.hasOwn(target, segment)) target[segment] = {};
+        else if (!target[segment] || typeof target[segment] !== "object" || Array.isArray(target[segment])) throw new SyntaxError(`invalid TOML section ${section[1]} on line ${index + 1}`);
+        target = target[segment];
+      }
+      return;
+    }
     const match = /^([A-Za-z0-9_-]+)\s*=\s*(.+)$/u.exec(trimmed);
     if (!match) throw new SyntaxError(`invalid TOML assignment on line ${index + 1}`);
     const [, key, raw] = match;
-    if (Object.hasOwn(result, key)) throw new SyntaxError(`duplicate TOML key ${key} on line ${index + 1}`);
-    result[key] = parseTomlValue(raw, index + 1);
+    if (Object.hasOwn(target, key)) throw new SyntaxError(`duplicate TOML key ${key} on line ${index + 1}`);
+    target[key] = parseTomlValue(raw, index + 1);
   });
   return result;
 }
@@ -301,7 +333,9 @@ function capabilityGuidance() {
     "- `AGENTS.md` is rendered as a regular instruction file for the canonical rules and action-to-workflow mappings.",
     "- Skills are packaged under `.agents/skills/<skill>/SKILL.md`; missing canonical sources remain marked `DEFERRED`.",
     "- Custom roles are standalone custom-agent TOML files under `.codex/agents/<role>.toml`.",
-    "- The primary overlay uses Sol/max; `terra-max.config.toml` is an explicit Terra/max CLI alternative.",
+    "- Each canonical `[agents.<role>]` registration points `config_file` at a role-specific layer under the delivered `agents/` directory; the package maps `.codex/agents/` there. The layer sets top-level `sandbox_mode` (`read-only` for read-only roles and `workspace-write` only for scoped implementer mutation). Relative `config_file` paths resolve from the declaring `config.toml`.",
+    "- This role-layer pattern follows the official Codex Configuration Reference (https://developers.openai.com/codex/config-reference/); the published docs do not show one combined registration example, so native client acceptance remains a later manual check.",
+    "- The primary overlay uses Sol/max; `terra-max.config.toml` preserves the same role registrations while providing the explicit Terra/max CLI alternative.",
     "- Codex Desktop Terra/max selection is manual in its model controls.",
     "",
     "This adapter does not define repository schedules or a native statusline. If a selected Codex capability, path, syntax, or product surface is unavailable, report that condition and stop or ask for direction rather than inferring support.",
@@ -316,6 +350,7 @@ export function renderCodex(input = {}) {
   for (const collection of ["rules", "skills", "workflows", "commands"]) {
     if (!Array.isArray(core[collection])) throw new TypeError(`core.${collection} must be an array`);
   }
+  assertCanonicalRoleRecords(core.roles);
   const commandValidation = validateCommandRecords(core.commands, core.workflows);
   if (!commandValidation.valid) throw new AdapterContractError(commandValidation.errors);
   validateCommandPresentation(core.commands);
@@ -325,8 +360,6 @@ export function renderCodex(input = {}) {
   addFile(files, "AGENTS.md", renderAgentsDocument(core));
   addFile(files, ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md", capabilityGuidance());
   addFile(files, "docs/manual-desktop.md", desktopInstructions());
-  addFile(files, "config.toml", configFor("gpt-5.6-sol", profile));
-  addFile(files, "terra-max.config.toml", configFor("gpt-5.6-terra", profile, false));
   const skillRecords = new Map(core.skills.map((record) => [record.id || record.name, record]));
   const missingSkills = [];
   for (const skill of canonicalSkillIds(core)) {
@@ -336,7 +369,14 @@ export function renderCodex(input = {}) {
   }
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
   const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort(compareCodePoints);
-  for (const roleName of roleNames) addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName)));
+  const renderedRoles = roleNames.map((roleName) => roleRecords.get(roleName) || { id: roleName, ...DEFAULT_ROLES[roleName] });
+  addFile(files, "config.toml", configFor("gpt-5.6-sol", profile, true, renderedRoles));
+  addFile(files, "terra-max.config.toml", configFor("gpt-5.6-terra", profile, false, renderedRoles));
+  for (const roleName of roleNames) {
+    const role = roleRecords.get(roleName) || { id: roleName, ...DEFAULT_ROLES[roleName] };
+    addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName)));
+    addFile(files, `.codex/agents/${roleName}.config.toml`, renderRoleConfig(role));
+  }
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   for (const file of files) {
     if (file.relativePath.endsWith(".toml")) parseCodexToml(new TextDecoder().decode(file.content));

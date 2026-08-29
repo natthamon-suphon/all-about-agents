@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
+import { assertCanonicalRoleRecords, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const SURFACE = "agy";
 const PLUGIN_ROOT = "";
@@ -137,15 +138,6 @@ const DEFAULT_ROLES = Object.freeze({
   })
 });
 
-const READ_ONLY_ROLES = new Set([
-  "researcher",
-  "investigator",
-  "architect",
-  "verifier",
-  "reviewer",
-  "security-reviewer"
-]);
-
 const FORBIDDEN_AGY_CONTENT = Object.freeze([
   Object.freeze({
     code: "desktop-path",
@@ -247,16 +239,17 @@ function renderRule(rule) {
 }
 
 function renderAgent(name, role) {
-  const fallback = DEFAULT_ROLES[name] || DEFAULT_ROLES.reviewer;
+  const fallback = DEFAULT_ROLES[name] || Object.freeze({ description: "Unknown role; no native capabilities are granted.", capabilities: [], readOnly: true });
   const description = typeof role?.description === "string" && role.description.trim()
     ? role.description.trim()
     : role?.purpose || fallback.description;
   const capabilities = [...new Set([
     ...(Array.isArray(role?.capabilities) ? role.capabilities : []),
     ...(Array.isArray(role?.requiredCapabilities) ? role.requiredCapabilities : []),
+    ...(Array.isArray(role?.allowedCapabilities) ? role.allowedCapabilities : []),
     ...(!role ? fallback.capabilities : [])
   ])].sort(compareCodePoints);
-  const readOnly = role?.mutationScope === "none" || role?.readOnly === true || fallback.readOnly === true || READ_ONLY_ROLES.has(name);
+  const readOnly = isRoleReadOnly(role || fallback);
   const commandExecutionPolicy = readOnly ? "off" : "sandbox";
   const prompt = role?.prompt || [
     `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`,
@@ -508,6 +501,7 @@ function actionDiagnostics() {
 /** Render the complete portable agy CLI plugin package and manual overlays. */
 export function renderAgy(input = {}) {
   coreShape(input.core);
+  assertCanonicalRoleRecords(input.core.roles);
   const profile = profileId(input.profile ?? "portable");
   if (typeof input.statuslineName !== "string") throw new TypeError("statuslineName must be a string");
   const skillRecords = new Map(input.core.skills.map((record) => [record.id || record.name, record]));

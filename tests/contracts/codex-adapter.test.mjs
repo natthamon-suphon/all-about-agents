@@ -108,11 +108,14 @@ test("Codex template emits the exact Sol/max primary and Terra/max alternate pol
   assert.match(primary, /approval_policy = "never"/u);
   assert.match(alternate, /model = "gpt-5\.6-terra"/u);
   assert.match(alternate, /model_reasoning_effort = "max"/u);
-  assert.deepEqual(adapter.parseCodexToml(alternate), {
+  const alternateConfig = adapter.parseCodexToml(alternate);
+  assert.deepEqual({ model: alternateConfig.model, model_reasoning_effort: alternateConfig.model_reasoning_effort }, {
     model: "gpt-5.6-terra",
     model_reasoning_effort: "max"
   });
-  assert.deepEqual(Object.keys(adapter.parseCodexToml(alternate)).sort(), ["model", "model_reasoning_effort"]);
+  assert.deepEqual(Object.keys(alternateConfig).sort(), ["agents", "model", "model_reasoning_effort"]);
+  assert.equal(Object.hasOwn(alternateConfig, "approval_policy"), false);
+  assert.equal(Object.hasOwn(alternateConfig, "sandbox_mode"), false);
   assert.doesNotMatch(`${primary}\n${alternate}`, /fallback(?:_model|Model|_models)?/iu);
 });
 

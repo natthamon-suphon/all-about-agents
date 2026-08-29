@@ -12,6 +12,7 @@
     "An approved implementation plan names a bounded change and its public test seam.",
     "The task has explicit write paths and acceptance checks."
   ],
+  "routingKeywords": ["write", "implement", "apply", "failing", "test", "vertical", "scoped", "change"],
   "mutationScope": {
     "paths": ["workspace/**"],
     "operations": ["create", "modify", "delete"]

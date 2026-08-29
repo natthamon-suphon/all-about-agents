@@ -45,6 +45,25 @@
         { "id": "compliance", "prompt": "Check whether the implementation meets the requested specification.", "expectedRole": "reviewer" },
         { "id": "maintainability", "prompt": "Review diff quality and test coverage for maintainability.", "expectedRole": "reviewer" }
       ]
+    },
+    {
+      "id": "research-vs-security-vs-review",
+      "critical": true,
+      "cases": [
+        { "id": "official-security", "prompt": "Find the current official security advisory and cite the first-party source.", "expectedRole": "researcher" },
+        { "id": "containment", "prompt": "Evaluate the security containment boundary and privilege risk.", "expectedRole": "security-reviewer" },
+        { "id": "review-findings", "prompt": "Review the diff against the specification and list quality findings.", "expectedRole": "reviewer" },
+        { "id": "schema-seam", "prompt": "Design the schema validation interface and smallest testable seam.", "expectedRole": "architect" },
+        { "id": "scoped-fix", "prompt": "Implement the approved scoped fix after the failing test is red.", "expectedRole": "implementer" }
+      ]
+    },
+    {
+      "id": "routing-edge-cases",
+      "critical": false,
+      "cases": [
+        { "id": "ambiguous-research-investigation", "prompt": "Find the current configuration.", "expectedStatus": "ambiguous", "expectedCandidates": ["investigator", "researcher"] },
+        { "id": "no-match", "prompt": "Say hello and tell me a joke.", "expectedStatus": "no-route", "expectedRole": null }
+      ]
     }
   ]
 }

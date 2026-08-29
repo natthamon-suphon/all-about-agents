@@ -3,28 +3,65 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 
+import { loadCore } from "../../../installers/lib/load-core.mjs";
+import { renderClaude } from "../../../adapters/claude/adapter.mjs";
+import { renderCodex } from "../../../adapters/codex/adapter.mjs";
+import { renderAntigravity } from "../../../adapters/antigravity-2/adapter.mjs";
+import { renderAgy } from "../../../adapters/agy/adapter.mjs";
+
 const routing = JSON.parse(await readFile(resolve(process.cwd(), "tests/behavioral/roles/routing.json"), "utf8"));
 
-function routeRole(prompt) {
-  const text = prompt.toLowerCase();
-  if (/(?:security|threat|secret|privilege|stride|exploit|containment)/u.test(text)) return "security-reviewer";
-  if (/(?:first-party|official|regulation|current|cite|external)/u.test(text)) return "researcher";
-  if (/(?:stack|trace|reproduce|regression|configuration fails|bad value|root)/u.test(text)) return "investigator";
-  if (/(?:black-box|parser|deterministic|not run)/u.test(text)) return "verifier";
-  if (/(?:diff|quality|specification|maintainability|test hygiene)/u.test(text)) return "reviewer";
-  if (/(?:interface|seam|design|module|invariants)/u.test(text)) return "architect";
-  if (/(?:write|implement|apply|vertical slice|failing test|scoped)/u.test(text)) return "implementer";
-  return null;
+function filePath(surface, roleId) {
+  return surface === "claude"
+    ? `agents/${roleId}.md`
+    : surface === "codex"
+      ? `.codex/agents/${roleId}.toml`
+      : surface === "antigravity-2"
+        ? `.agents/plugins/all-about-agents/agents/${roleId}.md`
+        : `agents/${roleId}/agent.md`;
 }
 
-test("critical canonical routing scenarios score 5/5 deterministically", () => {
+test("critical canonical routing scenarios score 5/5 using the production routing seam", async () => {
+  const { routeRole } = await import("../../../core/roles/router.mjs");
+  const core = await loadCore(process.cwd());
   for (const scenario of routing.scenarios.filter((entry) => entry.critical === true)) {
     const results = scenario.cases.map((entry) => ({
       id: entry.id,
       expected: entry.expectedRole,
-      actual: routeRole(entry.prompt)
+      actual: routeRole({ prompt: entry.prompt, roles: core.roles })
     }));
     assert.equal(results.length, 5, `${scenario.id} must contain five cases`);
-    assert.equal(results.filter((entry) => entry.expected === entry.actual).length, 5, JSON.stringify({ scenario: scenario.id, results }));
+    assert.equal(results.filter((entry) => entry.expected === entry.actual.roleId && entry.actual.status === "matched").length, 5, JSON.stringify({ scenario: scenario.id, results }));
+  }
+});
+
+test("routing production seam reports ambiguity and no-route explicitly", async () => {
+  const { routeRole } = await import("../../../core/roles/router.mjs");
+  const core = await loadCore(process.cwd());
+  const scenario = routing.scenarios.find((entry) => entry.id === "routing-edge-cases");
+  assert.ok(scenario);
+  for (const entry of scenario.cases) {
+    const actual = routeRole({ prompt: entry.prompt, roles: core.roles });
+    assert.equal(actual.status, entry.expectedStatus, entry.id);
+    assert.equal(actual.roleId ?? null, entry.expectedRole ?? null, entry.id);
+    if (entry.expectedCandidates) assert.deepEqual(actual.candidates, entry.expectedCandidates, entry.id);
+  }
+});
+
+test("supported renderers preserve every production-selected canonical role id", async () => {
+  const { routeRole } = await import("../../../core/roles/router.mjs");
+  const core = await loadCore(process.cwd());
+  const renders = [
+    ["claude", renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity-2", renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
+    ["agy", renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+  ].map(([surface, result]) => [surface, new Map(result.files.map((file) => [file.relativePath, new TextDecoder().decode(file.content)]))]);
+  for (const scenario of routing.scenarios.filter((entry) => entry.critical === true)) {
+    for (const entry of scenario.cases) {
+      const route = routeRole({ prompt: entry.prompt, roles: core.roles });
+      assert.equal(route.status, "matched");
+      for (const [surface, files] of renders) assert.ok(files.has(filePath(surface, route.roleId)), `${surface}/${route.roleId}`);
+    }
   }
 });

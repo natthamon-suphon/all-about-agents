@@ -12,6 +12,7 @@
     "A change handles untrusted input, secrets, authorization, or destructive operations.",
     "A release needs a threat model and explicit security guardrail review."
   ],
+  "routingKeywords": ["security", "threat", "secret", "privilege", "stride", "exploit", "containment", "risk"],
   "mutationScope": "none",
   "inputContract": {
     "scope": "object",

@@ -12,6 +12,7 @@
     "An internal failure, regression, or unexpected behavior needs root-cause analysis.",
     "The task needs ranked, falsifiable hypotheses and reproduction evidence."
   ],
+  "routingKeywords": ["stack", "trace", "reproduce", "regression", "configuration", "fails", "bad", "value", "internal"],
   "mutationScope": "none",
   "inputContract": {
     "failure": "string or structured report",

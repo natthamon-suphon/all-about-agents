@@ -12,6 +12,7 @@
     "A change needs independent fresh behavioral or parser verification.",
     "Deterministic fixtures can establish expected results without mutating code."
   ],
+  "routingKeywords": ["black-box", "parser", "deterministic", "not", "run", "verify", "rendered"],
   "mutationScope": "none",
   "inputContract": {
     "acceptanceCriteria": "array",

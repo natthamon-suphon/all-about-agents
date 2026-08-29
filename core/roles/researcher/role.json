@@ -12,6 +12,7 @@
     "The answer depends on current external facts or a named specification.",
     "Primary-source links or short, attributable quotations are required."
   ],
+  "routingKeywords": ["current", "official", "first-party", "regulation", "cite", "external", "source"],
   "mutationScope": "none",
   "inputContract": {
     "question": "string",

@@ -7,6 +7,7 @@ import {
   renderSurface as validateSurface,
   validateRenderResult
 } from "../shared/adapter-contract.mjs";
+import { assertCanonicalRoleRecords, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const CLAUDE_SURFACE = "claude";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
@@ -22,7 +23,6 @@ export const CLAUDE_PREREQUISITES = Object.freeze({
 });
 
 const READ_ONLY_NATIVE_TOOLS = Object.freeze(["Agent", "Bash", "Edit", "Write"]);
-const READ_ONLY_ROLE_NAMES = new Set(["researcher", "investigator", "architect", "verifier", "reviewer", "security-reviewer"]);
 
 /**
  * The names at this boundary are intentionally Claude-native. The core only
@@ -246,11 +246,12 @@ function renderRule(rule) {
 
 function renderAgent(name, role) {
   const defaultRole = DEFAULT_ROLES[name];
-  const fallback = defaultRole || DEFAULT_ROLES.reviewer;
+  const fallback = defaultRole || Object.freeze({ description: "Unknown role; no native capabilities are granted.", capabilities: [], readOnly: true });
   const description = role?.description || role?.purpose || fallback.description;
   const semanticNames = [
     ...(Array.isArray(role?.capabilities) ? role.capabilities : []),
-    ...(Array.isArray(role?.requiredCapabilities) ? role.requiredCapabilities : [])
+    ...(Array.isArray(role?.requiredCapabilities) ? role.requiredCapabilities : []),
+    ...(Array.isArray(role?.allowedCapabilities) ? role.allowedCapabilities : [])
   ];
   const mappedTools = semanticNames.flatMap((capability) => CLAUDE_SEMANTIC_MAPPINGS[capability] || []);
   const tools = [...new Set([...(role ? mappedTools : (mappedTools.length > 0 ? mappedTools : fallback.tools))])].sort();
@@ -260,7 +261,7 @@ function renderAgent(name, role) {
     Array.isArray(role?.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
   const body = role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.\n`;
-  const readOnly = role?.readOnly === true || defaultRole?.readOnly === true || role?.mutationScope === "none" || READ_ONLY_ROLE_NAMES.has(name);
+  const readOnly = isRoleReadOnly(role || fallback);
   const allowedTools = readOnly ? tools.filter((tool) => !READ_ONLY_NATIVE_TOOLS.includes(tool)) : tools;
   const restriction = readOnly
     ? `disallowedTools:\n${READ_ONLY_NATIVE_TOOLS.map((tool) => `  - ${tool}`).join("\n")}\n`
@@ -346,6 +347,7 @@ export function renderClaude(input = {}) {
   for (const collection of ["rules", "skills", "workflows", "commands"]) {
     if (!Array.isArray(core[collection])) throw new TypeError(`core.${collection} must be an array`);
   }
+  assertCanonicalRoleRecords(core.roles);
   const profile = profileId(input.profile ?? "portable");
   const statuslineName = validStatuslineName(input.statuslineName ?? "");
   const files = [];

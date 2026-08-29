@@ -12,6 +12,7 @@
     "A change needs an interface, seam, ownership, or module-depth decision.",
     "Multiple approaches must be compared before an implementation plan is approved."
   ],
+  "routingKeywords": ["interface", "seam", "design", "module", "invariants", "architecture", "schema"],
   "mutationScope": "none",
   "inputContract": {
     "goal": "string",

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
+import { assertCanonicalRoleRecords, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const SURFACE = "antigravity-2";
 const DESKTOP_SURFACE = "antigravity-2-desktop";
@@ -76,15 +77,6 @@ const EMERGENCY_DENIES = Object.freeze([
   "command(sudo)",
   "write_file(.git/)",
   "write_file(/home/user/.ssh)"
-]);
-
-const READ_ONLY_ROLE_NAMES = new Set([
-  "researcher",
-  "investigator",
-  "architect",
-  "verifier",
-  "reviewer",
-  "security-reviewer"
 ]);
 
 export const ANTIGRAVITY_PERMISSION_POLICY = Object.freeze({
@@ -169,16 +161,17 @@ function renderRule(rule) {
 }
 
 function renderAgent(name, role) {
-  const fallback = DEFAULT_ROLES[name] || DEFAULT_ROLES.reviewer;
+  const fallback = DEFAULT_ROLES[name] || Object.freeze({ description: "Unknown role; no native capabilities are granted.", capabilities: [], readOnly: true });
   const description = typeof role?.description === "string" && role.description.trim() ? role.description.trim() : fallback.description;
   const capabilities = [...new Set([
     ...(Array.isArray(role?.capabilities) ? role.capabilities : []),
     ...(Array.isArray(role?.requiredCapabilities) ? role.requiredCapabilities : []),
+    ...(Array.isArray(role?.allowedCapabilities) ? role.allowedCapabilities : []),
     ...(role ? [] : fallback.capabilities)
   ])];
   let tools = [...new Set(capabilities.flatMap((capability) => ANTIGRAVITY_SEMANTIC_MAPPINGS[capability] || []))];
   if (tools.length === 0 && !role) tools = [...ANTIGRAVITY_SEMANTIC_MAPPINGS["repository-read"]];
-  const readOnly = role?.readOnly === true || fallback.readOnly === true || role?.mutationScope === "none" || READ_ONLY_ROLE_NAMES.has(name);
+  const readOnly = isRoleReadOnly(role || fallback);
   if (readOnly) tools = tools.filter((tool) => ![
     "write_to_file", "replace_file_content", "multi_replace_file_content", "run_command"
   ].includes(tool));
@@ -300,6 +293,7 @@ function hooksDocument() {
 /** Render the documented Antigravity 2.0 Desktop package without native settings writes. */
 export function renderAntigravity(input = {}) {
   coreShape(input.core);
+  assertCanonicalRoleRecords(input.core.roles);
   const profile = profileId(input.profile ?? "portable");
   if (typeof input.statuslineName !== "string") throw new TypeError("statuslineName must be a string");
   const files = [];

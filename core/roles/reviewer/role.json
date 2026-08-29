@@ -12,6 +12,7 @@
     "An implementation needs a spec-compliance and quality gate.",
     "A review package contains the task brief, report, and diff."
   ],
+  "routingKeywords": ["diff", "quality", "specification", "maintainability", "review", "coverage", "findings"],
   "mutationScope": "none",
   "inputContract": {
     "taskBrief": "string",

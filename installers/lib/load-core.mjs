@@ -1,7 +1,8 @@
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readFile, readdir, realpath, stat } from "node:fs/promises";
 import { dirname, extname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateSchema } from "./validate-schema.mjs";
+import { CANONICAL_ROLE_IDS, WRITE_SEMANTIC_CAPABILITIES } from "../../core/roles/contract.mjs";
 
 const SCHEMA_NAMES = Object.freeze(["rule", "role", "workflow", "command", "skill"]);
 
@@ -30,6 +31,11 @@ const CAPABILITY_SET = new Set(SEMANTIC_CAPABILITIES);
 const VENDOR_TOOL_VALUES = new Set(["Read", "Write", "Edit", "Bash", "Glob", "Grep", "LS", "NotebookEdit", "WebFetch", "WebSearch", "Task", "MultiEdit", "Agent", "Skill", "TodoWrite", "PowerShell"]);
 const VENDOR_TOOL_PATTERN = /(?:^|[^a-z0-9])(?:spawn_agent|invoke_subagent|run_command|view_file|grep_search|find_by_name|list_dir|write_to_file|replace_file_content|search_web|read_url_content|ask_question|manage_subagents|manage_task|generate_image|mcp__[a-z0-9_:-]+)(?:$|[^a-z0-9])/u;
 const VENDOR_FIELD_NAMES = new Set(["tool", "tools", "nativeTool", "nativeTools", "vendorTool", "vendorTools"]);
+const CANONICAL_ROLE_SET = new Set(CANONICAL_ROLE_IDS);
+const ROLE_WRITE_CAPABILITIES = new Set(WRITE_SEMANTIC_CAPABILITIES);
+const IMPLEMENTER_SCOPE_OPERATIONS = new Set(["create", "modify", "delete"]);
+const PROMPT_READ_ONLY_MUTATION_PATTERN = /(?:\b(?:use|invoke|call|run)\s+(?:bash|edit|write)\b|\bclaude\s+(?:bash|edit|write)\b|\b(?:bash|edit|write)\s+tools?\b|`(?:bash|edit|write)`|\b(?:run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|manage_subagents)\b)/iu;
+const PROMPT_VENDOR_BYPASS_PATTERN = /(?:\buse\s+(?:bash|edit|write)\b|\bclaude\s+(?:edit|write)\b|\b(?:run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|manage_subagents)\b)/iu;
 
 function compareText(left, right) {
   return left === right ? 0 : left < right ? -1 : 1;
@@ -276,6 +282,18 @@ async function loadJsonCollection(root, coreRoot, directoryName, kind, errors) {
 
 async function loadRoleCollection(root, coreRoot, errors) {
   const entries = await loadJsonCollection(root, coreRoot, "roles", "role", errors);
+  let directories = [];
+  try {
+    directories = await readdir(resolve(coreRoot, "roles"), { withFileTypes: true });
+  } catch (error) {
+    if (error?.code !== "ENOENT" && error?.code !== "ENOTDIR") throw error;
+  }
+  for (const directory of directories.filter((entry) => entry.isDirectory()).sort((left, right) => compareText(left.name, right.name))) {
+    if (!CANONICAL_ROLE_SET.has(directory.name)) {
+      errors.push(errorRecord(toPortablePath(root, resolve(coreRoot, "roles", directory.name)), `/roles/${directory.name}`, "canonicalRole", `unknown canonical role directory ${directory.name}`));
+      if (directory.name === "generalist") errors.push(errorRecord(toPortablePath(root, resolve(coreRoot, "roles", directory.name)), `/roles/${directory.name}`, "quarantinedRole", "generic generalist roles are not part of canonical routing"));
+    }
+  }
   for (const entry of entries) {
     const promptPath = resolve(dirname(entry.path), "prompt.md");
     if (!(await pathExists(promptPath))) continue;
@@ -285,6 +303,10 @@ async function loadRoleCollection(root, coreRoot, errors) {
       if (prompt.trim().length === 0) {
         errors.push(errorRecord(promptSourcePath, "", "prompt", "role prompt must contain a non-empty body"));
       } else {
+        const readOnly = entry.record.mutationScope === "none";
+        if (CANONICAL_ROLE_SET.has(entry.record.id) && ((readOnly && PROMPT_READ_ONLY_MUTATION_PATTERN.test(prompt)) || (!readOnly && PROMPT_VENDOR_BYPASS_PATTERN.test(prompt)))) {
+          errors.push(errorRecord(promptSourcePath, "", "promptSafety", "portable role prompts cannot invoke vendor-native mutable or command tools"));
+        }
         entry.record.prompt = prompt;
       }
     } catch (error) {
@@ -294,32 +316,14 @@ async function loadRoleCollection(root, coreRoot, errors) {
   return entries;
 }
 
-const CANONICAL_ROLE_IDS = new Set([
-  "researcher",
-  "investigator",
-  "architect",
-  "implementer",
-  "verifier",
-  "reviewer",
-  "security-reviewer"
-]);
-const ROLE_WRITE_CAPABILITIES = new Set([
-  "repository-write",
-  "filesystem-write",
-  "git-write",
-  "isolated-write",
-  "command-execution"
-]);
-const IMPLEMENTER_SCOPE_OPERATIONS = new Set(["create", "modify", "delete"]);
-
 function roleContractErrors(entries, requireCanonical = false) {
   const errors = [];
   const prompts = new Map();
   const purposes = new Map();
-  const canonicalEntries = entries.filter((entry) => CANONICAL_ROLE_IDS.has(entry.record?.id));
-  const enforceCanonicalContract = requireCanonical || canonicalEntries.length === CANONICAL_ROLE_IDS.size;
-  if (requireCanonical && canonicalEntries.length !== CANONICAL_ROLE_IDS.size) {
-    for (const roleId of [...CANONICAL_ROLE_IDS].sort(compareText)) {
+  const canonicalEntries = entries.filter((entry) => CANONICAL_ROLE_SET.has(entry.record?.id));
+  const enforceCanonicalContract = requireCanonical;
+  if (enforceCanonicalContract) {
+    for (const roleId of [...CANONICAL_ROLE_SET].sort(compareText)) {
       if (!canonicalEntries.some((entry) => entry.record?.id === roleId)) {
         errors.push(errorRecord("core/roles", `/roles/${roleId}`, "canonicalRole", `missing canonical role ${roleId}`));
       }
@@ -327,13 +331,13 @@ function roleContractErrors(entries, requireCanonical = false) {
   }
   for (const entry of entries) {
     const role = entry.record;
-    if (!CANONICAL_ROLE_IDS.has(role?.id) && role?.id !== "generalist") continue;
-    if (!enforceCanonicalContract && role?.id !== "generalist") continue;
     const sourcePath = entry.sourcePath;
-    if (role.id === "generalist") {
-      errors.push(errorRecord(sourcePath, "/id", "quarantinedRole", "generic generalist roles are not part of canonical routing"));
+    if (!CANONICAL_ROLE_SET.has(role?.id)) {
+      errors.push(errorRecord(sourcePath, "/id", "canonicalRole", `unknown canonical role ${String(role?.id)}`));
+      if (role?.id === "generalist") errors.push(errorRecord(sourcePath, "/id", "quarantinedRole", "generic generalist roles are not part of canonical routing"));
       continue;
     }
+    if (!enforceCanonicalContract) continue;
     if (typeof role.prompt !== "string" || role.prompt.trim().length === 0) {
       errors.push(errorRecord(sourcePath, "/prompt", "prompt", "canonical role requires a non-empty sibling prompt.md"));
     } else {
@@ -360,7 +364,11 @@ function roleContractErrors(entries, requireCanonical = false) {
     if (!role.outputContract || typeof role.outputContract !== "object" || Array.isArray(role.outputContract) || !Object.hasOwn(role.outputContract, "evidence")) {
       errors.push(errorRecord(sourcePath, "/outputContract", "evidenceContract", "outputContract must declare evidence"));
     }
-    const capabilities = Array.isArray(role.capabilities) ? role.capabilities : [];
+    const capabilities = [
+      ...(Array.isArray(role.capabilities) ? role.capabilities : []),
+      ...(Array.isArray(role.requiredCapabilities) ? role.requiredCapabilities : []),
+      ...(Array.isArray(role.allowedCapabilities) ? role.allowedCapabilities : [])
+    ];
     const writeCapabilities = capabilities.filter((capability) => ROLE_WRITE_CAPABILITIES.has(capability));
     if (role.id !== "implementer" && writeCapabilities.length > 0) {
       errors.push(errorRecord(sourcePath, "/capabilities", "mutationScope", `read-only role cannot declare ${writeCapabilities.join(", ")}`));
@@ -369,6 +377,9 @@ function roleContractErrors(entries, requireCanonical = false) {
       errors.push(errorRecord(sourcePath, "/mutationScope", "mutationScope", "every non-implementer role must use mutationScope none"));
     }
     if (role.id === "implementer") {
+      if (writeCapabilities.length === 0) {
+        errors.push(errorRecord(sourcePath, "/capabilities", "semanticCapability", `implementer must declare one of ${[...ROLE_WRITE_CAPABILITIES].sort(compareText).join(", ")}`));
+      }
       const scope = role.mutationScope;
       const validScope = scope && typeof scope === "object" && !Array.isArray(scope) &&
         Array.isArray(scope.paths) && scope.paths.length > 0 &&
@@ -379,6 +390,42 @@ function roleContractErrors(entries, requireCanonical = false) {
         errors.push(errorRecord(sourcePath, "/mutationScope", "mutationScope", "implementer must declare non-empty scoped paths and operations"));
       }
       if (role.mutationScope === "full") errors.push(errorRecord(sourcePath, "/mutationScope", "mutationScope", "implementer may not use full mutation scope"));
+    }
+  }
+  return errors;
+}
+
+async function nearestExistingRealpath(path) {
+  let candidate = resolve(path);
+  while (true) {
+    try {
+      return await realpath(candidate);
+    } catch (error) {
+      if (error?.code !== "ENOENT" && error?.code !== "ENOTDIR") throw error;
+      const parent = resolve(candidate, "..");
+      if (parent === candidate) return null;
+      candidate = parent;
+    }
+  }
+}
+
+async function mutationScopeContainmentErrors(repositoryRoot, entries) {
+  const errors = [];
+  const rootRealpath = await nearestExistingRealpath(repositoryRoot);
+  if (!rootRealpath) return errors;
+  const implementers = entries.filter((entry) => entry.record?.id === "implementer");
+  for (const entry of implementers) {
+    const paths = entry.record?.mutationScope?.paths;
+    if (!Array.isArray(paths)) continue;
+    for (const [index, scopePath] of paths.entries()) {
+      if (typeof scopePath !== "string") continue;
+      const literal = scopePath.split("/**", 1)[0].replace(/\/$/u, "");
+      const targetRealpath = await nearestExistingRealpath(resolve(repositoryRoot, literal));
+      if (!targetRealpath) continue;
+      const relativePath = relative(rootRealpath, targetRealpath);
+      if (relativePath === ".." || relativePath.startsWith(`..${sep}`) || resolve(rootRealpath, relativePath) !== targetRealpath) {
+        errors.push(errorRecord(entry.sourcePath, `/mutationScope/paths/${index}`, "mutationScopeContainment", "mutation scope resolves outside the repository root"));
+      }
     }
   }
   return errors;
@@ -533,6 +580,7 @@ export async function loadCore(root) {
   const collections = { rules, roles, skills, workflows, commands, evals };
   for (const collection of Object.values(collections)) checkDuplicateIds(collection, errors);
   errors.push(...roleContractErrors(roles, inventory?.repository === "all-about-agents"));
+  errors.push(...await mutationScopeContainmentErrors(repositoryRoot, roles));
   checkReferences(collections, errors);
   for (const collection of Object.values(collections)) collection.sort(sortEntries);
   if (errors.length > 0) throw new CoreLoadError(errors);

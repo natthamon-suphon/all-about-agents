@@ -1,5 +1,5 @@
 {
-  "fileCount": 41,
+  "fileCount": 48,
   "files": [
     {
       "relativePath": ".agents/skills/brainstorming/SKILL.md",
@@ -108,7 +108,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "921f5b1a8dfcf9381b621f817217db19d23dc8aa9d2e75ea863d5ba07a22e2c4",
+      "sha256": "08148813bdbb8de545ab109ab96ed6063f9a4db57b37f8c7095464acd4b68505",
       "mode": null
     },
     {
@@ -152,8 +152,18 @@
       "mode": null
     },
     {
+      "relativePath": ".codex/agents/architect.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
+      "mode": null
+    },
+    {
       "relativePath": ".codex/agents/architect.toml",
       "sha256": "1dcc929926c0430cfad412be0d6b0332e0c76d041975f09789890b15fd7866f1",
+      "mode": null
+    },
+    {
+      "relativePath": ".codex/agents/implementer.config.toml",
+      "sha256": "cc4f8f11ad3b2689b7b36b2ea9161ffb3a65327d60d8c73e508d9f3d378377a8",
       "mode": null
     },
     {
@@ -162,8 +172,18 @@
       "mode": null
     },
     {
+      "relativePath": ".codex/agents/investigator.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
+      "mode": null
+    },
+    {
       "relativePath": ".codex/agents/investigator.toml",
       "sha256": "71a694c7bc6cf338e23cde33ff05881642f0dd6fa9a91e192e64516170afd58c",
+      "mode": null
+    },
+    {
+      "relativePath": ".codex/agents/researcher.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
       "mode": null
     },
     {
@@ -172,13 +192,28 @@
       "mode": null
     },
     {
+      "relativePath": ".codex/agents/reviewer.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
+      "mode": null
+    },
+    {
       "relativePath": ".codex/agents/reviewer.toml",
       "sha256": "be8c972c0e7c3fcefc4c94ca58735f4b50cca27bf87a5c8f026f5e87c39e8857",
       "mode": null
     },
     {
+      "relativePath": ".codex/agents/security-reviewer.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
+      "mode": null
+    },
+    {
       "relativePath": ".codex/agents/security-reviewer.toml",
       "sha256": "30780ca94f5c4aeb0f11f0f618cdc77d4612a3fcfae5b819d02b1879e2cb7694",
+      "mode": null
+    },
+    {
+      "relativePath": ".codex/agents/verifier.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
       "mode": null
     },
     {
@@ -193,7 +228,7 @@
     },
     {
       "relativePath": "config.toml",
-      "sha256": "88d5e63f1af113513ac655e7778d11994e585a1cf72507dfef2211b8b323e3b5",
+      "sha256": "6c63174df7eb8184032b49550f258f5f3492da011d8686b21db67928e9c4e2d0",
       "mode": null
     },
     {
@@ -203,7 +238,7 @@
     },
     {
       "relativePath": "terra-max.config.toml",
-      "sha256": "f4625e0b7fc0e73d92028a964be76042953f46135838a5f95fcf009905f913b2",
+      "sha256": "e80b34f49271ec5c97a7ed92d01dd1694ccefa908e803805b137577bbcb33222",
       "mode": null
     }
   ],
@@ -294,7 +329,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "921f5b1a8dfcf9381b621f817217db19d23dc8aa9d2e75ea863d5ba07a22e2c4"
+      "sha256": "08148813bdbb8de545ab109ab96ed6063f9a4db57b37f8c7095464acd4b68505"
     },
     {
       "relativePath": ".agents/skills/using-git-worktrees/SKILL.md",
@@ -329,28 +364,56 @@
       "sha256": "cbb2dec01497ad11ee629d7dc88b9000272cdbb37c26cb2501dd82e12e676d4d"
     },
     {
+      "relativePath": ".codex/agents/architect.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
+    },
+    {
       "relativePath": ".codex/agents/architect.toml",
       "sha256": "1dcc929926c0430cfad412be0d6b0332e0c76d041975f09789890b15fd7866f1"
+    },
+    {
+      "relativePath": ".codex/agents/implementer.config.toml",
+      "sha256": "cc4f8f11ad3b2689b7b36b2ea9161ffb3a65327d60d8c73e508d9f3d378377a8"
     },
     {
       "relativePath": ".codex/agents/implementer.toml",
       "sha256": "ea7305449bc922b756fbc5ef38189d64b81bef47e8a7c5896d46e23553897d83"
     },
     {
+      "relativePath": ".codex/agents/investigator.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
+    },
+    {
       "relativePath": ".codex/agents/investigator.toml",
       "sha256": "71a694c7bc6cf338e23cde33ff05881642f0dd6fa9a91e192e64516170afd58c"
+    },
+    {
+      "relativePath": ".codex/agents/researcher.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
     },
     {
       "relativePath": ".codex/agents/researcher.toml",
       "sha256": "8fe30040612efc959815cb99585f2df4e4085d6669f27ba6badce5892b5ca014"
     },
     {
+      "relativePath": ".codex/agents/reviewer.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
+    },
+    {
       "relativePath": ".codex/agents/reviewer.toml",
       "sha256": "be8c972c0e7c3fcefc4c94ca58735f4b50cca27bf87a5c8f026f5e87c39e8857"
     },
     {
+      "relativePath": ".codex/agents/security-reviewer.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
+    },
+    {
       "relativePath": ".codex/agents/security-reviewer.toml",
       "sha256": "30780ca94f5c4aeb0f11f0f618cdc77d4612a3fcfae5b819d02b1879e2cb7694"
+    },
+    {
+      "relativePath": ".codex/agents/verifier.config.toml",
+      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
     },
     {
       "relativePath": ".codex/agents/verifier.toml",
@@ -362,7 +425,7 @@
     },
     {
       "relativePath": "config.toml",
-      "sha256": "88d5e63f1af113513ac655e7778d11994e585a1cf72507dfef2211b8b323e3b5"
+      "sha256": "6c63174df7eb8184032b49550f258f5f3492da011d8686b21db67928e9c4e2d0"
     },
     {
       "relativePath": "docs/manual-desktop.md",
@@ -370,7 +433,7 @@
     },
     {
       "relativePath": "terra-max.config.toml",
-      "sha256": "f4625e0b7fc0e73d92028a964be76042953f46135838a5f95fcf009905f913b2"
+      "sha256": "e80b34f49271ec5c97a7ed92d01dd1694ccefa908e803805b137577bbcb33222"
     }
   ],
   "registrations": [
