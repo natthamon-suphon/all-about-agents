@@ -34,11 +34,12 @@ function parseInput(rawInput) {
   }
 }
 
-function parsePolicy(rawPolicy) {
+function parsePolicy(rawPolicy, canonicalRuleIds) {
   try {
     const policy = JSON.parse(rawPolicy);
     if (!isPlainObject(policy) || policy.schemaVersion !== 1 || policy.id !== "emergency-guard") return null;
-    if (!Array.isArray(policy.orderedRuleIds) || policy.orderedRuleIds.some((id) => typeof id !== "string")) return null;
+    if (!Array.isArray(canonicalRuleIds) || !Array.isArray(policy.orderedRuleIds) || policy.orderedRuleIds.length !== canonicalRuleIds.length || policy.orderedRuleIds.some((id, index) => id !== canonicalRuleIds[index])) return null;
+    if (!Array.isArray(policy.rules) || policy.rules.length !== canonicalRuleIds.length || policy.rules.some((rule, index) => !isPlainObject(rule) || rule.id !== canonicalRuleIds[index] || rule.decision !== "deny")) return null;
     return policy;
   } catch {
     return null;
@@ -73,7 +74,7 @@ export function normalizeNativeRequest(surface, request) {
 }
 
 export function buildNativeDecision(surface, classification) {
-  if (!AUTOMATIC_SURFACES.has(surface) || !isPlainObject(classification) || classification.decision !== "deny") return {};
+  if (!AUTOMATIC_SURFACES.has(surface) || !isPlainObject(classification) || classification.decision !== "deny" || typeof classification.reason !== "string" || [...classification.reason].length > 160 || /[\u0000-\u001f\u007f]/u.test(classification.reason)) return {};
   return {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
@@ -83,10 +84,10 @@ export function buildNativeDecision(surface, classification) {
   };
 }
 
-async function readPolicy(policyPath) {
+async function readPolicy(policyPath, canonicalRuleIds) {
   if (!absolutePath(policyPath)) return null;
   try {
-    return parsePolicy(await readFile(policyPath, "utf8"));
+    return parsePolicy(await readFile(policyPath, "utf8"), canonicalRuleIds);
   } catch {
     return null;
   }
@@ -104,20 +105,20 @@ export async function runEmergencyGuard(argv = process.argv.slice(2), rawInput =
   const policyPath = argumentValue(argv, "--policy-path");
   const verifiedRoot = argumentValue(argv, "--verified-disposable-root");
   if (!AUTOMATIC_SURFACES.has(surface)) return "{}";
-  const policy = await readPolicy(policyPath);
-  if (!policy) return "{}";
   let policyModule;
   try {
     policyModule = await import(new URL("./emergency-policy.mjs", import.meta.url));
   } catch {
     return "{}";
   }
+  const policy = await readPolicy(policyPath, policyModule.DEFAULT_RULE_IDS);
   const request = parseInput(rawInput === null ? await readStdin() : rawInput);
   const normalized = normalizeNativeRequest(surface, request);
   if (!normalized) return "{}";
   const verifiedDisposableRoot = parseVerifiedRoot(verifiedRoot);
   try {
-    const classification = policyModule.classifyEmergencyAction({ ...normalized, verifiedDisposableRoot, policy });
+    const extractedPaths = typeof policyModule.extractCandidatePaths === "function" ? policyModule.extractCandidatePaths(normalized.command) : [];
+    const classification = policyModule.classifyEmergencyAction({ ...normalized, paths: [...normalized.paths, ...extractedPaths], verifiedDisposableRoot, policy });
     return JSON.stringify(buildNativeDecision(surface, classification));
   } catch {
     return "{}";

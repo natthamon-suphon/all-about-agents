@@ -198,7 +198,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "95e3a8c7537460e49b098997886adf71b29c2253bb53b591a9fc2740b4e9f10e",
+      "sha256": "9928b5d787efa032def1825b818c6f0b274a440a170fdb988496c7dc9f159590",
       "mode": null
     },
     {
@@ -218,12 +218,12 @@
     },
     {
       "relativePath": "hooks/emergency-guard.mjs",
-      "sha256": "3d3013780751f3c238f77abd8b3eaf16431cd36c09b9c90c6eb96e29c8e71885",
+      "sha256": "afd73f64b4f3845f72bffc429f63066215bb00bea9d70b6bc0abe7c204f5901c",
       "mode": 493
     },
     {
       "relativePath": "hooks/emergency-policy.mjs",
-      "sha256": "1abe40537eb0509746c69c431a1c525d593aa417efd30e55eeccc76188b0fcd5",
+      "sha256": "37a04e9e30c7e583fc238c2fb05c3bb3436b6cab9482efbe4fb36fade5782638",
       "mode": 493
     },
     {
@@ -396,7 +396,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "95e3a8c7537460e49b098997886adf71b29c2253bb53b591a9fc2740b4e9f10e"
+      "sha256": "9928b5d787efa032def1825b818c6f0b274a440a170fdb988496c7dc9f159590"
     },
     {
       "relativePath": "hooks/bootstrap.json",
@@ -412,11 +412,11 @@
     },
     {
       "relativePath": "hooks/emergency-guard.mjs",
-      "sha256": "3d3013780751f3c238f77abd8b3eaf16431cd36c09b9c90c6eb96e29c8e71885"
+      "sha256": "afd73f64b4f3845f72bffc429f63066215bb00bea9d70b6bc0abe7c204f5901c"
     },
     {
       "relativePath": "hooks/emergency-policy.mjs",
-      "sha256": "1abe40537eb0509746c69c431a1c525d593aa417efd30e55eeccc76188b0fcd5"
+      "sha256": "37a04e9e30c7e583fc238c2fb05c3bb3436b6cab9482efbe4fb36fade5782638"
     },
     {
       "relativePath": "hooks/hooks.json",
@@ -459,6 +459,19 @@
       "matcher": "^startup$",
       "trustRequired": true,
       "desktopManualOnly": true
+    },
+    {
+      "kind": "emergency-guard",
+      "surface": "codex-cli",
+      "targetRuntime": "cli",
+      "relativePath": "hooks/hooks.json",
+      "event": "PreToolUse",
+      "matcher": ".*",
+      "enabled": true,
+      "automatic": true,
+      "trustRequired": true,
+      "probeRequired": false,
+      "status": "ready"
     },
     {
       "kind": "instructions",

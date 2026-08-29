@@ -6,11 +6,12 @@ import { tmpdir } from "node:os";
 import test from "node:test";
 
 import { classifyEmergencyAction, DEFAULT_RULE_IDS } from "../../installers/lib/emergency-policy.mjs";
+import { buildNativeDecision, normalizeNativeRequest } from "../../core/hooks/emergency-guard.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
-import { renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
-import { renderAgy } from "../../adapters/agy/adapter.mjs";
+import { mapAntigravityEmergencyDecision, normalizeAntigravityEmergencyRequest, renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
+import { mapAgyEmergencyDecision, normalizeAgyEmergencyRequest, renderAgy } from "../../adapters/agy/adapter.mjs";
 
 const requiredOutputs = [
   "core/hooks/emergency-guard.json",
@@ -32,6 +33,7 @@ test("T014 creates every owned artifact", async () => {
 });
 
 const fixture = JSON.parse(await readFile(resolve(process.cwd(), "tests/fixtures/emergency-actions.json"), "utf8"));
+const emergencyPolicy = JSON.parse(await readFile(resolve(process.cwd(), "core/hooks/emergency-guard.json"), "utf8"));
 
 test("emergency policy keeps canonical rule order and classifies every fixture", async () => {
   const policy = JSON.parse(await readFile(resolve(process.cwd(), "core/hooks/emergency-guard.json"), "utf8"));
@@ -68,6 +70,108 @@ test("emergency policy rejects traversal even when a containment proof is marked
     }
   });
   assert.deepEqual({ decision: result.decision, ruleId: result.ruleId }, { decision: "deny", ruleId: "filesystem-root-erasure" });
+});
+
+test("emergency policy never accepts incomplete, reordered, duplicated, or unknown rule policies", () => {
+  const forcePush = { capability: "command-execution", command: "git push origin main --force" };
+  const invalidPolicies = [
+    { orderedRuleIds: ["git-discard-uncommitted"] },
+    { orderedRuleIds: ["unknown-rule"] },
+    { orderedRuleIds: [...DEFAULT_RULE_IDS.slice(0, 2), ...DEFAULT_RULE_IDS.slice(3), "guardrail-bypass"] },
+    { orderedRuleIds: [...DEFAULT_RULE_IDS, "duplicate-rule"] }
+  ];
+  for (const policy of invalidPolicies) {
+    const result = classifyEmergencyAction({ ...forcePush, policy });
+    assert.deepEqual({ decision: result.decision, ruleId: result.ruleId }, { decision: "deny", ruleId: "git-force-push" });
+  }
+  const reordered = classifyEmergencyAction({
+    capability: "filesystem-delete",
+    command: "rm -rf / && git push origin main --force",
+    paths: ["/"],
+    policy: { orderedRuleIds: [...DEFAULT_RULE_IDS.slice(1), DEFAULT_RULE_IDS[0]] }
+  });
+  assert.deepEqual({ decision: reordered.decision, ruleId: reordered.ruleId }, { decision: "deny", ruleId: "filesystem-root-erasure" });
+});
+
+test("emergency policy rejects broad, device, UNC, and namespace roots despite containment proof", () => {
+  const roots = [
+    ["/tmp", "/tmp/generated"],
+    ["C:/", "C:/generated"],
+    ["/home/tester/disposable", "/home/tester/disposable/generated"],
+    ["/workspace/project", "/workspace/project/generated"],
+    ["//server/share/disposable", "//server/share/disposable/generated"],
+    ["//?/C:/tmp/disposable", "//?/C:/tmp/disposable/generated"],
+    ["//./PhysicalDrive0", "//./PhysicalDrive0/generated"]
+  ];
+  for (const [resolvedPath, target] of roots) {
+    const result = classifyEmergencyAction({
+      capability: "filesystem-delete",
+      command: `rm -rf ${target}`,
+      paths: [{ path: target, kind: "generated" }],
+      verifiedDisposableRoot: { resolvedPath, resolved: true, allTargetsContained: true, designation: "disposable", targets: [target] }
+    });
+    assert.deepEqual({ decision: result.decision, ruleId: result.ruleId }, { decision: "deny", ruleId: "filesystem-root-erasure" }, resolvedPath);
+  }
+});
+
+function firstFixturePath(action) {
+  const first = Array.isArray(action.paths) ? action.paths[0] : null;
+  return typeof first === "string" ? first : first && typeof first === "object" ? first.resolvedPath || first.path || first.filePath || "" : "";
+}
+
+function fixtureCommand(action) {
+  if (typeof action.command === "string") return action.command;
+  if (action.gitOperation && typeof action.gitOperation.operation === "string") return action.gitOperation.operation;
+  if (action.secretOperation && typeof action.secretOperation.operation === "string") return action.secretOperation.operation;
+  return "";
+}
+
+test("all emergency fixtures agree across canonical and four documented adapter decision seams", () => {
+  for (const entry of fixture.cases) {
+    const action = entry.action;
+    const command = fixtureCommand(action);
+    const path = firstFixturePath(action);
+    const claudeRequest = {
+      hook_event_name: "PreToolUse",
+      tool_name: command ? "Bash" : "Read",
+      tool_input: { ...(command ? { command } : {}), ...(path ? { file_path: path } : {}) }
+    };
+    const claudeNormalized = normalizeNativeRequest("claude", claudeRequest);
+    const antigravityRequest = {
+      toolCall: { name: command ? "run_command" : "read_file", args: { ...(command ? { CommandLine: command } : {}), ...(path ? { filePath: path } : {}) } },
+      stepIdx: 1
+    };
+    const antigravityNormalized = normalizeAntigravityEmergencyRequest(antigravityRequest);
+    const agyNormalized = normalizeAgyEmergencyRequest(antigravityRequest);
+    assert.ok(claudeNormalized && antigravityNormalized && agyNormalized, entry.id);
+    const canonical = classifyEmergencyAction({ ...action, policy: emergencyPolicy });
+    assert.deepEqual({ decision: canonical.decision, ruleId: canonical.ruleId }, entry.expected, entry.id);
+    const normalizedInputs = [claudeNormalized, antigravityNormalized, agyNormalized];
+    for (const normalized of normalizedInputs) {
+      const classification = classifyEmergencyAction({
+        ...normalized,
+        paths: action.paths || normalized.paths,
+        verifiedDisposableRoot: action.verifiedDisposableRoot,
+        policy: emergencyPolicy
+      });
+      assert.deepEqual({ decision: classification.decision, ruleId: classification.ruleId }, entry.expected, `${entry.id} normalized`);
+    }
+    const nativeClaude = buildNativeDecision("claude", canonical);
+    const nativeCodex = buildNativeDecision("codex", canonical);
+    const nativeAntigravity = mapAntigravityEmergencyDecision(canonical);
+    const nativeAgy = mapAgyEmergencyDecision(canonical);
+    if (entry.expected.decision === "deny") {
+      assert.equal(nativeClaude.hookSpecificOutput.permissionDecision, "deny", entry.id);
+      assert.equal(nativeCodex.hookSpecificOutput.permissionDecision, "deny", entry.id);
+      assert.deepEqual(nativeAntigravity, { decision: "deny", reason: canonical.reason }, entry.id);
+      assert.deepEqual(nativeAgy, { decision: "deny", reason: canonical.reason }, entry.id);
+    } else {
+      assert.deepEqual(nativeClaude, {}, entry.id);
+      assert.deepEqual(nativeCodex, {}, entry.id);
+      assert.deepEqual(nativeAntigravity, {}, entry.id);
+      assert.deepEqual(nativeAgy, {}, entry.id);
+    }
+  }
 });
 
 test("emergency policy remains bounded and total for hostile path data", () => {
@@ -157,6 +261,26 @@ test("rendered Claude and Codex guard wrappers deny emergency commands and defer
       assert.deepEqual(malformed, {});
       const bareRoot = await runHandler(process.execPath, [wrapper, "--surface", surface, "--policy-path", policy, "--verified-disposable-root", "/tmp/aaa-disposable"], { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "rm -rf /tmp/aaa-disposable/generated-fixture" } });
       assert.deepEqual(bareRoot, { hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "Denied: broad or unresolved filesystem erasure is an emergency action." } });
+      const tamperedPolicy = JSON.parse(await readFile(policy, "utf8"));
+      tamperedPolicy.orderedRuleIds = ["git-discard-uncommitted"];
+      await writeFile(policy, JSON.stringify(tamperedPolicy));
+      const tampered = await runHandler(process.execPath, [wrapper, "--surface", surface, "--policy-path", policy], { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "git push origin main --force" } });
+      assert.deepEqual(tampered, { hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: "Denied: force-push would rewrite shared Git history." } });
+      await writeFile(policy, fileMap(result).get("hooks/emergency-guard.json"));
+      for (const entry of fixture.cases) {
+        const action = entry.action;
+        const command = fixtureCommand(action);
+        const path = firstFixturePath(action);
+        const wrapperArgs = [wrapper, "--surface", surface, "--policy-path", policy];
+        if (action.verifiedDisposableRoot) wrapperArgs.push("--verified-disposable-root", JSON.stringify(action.verifiedDisposableRoot));
+        const native = await runHandler(process.execPath, wrapperArgs, { hook_event_name: "PreToolUse", tool_name: command ? "Bash" : "Read", tool_input: { ...(command ? { command } : {}), ...(path ? { file_path: path } : {}) } });
+        if (entry.expected.decision === "deny") {
+          assert.equal(native.hookSpecificOutput?.permissionDecision, "deny", `${surface}:${entry.id}`);
+          assert.equal(native.hookSpecificOutput?.permissionDecisionReason, classifyEmergencyAction({ ...action, policy: emergencyPolicy }).reason, `${surface}:${entry.id}`);
+        } else {
+          assert.deepEqual(native, {}, `${surface}:${entry.id}`);
+        }
+      }
     } finally {
       await rm(packageRoot, { recursive: true, force: true });
     }

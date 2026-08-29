@@ -10,6 +10,7 @@ import { AdapterContractError, renderSurface as validateSurface, validateCommand
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, hasScopedMutation, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const CODEX_SURFACE = "codex";
+const CODEX_TARGET_RUNTIMES = Object.freeze(["cli", "desktop"]);
 const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
 const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.json", import.meta.url), "utf8");
 const EMERGENCY_GUARD_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.mjs", import.meta.url), "utf8");
@@ -203,16 +204,14 @@ function pluginManifest() {
   };
 }
 
-function bootstrapHooks() {
-  const emergencyHook = {
-    matcher: codexEmergencyTemplate.nativeMatcher,
-    hooks: [{
-      type: "command",
-      command: codexEmergencyTemplate.command,
-      commandWindows: codexEmergencyTemplate.commandWindows
-    }]
-  };
-  return {
+function targetRuntimeOf(input) {
+  const targetRuntime = input.targetRuntime ?? "cli";
+  if (!CODEX_TARGET_RUNTIMES.includes(targetRuntime)) throw new TypeError(`targetRuntime must be one of: ${CODEX_TARGET_RUNTIMES.join(", ")}`);
+  return targetRuntime;
+}
+
+function bootstrapHooks(targetRuntime) {
+  const hooks = {
     description: codexBootstrapTemplate.description,
     hooks: {
       [codexBootstrapTemplate.event]: [
@@ -224,10 +223,26 @@ function bootstrapHooks() {
             commandWindows: codexBootstrapTemplate.commandWindows
           }]
         }
-      ],
-      [codexEmergencyTemplate.event]: [emergencyHook]
+      ]
     }
   };
+  if (targetRuntime === "cli") {
+    hooks.hooks[codexEmergencyTemplate.event] = [{
+      matcher: codexEmergencyTemplate.nativeMatcher,
+      hooks: [{
+        type: "command",
+        command: codexEmergencyTemplate.command,
+        commandWindows: codexEmergencyTemplate.commandWindows
+      }]
+    }];
+  }
+  return hooks;
+}
+
+function desktopEmergencyContract() {
+  const contract = codexEmergencyTemplate.desktop;
+  if (!contract || contract.automatic !== false || contract.probeRequired !== true || contract.status !== "not run" || typeof contract.reason !== "string" || !Array.isArray(contract.manualSequence)) throw new Error("Codex Desktop emergency template is incomplete");
+  return contract;
 }
 
 function desktopInstructions() {
@@ -239,6 +254,7 @@ function desktopInstructions() {
     "To use the explicit alternate in Codex Desktop, select gpt-5.6-terra and max reasoning in the Desktop model controls for the current thread.",
     "",
     "Desktop model selection is manual because no documented Desktop profile selector is assumed by this adapter.",
+    "The emergency PreToolUse guard is automatic only for the explicit Codex CLI target; Desktop output remains probe-required and contains no copied emergency runtime.",
     ""
   ].join("\n"));
 }
@@ -378,6 +394,7 @@ function capabilityGuidance() {
 
 /** Render the initial deterministic Codex policy overlays. */
 export function renderCodex(input = {}) {
+  const targetRuntime = targetRuntimeOf(input);
   const core = input.core;
   if (!core || typeof core !== "object") throw new TypeError("core is required");
   for (const collection of ["rules", "skills", "workflows", "commands"]) {
@@ -391,12 +408,14 @@ export function renderCodex(input = {}) {
   const profile = profileId(input.profile ?? "portable");
   const files = [];
   addFile(files, ".codex-plugin/plugin.json", renderJson(pluginManifest()));
-  addFile(files, "hooks/hooks.json", renderJson(bootstrapHooks()));
+  addFile(files, "hooks/hooks.json", renderJson(bootstrapHooks(targetRuntime)));
   addFile(files, "hooks/bootstrap.json", BOOTSTRAP_CONFIG_SOURCE);
   addFile(files, `hooks/${codexBootstrapTemplate.module}.mjs`, BOOTSTRAP_SOURCE, 0o755);
-  addFile(files, "hooks/emergency-guard.json", EMERGENCY_CONFIG_SOURCE);
-  addFile(files, "hooks/emergency-guard.mjs", EMERGENCY_GUARD_SOURCE, 0o755);
-  addFile(files, "hooks/emergency-policy.mjs", EMERGENCY_POLICY_SOURCE, 0o755);
+  if (targetRuntime === "cli") {
+    addFile(files, "hooks/emergency-guard.json", EMERGENCY_CONFIG_SOURCE);
+    addFile(files, "hooks/emergency-guard.mjs", EMERGENCY_GUARD_SOURCE, 0o755);
+    addFile(files, "hooks/emergency-policy.mjs", EMERGENCY_POLICY_SOURCE, 0o755);
+  }
   addFile(files, "AGENTS.md", renderAgentsDocument(core));
   addFile(files, ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md", capabilityGuidance());
   addFile(files, "docs/manual-desktop.md", desktopInstructions());
@@ -421,6 +440,28 @@ export function renderCodex(input = {}) {
     if (file.relativePath.endsWith(".toml")) parseCodexToml(new TextDecoder().decode(file.content));
   }
   const configRoot = resolveCodexHome(input);
+  const emergencyRegistration = targetRuntime === "cli"
+    ? {
+        kind: "emergency-guard",
+        surface: "codex-cli",
+        targetRuntime,
+        relativePath: "hooks/hooks.json",
+        event: codexEmergencyTemplate.event,
+        matcher: codexEmergencyTemplate.nativeMatcher,
+        enabled: true,
+        automatic: true,
+        trustRequired: true,
+        probeRequired: false,
+        status: "ready"
+      }
+    : {
+        ...desktopEmergencyContract(),
+        kind: "emergency-guard",
+        surface: "codex-desktop",
+        targetRuntime,
+        relativePath: "hooks/hooks.json",
+        enabled: false
+      };
   const result = {
     files,
     registrations: [
@@ -447,6 +488,7 @@ export function renderCodex(input = {}) {
         trustRequired: true,
         desktopManualOnly: true
       },
+      emergencyRegistration,
       {
         kind: "instructions",
         relativePath: "AGENTS.md",
@@ -502,6 +544,12 @@ export function renderCodex(input = {}) {
       }
     ],
     diagnostics: [
+      ...(targetRuntime === "desktop" ? [{
+        code: "codex-desktop-emergency-guard-probe-required",
+        severity: "warning",
+        message: "Codex Desktop emergency guard output is manual/probe-only because executable package-root resolution is not verified separately from Codex CLI.",
+        sourcePath: "adapters/codex/templates/hooks/emergency-guard.json"
+      }] : []),
       ...nativeScopeDiagnostics(core.roles),
       ...missingSkills.map(({ skill, hasRecord }) => ({
       code: "missing-skill-source",

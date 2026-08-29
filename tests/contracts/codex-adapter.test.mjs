@@ -376,6 +376,29 @@ test("Codex emergency guard uses documented CLI command forms and canonical poli
   ]);
 });
 
+test("Codex target runtime keeps CLI guard automatic but makes Desktop probe-only without runtime copies", () => {
+  const cli = resultFor("portable", { targetRuntime: "cli" });
+  const cliFiles = fileMap(cli);
+  const cliHooks = JSON.parse(cliFiles.get("hooks/hooks.json")).hooks;
+  assert.ok(cliHooks.PreToolUse?.[0]?.hooks?.[0]?.command);
+  assert.ok(cliFiles.has("hooks/emergency-guard.mjs"));
+  assert.ok(cliFiles.has("hooks/emergency-policy.mjs"));
+  assert.ok(cliFiles.has("hooks/emergency-guard.json"));
+  assert.ok(cli.registrations.some((entry) => entry.kind === "emergency-guard" && entry.targetRuntime === "cli" && entry.automatic === true));
+
+  const desktop = resultFor("portable", { targetRuntime: "desktop" });
+  const desktopFiles = fileMap(desktop);
+  const desktopHooks = JSON.parse(desktopFiles.get("hooks/hooks.json")).hooks;
+  assert.equal(desktopHooks.PreToolUse, undefined);
+  assert.equal(desktopFiles.has("hooks/emergency-guard.mjs"), false);
+  assert.equal(desktopFiles.has("hooks/emergency-policy.mjs"), false);
+  assert.equal(desktopFiles.has("hooks/emergency-guard.json"), false);
+  const desktopRegistration = desktop.registrations.find((entry) => entry.kind === "emergency-guard");
+  assert.deepEqual({ targetRuntime: desktopRegistration.targetRuntime, automatic: desktopRegistration.automatic, probeRequired: desktopRegistration.probeRequired, status: desktopRegistration.status }, { targetRuntime: "desktop", automatic: false, probeRequired: true, status: "not run" });
+  assert.ok(desktop.diagnostics.some((entry) => entry.code === "codex-desktop-emergency-guard-probe-required"));
+  assert.throws(() => resultFor("portable", { targetRuntime: "unknown" }), /targetRuntime/u);
+});
+
 test("Codex adapter satisfies the shared renderSurface action contract", () => {
   const result = adapter.renderSurface({
     core,

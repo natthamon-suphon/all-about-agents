@@ -11,6 +11,18 @@
   "command": "node \"$PLUGIN_ROOT/hooks/emergency-guard.mjs\" --surface codex --policy-path \"$PLUGIN_ROOT/hooks/emergency-guard.json\"",
   "commandWindows": "node \"%PLUGIN_ROOT%/hooks/emergency-guard.mjs\" --surface codex --policy-path \"%PLUGIN_ROOT%/hooks/emergency-guard.json\"",
   "contentRef": "core/hooks/emergency-guard.json",
+  "desktop": {
+    "event": "PreToolUse",
+    "automatic": false,
+    "probeRequired": true,
+    "status": "not run",
+    "reason": "Codex Desktop executable package-root resolution is not verified separately from Codex CLI.",
+    "manualSequence": [
+      "Record the installed Codex Desktop version and platform.",
+      "Review the documented Desktop hook and package-root behavior.",
+      "On a disposable package, perform an explicit deny-output probe before proposing an executable handler."
+    ]
+  },
   "failureMode": "fail-open",
   "input": {
     "format": "json-object",
