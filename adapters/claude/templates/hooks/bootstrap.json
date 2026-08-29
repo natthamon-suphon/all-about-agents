@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "surface": "claude",
+  "module": "bootstrap",
+  "event": "SessionStart",
+  "matchers": [
+    "startup",
+    "resume",
+    "clear",
+    "compact",
+    "fork"
+  ],
+  "contentRef": "core/skills/using-all-about-agents/SKILL.md",
+  "failureMode": "fail-open",
+  "runtime": {
+    "executable": "node",
+    "minimumVersion": "22.12.0",
+    "preflight": "required",
+    "missingRuntime": "unavailable"
+  },
+  "input": {
+    "format": "json-object",
+    "malformedOutput": {},
+    "malformedDiagnostic": "Bootstrap skipped: malformed hook input; the session continues without injected context."
+  },
+  "firstSessionOutput": {
+    "hookSpecificOutput": {
+      "hookEventName": "SessionStart",
+      "additionalContext": "{{canonicalContent}}"
+    }
+  },
+  "otherSessionOutput": {}
+}
