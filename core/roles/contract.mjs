@@ -22,6 +22,17 @@ export const CANONICAL_ROLE_CAPABILITIES = Object.freeze({
   "security-reviewer": Object.freeze(["repository-read", "evaluation", "schema-validation"])
 });
 
+// This vocabulary is shared with portable metadata validation. Prompt
+// scanning derives from it so a newly known native tool cannot silently pass
+// through one boundary while being rejected by another.
+export const VENDOR_NATIVE_TOOL_NAMES = Object.freeze([
+  "Read", "Write", "Edit", "Bash", "Glob", "Grep", "LS", "NotebookEdit",
+  "WebFetch", "WebSearch", "Task", "MultiEdit", "Agent", "Skill", "TodoWrite", "PowerShell",
+  "spawn_agent", "invoke_subagent", "run_command", "view_file", "grep_search", "find_by_name", "list_dir",
+  "write_to_file", "replace_file_content", "search_web", "read_url_content", "ask_question",
+  "manage_subagents", "manage_task", "generate_image"
+]);
+
 export const WRITE_SEMANTIC_CAPABILITIES = Object.freeze([
   "repository-write",
   "filesystem-write",
@@ -59,8 +70,11 @@ const WRITE_CAPABILITY_SET = new Set(WRITE_SEMANTIC_CAPABILITIES);
 const SEMANTIC_CAPABILITY_SET = new Set(SEMANTIC_CAPABILITIES);
 const PRIVILEGED_CAPABILITY_SET = new Set(PRIVILEGED_SEMANTIC_CAPABILITIES);
 const IMPLEMENTER_SCOPE_OPERATIONS = new Set(["create", "modify", "delete"]);
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+const vendorToolAlternation = VENDOR_NATIVE_TOOL_NAMES.map(escapeRegex).join("|");
+const vendorToolInvocationVerbs = "[Uu]se|[Ii]nvoke|[Cc]all|[Rr]un|[Ee]xecute|[Ll]aunch";
+const vendorToolInvocationPattern = new RegExp(`(?:\\b(?:${vendorToolInvocationVerbs})\\s+(?:${vendorToolAlternation}|mcp__[a-z0-9_:-]+)\\b|\\b(?:${vendorToolAlternation})\\s+tool\\b|\\x60(?:${vendorToolAlternation}|mcp__[a-z0-9_:-]+)\\x60|(?:^|[^a-z0-9])(?:${VENDOR_NATIVE_TOOL_NAMES.filter((name) => name.includes("_")).map(escapeRegex).join("|")}|mcp__[a-z0-9_:-]+)(?:$|[^a-z0-9]))`, "u");
 const PROMPT_NATIVE_INSTRUCTION_PATTERN = /(?:\b(?:use|invoke|call|run|execute|launch)\s+(?:bash|git\s+bash|powershell|pwsh|edit|write|agent|subagent|view_file|shell|run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|define_subagent|manage_subagents)\b|\b(?:bash|git\s+bash|powershell|pwsh|agent|subagent|read|websearch|view_file|shell|skill)\s+tool\b|\b(?:git\s+bash|powershell|pwsh|view_file)\b|\b(?:claude\s+)?(?:edit|write)\s+tools?\b|`(?:bash|powershell|pwsh|edit|write|agent|subagent|read|websearch|view_file|shell|skill|run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|define_subagent|manage_subagents)`|\b(?:run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|define_subagent|manage_subagents)\b)/iu;
-const PROMPT_EXPLICIT_NATIVE_TOOL_PATTERN = /(?:\b(?:[Uu]se|[Ii]nvoke|[Cc]all|[Rr]un|[Ee]xecute|[Ll]aunch)\s+(?:Read|WebSearch|Skill)\b|\b(?:Read|WebSearch|Skill)\s+(?:tool|command|shell)\b|`(?:Read|WebSearch|Skill)`)/u;
 const PROMPT_CONTROL_PATTERN = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u;
 
 /** Keep mutation scopes portable and unambiguous at every native boundary. */
@@ -80,7 +94,7 @@ export function isValidMutationScopeOperation(operation) {
 }
 
 export function isSafePortableRolePrompt(prompt) {
-  return typeof prompt === "string" && !PROMPT_NATIVE_INSTRUCTION_PATTERN.test(prompt) && !PROMPT_EXPLICIT_NATIVE_TOOL_PATTERN.test(prompt);
+  return typeof prompt === "string" && !PROMPT_NATIVE_INSTRUCTION_PATTERN.test(prompt) && !vendorToolInvocationPattern.test(prompt);
 }
 
 export function isValidPortableRolePrompt(prompt) {

@@ -15,7 +15,7 @@ const INTENT_SIGNALS = Object.freeze({
   "security-reviewer": Object.freeze([/\b(?:threat|secret)\b.*\buntrusted\s+input\b/iu, /\bprivilege\s+(?:elevation|risk)\b.*\b(?:destructive|containment)\b/iu, /\bstride\s+threats?\b/iu, /\bsecurity\s+containment\b.*\bprivilege\b/iu])
 });
 
-const NEGATION_CUE = /\b(?:do\s+not|don't|dont|never|no(?:\s+(?:need|reason|intention|desire))?|without|not)\b/iu;
+const NEGATION_CUE = /\b(?:do\s+not|don['’]?t|isn['’]?t|can(?:not|['’]?t)|never|avoid|no(?:\s+(?:need|reason|intention|desire))?|without|not)\b/iu;
 
 function hasUnnegatedSignal(text, signal) {
   const match = signal.exec(text);

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
 
-import { loadCore, resolveWorkspaceScopePath } from "../../installers/lib/load-core.mjs";
+import { loadCore, resolveWorkspaceScopePath, VENDOR_NATIVE_TOOL_NAMES } from "../../installers/lib/load-core.mjs";
 import { CLAUDE_SEMANTIC_MAPPINGS, renderClaude } from "../../adapters/claude/adapter.mjs";
 import { parseCodexToml, renderCodex } from "../../adapters/codex/adapter.mjs";
 import { ANTIGRAVITY_SEMANTIC_MAPPINGS, renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
@@ -257,7 +257,12 @@ test("read-only prompt validation covers Claude and Antigravity mutable token fo
     "Use bash to inspect the repository.\n## Evidence contract\nreport only.\n",
     "Claude Edit and Write tools are forbidden here.\n## Evidence contract\nreport only.\n",
     "Do not call write_to_file or replace_file_content.\n## Evidence contract\nreport only.\n",
-    "Do not call run_command or manage_subagents.\n## Evidence contract\nreport only.\n"
+    "Do not call run_command or manage_subagents.\n## Evidence contract\nreport only.\n",
+    "Use Glob to inspect the repository.\n## Evidence contract\nreport only.\n",
+    "Use Grep to inspect the repository.\n## Evidence contract\nreport only.\n",
+    "Use WebFetch to retrieve the source.\n## Evidence contract\nreport only.\n",
+    "Use Task to delegate the work.\n## Evidence contract\nreport only.\n",
+    "Use MultiEdit to change the files.\n## Evidence contract\nreport only.\n"
   ].entries()) {
     const root = await mkdtemp(resolve(tmpdir(), `aaa-t012-roles-prompt-native-${index}-`));
     try {
@@ -629,7 +634,14 @@ test("native boundary rejects malformed prompt documents and explicit native too
     "Invoke WebSearch to locate the source.\n## Evidence contract\nreport only.\n",
     "Call `view_file` for the requested path.\n## Evidence contract\nreport only.\n",
     "Run shell command to inspect the repository.\n## Evidence contract\nreport only.\n",
-    "Invoke Skill to perform the workflow.\n## Evidence contract\nreport only.\n"
+    "Invoke Skill to perform the workflow.\n## Evidence contract\nreport only.\n",
+    "Use Glob to inspect the repository.\n## Evidence contract\nreport only.\n",
+    "Use Grep to inspect the repository.\n## Evidence contract\nreport only.\n",
+    "Use WebFetch to retrieve the source.\n## Evidence contract\nreport only.\n",
+    "Use Task to delegate the work.\n## Evidence contract\nreport only.\n",
+    "Use MultiEdit to change the files.\n## Evidence contract\nreport only.\n",
+    ...VENDOR_NATIVE_TOOL_NAMES.map((tool) => `Use ${tool} to perform a native action.\n## Evidence contract\nreport only.\n`),
+    "Use mcp__vendor_tool to perform a native action.\n## Evidence contract\nreport only.\n"
   ]) {
     const forged = cloneCoreWithRole(base, "reviewer", (role) => ({ ...role, prompt }));
     for (const [surface, render] of renderers) {

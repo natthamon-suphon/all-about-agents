@@ -2,17 +2,19 @@ import { lstat, readFile, readdir, realpath, stat } from "node:fs/promises";
 import { dirname, extname, posix, relative, resolve, sep, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateSchema } from "./validate-schema.mjs";
-import { CANONICAL_ROLE_IDS, canonicalRoleCapabilityErrors, isSafePortableRolePrompt, isValidMutationScopeOperation, isValidMutationScopePath, PRIVILEGED_SEMANTIC_CAPABILITIES, SEMANTIC_CAPABILITIES, WRITE_SEMANTIC_CAPABILITIES } from "../../core/roles/contract.mjs";
+import { CANONICAL_ROLE_IDS, canonicalRoleCapabilityErrors, isSafePortableRolePrompt, isValidMutationScopeOperation, isValidMutationScopePath, PRIVILEGED_SEMANTIC_CAPABILITIES, SEMANTIC_CAPABILITIES, VENDOR_NATIVE_TOOL_NAMES, WRITE_SEMANTIC_CAPABILITIES } from "../../core/roles/contract.mjs";
 
-export { SEMANTIC_CAPABILITIES };
+export { SEMANTIC_CAPABILITIES, VENDOR_NATIVE_TOOL_NAMES };
 
 const SCHEMA_NAMES = Object.freeze(["rule", "role", "workflow", "command", "skill"]);
 
 // These are the only capability names that may cross the portable/native seam.
 // Adapters map them to product-specific tools; the core never does that mapping.
 const CAPABILITY_SET = new Set(SEMANTIC_CAPABILITIES);
-const VENDOR_TOOL_VALUES = new Set(["Read", "Write", "Edit", "Bash", "Glob", "Grep", "LS", "NotebookEdit", "WebFetch", "WebSearch", "Task", "MultiEdit", "Agent", "Skill", "TodoWrite", "PowerShell"]);
-const VENDOR_TOOL_PATTERN = /(?:^|[^a-z0-9])(?:spawn_agent|invoke_subagent|run_command|view_file|grep_search|find_by_name|list_dir|write_to_file|replace_file_content|search_web|read_url_content|ask_question|manage_subagents|manage_task|generate_image|mcp__[a-z0-9_:-]+)(?:$|[^a-z0-9])/u;
+const VENDOR_TOOL_VALUES = new Set(VENDOR_NATIVE_TOOL_NAMES);
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+const VENDOR_IDENTIFIER_NAMES = VENDOR_NATIVE_TOOL_NAMES.filter((name) => name.includes("_"));
+const VENDOR_TOOL_PATTERN = new RegExp(`(?:^|[^a-z0-9])(?:${VENDOR_IDENTIFIER_NAMES.map(escapeRegex).join("|")}|mcp__[a-z0-9_:-]+)(?:$|[^a-z0-9])`, "u");
 const VENDOR_FIELD_NAMES = new Set(["tool", "tools", "nativeTool", "nativeTools", "vendorTool", "vendorTools"]);
 const CANONICAL_ROLE_SET = new Set(CANONICAL_ROLE_IDS);
 const ROLE_WRITE_CAPABILITIES = new Set(WRITE_SEMANTIC_CAPABILITIES);
