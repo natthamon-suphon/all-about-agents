@@ -396,6 +396,11 @@ test("Codex target runtime keeps CLI guard automatic but makes Desktop probe-onl
   const desktopRegistration = desktop.registrations.find((entry) => entry.kind === "emergency-guard");
   assert.deepEqual({ targetRuntime: desktopRegistration.targetRuntime, automatic: desktopRegistration.automatic, probeRequired: desktopRegistration.probeRequired, status: desktopRegistration.status }, { targetRuntime: "desktop", automatic: false, probeRequired: true, status: "not run" });
   assert.ok(desktop.diagnostics.some((entry) => entry.code === "codex-desktop-emergency-guard-probe-required"));
+  const desktopAgain = resultFor("portable", { targetRuntime: "desktop" });
+  const fileProjection = (result) => result.files.map((file) => ({ relativePath: file.relativePath, mode: file.mode, content: [...file.content] }));
+  assert.deepEqual(fileProjection(desktop), fileProjection(desktopAgain));
+  assert.deepEqual(desktop.registrations, desktopAgain.registrations);
+  assert.deepEqual(desktop.diagnostics, desktopAgain.diagnostics);
   assert.throws(() => resultFor("portable", { targetRuntime: "unknown" }), /targetRuntime/u);
 });
 

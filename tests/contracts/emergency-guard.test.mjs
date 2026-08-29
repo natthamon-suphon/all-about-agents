@@ -114,6 +114,29 @@ test("emergency policy rejects broad, device, UNC, and namespace roots despite c
   }
 });
 
+test("emergency policy rejects root-relative Windows disposable proofs", () => {
+  const result = classifyEmergencyAction({
+    capability: "filesystem-delete",
+    command: "rm -rf \\disposable\\generated",
+    paths: ["\\disposable\\generated"],
+    verifiedDisposableRoot: {
+      resolvedPath: "\\disposable",
+      resolved: true,
+      allTargetsContained: true,
+      designation: "disposable",
+      targets: ["\\disposable\\generated"]
+    }
+  });
+  assert.deepEqual({ decision: result.decision, ruleId: result.ruleId }, { decision: "deny", ruleId: "filesystem-root-erasure" });
+});
+
+test("emergency policy does not exempt a benign format segment from later raw-disk destruction", () => {
+  for (const command of ["format text; diskpart delete partition", "format json; Remove-Partition -DiskNumber 0"]) {
+    const result = classifyEmergencyAction({ command });
+    assert.deepEqual({ decision: result.decision, ruleId: result.ruleId }, { decision: "deny", ruleId: "raw-disk-destruction" }, command);
+  }
+});
+
 function firstFixturePath(action) {
   const first = Array.isArray(action.paths) ? action.paths[0] : null;
   return typeof first === "string" ? first : first && typeof first === "object" ? first.resolvedPath || first.path || first.filePath || "" : "";
@@ -315,6 +338,7 @@ test("Desktop and agy adapters consume native emergency templates as explicit pr
     assert.equal(output.probeRequired, true);
     assert.deepEqual(output.probe, expected.probe);
     assert.doesNotMatch(JSON.stringify(output), /"command"\s*:|\.\/hooks|%PLUGIN_ROOT%|\$PLUGIN_ROOT/iu);
+    assert.equal(item.result.files.some((file) => /(?:^|\/)emergency-(?:guard|policy)\.mjs$/u.test(file.relativePath)), false);
     const registration = item.result.registrations.find((entry) => entry.kind === "hook-contract");
     assert.equal(registration.automaticHookExecution, false);
     assert.equal(registration.probeRequired, true);
