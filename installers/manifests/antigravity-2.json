@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "surface": "antigravity-2",
+  "product": "Antigravity 2.0 Desktop",
+  "productVersion": "unknown",
+  "package": "all-about-agents",
+  "pluginManifest": ".agents/plugins/all-about-agents/plugin.json",
+  "discovery": {
+    "workspace": ".agents/plugins/<plugin>/",
+    "global": "~/.gemini/config/plugins/<plugin>/"
+  },
+  "components": {
+    "pluginManifest": ".agents/plugins/<plugin>/plugin.json",
+    "skills": ".agents/plugins/<plugin>/skills/{skill}/SKILL.md",
+    "rules": ".agents/plugins/<plugin>/rules/{rule}.md",
+    "agents": ".agents/plugins/<plugin>/agents/{role}.md",
+    "hooks": ".agents/plugins/<plugin>/hooks.json"
+  },
+  "profiles": {
+    "portable": {
+      "securityPreset": "Default",
+      "permissionControl": "manual Desktop UI",
+      "emergencyDeny": [
+        "command(rm -rf)",
+        "command(sudo)",
+        "write_file(.git/)",
+        "write_file(/home/user/.ssh)"
+      ]
+    },
+    "template": {
+      "securityPreset": "Unrestricted",
+      "permissionControl": "manual Desktop UI",
+      "emergencyDeny": [
+        "command(rm -rf)",
+        "command(sudo)",
+        "write_file(.git/)",
+        "write_file(/home/user/.ssh)"
+      ]
+    }
+  },
+  "modelPolicy": {
+    "desktop": {
+      "displayName": "Gemini 3.7 Flash Medium",
+      "selection": "manual conversation selector",
+      "persistence": "conversation-local"
+    },
+    "requestedDesktopFlashHigh": {
+      "status": "unsupported",
+      "source": "research-antigravity-2.md"
+    }
+  },
+  "semanticCapabilities": {
+    "repository-read": ["view_file", "list_dir", "find_by_name", "grep_search"],
+    "repository-write": ["write_to_file", "replace_file_content", "multi_replace_file_content"],
+    "web-primary-sources": ["search_web", "read_url_content"],
+    "isolated-write": ["write_to_file", "replace_file_content", "multi_replace_file_content"],
+    "command-execution": ["run_command"],
+    "filesystem-read": ["view_file", "list_dir", "find_by_name", "grep_search"],
+    "filesystem-write": ["write_to_file", "replace_file_content", "multi_replace_file_content"],
+    "git-read": ["run_command"],
+    "git-write": ["run_command"],
+    "test-execution": ["run_command"],
+    "external-research": ["search_web", "read_url_content"],
+    "evaluation": ["run_command", "view_file"],
+    "role-dispatch": ["invoke_subagent", "define_subagent", "manage_subagents"],
+    "workflow-state": ["view_file", "write_to_file"],
+    "schema-validation": ["run_command"],
+    "native-rendering": ["write_to_file"]
+  },
+  "actions": {
+    "aaa:design": "manual Desktop conversation action",
+    "aaa:build": "manual Desktop conversation action",
+    "aaa:fix": "manual Desktop conversation action",
+    "aaa:review": "manual Desktop conversation action",
+    "aaa:audit": "manual Desktop conversation action",
+    "aaa:improve-skill": "manual Desktop conversation action",
+    "aaa:resume": "manual Desktop conversation action",
+    "aaa:verify": "manual Desktop conversation action"
+  },
+  "ownedPaths": [
+    ".agents/plugins/<plugin>/plugin.json",
+    ".agents/plugins/<plugin>/skills/{skill}/SKILL.md",
+    ".agents/plugins/<plugin>/rules/{rule}.md",
+    ".agents/plugins/<plugin>/agents/{role}.md",
+    ".agents/plugins/<plugin>/hooks.json"
+  ],
+  "nativeValidation": {
+    "status": "not run",
+    "reason": "Desktop launch and UI acceptance require a real Antigravity 2.0 Desktop session."
+  },
+  "installation": {
+    "registration": "Desktop workspace plugin discovery",
+    "automaticInstall": false,
+    "automaticHookExecution": false
+  }
+}
