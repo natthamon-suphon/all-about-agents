@@ -91,7 +91,7 @@ test("agy read-only roles cannot execute or mutate", () => {
   assert.match(files.get("agents/implementer/agent.md"), /^commandExecutionPolicy: sandbox$/mu);
 });
 
-test("agy hooks are disabled inert contracts with documented event semantics", () => {
+test("agy hooks are disabled until the explicit lifecycle probe is complete", () => {
   const files = fileMap(resultFor());
   const hooks = JSON.parse(files.get("hooks.json"));
   const safety = hooks["all-about-agents-safety"];
@@ -101,9 +101,9 @@ test("agy hooks are disabled inert contracts with documented event semantics", (
   const guidance = files.get("rules/adapter-capability-guidance.md");
   const hookRule = files.get("rules/hook-contract.md");
   assert.match(guidance, /PostToolUse[\s\S]*toolCall\.name/u);
-  assert.match(guidance, /PreInvocation[\s\S]*0/u);
-  assert.match(hookRule, /toolCall\.name/u);
-  assert.match(hookRule, /zero-based|index 0/u);
+  assert.match(guidance, /probe below[\s\S]*lifecycle schema/iu);
+  assert.match(hookRule, /probe-required|lifecycle payload parity/iu);
+  assert.doesNotMatch(hookRule, /PreInvocation\s+contract/u);
   assert.equal(resultFor().registrations.find((entry) => entry.kind === "hook-contract").automaticHookExecution, false);
 });
 

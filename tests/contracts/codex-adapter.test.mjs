@@ -343,6 +343,22 @@ test("Codex package manifest and Desktop guidance use only documented surfaces",
   });
 });
 
+test("Codex plugin hooks invoke the rendered runtime and require trust plus Node preflight", async () => {
+  const result = resultFor();
+  const files = fileMap(result);
+  const hooks = JSON.parse(files.get("hooks/hooks.json"));
+  const startup = hooks.hooks.SessionStart[0];
+  assert.equal(startup.matcher, "^startup$");
+  assert.equal(startup.hooks[0].type, "command");
+  assert.match(startup.hooks[0].command, /\$PLUGIN_ROOT\/hooks\/bootstrap\.mjs/u);
+  assert.match(startup.hooks[0].commandWindows, /%PLUGIN_ROOT%\/hooks\/bootstrap\.mjs/u);
+  assert.equal(files.get("hooks/bootstrap.mjs"), await readFile(resolve(process.cwd(), "core/hooks/bootstrap.mjs"), "utf8"));
+  const hookRegistration = result.registrations.find((entry) => entry.kind === "hook-contract");
+  assert.equal(hookRegistration.trustRequired, true);
+  assert.equal(hookRegistration.desktopManualOnly, true);
+  assert.ok(result.registrations.some((entry) => entry.kind === "runtime-prerequisite" && entry.onMissing === "unavailable"));
+});
+
 test("Codex adapter satisfies the shared renderSurface action contract", () => {
   const result = adapter.renderSurface({
     core,

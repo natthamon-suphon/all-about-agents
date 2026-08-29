@@ -2,11 +2,14 @@ import { homedir } from "node:os";
 import { posix, win32 } from "node:path";
 
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import codexBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
 import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
 import { AdapterContractError, renderSurface as validateSurface, validateCommandRecords, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, hasScopedMutation, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const CODEX_SURFACE = "codex";
+const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
 const ACTION_IDS = Object.freeze([
   "aaa:design",
   "aaa:build",
@@ -195,6 +198,24 @@ function pluginManifest() {
   };
 }
 
+function bootstrapHooks() {
+  return {
+    description: codexBootstrapTemplate.description,
+    hooks: {
+      [codexBootstrapTemplate.event]: [
+        {
+          matcher: codexBootstrapTemplate.nativeMatcher,
+          hooks: [{
+            type: "command",
+            command: codexBootstrapTemplate.command,
+            commandWindows: codexBootstrapTemplate.commandWindows
+          }]
+        }
+      ]
+    }
+  };
+}
+
 function desktopInstructions() {
   return ensureText([
     "# Codex Desktop manual setup",
@@ -356,6 +377,8 @@ export function renderCodex(input = {}) {
   const profile = profileId(input.profile ?? "portable");
   const files = [];
   addFile(files, ".codex-plugin/plugin.json", renderJson(pluginManifest()));
+  addFile(files, "hooks/hooks.json", renderJson(bootstrapHooks()));
+  addFile(files, `hooks/${codexBootstrapTemplate.module}.mjs`, BOOTSTRAP_SOURCE, 0o755);
   addFile(files, "AGENTS.md", renderAgentsDocument(core));
   addFile(files, ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md", capabilityGuidance());
   addFile(files, "docs/manual-desktop.md", desktopInstructions());
@@ -387,6 +410,24 @@ export function renderCodex(input = {}) {
         kind: "plugin-package",
         relativePath: ".codex-plugin/plugin.json",
         packageRoot: "."
+      },
+      {
+        kind: "runtime-prerequisite",
+        executable: codexBootstrapTemplate.runtime.executable,
+        check: [codexBootstrapTemplate.runtime.executable, "--version"],
+        minimumVersion: codexBootstrapTemplate.runtime.minimumVersion,
+        onMissing: codexBootstrapTemplate.runtime.missingRuntime,
+        requiredBy: [`hooks/${codexBootstrapTemplate.module}.mjs`],
+        platforms: ["win32", "darwin", "linux"]
+      },
+      {
+        kind: "hook-contract",
+        surface: CODEX_SURFACE,
+        relativePath: "hooks/hooks.json",
+        event: codexBootstrapTemplate.event,
+        matcher: codexBootstrapTemplate.nativeMatcher,
+        trustRequired: true,
+        desktopManualOnly: true
       },
       {
         kind: "instructions",

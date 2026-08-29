@@ -98,7 +98,7 @@
     },
     {
       "relativePath": "rules/adapter-capability-guidance.md",
-      "sha256": "7e0c66d6c2d03162e767225be4b4b2480eb1fb1b83d8d0c2c76caa0a5e8c5ed0"
+      "sha256": "c3404bc788386ad577338bbf5ecf52185dd164edc4b41d02deb5f050ba7d088a"
     },
     {
       "relativePath": "rules/authority-and-scope.md",
@@ -122,7 +122,7 @@
     },
     {
       "relativePath": "rules/hook-contract.md",
-      "sha256": "340dc390540dd0fa3bdb0fe0f154f75386d95f0a6ae78794fc77026f5efcc89d"
+      "sha256": "361f8852427ff6a8785d4d09af834aba98e2e1e692ce292b4cce238d4460dffc"
     },
     {
       "relativePath": "rules/implementation-quality.md",
@@ -355,7 +355,34 @@
       "relativePath": "hooks.json",
       "enabled": false,
       "manualOnly": true,
-      "automaticHookExecution": false
+      "automaticHookExecution": false,
+      "probeRequired": true,
+      "probe": {
+        "status": "not run",
+        "manualSequence": [
+          "Record the installed agy version and platform.",
+          "Review the installed agy hook documentation for the complete lifecycle payload schema.",
+          "On a disposable package, perform an explicit probe and record the observed first-invocation fields before proposing an executable handler."
+        ]
+      }
+    },
+    {
+      "kind": "runtime-prerequisite",
+      "executable": "node",
+      "check": [
+        "node",
+        "--version"
+      ],
+      "minimumVersion": "22.12.0",
+      "onMissing": "unavailable",
+      "requiredBy": [
+        "manual-bootstrap-probe"
+      ],
+      "platforms": [
+        "win32",
+        "darwin",
+        "linux"
+      ]
     },
     {
       "kind": "native-acceptance",
@@ -388,6 +415,12 @@
       "severity": "warning",
       "message": "The agy runtime version, executable path, entitlement, and active package/settings roots are unknown; discover them manually before applying artifacts.",
       "sourcePath": "research-agy-2.md"
+    },
+    {
+      "code": "agy-bootstrap-probe-required",
+      "severity": "warning",
+      "message": "The installed agy CLI does not have a verified PreInvocation payload contract for automatic bootstrap. Status: not run. Manual sequence: Record the installed agy version and platform. Review the installed agy hook documentation for the complete lifecycle payload schema. On a disposable package, perform an explicit probe and record the observed first-invocation fields before proposing an executable handler.",
+      "sourcePath": "research-t013-antigravity-agy-hooks.md"
     },
     {
       "code": "agy-layout-conflict",
@@ -761,13 +794,13 @@
     "agents/verifier/agent.md": "145fba95a78f4625d5efa22765ae3f294b07c08ed3c44fee73ebba28ac236cb2",
     "hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
     "plugin.json": "756ec24b1703be2d650e94914f6f7668ba98a1dd746cda65a42e8025e2ba6ead",
-    "rules/adapter-capability-guidance.md": "7e0c66d6c2d03162e767225be4b4b2480eb1fb1b83d8d0c2c76caa0a5e8c5ed0",
+    "rules/adapter-capability-guidance.md": "c3404bc788386ad577338bbf5ecf52185dd164edc4b41d02deb5f050ba7d088a",
     "rules/authority-and-scope.md": "e954e78589912467fcc0f1e273cd7f7028efb014152ec22e9cdd6e99c821764f",
     "rules/cross-platform-execution.md": "b0db23bbbee452ae698d68171bde816bbdc360464d7e8d3105b46eaefa1d8c62",
     "rules/destructive-actions.md": "69f0320c6279e4f2a5b3dc96381c08d80c5d3dc84a5aa34ae2e6e790b4b452f9",
     "rules/evidence-and-truth.md": "6f0155b38cdafb34fd204576ab721db6220a2f117256f30764026d63f01dfcde",
     "rules/git-and-user-work.md": "b65c9ad2095d570a7ad6299e53a5811698cebc9148c7d38e0d9e77d132404872",
-    "rules/hook-contract.md": "340dc390540dd0fa3bdb0fe0f154f75386d95f0a6ae78794fc77026f5efcc89d",
+    "rules/hook-contract.md": "361f8852427ff6a8785d4d09af834aba98e2e1e692ce292b4cce238d4460dffc",
     "rules/implementation-quality.md": "b680c552b63c1b11ae103f96a439e1acceb09ba2deebb728bc5e08bf5177ce15",
     "rules/long-task-state.md": "62d1c22e14fa00a01136894dad2336e1d3c059b104e3e64eeb2d66bd3755b2af",
     "rules/model-selection.md": "3d8c70244e3baa1b47b9b30d3de52787eec77a41b2219cba7951e6145995c245",

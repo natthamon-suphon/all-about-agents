@@ -1,5 +1,5 @@
 {
-  "fileCount": 41,
+  "fileCount": 43,
   "files": [
     {
       "relativePath": ".agents/skills/brainstorming/SKILL.md",
@@ -202,6 +202,16 @@
       "mode": null
     },
     {
+      "relativePath": "hooks/bootstrap.mjs",
+      "sha256": "81d4c28b938906e31e743964a7a6b3ed7ae4c6ba5ad539f77c9493c63a9908df",
+      "mode": 493
+    },
+    {
+      "relativePath": "hooks/hooks.json",
+      "sha256": "9e904ded584bec6bb0873ac6c68d6dcbe84db49b5e4f45ff5970dd86d561a4cb",
+      "mode": null
+    },
+    {
       "relativePath": "terra-max.config.toml",
       "sha256": "87343d577271242c0c68c379095432480f687b7a528877503a08eed7b00b6011",
       "mode": null
@@ -369,6 +379,14 @@
       "sha256": "95e3a8c7537460e49b098997886adf71b29c2253bb53b591a9fc2740b4e9f10e"
     },
     {
+      "relativePath": "hooks/bootstrap.mjs",
+      "sha256": "81d4c28b938906e31e743964a7a6b3ed7ae4c6ba5ad539f77c9493c63a9908df"
+    },
+    {
+      "relativePath": "hooks/hooks.json",
+      "sha256": "9e904ded584bec6bb0873ac6c68d6dcbe84db49b5e4f45ff5970dd86d561a4cb"
+    },
+    {
       "relativePath": "terra-max.config.toml",
       "sha256": "87343d577271242c0c68c379095432480f687b7a528877503a08eed7b00b6011"
     }
@@ -378,6 +396,33 @@
       "kind": "plugin-package",
       "relativePath": ".codex-plugin/plugin.json",
       "packageRoot": "."
+    },
+    {
+      "kind": "runtime-prerequisite",
+      "executable": "node",
+      "check": [
+        "node",
+        "--version"
+      ],
+      "minimumVersion": "22.12.0",
+      "onMissing": "unavailable",
+      "requiredBy": [
+        "hooks/bootstrap.mjs"
+      ],
+      "platforms": [
+        "win32",
+        "darwin",
+        "linux"
+      ]
+    },
+    {
+      "kind": "hook-contract",
+      "surface": "codex",
+      "relativePath": "hooks/hooks.json",
+      "event": "SessionStart",
+      "matcher": "^startup$",
+      "trustRequired": true,
+      "desktopManualOnly": true
     },
     {
       "kind": "instructions",

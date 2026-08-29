@@ -4,40 +4,5 @@
   "description": "Inject the canonical using-all-about-agents routing contract at a native first-session event.",
   "contentRef": "core/skills/using-all-about-agents/SKILL.md",
   "failureMode": "fail-open",
-  "failureDiagnostic": "Bootstrap skipped: malformed hook input; the session continues without injected context.",
-  "surfaces": [
-    "claude",
-    "codex",
-    "antigravity-2",
-    "agy"
-  ],
-  "firstSession": {
-    "claude": {
-      "event": "SessionStart",
-      "matchers": [
-        "startup",
-        "resume",
-        "clear",
-        "compact",
-        "fork"
-      ]
-    },
-    "codex": {
-      "event": "SessionStart"
-    },
-    "antigravity-2": {
-      "event": "PreInvocation",
-      "when": {
-        "invocationNum": 0,
-        "initialNumSteps": 0
-      }
-    },
-    "agy": {
-      "event": "PreInvocation",
-      "when": {
-        "invocationNum": 0,
-        "initialNumSteps": 0
-      }
-    }
-  }
+  "failureDiagnostic": "Bootstrap skipped: malformed hook input; the session continues without injected context."
 }

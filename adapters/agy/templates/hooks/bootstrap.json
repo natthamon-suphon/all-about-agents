@@ -2,7 +2,17 @@
   "schemaVersion": 1,
   "surface": "agy",
   "module": "bootstrap",
-  "event": "PreInvocation",
+  "automatic": false,
+  "probeRequired": true,
+  "probe": {
+    "status": "not run",
+    "reason": "The installed agy CLI does not have a verified PreInvocation payload contract for automatic bootstrap.",
+    "manualSequence": [
+      "Record the installed agy version and platform.",
+      "Review the installed agy hook documentation for the complete lifecycle payload schema.",
+      "On a disposable package, perform an explicit probe and record the observed first-invocation fields before proposing an executable handler."
+    ]
+  },
   "contentRef": "core/skills/using-all-about-agents/SKILL.md",
   "failureMode": "fail-open",
   "runtime": {
@@ -10,28 +20,5 @@
     "minimumVersion": "22.12.0",
     "preflight": "required",
     "missingRuntime": "unavailable"
-  },
-  "input": {
-    "format": "json-object",
-    "fields": {
-      "invocationNum": "integer",
-      "initialNumSteps": "integer"
-    },
-    "malformedOutput": {},
-    "malformedDiagnostic": "Bootstrap skipped: malformed hook input; the session continues without injected context."
-  },
-  "firstSessionWhen": {
-    "invocationNum": 0,
-    "initialNumSteps": 0
-  },
-  "firstSessionOutput": {
-    "injectSteps": [
-      {
-        "ephemeralMessage": "{{canonicalContent}}"
-      }
-    ]
-  },
-  "otherSessionOutput": {
-    "injectSteps": []
   }
 }

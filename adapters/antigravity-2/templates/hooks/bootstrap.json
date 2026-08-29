@@ -3,6 +3,7 @@
   "surface": "antigravity-2",
   "module": "bootstrap",
   "event": "PreInvocation",
+  "command": "node ./hooks/bootstrap.mjs --surface antigravity-2 --skill-path ./skills/using-all-about-agents/SKILL.md",
   "contentRef": "core/skills/using-all-about-agents/SKILL.md",
   "failureMode": "fail-open",
   "runtime": {
@@ -17,7 +18,9 @@
       "invocationNum": "integer",
       "initialNumSteps": "integer"
     },
-    "malformedOutput": {},
+    "malformedOutput": {
+      "injectSteps": []
+    },
     "malformedDiagnostic": "Bootstrap skipped: malformed hook input; the session continues without injected context."
   },
   "firstSessionWhen": {

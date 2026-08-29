@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 
+import antigravityBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
@@ -7,6 +9,7 @@ import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeSc
 const SURFACE = "antigravity-2";
 const DESKTOP_SURFACE = "antigravity-2-desktop";
 const PLUGIN_ROOT = ".agents/plugins/all-about-agents";
+const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
 
 const ACTION_IDS = [
   "aaa:design", "aaa:build", "aaa:fix", "aaa:review",
@@ -276,7 +279,7 @@ function permissionRule() {
     "- `write_file(.git/)`",
     "- `write_file(/home/user/.ssh)`",
     "",
-    "A documented PreToolUse hook can return `decision: deny` for an emergency match. This package keeps its hook contract disabled and does not install or execute a command handler.",
+    "A documented PreToolUse hook can return `decision: deny` for an emergency match. This package keeps that emergency hook disabled; its enabled hook is limited to the documented first-invocation PreInvocation bootstrap.",
     "There is no documented Desktop panic file or global kill switch; stop the active agent in the UI and add Deny rules manually.",
     ""
   ].join("\n"));
@@ -284,13 +287,12 @@ function permissionRule() {
 
 function hooksDocument() {
   return {
-    "all-about-agents-safety": {
-      enabled: false,
-      PreToolUse: [],
-      PostToolUse: [],
-      PreInvocation: [],
-      PostInvocation: [],
-      Stop: []
+    "all-about-agents-bootstrap": {
+      enabled: true,
+      [antigravityBootstrapTemplate.event]: [{
+        type: "command",
+        command: antigravityBootstrapTemplate.command
+      }]
     }
   };
 }
@@ -308,6 +310,7 @@ export function renderAntigravity(input = {}) {
 
   addFile(files, `${PLUGIN_ROOT}/plugin.json`, renderJson({ name: "all-about-agents" }));
   addFile(files, `${PLUGIN_ROOT}/hooks.json`, renderJson(hooksDocument()));
+  addFile(files, `${PLUGIN_ROOT}/hooks/${antigravityBootstrapTemplate.module}.mjs`, BOOTSTRAP_SOURCE, 0o755);
   addFile(files, `${PLUGIN_ROOT}/rules/adapter-capability-guidance.md`, capabilityGuidance());
   addFile(files, `${PLUGIN_ROOT}/rules/model-selection.md`, modelRule());
   addFile(files, `${PLUGIN_ROOT}/rules/permission-safety.md`, permissionRule());
@@ -385,8 +388,19 @@ export function renderAntigravity(input = {}) {
         kind: "hook-contract",
         surface: DESKTOP_SURFACE,
         relativePath: `${PLUGIN_ROOT}/hooks.json`,
-        enabled: false,
-        manualOnly: true
+        enabled: true,
+        event: antigravityBootstrapTemplate.event,
+        command: antigravityBootstrapTemplate.command,
+        manualOnly: false
+      },
+      {
+        kind: "runtime-prerequisite",
+        executable: antigravityBootstrapTemplate.runtime.executable,
+        check: [antigravityBootstrapTemplate.runtime.executable, "--version"],
+        minimumVersion: antigravityBootstrapTemplate.runtime.minimumVersion,
+        onMissing: antigravityBootstrapTemplate.runtime.missingRuntime,
+        requiredBy: [`${PLUGIN_ROOT}/hooks/${antigravityBootstrapTemplate.module}.mjs`],
+        platforms: ["win32", "darwin", "linux"]
       }
     ],
     diagnostics,

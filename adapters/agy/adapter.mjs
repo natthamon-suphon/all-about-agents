@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import agyBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
 
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
@@ -281,7 +282,7 @@ function renderCapabilityGuidance() {
     "Run agy agents after discovery and add only tool names accepted by that installed version through an explicit operator change.",
     "",
     "PostToolUse contract: a documented tool event identifies the tool as toolCall.name; do not substitute a Desktop or legacy event field.",
-    "PreInvocation contract: the first invocation step is indexed at 0 (zero-based); hooks remain disabled and empty in this package.",
+    `Bootstrap hooks remain disabled: ${agyBootstrapTemplate.probeRequired ? "the installed agy version requires the explicit probe below before any lifecycle schema can be considered." : "no automatic handler is rendered."}`,
     ""
   ].join("\n"));
 }
@@ -330,9 +331,9 @@ function renderHooksRule() {
   return ensureText([
     "# agy hook contract",
     "",
-    "The generated hooks.json is disabled and contains empty documented event arrays. It is an inert contract artifact, not an installed handler.",
-    "For a later manually approved handler, PostToolUse input identifies the tool as `toolCall.name`; match that documented field.",
-    "PreInvocation step indexes are zero-based: the first invocation is index 0.",
+    "The generated hooks.json is disabled and contains no executable hook command. It is an inert contract artifact, not an installed handler.",
+    "The lifecycle payload parity required for automatic bootstrap is unverified for this CLI. Complete the explicit version/runtime probe before proposing a handler.",
+    ...agyBootstrapTemplate.probe.manualSequence.map((step, index) => `${index + 1}. ${step}`),
     "Any later handler must be reviewed and enabled by the operator in a disposable target. No hook command is auto-installed or executed here.",
     ""
   ].join("\n"));
@@ -533,6 +534,12 @@ export function renderAgy(input = {}) {
       sourcePath: "research-agy-2.md"
     },
     {
+      code: "agy-bootstrap-probe-required",
+      severity: "warning",
+      message: `${agyBootstrapTemplate.probe.reason} Status: ${agyBootstrapTemplate.probe.status}. Manual sequence: ${agyBootstrapTemplate.probe.manualSequence.join(" ")}`,
+      sourcePath: "research-t013-antigravity-agy-hooks.md"
+    },
+    {
       code: "agy-layout-conflict",
       severity: "warning",
       message: "Official sources conflict on CLI versus shared plugin, skill, hook, and settings roots; this result emits diagnostics and no persistent destination write.",
@@ -620,7 +627,21 @@ export function renderAgy(input = {}) {
         relativePath: "hooks.json",
         enabled: false,
         manualOnly: true,
-        automaticHookExecution: false
+        automaticHookExecution: false,
+        probeRequired: agyBootstrapTemplate.probeRequired,
+        probe: {
+          status: "not run",
+          manualSequence: [...agyBootstrapTemplate.probe.manualSequence]
+        }
+      },
+      {
+        kind: "runtime-prerequisite",
+        executable: agyBootstrapTemplate.runtime.executable,
+        check: [agyBootstrapTemplate.runtime.executable, "--version"],
+        minimumVersion: agyBootstrapTemplate.runtime.minimumVersion,
+        onMissing: agyBootstrapTemplate.runtime.missingRuntime,
+        requiredBy: ["manual-bootstrap-probe"],
+        platforms: ["win32", "darwin", "linux"]
       },
       {
         kind: "native-acceptance",

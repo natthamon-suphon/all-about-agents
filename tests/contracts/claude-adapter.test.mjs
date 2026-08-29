@@ -136,6 +136,22 @@ test("Claude hooks use exec-form commands with argument arrays and plugin-root p
   }
 });
 
+test("Claude startup hook invokes the rendered canonical runtime", async () => {
+  const result = resultFor();
+  const files = fileMap(result);
+  const hooks = JSON.parse(files.get("hooks/hooks.json")).hooks;
+  const startup = hooks.SessionStart.find((entry) => entry.matcher === "startup");
+  assert.ok(startup);
+  assert.deepEqual(startup.hooks[0].args, [
+    "${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.mjs",
+    "--surface",
+    "claude",
+    "--skill-path",
+    "${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md"
+  ]);
+  assert.equal(files.get("hooks/bootstrap.mjs"), await readFile(resolve(process.cwd(), "core/hooks/bootstrap.mjs"), "utf8"));
+});
+
 test("Claude settings registration documents one shared CLI/Desktop config root", () => {
   const result = resultFor();
   const registration = result.registrations.find((entry) => entry.kind === "settings");

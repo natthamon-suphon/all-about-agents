@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, posix } from "node:path";
+
+import claudeBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
 
 import { renderJson } from "../shared/render-utils.mjs";
 import {
@@ -12,12 +15,13 @@ import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeSc
 const CLAUDE_SURFACE = "claude";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
 const CONTROL_OR_ANSI = /[\u0000-\u001f\u007f]|\u001b\[[0-?]*[ -/]*[@-~]/u;
+const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
 
 /** Static installer preflight for the Node.js entrypoint used by every hook. */
 export const CLAUDE_PREREQUISITES = Object.freeze({
   executable: "node",
   check: Object.freeze(["node", "--version"]),
-  minimumVersion: "22.12.0",
+  minimumVersion: claudeBootstrapTemplate.runtime.minimumVersion,
   onMissing: "reject",
   requiredBy: Object.freeze(["hooks/*.mjs", "statusline/statusline.mjs"])
 });
@@ -124,13 +128,6 @@ const DEFAULT_ROLES = Object.freeze({
 });
 
 const HOOK_SOURCES = Object.freeze({
-  "session-start.mjs": `#!/usr/bin/env node
-// SessionStart is deliberately data-only and fail-open. It never reads CLAUDE.md.
-const chunks = [];
-for await (const chunk of process.stdin) chunks.push(chunk);
-try { JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"); } catch { /* fail open */ }
-process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: "All About Agents bootstrap is available through the installed plugin skills." } }));
-`,
   "emergency-guard.mjs": `#!/usr/bin/env node
 // Native permissions.deny remains authoritative; this hook only parses input and fails open.
 const chunks = [];
@@ -282,8 +279,20 @@ function hookConfig() {
     args: [`${"${CLAUDE_PLUGIN_ROOT}"}/hooks/${fileName}`],
     timeout: 10
   });
+  const bootstrapCommand = {
+    type: "command",
+    command: "node",
+    args: [
+      `${"${CLAUDE_PLUGIN_ROOT}"}/hooks/${claudeBootstrapTemplate.module}.mjs`,
+      "--surface",
+      claudeBootstrapTemplate.surface,
+      "--skill-path",
+      `${"${CLAUDE_PLUGIN_ROOT}"}/${claudeBootstrapTemplate.contentRef.replace(/^core\//u, "")}`
+    ],
+    timeout: 10
+  };
   return { hooks: {
-    SessionStart: [{ matcher: "startup|resume|clear|compact|fork", hooks: [command("session-start.mjs")] }],
+    [claudeBootstrapTemplate.event]: [{ matcher: claudeBootstrapTemplate.nativeMatcher, hooks: [bootstrapCommand] }],
     PreToolUse: [{ matcher: ".*", hooks: [command("emergency-guard.mjs")] }],
     PostToolUse: [{ matcher: ".*", hooks: [command("activity-audit.mjs")] }],
     PreCompact: [{ matcher: ".*", hooks: [command("pre-compact.mjs")] }]
@@ -363,6 +372,7 @@ export function renderClaude(input = {}) {
   addFile(files, "config/statusline.json", renderJson({ schemaVersion: 1, displayName: statuslineName }));
   addFile(files, "docs/semantic-mappings.md", mappingsDocument());
   addFile(files, "hooks/hooks.json", renderJson(hookConfig()));
+  addFile(files, `hooks/${claudeBootstrapTemplate.module}.mjs`, BOOTSTRAP_SOURCE, 0o755);
   for (const [fileName, source] of Object.entries(HOOK_SOURCES)) addFile(files, `hooks/${fileName}`, source, 0o755);
   addFile(files, "statusline/statusline.mjs", STATUSLINE_SOURCE_TEXT, 0o755);
 
