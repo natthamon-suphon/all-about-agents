@@ -275,7 +275,113 @@ async function loadJsonCollection(root, coreRoot, directoryName, kind, errors) {
 }
 
 async function loadRoleCollection(root, coreRoot, errors) {
-  return loadJsonCollection(root, coreRoot, "roles", "role", errors);
+  const entries = await loadJsonCollection(root, coreRoot, "roles", "role", errors);
+  for (const entry of entries) {
+    const promptPath = resolve(dirname(entry.path), "prompt.md");
+    if (!(await pathExists(promptPath))) continue;
+    const promptSourcePath = toPortablePath(root, promptPath);
+    try {
+      const prompt = await readUtf8(promptPath);
+      if (prompt.trim().length === 0) {
+        errors.push(errorRecord(promptSourcePath, "", "prompt", "role prompt must contain a non-empty body"));
+      } else {
+        entry.record.prompt = prompt;
+      }
+    } catch (error) {
+      errors.push(errorRecord(promptSourcePath, "", "read", error.message));
+    }
+  }
+  return entries;
+}
+
+const CANONICAL_ROLE_IDS = new Set([
+  "researcher",
+  "investigator",
+  "architect",
+  "implementer",
+  "verifier",
+  "reviewer",
+  "security-reviewer"
+]);
+const ROLE_WRITE_CAPABILITIES = new Set([
+  "repository-write",
+  "filesystem-write",
+  "git-write",
+  "isolated-write",
+  "command-execution"
+]);
+const IMPLEMENTER_SCOPE_OPERATIONS = new Set(["create", "modify", "delete"]);
+
+function roleContractErrors(entries, requireCanonical = false) {
+  const errors = [];
+  const prompts = new Map();
+  const purposes = new Map();
+  const canonicalEntries = entries.filter((entry) => CANONICAL_ROLE_IDS.has(entry.record?.id));
+  const enforceCanonicalContract = requireCanonical || canonicalEntries.length === CANONICAL_ROLE_IDS.size;
+  if (requireCanonical && canonicalEntries.length !== CANONICAL_ROLE_IDS.size) {
+    for (const roleId of [...CANONICAL_ROLE_IDS].sort(compareText)) {
+      if (!canonicalEntries.some((entry) => entry.record?.id === roleId)) {
+        errors.push(errorRecord("core/roles", `/roles/${roleId}`, "canonicalRole", `missing canonical role ${roleId}`));
+      }
+    }
+  }
+  for (const entry of entries) {
+    const role = entry.record;
+    if (!CANONICAL_ROLE_IDS.has(role?.id) && role?.id !== "generalist") continue;
+    if (!enforceCanonicalContract && role?.id !== "generalist") continue;
+    const sourcePath = entry.sourcePath;
+    if (role.id === "generalist") {
+      errors.push(errorRecord(sourcePath, "/id", "quarantinedRole", "generic generalist roles are not part of canonical routing"));
+      continue;
+    }
+    if (typeof role.prompt !== "string" || role.prompt.trim().length === 0) {
+      errors.push(errorRecord(sourcePath, "/prompt", "prompt", "canonical role requires a non-empty sibling prompt.md"));
+    } else {
+      const normalizedPrompt = role.prompt.replace(/\s+/gu, " ").trim();
+      if (prompts.has(normalizedPrompt)) {
+        errors.push(errorRecord(sourcePath, "/prompt", "promptDivergence", `prompt duplicates ${prompts.get(normalizedPrompt)}`));
+      } else prompts.set(normalizedPrompt, role.id);
+      if (/^---\s*$/mu.test(role.prompt)) errors.push(errorRecord(sourcePath, "/prompt", "promptFormat", "role prompt must be a body document without frontmatter"));
+      if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(role.prompt)) errors.push(errorRecord(sourcePath, "/prompt", "promptFormat", "role prompt cannot contain control characters"));
+      if (!/## Evidence contract\b/iu.test(role.prompt)) errors.push(errorRecord(sourcePath, "/prompt", "evidenceContract", "role prompt must explain its evidence contract"));
+    }
+    if (typeof role.purpose === "string") {
+      const normalizedPurpose = role.purpose.replace(/\s+/gu, " ").trim().toLowerCase();
+      if (purposes.has(normalizedPurpose)) errors.push(errorRecord(sourcePath, "/purpose", "roleDivergence", `purpose duplicates ${purposes.get(normalizedPurpose)}`));
+      else purposes.set(normalizedPurpose, role.id);
+    }
+    if (!role.evidenceContract || typeof role.evidenceContract !== "object" || Array.isArray(role.evidenceContract)) {
+      errors.push(errorRecord(sourcePath, "/evidenceContract", "evidenceContract", "canonical role requires a structured evidence contract"));
+    } else {
+      if (!Array.isArray(role.evidenceContract.required) || role.evidenceContract.required.length === 0) errors.push(errorRecord(sourcePath, "/evidenceContract/required", "evidenceContract", "evidenceContract.required must be non-empty"));
+      if (typeof role.evidenceContract.format !== "string" || role.evidenceContract.format.trim().length === 0) errors.push(errorRecord(sourcePath, "/evidenceContract/format", "evidenceContract", "evidenceContract.format must be non-empty"));
+      if (!Array.isArray(role.evidenceContract.limitations) || role.evidenceContract.limitations.length === 0) errors.push(errorRecord(sourcePath, "/evidenceContract/limitations", "evidenceContract", "evidenceContract.limitations must be non-empty"));
+    }
+    if (!role.outputContract || typeof role.outputContract !== "object" || Array.isArray(role.outputContract) || !Object.hasOwn(role.outputContract, "evidence")) {
+      errors.push(errorRecord(sourcePath, "/outputContract", "evidenceContract", "outputContract must declare evidence"));
+    }
+    const capabilities = Array.isArray(role.capabilities) ? role.capabilities : [];
+    const writeCapabilities = capabilities.filter((capability) => ROLE_WRITE_CAPABILITIES.has(capability));
+    if (role.id !== "implementer" && writeCapabilities.length > 0) {
+      errors.push(errorRecord(sourcePath, "/capabilities", "mutationScope", `read-only role cannot declare ${writeCapabilities.join(", ")}`));
+    }
+    if (role.id !== "implementer" && role.mutationScope !== "none") {
+      errors.push(errorRecord(sourcePath, "/mutationScope", "mutationScope", "every non-implementer role must use mutationScope none"));
+    }
+    if (role.id === "implementer") {
+      const scope = role.mutationScope;
+      const validScope = scope && typeof scope === "object" && !Array.isArray(scope) &&
+        Array.isArray(scope.paths) && scope.paths.length > 0 &&
+        Array.isArray(scope.operations) && scope.operations.length > 0 &&
+        scope.paths.every((path) => typeof path === "string" && /^workspace(?:\/|$)/u.test(path) && !path.includes("..")) &&
+        scope.operations.every((operation) => IMPLEMENTER_SCOPE_OPERATIONS.has(operation));
+      if (!validScope) {
+        errors.push(errorRecord(sourcePath, "/mutationScope", "mutationScope", "implementer must declare non-empty scoped paths and operations"));
+      }
+      if (role.mutationScope === "full") errors.push(errorRecord(sourcePath, "/mutationScope", "mutationScope", "implementer may not use full mutation scope"));
+    }
+  }
+  return errors;
 }
 
 async function loadSkills(root, coreRoot, errors) {
@@ -426,6 +532,7 @@ export async function loadCore(root) {
   ]);
   const collections = { rules, roles, skills, workflows, commands, evals };
   for (const collection of Object.values(collections)) checkDuplicateIds(collection, errors);
+  errors.push(...roleContractErrors(roles, inventory?.repository === "all-about-agents"));
   checkReferences(collections, errors);
   for (const collection of Object.values(collections)) collection.sort(sortEntries);
   if (errors.length > 0) throw new CoreLoadError(errors);

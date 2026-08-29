@@ -23,6 +23,16 @@
     },
     "inputContract": { "type": ["object", "string"] },
     "outputContract": { "type": ["object", "string"] },
+    "evidenceContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "format", "limitations"],
+      "properties": {
+        "required": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "format": { "type": "string", "minLength": 1 },
+        "limitations": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
     "capabilities": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
     "requiredCapabilities": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
     "allowedCapabilities": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },

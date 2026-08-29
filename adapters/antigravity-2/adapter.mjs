@@ -78,6 +78,15 @@ const EMERGENCY_DENIES = Object.freeze([
   "write_file(/home/user/.ssh)"
 ]);
 
+const READ_ONLY_ROLE_NAMES = new Set([
+  "researcher",
+  "investigator",
+  "architect",
+  "verifier",
+  "reviewer",
+  "security-reviewer"
+]);
+
 export const ANTIGRAVITY_PERMISSION_POLICY = Object.freeze({
   portable: Object.freeze({ preset: "Default", manualOnly: true, deny: EMERGENCY_DENIES }),
   template: Object.freeze({ preset: "Unrestricted", manualOnly: true, deny: EMERGENCY_DENIES })
@@ -169,7 +178,7 @@ function renderAgent(name, role) {
   ])];
   let tools = [...new Set(capabilities.flatMap((capability) => ANTIGRAVITY_SEMANTIC_MAPPINGS[capability] || []))];
   if (tools.length === 0 && !role) tools = [...ANTIGRAVITY_SEMANTIC_MAPPINGS["repository-read"]];
-  const readOnly = role?.readOnly === true || fallback.readOnly === true || role?.mutationScope === "none";
+  const readOnly = role?.readOnly === true || fallback.readOnly === true || role?.mutationScope === "none" || READ_ONLY_ROLE_NAMES.has(name);
   if (readOnly) tools = tools.filter((tool) => ![
     "write_to_file", "replace_file_content", "multi_replace_file_content", "run_command"
   ].includes(tool));
@@ -307,7 +316,7 @@ export function renderAntigravity(input = {}) {
   }
   for (const skill of skillIds(input.core)) addFile(files, `${PLUGIN_ROOT}/skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill)));
 
-  const roleNames = [...new Set([...Object.keys(DEFAULT_ROLES), ...roleRecords.keys()])].sort();
+  const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort();
   for (const role of roleNames) addFile(files, `${PLUGIN_ROOT}/agents/${role}.md`, renderAgent(role, roleRecords.get(role)));
   files.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
   validateDesktopContent(files);

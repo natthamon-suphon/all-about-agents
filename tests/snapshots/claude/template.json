@@ -1,5 +1,4 @@
 {
-  "fileCount": 62,
   "paths": [
     ".claude-plugin/plugin.json",
     "agents/architect.md",
@@ -64,6 +63,7 @@
     "skills/zero-downtime-migrations/SKILL.md",
     "statusline/statusline.mjs"
   ],
+  "fileCount": 62,
   "settings": {
     "advisorModel": "claude-fable-5",
     "env": {
@@ -85,19 +85,19 @@
   },
   "content": {
     ".claude-plugin/plugin.json": "{\n  \"author\": {\n    \"name\": \"All About Agents\"\n  },\n  \"description\": \"Portable all-about-agents skills, agents, commands, hooks, and rules for Claude Code.\",\n  \"hooks\": \"./hooks/hooks.json\",\n  \"name\": \"all-about-agents\",\n  \"version\": \"1.0.0\"\n}\n",
-    "agents/investigator.md": "---\nname: investigator\ndescription: \"Reproduce an internal problem and rank evidence-backed hypotheses.\"\nmodel: inherit\ntools:\n  - Glob\n  - Grep\n  - Read\ndisallowedTools:\n  - Agent\n  - Bash\n  - Edit\n  - Write\n---\n\nOperate as the investigator role. Preserve scope, verify evidence, and report uncertainty.\n",
+    "agents/investigator.md": "---\nname: investigator\ndescription: \"Performs read-only forensic investigation and ranks falsifiable root-cause hypotheses.\"\nmodel: inherit\ntools:\n  - Glob\n  - Grep\n  - Read\ndisallowedTools:\n  - Agent\n  - Bash\n  - Edit\n  - Write\n---\n\n# Investigator\n\n## Mission\n\nExplain an internal failure before anyone changes code. Read the complete error, stack, input, and environment evidence; reproduce the behavior when possible; then trace the bad value backward to its origin.\n\n## Boundaries\n\nThis is a forensic role, not an implementation role. Do not edit files, apply a workaround, or turn an untested suspicion into a fix. Do not substitute external research for local reproduction when the failure is inside the repository.\n\n## Working method\n\nRecord observations first, compare a failing path with a known-working path, and rank three or fewer falsifiable hypotheses. For each hypothesis state the prediction, the check that would distinguish it, and the exact source location involved.\n\n## Evidence contract\n\nReport the reproduction command or explain why reproduction was unavailable, include the full evidence chain, label inference explicitly, and end with a handoff that an implementer can test without guessing. Route architecture questions to the architect and fresh black-box checking to the verifier.\n",
     "config/settings.json": "{\n  \"advisorModel\": \"claude-fable-5\",\n  \"env\": {\n    \"CLAUDE_CODE_EFFORT_LEVEL\": \"max\"\n  },\n  \"fallbackModel\": [\n    \"claude-sonnet-5\"\n  ],\n  \"model\": \"claude-opus-5\",\n  \"permissions\": {\n    \"defaultMode\": \"bypassPermissions\",\n    \"deny\": [\n      \"Bash(rm -rf /)\",\n      \"Bash(rm -rf ~)\",\n      \"Bash(git push --force*)\",\n      \"Bash(git reset --hard*)\"\n    ]\n  }\n}\n",
     "hooks/hooks.json": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/activity-audit.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreCompact\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/emergency-guard.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \"startup|resume|clear|compact|fork\"\n      }\n    ]\n  }\n}\n"
   },
   "ownershipHashes": {
     ".claude-plugin/plugin.json": "7454344a5884c768fbe2d497de34d93916e1d33eae8f20dc9b63005bfb9f02b8",
-    "agents/architect.md": "4b3c2d8cd7d6df6448a831b1d6add39210593599aebaa3602ec6ceb3da6906c2",
-    "agents/implementer.md": "00b431f6534d36bfb5d5158277afec578aa888d257c74f70781bbe0b3e8c4444",
-    "agents/investigator.md": "18d33c82c4c1a7f5453bdfbcecdfffdc50e1e6cc7c5b713522fa6e850f7c5777",
-    "agents/researcher.md": "d48913752a6ced806d77da48a60d12f873b152375e164366c91e685f8b2ca973",
-    "agents/reviewer.md": "4159b75eaa7aa8b9e77ecf9de38f72f405d88ea63684d2fb30d2694b9b0baad3",
-    "agents/security-reviewer.md": "1a34b5860d63cdb384bc67e7aa9867ca608b3b5063fe518fa553bd63ee057313",
-    "agents/verifier.md": "91b5ad2e877a445e387afb3a74f60ac5191b733055ae2472daff4c74ae857bb7",
+    "agents/architect.md": "c6343961b5530ef966b9b22da10d34605c9942115b7594433225bb847e16026c",
+    "agents/implementer.md": "55a9d95270c42bfc6e852d35f09fe22da97fa60ee38ff653ffebe2e60e955799",
+    "agents/investigator.md": "7f086def6c00d02cdb4586f49f90035a5c3cb8b4e94bc4a52c68e1a98c3430cd",
+    "agents/researcher.md": "90be21188aaa10d2bb9b3eaf41a3f0313eae06788365f7aff02fffdaa19cd2ca",
+    "agents/reviewer.md": "909bb4bb7cb1de1146e7a8bf001a1aa551aff76809c7648a0cb065a686dcf347",
+    "agents/security-reviewer.md": "50067fb4bb8c8e8eadd07dfcbc87ec3711bbdda993eecd4393f6fbaf0e2533f5",
+    "agents/verifier.md": "b067a654045354f5a477c2a27639b064e2f0b52a6f81a09eedbe209db7af08f5",
     "commands/audit.md": "f15a46fec5cdf8305c16933b14dc7de073500061ea5b1f0e6266c5ecb27a5ea9",
     "commands/build.md": "2677aca4c10ef11caaa42c7fdb89e5c0f5bbb54ed47f413d3b15bfcb83203299",
     "commands/design.md": "42d366cf49f245a655d4c4401e91625fea6c96f103468e34520c8089b97f7823",

@@ -153,37 +153,37 @@
     },
     {
       "relativePath": ".codex/agents/architect.toml",
-      "sha256": "d9e895c191021307746ea66c39374f8ff5509dfa1c45a6b9aad2bf334d6e2dd0",
+      "sha256": "1dcc929926c0430cfad412be0d6b0332e0c76d041975f09789890b15fd7866f1",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/implementer.toml",
-      "sha256": "b1a01187ac1d6815d90a5621b84b20914192ff2292bde6f8a367a90439cc21f7",
+      "sha256": "ea7305449bc922b756fbc5ef38189d64b81bef47e8a7c5896d46e23553897d83",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/investigator.toml",
-      "sha256": "215f2d81c6fb940ea555c28424b474a2453fb09c0e1087924b4b326d87caa100",
+      "sha256": "71a694c7bc6cf338e23cde33ff05881642f0dd6fa9a91e192e64516170afd58c",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/researcher.toml",
-      "sha256": "87c057beed5c2cbce5d64ebe759e85545acb4f845ff33b0b858e3f7e3effe677",
+      "sha256": "8fe30040612efc959815cb99585f2df4e4085d6669f27ba6badce5892b5ca014",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/reviewer.toml",
-      "sha256": "e903259c9dd01198beb531f15da0048a6408184e2f1980b115f9d01034e19881",
+      "sha256": "be8c972c0e7c3fcefc4c94ca58735f4b50cca27bf87a5c8f026f5e87c39e8857",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/security-reviewer.toml",
-      "sha256": "30fcfe8db35e41e1cba772a8718dda5a8fc8b650bff5eeabab7c7db4dcfcf165",
+      "sha256": "30780ca94f5c4aeb0f11f0f618cdc77d4612a3fcfae5b819d02b1879e2cb7694",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/verifier.toml",
-      "sha256": "7b56cdc6da5e8473d7ee2a50804341fc3d4fa93e76aee2db61e8ca98184b9781",
+      "sha256": "e711c865c03a925f99fd6911051fd10d84c32b2e723a49955fb43120d7792fa8",
       "mode": null
     },
     {
@@ -330,31 +330,31 @@
     },
     {
       "relativePath": ".codex/agents/architect.toml",
-      "sha256": "d9e895c191021307746ea66c39374f8ff5509dfa1c45a6b9aad2bf334d6e2dd0"
+      "sha256": "1dcc929926c0430cfad412be0d6b0332e0c76d041975f09789890b15fd7866f1"
     },
     {
       "relativePath": ".codex/agents/implementer.toml",
-      "sha256": "b1a01187ac1d6815d90a5621b84b20914192ff2292bde6f8a367a90439cc21f7"
+      "sha256": "ea7305449bc922b756fbc5ef38189d64b81bef47e8a7c5896d46e23553897d83"
     },
     {
       "relativePath": ".codex/agents/investigator.toml",
-      "sha256": "215f2d81c6fb940ea555c28424b474a2453fb09c0e1087924b4b326d87caa100"
+      "sha256": "71a694c7bc6cf338e23cde33ff05881642f0dd6fa9a91e192e64516170afd58c"
     },
     {
       "relativePath": ".codex/agents/researcher.toml",
-      "sha256": "87c057beed5c2cbce5d64ebe759e85545acb4f845ff33b0b858e3f7e3effe677"
+      "sha256": "8fe30040612efc959815cb99585f2df4e4085d6669f27ba6badce5892b5ca014"
     },
     {
       "relativePath": ".codex/agents/reviewer.toml",
-      "sha256": "e903259c9dd01198beb531f15da0048a6408184e2f1980b115f9d01034e19881"
+      "sha256": "be8c972c0e7c3fcefc4c94ca58735f4b50cca27bf87a5c8f026f5e87c39e8857"
     },
     {
       "relativePath": ".codex/agents/security-reviewer.toml",
-      "sha256": "30fcfe8db35e41e1cba772a8718dda5a8fc8b650bff5eeabab7c7db4dcfcf165"
+      "sha256": "30780ca94f5c4aeb0f11f0f618cdc77d4612a3fcfae5b819d02b1879e2cb7694"
     },
     {
       "relativePath": ".codex/agents/verifier.toml",
-      "sha256": "7b56cdc6da5e8473d7ee2a50804341fc3d4fa93e76aee2db61e8ca98184b9781"
+      "sha256": "e711c865c03a925f99fd6911051fd10d84c32b2e723a49955fb43120d7792fa8"
     },
     {
       "relativePath": "AGENTS.md",

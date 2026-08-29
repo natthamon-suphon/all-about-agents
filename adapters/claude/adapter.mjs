@@ -22,7 +22,7 @@ export const CLAUDE_PREREQUISITES = Object.freeze({
 });
 
 const READ_ONLY_NATIVE_TOOLS = Object.freeze(["Agent", "Bash", "Edit", "Write"]);
-const READ_ONLY_ROLE_NAMES = new Set(["investigator", "verifier", "reviewer", "security-reviewer"]);
+const READ_ONLY_ROLE_NAMES = new Set(["researcher", "investigator", "architect", "verifier", "reviewer", "security-reviewer"]);
 
 /**
  * The names at this boundary are intentionally Claude-native. The core only
@@ -253,7 +253,7 @@ function renderAgent(name, role) {
     ...(Array.isArray(role?.requiredCapabilities) ? role.requiredCapabilities : [])
   ];
   const mappedTools = semanticNames.flatMap((capability) => CLAUDE_SEMANTIC_MAPPINGS[capability] || []);
-  const tools = [...new Set([...(mappedTools.length > 0 ? mappedTools : fallback.tools)])].sort();
+  const tools = [...new Set([...(role ? mappedTools : (mappedTools.length > 0 ? mappedTools : fallback.tools))])].sort();
   const roleContext = [
     role?.purpose,
     Array.isArray(role?.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
@@ -368,7 +368,7 @@ export function renderClaude(input = {}) {
   }
   for (const rule of [...core.rules].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `rules/${rule.id}.md`, renderRule(rule));
 
-  const roleNames = [...new Set([...Object.keys(DEFAULT_ROLES), ...roleRecords.keys()])].sort();
+  const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort();
   for (const roleName of roleNames) addFile(files, `agents/${roleName}.md`, renderAgent(roleName, roleRecords.get(roleName)));
   for (const command of [...core.commands].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `commands/${command.id}.md`, renderCommand(command));
 

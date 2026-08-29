@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "quarantinedLegacyRoles": ["generalist"],
+  "scenarios": [
+    {
+      "id": "research-vs-investigation",
+      "critical": true,
+      "cases": [
+        { "id": "current-spec", "prompt": "Find the current first-party API specification and cite it.", "expectedRole": "researcher" },
+        { "id": "external-regulation", "prompt": "Compare the latest official regulation text and link the source.", "expectedRole": "researcher" },
+        { "id": "stack-trace", "prompt": "Trace this failing stack and identify where the bad value originated.", "expectedRole": "investigator" },
+        { "id": "reproduction", "prompt": "Reproduce the internal regression and rank falsifiable causes.", "expectedRole": "investigator" },
+        { "id": "config-failure", "prompt": "Explain why this repository configuration fails without changing it.", "expectedRole": "investigator" }
+      ]
+    },
+    {
+      "id": "verifier-vs-reviewer",
+      "critical": true,
+      "cases": [
+        { "id": "black-box", "prompt": "Run a fresh black-box check of the rendered behavior.", "expectedRole": "verifier" },
+        { "id": "parser-output", "prompt": "Compare parser output to the deterministic expected fixture.", "expectedRole": "verifier" },
+        { "id": "not-run", "prompt": "Record the live check as not run when the surface is unavailable.", "expectedRole": "verifier" },
+        { "id": "spec-diff", "prompt": "Judge this diff against the task brief and report findings.", "expectedRole": "reviewer" },
+        { "id": "quality-gate", "prompt": "Review test hygiene and maintainability with exact citations.", "expectedRole": "reviewer" }
+      ]
+    },
+    {
+      "id": "architecture-vs-implementation",
+      "critical": true,
+      "cases": [
+        { "id": "seam", "prompt": "Choose the smallest public interface and testable seam.", "expectedRole": "architect" },
+        { "id": "depth", "prompt": "Compare deep module designs and their ownership risks.", "expectedRole": "architect" },
+        { "id": "invariants", "prompt": "Design module invariants before implementation begins.", "expectedRole": "architect" },
+        { "id": "red-test", "prompt": "Write the failing test and implement the approved scoped change.", "expectedRole": "implementer" },
+        { "id": "green-change", "prompt": "Apply the test-first vertical slice inside the approved workspace scope.", "expectedRole": "implementer" }
+      ]
+    },
+    {
+      "id": "security-vs-review",
+      "critical": true,
+      "cases": [
+        { "id": "secret", "prompt": "Model the threat of a secret leaking through untrusted input.", "expectedRole": "security-reviewer" },
+        { "id": "privilege", "prompt": "Check privilege elevation and destructive-operation containment.", "expectedRole": "security-reviewer" },
+        { "id": "stride", "prompt": "Rank STRIDE threats and residual risk for this change.", "expectedRole": "security-reviewer" },
+        { "id": "compliance", "prompt": "Check whether the implementation meets the requested specification.", "expectedRole": "reviewer" },
+        { "id": "maintainability", "prompt": "Review diff quality and test coverage for maintainability.", "expectedRole": "reviewer" }
+      ]
+    }
+  ]
+}

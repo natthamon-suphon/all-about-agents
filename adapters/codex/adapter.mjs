@@ -335,7 +335,7 @@ export function renderCodex(input = {}) {
     addFile(files, `.agents/skills/${skill}/SKILL.md`, rendered.content);
   }
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
-  const roleNames = [...new Set([...Object.keys(DEFAULT_ROLES), ...roleRecords.keys()])].sort(compareCodePoints);
+  const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort(compareCodePoints);
   for (const roleName of roleNames) addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName)));
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   for (const file of files) {

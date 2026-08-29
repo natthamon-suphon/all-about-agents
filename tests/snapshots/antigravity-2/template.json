@@ -1,5 +1,4 @@
 {
-  "fileCount": 49,
   "paths": [
     ".agents/plugins/all-about-agents/agents/architect.md",
     ".agents/plugins/all-about-agents/agents/implementer.md",
@@ -51,6 +50,7 @@
     ".agents/plugins/all-about-agents/skills/writing-skills/SKILL.md",
     ".agents/plugins/all-about-agents/skills/zero-downtime-migrations/SKILL.md"
   ],
+  "fileCount": 49,
   "model": {
     "kind": "manual-model-selection",
     "surface": "antigravity-2-desktop",
@@ -66,39 +66,84 @@
     "preset": "Unrestricted",
     "manualOnly": true,
     "precedence": "Deny > Ask > Allow",
-    "deny": ["command(rm -rf)", "command(sudo)", "write_file(.git/)", "write_file(/home/user/.ssh)"]
+    "deny": [
+      "command(rm -rf)",
+      "command(sudo)",
+      "write_file(.git/)",
+      "write_file(/home/user/.ssh)"
+    ]
   },
-  "diagnostics": [{
-    "kind": "unsupported-diagnostic",
-    "surface": "antigravity-2-desktop",
-    "claim": "Gemini 3.7 Flash High",
-    "status": "unsupported",
-    "source": "research-antigravity-2.md",
-    "manual_step": "Open the Desktop model selector and choose the currently offered Gemini 3.7 Flash Medium; do not enter a model key or persist the choice outside the conversation."
-  }],
+  "diagnostics": [
+    {
+      "kind": "unsupported-diagnostic",
+      "surface": "antigravity-2-desktop",
+      "claim": "Gemini 3.7 Flash High",
+      "status": "unsupported",
+      "source": "research-antigravity-2.md",
+      "manual_step": "Open the Desktop model selector and choose the currently offered Gemini 3.7 Flash Medium; do not enter a model key or persist the choice outside the conversation."
+    }
+  ],
   "actionDiagnostics": [
-    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:design has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
-    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:build has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
-    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:fix has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
-    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:review has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
-    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:audit has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
-    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:improve-skill has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
-    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:resume has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"},
-    {"code": "desktop-action-unknown", "severity": "warning", "message": "aaa:verify has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.", "sourcePath": "research-antigravity-2.md"}
+    {
+      "code": "desktop-action-unknown",
+      "severity": "warning",
+      "message": "aaa:design has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
+      "sourcePath": "research-antigravity-2.md"
+    },
+    {
+      "code": "desktop-action-unknown",
+      "severity": "warning",
+      "message": "aaa:build has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
+      "sourcePath": "research-antigravity-2.md"
+    },
+    {
+      "code": "desktop-action-unknown",
+      "severity": "warning",
+      "message": "aaa:fix has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
+      "sourcePath": "research-antigravity-2.md"
+    },
+    {
+      "code": "desktop-action-unknown",
+      "severity": "warning",
+      "message": "aaa:review has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
+      "sourcePath": "research-antigravity-2.md"
+    },
+    {
+      "code": "desktop-action-unknown",
+      "severity": "warning",
+      "message": "aaa:audit has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
+      "sourcePath": "research-antigravity-2.md"
+    },
+    {
+      "code": "desktop-action-unknown",
+      "severity": "warning",
+      "message": "aaa:improve-skill has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
+      "sourcePath": "research-antigravity-2.md"
+    },
+    {
+      "code": "desktop-action-unknown",
+      "severity": "warning",
+      "message": "aaa:resume has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
+      "sourcePath": "research-antigravity-2.md"
+    },
+    {
+      "code": "desktop-action-unknown",
+      "severity": "warning",
+      "message": "aaa:verify has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
+      "sourcePath": "research-antigravity-2.md"
+    }
   ],
   "contentHashes": {
-    ".agents/plugins/all-about-agents/rules/adapter-capability-guidance.md": "067cfcfb38dcb78663530f4debaab42ea74b6e49208ef5822e3cbb53b725eb80",
-    ".agents/plugins/all-about-agents/rules/model-selection.md": "5558fa6f85d26f1e027ef9c087e835df6bc7483e6ad580bbcb5716b7fa79be92",
-    ".agents/plugins/all-about-agents/rules/permission-safety.md": "fbbcd87452fe38d10dfcc333cbd621cb392087c14e6e76326a86c4233ec048c4",
-    ".agents/plugins/all-about-agents/agents/architect.md": "e2255ab6e9d81bbf6ffceec5681a1ab5480be1d8520aded3cb16f8ec95f9e32c",
-    ".agents/plugins/all-about-agents/agents/implementer.md": "075f53b781e0f7bd114ccc0aa2755f361c8dbd504f669b5c683c2dd60aeada73",
-    ".agents/plugins/all-about-agents/agents/investigator.md": "3ea99e2e515a79e97a546bdeb8c9db8b3689dce3555f4300237c67013f85fa2c",
-    ".agents/plugins/all-about-agents/agents/researcher.md": "d7f1b80b1b012bc9050073c37d0ad9e7465a22868225805966c8cab7bd87b7b1",
-    ".agents/plugins/all-about-agents/agents/reviewer.md": "acac291d0f8d445a7ad4fd27c76c8fd7a57a674ec32f89f08ec8d2f813301989",
-    ".agents/plugins/all-about-agents/agents/security-reviewer.md": "bfbc779821524765db8305afcea59d575f2263cb968504b1364d3e20915503e8",
-    ".agents/plugins/all-about-agents/agents/verifier.md": "33c6e24686a2d00ee6fe67a17c36be111c17a31a5dfae999064ef7a7e066c016",
+    ".agents/plugins/all-about-agents/agents/architect.md": "6cf03e01548ea6afa5ec10a830c118c4304b29fdb126582c45c07452ff47ffd8",
+    ".agents/plugins/all-about-agents/agents/implementer.md": "c94463cb7ad487c6a54084e12e2e9581ee7ded3fef222f2b8a767b29b94c5d1d",
+    ".agents/plugins/all-about-agents/agents/investigator.md": "4620e5b2dba284a6d74dc83d4b0f3212bfb51bbb3dc951588814af8e0c843cbf",
+    ".agents/plugins/all-about-agents/agents/researcher.md": "ace2cb457e440c0dacbd25e1872fbddaa40e770e71c3a423f62a49acee3247ec",
+    ".agents/plugins/all-about-agents/agents/reviewer.md": "3eb5215cf691957d394ece7bfbac48e54451c8a751afb033282c5e8e137179a2",
+    ".agents/plugins/all-about-agents/agents/security-reviewer.md": "0b13bda5993c27f07430d6ccecae50ec75df8e30067448c487bd04b3b65747e6",
+    ".agents/plugins/all-about-agents/agents/verifier.md": "781f1ebf4659113bfaa4f138801a3c06a51e44a79394eca71232bc98eb9e63c6",
     ".agents/plugins/all-about-agents/hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
     ".agents/plugins/all-about-agents/plugin.json": "6c9c8a61e842f1857dac5ee03a6457ccc84ba5f168a550732e9e9eb0a979c3ed",
+    ".agents/plugins/all-about-agents/rules/adapter-capability-guidance.md": "067cfcfb38dcb78663530f4debaab42ea74b6e49208ef5822e3cbb53b725eb80",
     ".agents/plugins/all-about-agents/rules/authority-and-scope.md": "e954e78589912467fcc0f1e273cd7f7028efb014152ec22e9cdd6e99c821764f",
     ".agents/plugins/all-about-agents/rules/cross-platform-execution.md": "b0db23bbbee452ae698d68171bde816bbdc360464d7e8d3105b46eaefa1d8c62",
     ".agents/plugins/all-about-agents/rules/destructive-actions.md": "69f0320c6279e4f2a5b3dc96381c08d80c5d3dc84a5aa34ae2e6e790b4b452f9",
@@ -106,7 +151,9 @@
     ".agents/plugins/all-about-agents/rules/git-and-user-work.md": "b65c9ad2095d570a7ad6299e53a5811698cebc9148c7d38e0d9e77d132404872",
     ".agents/plugins/all-about-agents/rules/implementation-quality.md": "b680c552b63c1b11ae103f96a439e1acceb09ba2deebb728bc5e08bf5177ce15",
     ".agents/plugins/all-about-agents/rules/long-task-state.md": "62d1c22e14fa00a01136894dad2336e1d3c059b104e3e64eeb2d66bd3755b2af",
+    ".agents/plugins/all-about-agents/rules/model-selection.md": "5558fa6f85d26f1e027ef9c087e835df6bc7483e6ad580bbcb5716b7fa79be92",
     ".agents/plugins/all-about-agents/rules/multi-agent-ownership.md": "b346e37ce93910abc0a4a967190502b223d0ec249095988bf3b42ce14e09c2d5",
+    ".agents/plugins/all-about-agents/rules/permission-safety.md": "fbbcd87452fe38d10dfcc333cbd621cb392087c14e6e76326a86c4233ec048c4",
     ".agents/plugins/all-about-agents/rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",
     ".agents/plugins/all-about-agents/skills/brainstorming/SKILL.md": "34020e7addba6f3ed6f9649badf41fc0fb62e76f49f0c190f046af129cf1b0b2",
     ".agents/plugins/all-about-agents/skills/codebase-design/SKILL.md": "eac82dd9b4e8b6861ad141681883d3b3b9aea67dd079bcdb7b53ea03a887a28c",

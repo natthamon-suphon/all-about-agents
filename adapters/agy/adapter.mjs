@@ -530,7 +530,7 @@ export function renderAgy(input = {}) {
   for (const skill of canonicalSkillIds(input.core)) {
     addFile(files, `skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill)));
   }
-  const roleNames = [...new Set([...Object.keys(DEFAULT_ROLES), ...roleRecords.keys()])].sort(compareCodePoints);
+  const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort(compareCodePoints);
   for (const roleName of roleNames) addFile(files, `agents/${roleName}/agent.md`, renderAgent(roleName, roleRecords.get(roleName)));
 
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
