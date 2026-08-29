@@ -231,7 +231,10 @@ function wrapperEnd(words) {
         index += 1;
         continue;
       }
-      if (wrapperOptionTakesValue(wrapper, option)) {
+      // `env -S` carries a split command string, so leave the following
+      // executable visible to the interpreter scanner. Other wrapper
+      // options (notably `sudo -u root`) consume their value as one unit.
+      if (wrapperOptionTakesValue(wrapper, option) && !(name === "env" && option === "-s")) {
         index += 2;
         continue;
       }
@@ -345,20 +348,40 @@ function wrapperScanExceeded(value) {
     let index = 0;
     let steps = 0;
     while (index < words.length && steps < MAX_WRAPPER_STEPS) {
-      steps += 1;
       if (isAssignmentToken(words[index])) {
+        steps += 1;
         index += 1;
         continue;
       }
       const name = tokenName(words[index]);
       if (!SHELL_PREFIXES.has(name)) break;
+      const wrapper = words[index];
       index += 1;
-      while (index < words.length && steps < MAX_WRAPPER_STEPS && (isAssignmentToken(words[index]) || normalized(words[index]).startsWith("-"))) {
-        steps += 1;
-        index += 1;
+      steps += 1;
+      while (index < words.length && steps < MAX_WRAPPER_STEPS) {
+        const option = normalized(words[index]);
+        if (isAssignmentToken(words[index])) {
+          steps += 1;
+          index += 1;
+          continue;
+        }
+        if (wrapperOptionTakesValue(wrapper, option)) {
+          steps += 1;
+          index += 1;
+          if (index >= words.length) return true;
+          steps += 1;
+          index += 1;
+          continue;
+        }
+        if (option.startsWith("-") || (name === "if" && option === "then")) {
+          steps += 1;
+          index += 1;
+          continue;
+        }
+        break;
       }
     }
-    if (index < words.length && steps >= MAX_WRAPPER_STEPS && SHELL_PREFIXES.has(tokenName(words[index - 1] || ""))) return true;
+    if (index < words.length && steps >= MAX_WRAPPER_STEPS) return true;
   }
   return false;
 }
@@ -384,6 +407,59 @@ function parserBoundsExceeded(input) {
   return sourceShapeExceeded(input.command) || sourceShapeExceeded(input.capability) || wrapperScanExceeded(input.command);
 }
 
+function isDispatcherRunner(value) {
+  const name = tokenName(value);
+  return SHELL_INTERPRETERS.has(name) || SHELL_PREFIXES.has(name) || isNonShellRunnerName(value)
+    || ["git", "git.exe", "git.cmd", "git.bat", "rm", "rmdir", "rd", "del", "erase", "remove-item", "ri", "clear-item", "srm"].includes(commandName(value));
+}
+
+function xargsOptionTakesValue(value) {
+  const option = normalized(value).split("=", 1)[0];
+  return [
+    "-a", "--arg-file", "-d", "--delimiter", "-e", "--eof", "-i", "--replace",
+    "-l", "--max-lines", "-n", "--max-args", "-p", "--max-procs", "-s", "--max-chars",
+    "--process-slot-var"
+  ].includes(option);
+}
+
+function dispatcherPayloads(value) {
+  const payloads = [];
+  for (const segment of commandSegments(value)) {
+    const words = lexicalWords(segment);
+    for (let index = 0; index < words.length; index += 1) {
+      const name = tokenName(words[index]);
+      if (name === "find") {
+        for (let execIndex = index + 1; execIndex < words.length; execIndex += 1) {
+          if (!["-exec", "-execdir"].includes(normalized(words[execIndex] || ""))) continue;
+          const candidate = words.slice(execIndex + 1);
+          const start = candidate.findIndex(isDispatcherRunner);
+          if (start >= 0) payloads.push(candidate.slice(start).join(" "));
+        }
+      }
+      if (name === "xargs") {
+        const args = words.slice(index + 1);
+        let commandIndex = 0;
+        while (commandIndex < args.length) {
+          const option = normalized(args[commandIndex]);
+          if (option === "--") {
+            commandIndex += 1;
+            break;
+          }
+          if (option.startsWith("-") && !isDispatcherRunner(args[commandIndex])) {
+            commandIndex += 1;
+            if (xargsOptionTakesValue(option) && !option.includes("=") && commandIndex < args.length) commandIndex += 1;
+            continue;
+          }
+          break;
+        }
+        const start = args.slice(commandIndex).findIndex(isDispatcherRunner);
+        if (start >= 0) payloads.push(args.slice(commandIndex + start).join(" "));
+      }
+    }
+  }
+  return payloads;
+}
+
 function commandVariants(value) {
   const variants = [];
   const seen = new Set();
@@ -396,6 +472,7 @@ function commandVariants(value) {
       if (variants.length >= MAX_VARIANT_COUNT) return;
       variants.push(segment);
       for (const record of shellInvocationRecords(segment)) if (record.payload) visit(record.payload, depth + 1);
+      for (const payload of dispatcherPayloads(segment)) visit(payload, depth + 1);
       for (const body of substitutionBodies(segment)) visit(body, depth + 1);
     }
   };
@@ -485,9 +562,10 @@ function hasOpaqueScriptPayload(value) {
         && candidate && !candidate.startsWith("-") && (hasDynamicToken(candidate) || isScriptPathToken(candidate))) return true;
     }
     if (["python", "python3", "node", "ruby", "perl", "pwsh", "powershell"].includes(first)
-      && /(?:\b(?:exec|eval|system|spawn|popen|open|require|child[_-]?process|start-process|invoke-command|invoke-expression)\b|process[.]env|os[.]environ)/iu.test(words.slice(1).join(" "))) return true;
+      && /(?:\b(?:exec|eval|system|spawn|popen|open|require|child[_-]?process|start-process|invoke-command|invoke-expression|subprocess|shutil|fileutils)\b|fs[.]rm(?:sync)?\b|process[.]env|os[.]environ)/iu.test(words.slice(1).join(" "))) return true;
+    if (["invoke-command", "start-job"].includes(first) && /\bscriptblock\b/iu.test(words.slice(1).join(" "))) return true;
     if ((isNonShellRunnerName(launchedFirst) || ["pwsh", "powershell"].includes(launchedFirst))
-      && /(?:\b(?:exec|eval|system|spawn|popen|open|require|child[_-]?process|start-process|invoke-command|invoke-expression)\b|process[.]env|os[.]environ|deno[.]env|bun[.]env)/iu.test(launched.slice(1).join(" "))) return true;
+      && /(?:\b(?:exec|eval|system|spawn|popen|open|require|child[_-]?process|start-process|invoke-command|invoke-expression|subprocess|shutil|fileutils)\b|fs[.]rm(?:sync)?\b|process[.]env|os[.]environ|deno[.]env|bun[.]env)/iu.test(launched.slice(1).join(" "))) return true;
     if (first === "env") {
       const splitIndex = words.findIndex((word) => {
         const option = normalized(word);
@@ -670,7 +748,10 @@ function structuredGitRecords(value) {
       return;
     }
     if (!isPlainObject(node)) return;
-    const command = text(node.command) || text(node.operation) || text(node.subcommand) || key;
+    const structuredText = (value) => Array.isArray(value)
+      ? value.filter((entry) => typeof entry === "string").join(" ")
+      : text(value);
+    const command = structuredText(node.command) || structuredText(node.operation) || structuredText(node.subcommand) || key;
     const parsed = typeof command === "string" && gitInvocation(command);
     const explicitArgs = Array.isArray(node.args)
       ? node.args.flatMap((entry) => typeof entry === "string" ? [normalized(entry)] : isPlainObject(entry) ? Object.values(entry).filter((value) => typeof value === "string").map(normalized) : [])
@@ -930,8 +1011,8 @@ function hasRawDiskDestruction(command, capability, operation) {
   };
   const isUnsafeSegment = (segment) => {
     const value = normalized(segment).trim();
-    const rawDeviceOperation = rawDevicePath.test(value) && /(?:>{1,2}|\b(?:set-content|out-file|add-content|copy-item|move-item|rename-item|remove-item|format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]disk|remove[-_ ]partition|remove-volume|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]copy|file[.]create|file[.]append|appendalltext|appendallbytes|truncate|cryptsetup|pvremove|nvme|cp|mv)\b|\bfile\]::(?:open|copy|create|writebyte|appendalltext|writealltext)\b)/u.test(value);
-    const rawWriteHelper = /(?:\b(?:set-content|out-file|add-content|copy-item|move-item|rename-item|remove-item|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]copy|file[.]create|file[.]append|appendall(?:text|bytes)|truncate|cryptsetup|pvremove|nvme|dd|cp|mv|tee(?:-object)?)\b|\bfile\]::(?:open|copy|create|writebyte|appendalltext|writealltext)\b)/u;
+    const rawDeviceOperation = rawDevicePath.test(value) && /(?:>{1,2}|\b(?:set-content|add-content|clear-content|set-item|out-file|copy-item|move-item|rename-item|remove-item|format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]disk|remove[-_ ]partition|remove-volume|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]copy|file[.]create|file[.]append|appendalltext|appendallbytes|openwrite|truncate|cryptsetup|pvremove|nvme|cp|mv)\b|\bfile\]::(?:open|openwrite|copy|create|writebyte|appendalltext|writealltext)\b)/u.test(value);
+    const rawWriteHelper = /(?:\b(?:set-content|add-content|clear-content|set-item|out-file|copy-item|move-item|rename-item|remove-item|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]openwrite|file[.]copy|file[.]create|file[.]append|appendall(?:text|bytes)|openwrite|truncate|cryptsetup|pvremove|nvme|dd|cp|mv|tee(?:-object)?)\b|\bfile\]::(?:open|openwrite|copy|create|writebyte|appendalltext|writealltext)\b)/u;
     const dynamicRawOperation = (hasDynamicToken(value) || /\bget-variable\b/u.test(value)) && rawWriteHelper.test(value);
     return formatCommand(value) || rawDeviceOperation || dynamicRawOperation || destructiveUtility.test(value);
   };
@@ -986,7 +1067,7 @@ function hasHistoryRewrite(command, operation) {
       || invocation?.subcommand === "reflog" && invocation.args[0] === "expire"
       || invocation?.subcommand === "commit" && invocation.args.includes("--amend")
       || invocation?.subcommand === "push" && (invocation.args.includes("--delete") || invocation.args.some((argument) => argument.startsWith(":")))
-      || invocation?.subcommand === "branch" && invocation.args.some((argument) => ["-d", "-D", "--delete"].includes(argument) || argument === "--force")
+      || invocation?.subcommand === "branch" && invocation.args.some((argument) => ["-d", "-D", "--delete"].includes(argument) || ["-f", "--force"].includes(argument))
       || invocation?.subcommand === "update-ref" && invocation.args.some((argument) => ["-d", "--delete", "--stdin"].includes(argument))
       || dynamicSubcommand
       || dynamicHistoryFlag;
@@ -1000,7 +1081,7 @@ function hasHistoryRewrite(command, operation) {
       || subcommand === "reflog" && args.includes("expire")
       || subcommand === "commit" && args.includes("--amend")
       || subcommand === "push" && (args.includes("--delete") || args.some((argument) => argument.startsWith(":")))
-      || subcommand === "branch" && args.some((argument) => ["-d", "-D", "--delete"].includes(argument) || argument === "--force")
+      || subcommand === "branch" && args.some((argument) => ["-d", "-D", "--delete"].includes(argument) || ["-f", "--force"].includes(argument))
       || subcommand === "update-ref" && args.some((argument) => ["-d", "--delete", "--stdin"].includes(argument))
       || /(?:^|\s)git(?:\s|$)/u.test(label) && /[\$%{}!`^\\(]/u.test(record.subcommand || "")
       || /(?:^|\s)(?:rebase|commit|reflog)(?:\s|$)/u.test(label) && args.some((argument) => /[\$%{}!`^\\(]/u.test(argument));
@@ -1023,12 +1104,12 @@ function hasDiscard(command, operation) {
     return invocation?.subcommand === "clean" && invocation.args.some(forceFlag)
       || invocation?.subcommand === "clean" && invocation.args.some((argument) => argument === "." || argument === "..")
       || invocation?.subcommand === "clean" && /clean[.]requireforce\s*[=:]\s*false/u.test(normalized(variant))
-      || ["checkout", "restore"].includes(invocation?.subcommand) && invocation.args.some((argument) => argument === "--" || forceFlag(argument) || argument === "--discard-changes" || argument === "." || argument === ".." || argument.startsWith("--pathspec-from-file"))
+      || ["checkout", "restore"].includes(invocation?.subcommand) && invocation.args.some((argument) => argument === "--" || forceFlag(argument) || argument === "-b" || argument === "--branch" || argument === "--discard-changes" || argument === "." || argument === ".." || argument.startsWith("--pathspec-from-file"))
       || invocation?.subcommand === "restore" && (invocation.args.some((argument) => argument === "--staged" || argument === "--worktree" || argument.startsWith("--source")) || invocation.args.some((argument) => !argument.startsWith("-")))
       || invocation?.subcommand === "checkout" && (nonOptions.length > 1 || nonOptions.some(checkoutPathArgument) || invocation.args.some((argument) => argument.startsWith("--pathspec-from-file")))
       || invocation?.subcommand === "checkout-index" && invocation.args.some(forceFlag)
       || invocation?.subcommand === "read-tree" && invocation.args.includes("-u") && (invocation.args.includes("-m") || invocation.args.includes("--reset"))
-      || invocation?.subcommand === "switch" && invocation.args.some((argument) => forceFlag(argument) || argument === "--discard-changes")
+      || invocation?.subcommand === "switch" && invocation.args.some((argument) => forceFlag(argument) || argument === "-c" || argument === "--create" || argument === "--discard-changes")
       || invocation?.subcommand === "reset" && invocation.args.includes("--hard")
       || invocation?.subcommand === "stash" && ["drop", "clear"].includes(invocation.args[0])
       || dynamicDiscardArgument;
@@ -1041,11 +1122,11 @@ function hasDiscard(command, operation) {
     const nonOptions = args.filter((argument) => !argument.startsWith("-"));
     const dynamicDiscardArgument = ["clean", "stash", "restore", "checkout", "checkout-index", "read-tree", "switch", "reset"].includes(subcommand)
       && args.some(hasDynamicToken);
-    return subcommand === "checkout" && (nonOptions.length > 1 || nonOptions.some(checkoutPathArgument) || args.some((argument) => argument.startsWith("--pathspec-from-file")))
+    return subcommand === "checkout" && (nonOptions.length > 1 || nonOptions.some(checkoutPathArgument) || args.some((argument) => argument.startsWith("--pathspec-from-file") || argument === "-b" || argument === "--branch"))
       || subcommand === "restore" && (nonOptions.length > 1 || nonOptions.some(pathArgument) || args.some((argument) => argument.startsWith("--pathspec-from-file") || argument === "--staged" || argument === "--worktree" || argument.startsWith("--source")))
       || subcommand === "checkout-index" && args.some(forceFlag)
       || subcommand === "read-tree" && args.includes("-u") && (args.includes("-m") || args.includes("--reset"))
-      || subcommand === "switch" && args.some((argument) => forceFlag(argument) || argument === "--discard-changes")
+      || subcommand === "switch" && args.some((argument) => forceFlag(argument) || argument === "-c" || argument === "--create" || argument === "--discard-changes")
       || subcommand === "clean" && (args.some(forceFlag) || args.includes(".") || args.includes(".."))
       || subcommand === "clean" && /clean[.]requireforce\s*[=:]\s*false/u.test(label)
       || subcommand === "reset" && args.includes("--hard")
@@ -1084,7 +1165,9 @@ function hasSecretOutput(command, capability, operation, pathEntries) {
     const commandInfo = commandAfterWrappers(tokens);
     const cmdSet = tokenName(tokens[0] || "") === "cmd"
       && tokens.some((token, index) => tokenName(token) === "set" && tokens.slice(index + 1).every((argument) => !argument.includes("=")));
-    return ["printenv", "env", "declare", "typeset"].includes(commandInfo.name)
+    const directNullEnv = tokenName(tokens[0] || "") === "env" && tokens.slice(1).some((token) => ["-0", "--null"].includes(normalized(token)));
+    return directNullEnv
+      || ["printenv", "env", "declare", "typeset"].includes(commandInfo.name)
       || commandInfo.name === "export" && (commandInfo.args.length === 0 || commandInfo.args.includes("-p"))
       || commandInfo.name === "set" && (commandInfo.args.length === 0 || commandInfo.args.every((argument) => !argument.includes("=")))
       || cmdSet;
@@ -1093,7 +1176,7 @@ function hasSecretOutput(command, capability, operation, pathEntries) {
     || /(?:\$\(|`)\s*(?:printenv|env)\b/u.test(normalized(command))
     || /\benv\s+(?:-s|--split-string)(?:=|\s+)(?:printenv|env)\b/u.test(normalized(command));
   const environmentProvider = /(?:\benv\s*:|\/proc\/[^\s/]+\/environ\b)/u.test(all) && /(?:get-content|get-item|cat|type|read|print|echo|write|copy|export|head|tail|strings|xargs)/u.test(all);
-  const processEnvironment = /(?:process\s*[.]\s*env|process\s*[\[({]\s*["']?env|os\s*[.]\s*(?:environ|getenv)|environment[.]getenvironmentvariable|environment\]::getenvironmentvariable|\b(?:python(?:3(?:[.]\d+)?)?|node(?:js)?|ruby|perl|deno|bun)\b[^;|&]*(?:\benv\b|\benviron(?:ment)?\b|%env\b|deno[.]env|bun[.]env))/u.test(all);
+  const processEnvironment = /(?:process\s*[.]\s*env|process\s*[\[({][^\]]*\]|os\s*[.]\s*(?:environ|getenv)|environment[.]getenvironmentvariable|environment\]::getenvironmentvariable|\b(?:python(?:3(?:[.]\d+)?)?|node(?:js)?|ruby|perl|deno|bun)\b[^;|&]*(?:\benv\b|\benviron(?:ment)?\b|%env\b|deno[.]env|bun[.]env))/u.test(all);
   const dynamicSecretRead = commandVariants(command).some((segment) => {
     const tokens = commandTokens(segment);
     const commandInfo = commandAfterWrappers(tokens);

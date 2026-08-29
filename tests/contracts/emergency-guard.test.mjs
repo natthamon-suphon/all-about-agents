@@ -288,6 +288,7 @@ test("emergency parser fails closed on boundedness violations and preserves dot-
   const deeplyNested = `${"$(".repeat(1_024)}echo ok${")".repeat(1_024)}`;
   const oversized = "echo " + "x".repeat(100_000);
   const wrapperOverflow = `${"sudo ".repeat(64)}echo ok`;
+  const optionWrapperOverflow = `${"sudo -u root ".repeat(8)}echo ok`;
   let structuredOverflow = { value: "leaf" };
   for (let index = 0; index < 12; index += 1) structuredOverflow = { nested: structuredOverflow };
   const structuredArrayOverflow = Array.from({ length: 600 }, () => "git status");
@@ -297,6 +298,9 @@ test("emergency parser fails closed on boundedness violations and preserves dot-
   assert.deepEqual({ decision: oversizedResult.decision, ruleId: oversizedResult.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
   const wrapperResult = classifyEmergencyAction({ command: wrapperOverflow });
   assert.deepEqual({ decision: wrapperResult.decision, ruleId: wrapperResult.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+  const optionWrapperResult = classifyEmergencyAction({ command: optionWrapperOverflow });
+  assert.deepEqual({ decision: optionWrapperResult.decision, ruleId: optionWrapperResult.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+  assert.deepEqual(classifyEmergencyAction({ command: "sudo -u root echo ok" }), { decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." });
   const structuredResult = classifyEmergencyAction({ command: "git status", gitOperation: structuredOverflow });
   assert.deepEqual({ decision: structuredResult.decision, ruleId: structuredResult.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
   const arrayResult = classifyEmergencyAction({ command: "git status", gitOperation: structuredArrayOverflow });
