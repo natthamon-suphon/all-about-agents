@@ -12,6 +12,15 @@ const EMPTY_OUTPUTS = Object.freeze({
 
 const SESSION_START_SURFACES = new Set(["claude", "codex"]);
 const INVOCATION_SURFACES = new Set(["antigravity-2"]);
+const BOOTSTRAP_CONTRACT_KEYS = new Set([
+  "schemaVersion",
+  "id",
+  "description",
+  "contentRef",
+  "failureMode",
+  "failureDiagnostic"
+]);
+const EXPECTED_CONTENT_REF = "core/skills/using-all-about-agents/SKILL.md";
 
 function isPlainObject(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -98,6 +107,29 @@ function parseInput(rawInput) {
   }
 }
 
+function parseBootstrapContract(rawContract) {
+  try {
+    const parsed = JSON.parse(rawContract);
+    if (!isPlainObject(parsed)) return null;
+    if ([...Object.keys(parsed)].some((key) => !BOOTSTRAP_CONTRACT_KEYS.has(key))) return null;
+    if (parsed.schemaVersion !== 1 || parsed.id !== "bootstrap") return null;
+    if (parsed.contentRef !== EXPECTED_CONTENT_REF || parsed.failureMode !== "fail-open") return null;
+    if (typeof parsed.description !== "string" || typeof parsed.failureDiagnostic !== "string") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function readBootstrapContract(configPath) {
+  if (!configPath) return null;
+  try {
+    return parseBootstrapContract(await readFile(configPath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
 function argumentValue(argv, name) {
   const index = argv.indexOf(name);
   return index >= 0 && typeof argv[index + 1] === "string" ? argv[index + 1] : "";
@@ -107,8 +139,10 @@ function argumentValue(argv, name) {
 export async function runBootstrap(argv = process.argv.slice(2), rawInput = null) {
   const surface = argumentValue(argv, "--surface");
   const skillPath = argumentValue(argv, "--skill-path");
+  const configPath = argumentValue(argv, "--config-path");
+  const contract = await readBootstrapContract(configPath);
   let canonicalContent = null;
-  if (skillPath) {
+  if (contract && skillPath) {
     try {
       canonicalContent = await readFile(skillPath, "utf8");
     } catch {

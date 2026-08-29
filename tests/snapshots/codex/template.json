@@ -1,5 +1,5 @@
 {
-  "fileCount": 43,
+  "fileCount": 44,
   "files": [
     {
       "relativePath": ".agents/skills/brainstorming/SKILL.md",
@@ -202,13 +202,18 @@
       "mode": null
     },
     {
+      "relativePath": "hooks/bootstrap.json",
+      "sha256": "75744088db1bf98a66bc3c5e4d94a938a2a81486b01d72b9f90a35075b1595aa",
+      "mode": null
+    },
+    {
       "relativePath": "hooks/bootstrap.mjs",
-      "sha256": "81d4c28b938906e31e743964a7a6b3ed7ae4c6ba5ad539f77c9493c63a9908df",
+      "sha256": "846d4f13a17f6ea7b42318b1400fa9442241c2342ff375ac64bb52eff60188c6",
       "mode": 493
     },
     {
       "relativePath": "hooks/hooks.json",
-      "sha256": "9e904ded584bec6bb0873ac6c68d6dcbe84db49b5e4f45ff5970dd86d561a4cb",
+      "sha256": "dbed6eb086d542bf56699230b69d433f7472ed806d1d6392323e6f0b731006be",
       "mode": null
     },
     {
@@ -379,12 +384,16 @@
       "sha256": "95e3a8c7537460e49b098997886adf71b29c2253bb53b591a9fc2740b4e9f10e"
     },
     {
+      "relativePath": "hooks/bootstrap.json",
+      "sha256": "75744088db1bf98a66bc3c5e4d94a938a2a81486b01d72b9f90a35075b1595aa"
+    },
+    {
       "relativePath": "hooks/bootstrap.mjs",
-      "sha256": "81d4c28b938906e31e743964a7a6b3ed7ae4c6ba5ad539f77c9493c63a9908df"
+      "sha256": "846d4f13a17f6ea7b42318b1400fa9442241c2342ff375ac64bb52eff60188c6"
     },
     {
       "relativePath": "hooks/hooks.json",
-      "sha256": "9e904ded584bec6bb0873ac6c68d6dcbe84db49b5e4f45ff5970dd86d561a4cb"
+      "sha256": "dbed6eb086d542bf56699230b69d433f7472ed806d1d6392323e6f0b731006be"
     },
     {
       "relativePath": "terra-max.config.toml",

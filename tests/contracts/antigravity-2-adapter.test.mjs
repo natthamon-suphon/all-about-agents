@@ -213,13 +213,19 @@ test("Desktop full-access profile is a manual Unrestricted UI preset with docume
   assert.match(rule, /Full machine|Unrestricted/u);
 });
 
-test("Desktop hooks render the documented PreInvocation command and canonical runtime", () => {
+test("Desktop hooks remain probe-required without an automatic command", () => {
   const hooks = JSON.parse(fileMap(resultFor()).get(".agents/plugins/all-about-agents/hooks.json"));
-  const hook = hooks["all-about-agents-bootstrap"];
-  assert.equal(hook.enabled, true);
-  assert.equal(hook.PreInvocation[0].type, "command");
-  assert.match(hook.PreInvocation[0].command, /hooks\/bootstrap\.mjs/u);
-  assert.ok(fileMap(resultFor()).has(".agents/plugins/all-about-agents/hooks/bootstrap.mjs"));
+  const hook = hooks["all-about-agents-safety"];
+  assert.equal(hook.enabled, false);
+  for (const event of ["PreToolUse", "PostToolUse", "PreInvocation", "PostInvocation", "Stop"]) assert.deepEqual(hook[event], []);
+  assert.doesNotMatch(JSON.stringify(hooks), /command|\.\//iu);
+  assert.equal(fileMap(resultFor()).has(".agents/plugins/all-about-agents/hooks/bootstrap.mjs"), false);
+  const registration = resultFor().registrations.find((entry) => entry.kind === "hook-contract");
+  assert.equal(registration.enabled, false);
+  assert.equal(registration.manualOnly, true);
+  assert.equal(registration.automaticHookExecution, false);
+  assert.equal(registration.probeRequired, true);
+  assert.equal(registration.probe.status, "not run");
 });
 
 test("Desktop manifest documents workspace/global discovery and no serialized settings or CLI registration", async () => {

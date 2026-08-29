@@ -3,7 +3,17 @@
   "surface": "antigravity-2",
   "module": "bootstrap",
   "event": "PreInvocation",
-  "command": "node ./hooks/bootstrap.mjs --surface antigravity-2 --skill-path ./skills/using-all-about-agents/SKILL.md",
+  "automatic": false,
+  "probeRequired": true,
+  "probe": {
+    "status": "not run",
+    "reason": "The target Antigravity Desktop build does not have a verified hook command package-root resolution contract.",
+    "manualSequence": [
+      "Record the installed Antigravity Desktop version and platform.",
+      "Review the installed Desktop hook documentation for command working-directory and package-root resolution.",
+      "On a disposable package, inspect hooks.json and perform an explicit PreInvocation probe before proposing an executable handler."
+    ]
+  },
   "contentRef": "core/skills/using-all-about-agents/SKILL.md",
   "failureMode": "fail-open",
   "runtime": {

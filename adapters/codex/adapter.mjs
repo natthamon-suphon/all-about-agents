@@ -10,6 +10,7 @@ import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeSc
 
 const CODEX_SURFACE = "codex";
 const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
+const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.json", import.meta.url), "utf8");
 const ACTION_IDS = Object.freeze([
   "aaa:design",
   "aaa:build",
@@ -378,6 +379,7 @@ export function renderCodex(input = {}) {
   const files = [];
   addFile(files, ".codex-plugin/plugin.json", renderJson(pluginManifest()));
   addFile(files, "hooks/hooks.json", renderJson(bootstrapHooks()));
+  addFile(files, "hooks/bootstrap.json", BOOTSTRAP_CONFIG_SOURCE);
   addFile(files, `hooks/${codexBootstrapTemplate.module}.mjs`, BOOTSTRAP_SOURCE, 0o755);
   addFile(files, "AGENTS.md", renderAgentsDocument(core));
   addFile(files, ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md", capabilityGuidance());

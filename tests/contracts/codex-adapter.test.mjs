@@ -353,6 +353,7 @@ test("Codex plugin hooks invoke the rendered runtime and require trust plus Node
   assert.match(startup.hooks[0].command, /\$PLUGIN_ROOT\/hooks\/bootstrap\.mjs/u);
   assert.match(startup.hooks[0].commandWindows, /%PLUGIN_ROOT%\/hooks\/bootstrap\.mjs/u);
   assert.equal(files.get("hooks/bootstrap.mjs"), await readFile(resolve(process.cwd(), "core/hooks/bootstrap.mjs"), "utf8"));
+  assert.equal(files.get("hooks/bootstrap.json"), await readFile(resolve(process.cwd(), "core/hooks/bootstrap.json"), "utf8"));
   const hookRegistration = result.registrations.find((entry) => entry.kind === "hook-contract");
   assert.equal(hookRegistration.trustRequired, true);
   assert.equal(hookRegistration.desktopManualOnly, true);

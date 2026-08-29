@@ -147,9 +147,12 @@ test("Claude startup hook invokes the rendered canonical runtime", async () => {
     "--surface",
     "claude",
     "--skill-path",
-    "${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md"
+    "${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md",
+    "--config-path",
+    "${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json"
   ]);
   assert.equal(files.get("hooks/bootstrap.mjs"), await readFile(resolve(process.cwd(), "core/hooks/bootstrap.mjs"), "utf8"));
+  assert.equal(files.get("hooks/bootstrap.json"), await readFile(resolve(process.cwd(), "core/hooks/bootstrap.json"), "utf8"));
 });
 
 test("Claude settings registration documents one shared CLI/Desktop config root", () => {

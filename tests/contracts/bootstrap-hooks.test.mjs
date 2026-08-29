@@ -46,19 +46,21 @@ function runHandler(executable, args, input, options) {
 
 async function materialize(result, packageRoot) {
   for (const file of result.files) {
-    const target = join(packageRoot, file.relativePath.replaceAll("/", "\\"));
+    const target = join(packageRoot, ...file.relativePath.split("/"));
     await mkdir(resolve(target, ".."), { recursive: true });
     await writeFile(target, file.content);
   }
 }
 
-async function executeRendered(result, { surface, runtimePath, skillPath, input }) {
+async function executeRendered(result, { surface, runtimePath, skillPath, configPath, input }) {
   const packageRoot = await mkdtemp(join(tmpdir(), `t013-${surface}-`));
   try {
     await materialize(result, packageRoot);
-    const runtime = join(packageRoot, runtimePath.replaceAll("/", "\\"));
-    const skill = join(packageRoot, skillPath.replaceAll("/", "\\"));
-    return await runHandler(process.execPath, [runtime, "--surface", surface, "--skill-path", skill], `${typeof input === "string" ? input : JSON.stringify(input)}\n`, { cwd: tmpdir() });
+    const runtime = join(packageRoot, ...runtimePath.split("/"));
+    const skill = join(packageRoot, ...skillPath.split("/"));
+    const args = [runtime, "--surface", surface, "--skill-path", skill];
+    if (configPath) args.push("--config-path", join(packageRoot, ...configPath.split("/")));
+    return await runHandler(process.execPath, args, `${typeof input === "string" ? input : JSON.stringify(input)}\n`, { cwd: tmpdir() });
   } finally {
     await rm(packageRoot, { recursive: true, force: true });
   }
@@ -77,6 +79,7 @@ test("rendered executable packages invoke the production bootstrap handler", asy
       result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CLAUDE_CONFIG_DIR: "C:/disposable" } }),
       runtimePath: "hooks/bootstrap.mjs",
       skillPath: "skills/using-all-about-agents/SKILL.md",
+      configPath: "hooks/bootstrap.json",
       input: { hook_event_name: "SessionStart", source: "startup" },
       expected: null
     },
@@ -85,15 +88,8 @@ test("rendered executable packages invoke the production bootstrap handler", asy
       result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" } }),
       runtimePath: "hooks/bootstrap.mjs",
       skillPath: ".agents/skills/using-all-about-agents/SKILL.md",
+      configPath: "hooks/bootstrap.json",
       input: { hook_event_name: "SessionStart", source: "startup" },
-      expected: null
-    },
-    {
-      surface: "antigravity-2",
-      result: renderAntigravity({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
-      runtimePath: ".agents/plugins/all-about-agents/hooks/bootstrap.mjs",
-      skillPath: ".agents/plugins/all-about-agents/skills/using-all-about-agents/SKILL.md",
-      input: { invocationNum: 0, initialNumSteps: 0 },
       expected: null
     }
   ];
@@ -109,10 +105,68 @@ test("rendered executable packages invoke the production bootstrap handler", asy
   }
 });
 
+test("automatic renderers consume the canonical core bootstrap contract", async () => {
+  const core = await loadCore(process.cwd());
+  const canonicalContract = await readFile(root("core/hooks/bootstrap.json"), "utf8");
+  const packages = [
+    {
+      result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
+      configPath: "hooks/bootstrap.json",
+      hooksPath: "hooks/hooks.json"
+    },
+    {
+      result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
+      configPath: "hooks/bootstrap.json",
+      hooksPath: "hooks/hooks.json"
+    }
+  ];
+
+  for (const packageSpec of packages) {
+    const files = fileMap(packageSpec.result);
+    assert.equal(files.get(packageSpec.configPath), canonicalContract, "the automatic package must render the canonical bootstrap contract");
+    const hooks = JSON.parse(files.get(packageSpec.hooksPath));
+    const command = hooks.hooks.SessionStart[0].hooks[0];
+    const commandText = command.args ? command.args.join(" ") : `${command.command} ${command.commandWindows || ""}`;
+    assert.match(commandText, /--config-path/u, "the rendered handler must receive the canonical contract path");
+  }
+});
+
+test("unverified renderers stay probe-only without commands or relative handler paths", async () => {
+  const core = await loadCore(process.cwd());
+  const packages = [
+    {
+      templatePath: "adapters/antigravity-2/templates/hooks/bootstrap.json",
+      result: renderAntigravity({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
+      hooksPath: ".agents/plugins/all-about-agents/hooks.json"
+    },
+    {
+      templatePath: "adapters/agy/templates/hooks/bootstrap.json",
+      result: renderAgy({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
+      hooksPath: "hooks.json"
+    }
+  ];
+
+  for (const packageSpec of packages) {
+    const template = await readJson(packageSpec.templatePath);
+    assert.equal(template.automatic, false);
+    assert.equal(template.probeRequired, true);
+    assert.equal(template.probe.status, "not run");
+    assert.ok(template.probe.manualSequence.length >= 2);
+    assert.doesNotMatch(JSON.stringify(template), /"command"\s*:|\.\/hooks|\.\/skills/iu);
+    const hooks = fileMap(packageSpec.result).get(packageSpec.hooksPath);
+    assert.doesNotMatch(hooks, /"command"\s*:|\.\/hooks|\.\/skills/iu);
+    assert.doesNotMatch(hooks, /"enabled"\s*:\s*true/iu);
+    const registration = packageSpec.result.registrations.find((entry) => entry.kind === "hook-contract");
+    assert.equal(registration.enabled, false);
+    assert.equal(registration.automaticHookExecution, false);
+    assert.equal(registration.probeRequired, true);
+  }
+});
+
 test("Claude production handler injects only on startup and fails open for every other SessionStart source", async () => {
   const core = await loadCore(process.cwd());
   const result = renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CLAUDE_CONFIG_DIR: "C:/disposable" } });
-  const base = { surface: "claude", runtimePath: "hooks/bootstrap.mjs", skillPath: "skills/using-all-about-agents/SKILL.md" };
+  const base = { surface: "claude", runtimePath: "hooks/bootstrap.mjs", skillPath: "skills/using-all-about-agents/SKILL.md", configPath: "hooks/bootstrap.json" };
   const canonical = fileMap(result).get("skills/using-all-about-agents/SKILL.md");
   assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source: "startup" } }), { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: canonical } });
   for (const source of ["clear", "compact", "resume", "fork"]) {
@@ -122,37 +176,19 @@ test("Claude production handler injects only on startup and fails open for every
     assert.deepEqual(await executeRendered(result, { ...base, input }), {}, "malformed input must not be treated as first startup");
   }
   assert.deepEqual(await executeRendered(result, { ...base, skillPath: "skills/missing/SKILL.md", input: { hook_event_name: "SessionStart", source: "startup" } }), {}, "missing canonical content must fail open");
+  assert.deepEqual(await executeRendered(result, { ...base, configPath: "hooks/missing-bootstrap.json", input: { hook_event_name: "SessionStart", source: "startup" } }), {}, "missing canonical bootstrap contract must fail open");
 });
 
 test("Codex production handler supports documented SessionStart sources and malformed input", async () => {
   const core = await loadCore(process.cwd());
   const result = renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" } });
-  const base = { surface: "codex", runtimePath: "hooks/bootstrap.mjs", skillPath: ".agents/skills/using-all-about-agents/SKILL.md" };
+  const base = { surface: "codex", runtimePath: "hooks/bootstrap.mjs", skillPath: ".agents/skills/using-all-about-agents/SKILL.md", configPath: "hooks/bootstrap.json" };
   const canonical = fileMap(result).get(".agents/skills/using-all-about-agents/SKILL.md");
   assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source: "startup" } }), { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: canonical } });
   for (const source of ["clear", "compact"]) assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source } }), {});
   for (const input of ["{malformed", "[]", {}, { hook_event_name: "SessionStart", source: [] }, { hook_event_name: [], source: "startup" }]) {
     assert.deepEqual(await executeRendered(result, { ...base, input }), {});
   }
-});
-
-test("Antigravity production handler requires integer zero-based first invocation fields", async () => {
-  const core = await loadCore(process.cwd());
-  const result = renderAntigravity({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" });
-  const base = { surface: "antigravity-2", runtimePath: ".agents/plugins/all-about-agents/hooks/bootstrap.mjs", skillPath: ".agents/plugins/all-about-agents/skills/using-all-about-agents/SKILL.md" };
-  const canonical = fileMap(result).get(".agents/plugins/all-about-agents/skills/using-all-about-agents/SKILL.md");
-  assert.deepEqual(await executeRendered(result, { ...base, input: { invocationNum: 0, initialNumSteps: 0 } }), { injectSteps: [{ ephemeralMessage: canonical }] });
-  for (const input of [
-    { invocationNum: 1, initialNumSteps: 0 },
-    { invocationNum: 0, initialNumSteps: 1 },
-    { invocationNum: 0 },
-    { initialNumSteps: 0 },
-    { invocationNum: "0", initialNumSteps: 0 },
-    { invocationNum: 0, initialNumSteps: "0" },
-    "{malformed",
-    "[]",
-    null
-  ]) assert.deepEqual(await executeRendered(result, { ...base, input }), { injectSteps: [] });
 });
 
 test("agy renders a visible probe-required diagnostic without an automatic command", async () => {
@@ -197,7 +233,7 @@ test("rendered hook configs consume their parsed native templates and declare ru
   const claude = renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" });
   const claudeHooks = JSON.parse(fileMap(claude).get("hooks/hooks.json"));
   assert.equal(claudeHooks.hooks.SessionStart[0].matcher, "startup");
-  assert.deepEqual(claudeHooks.hooks.SessionStart[0].hooks[0].args.slice(1), ["--surface", "claude", "--skill-path", "${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md"]);
+  assert.deepEqual(claudeHooks.hooks.SessionStart[0].hooks[0].args.slice(1), ["--surface", "claude", "--skill-path", "${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md", "--config-path", "${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json"]);
   const codex = renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" });
   const codexHooks = JSON.parse(fileMap(codex).get("hooks/hooks.json"));
   assert.equal(codexHooks.hooks.SessionStart[0].matcher, "^startup$");
@@ -205,8 +241,8 @@ test("rendered hook configs consume their parsed native templates and declare ru
   assert.ok(codex.registrations.some((entry) => entry.kind === "runtime-prerequisite" && entry.onMissing === "unavailable"));
   const antigravity = renderAntigravity({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" });
   const antigravityHooks = JSON.parse(fileMap(antigravity).get(".agents/plugins/all-about-agents/hooks.json"));
-  assert.equal(antigravityHooks["all-about-agents-bootstrap"].PreInvocation[0].type, "command");
-  assert.match(antigravityHooks["all-about-agents-bootstrap"].PreInvocation[0].command, /hooks\/bootstrap\.mjs/u);
+  assert.equal(antigravityHooks["all-about-agents-safety"].enabled, false);
+  assert.doesNotMatch(JSON.stringify(antigravityHooks), /command|\.\//iu);
   assert.ok(antigravity.registrations.some((entry) => entry.kind === "runtime-prerequisite" && entry.onMissing === "unavailable"));
 });
 
@@ -216,4 +252,16 @@ test("production runtime uses structured JSON serialization and explicit inputs 
   assert.doesNotMatch(source, /process\.cwd\s*\(/u);
   assert.doesNotMatch(source, /transcript/iu);
   assert.match(source, /readFile\(skillPath/u);
+});
+
+test("portable package materialization keeps slash-neutral relative paths", async () => {
+  const source = await readFile(root("tests/contracts/bootstrap-hooks.test.mjs"), "utf8");
+  assert.doesNotMatch(source, /relativePath\.replaceAll\(/u);
+  const packageRoot = await mkdtemp(join(tmpdir(), "t013-paths-"));
+  try {
+    await materialize({ files: [{ relativePath: "nested/portable.txt", content: new TextEncoder().encode("portable") }] }, packageRoot);
+    assert.equal(await readFile(join(packageRoot, "nested", "portable.txt"), "utf8"), "portable");
+  } finally {
+    await rm(packageRoot, { recursive: true, force: true });
+  }
 });

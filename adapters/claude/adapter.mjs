@@ -16,6 +16,7 @@ const CLAUDE_SURFACE = "claude";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
 const CONTROL_OR_ANSI = /[\u0000-\u001f\u007f]|\u001b\[[0-?]*[ -/]*[@-~]/u;
 const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
+const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.json", import.meta.url), "utf8");
 
 /** Static installer preflight for the Node.js entrypoint used by every hook. */
 export const CLAUDE_PREREQUISITES = Object.freeze({
@@ -287,7 +288,9 @@ function hookConfig() {
       "--surface",
       claudeBootstrapTemplate.surface,
       "--skill-path",
-      `${"${CLAUDE_PLUGIN_ROOT}"}/${claudeBootstrapTemplate.contentRef.replace(/^core\//u, "")}`
+      `${"${CLAUDE_PLUGIN_ROOT}"}/${claudeBootstrapTemplate.contentRef.replace(/^core\//u, "")}`,
+      "--config-path",
+      `${"${CLAUDE_PLUGIN_ROOT}"}/hooks/bootstrap.json`
     ],
     timeout: 10
   };
@@ -372,6 +375,7 @@ export function renderClaude(input = {}) {
   addFile(files, "config/statusline.json", renderJson({ schemaVersion: 1, displayName: statuslineName }));
   addFile(files, "docs/semantic-mappings.md", mappingsDocument());
   addFile(files, "hooks/hooks.json", renderJson(hookConfig()));
+  addFile(files, "hooks/bootstrap.json", BOOTSTRAP_CONFIG_SOURCE);
   addFile(files, `hooks/${claudeBootstrapTemplate.module}.mjs`, BOOTSTRAP_SOURCE, 0o755);
   for (const [fileName, source] of Object.entries(HOOK_SOURCES)) addFile(files, `hooks/${fileName}`, source, 0o755);
   addFile(files, "statusline/statusline.mjs", STATUSLINE_SOURCE_TEXT, 0o755);
