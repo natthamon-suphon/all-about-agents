@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "surface": "agy",
+  "product": "agy CLI",
+  "productVersion": "unknown",
+  "package": "all-about-agents",
+  "pluginManifest": "plugin.json",
+  "packageRoot": ".",
+  "components": {
+    "pluginManifest": "plugin.json",
+    "hooks": "hooks.json",
+    "skills": "skills/{skill}/SKILL.md",
+    "agents": "agents/{role}/agent.md",
+    "rules": "rules/{rule}.md",
+    "settingsOverlay": "settings.overlay.json"
+  },
+  "pluginManifestSchema": {
+    "documentedProperties": ["$schema", "name", "description"],
+    "additionalProperties": false,
+    "schema": "https://antigravity.google/schemas/v1/plugin.json"
+  },
+  "settingsOverlay": {
+    "relativePath": "settings.overlay.json",
+    "documentedKeys": [
+      "toolPermission",
+      "artifactReviewPolicy",
+      "allowNonWorkspaceAccess",
+      "enableTerminalSandbox",
+      "permissions.deny"
+    ],
+    "destinationCandidates": [
+      "~/.gemini/antigravity-cli/settings.json",
+      "~/.gemini/config/config.json"
+    ],
+    "status": "manual-discovery-required",
+    "automaticWrite": false,
+    "reason": "The documented sparse settings keys are known, but active CLI/shared roots and complete schema are version-sensitive."
+  },
+  "profiles": {
+    "portable": {
+      "toolPermission": "request-review",
+      "artifactReviewPolicy": "asks-for-review",
+      "allowNonWorkspaceAccess": false,
+      "enableTerminalSandbox": true,
+      "emergencyDeny": [
+        "command(rm -rf)",
+        "command(sudo)",
+        "write_file(.git/)",
+        "write_file(/home/user/.ssh)"
+      ]
+    },
+    "template": {
+      "toolPermission": "always-proceed",
+      "artifactReviewPolicy": "always-proceed",
+      "allowNonWorkspaceAccess": true,
+      "enableTerminalSandbox": false,
+      "emergencyDeny": [
+        "command(rm -rf)",
+        "command(sudo)",
+        "write_file(.git/)",
+        "write_file(/home/user/.ssh)"
+      ],
+      "fullAccessPerRun": "agy -p \"<prompt>\" --model gemini-3.7-flash-high --effort high --dangerously-skip-permissions"
+    }
+  },
+  "modelPolicy": {
+    "model": "gemini-3.7-flash-high",
+    "effort": "high",
+    "selection": "manual after agy models",
+    "unknownSelection": "Fail, run agy models, then retry with an exact operator-selected slug or omit --model; never substitute silently."
+  },
+  "semanticCapabilities": {
+    "repository-read": [],
+    "repository-write": [],
+    "web-primary-sources": [],
+    "isolated-write": [],
+    "command-execution": [],
+    "filesystem-read": [],
+    "filesystem-write": [],
+    "git-read": [],
+    "git-write": [],
+    "test-execution": [],
+    "external-research": [],
+    "evaluation": [],
+    "role-dispatch": [],
+    "workflow-state": [],
+    "schema-validation": [],
+    "native-rendering": []
+  },
+  "actions": {
+    "aaa:design": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-agy-2.md",
+      "reason": "No documented agy native action mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
+    },
+    "aaa:build": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-agy-2.md",
+      "reason": "No documented agy native action mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
+    },
+    "aaa:fix": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-agy-2.md",
+      "reason": "No documented agy native action mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
+    },
+    "aaa:review": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-agy-2.md",
+      "reason": "No documented agy native action mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
+    },
+    "aaa:audit": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-agy-2.md",
+      "reason": "No documented agy native action mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
+    },
+    "aaa:improve-skill": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-agy-2.md",
+      "reason": "No documented agy native action mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
+    },
+    "aaa:resume": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-agy-2.md",
+      "reason": "No documented agy native action mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
+    },
+    "aaa:verify": {
+      "support": "manual-unknown",
+      "status": "unknown",
+      "source": "research-agy-2.md",
+      "reason": "No documented agy native action mapping is published for this canonical action.",
+      "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
+    }
+  },
+  "nativeValidation": {
+    "status": "not run",
+    "product": "agy CLI",
+    "productVersion": "unknown",
+    "executablePath": "unknown",
+    "platform": "unknown",
+    "reason": "agy is not on PATH for this repository run; no native executable was invoked.",
+    "manualSequence": [
+      "agy --help",
+      "agy models",
+      "agy agents",
+      "agy plugin list"
+    ],
+    "disposablePackageInstall": "agy plugin install PACKAGE_DIRECTORY",
+    "manualOnly": true
+  },
+  "installation": {
+    "registration": "agy plugin install PACKAGE_DIRECTORY",
+    "automaticInstall": false,
+    "automaticHookExecution": false,
+    "liveProfileWrite": false
+  }
+}
