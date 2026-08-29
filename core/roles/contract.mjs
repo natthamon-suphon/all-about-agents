@@ -41,6 +41,9 @@ export function assertCanonicalRoleRecords(roles) {
         seen.add(id);
       }
     }
+    for (const id of [...CANONICAL_ROLE_SET].sort()) {
+      if (!seen.has(id)) errors.push({ code: "canonical-role", path: `/roles/${id}`, message: `missing canonical role ${id}` });
+    }
   }
   if (errors.length > 0) {
     const error = new Error("Canonical role contract validation failed");

@@ -372,6 +372,27 @@ test("renderers fail closed for an unknown role instead of making it editable", 
   for (const [surface, render] of renders) assert.throws(render, (error) => error.name === "CanonicalRoleContractError" && error.errors.some((entry) => entry.code === "canonical-role"), surface);
 });
 
+test("all renderers reject an incomplete canonical role collection deterministically", async () => {
+  const base = await loadCore(process.cwd());
+  const core = { ...base, roles: [base.roles[0]] };
+  const renderers = [
+    ["claude", () => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["codex", () => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity-2", () => renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
+    ["agy", () => renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+  ];
+  const expectedMissing = ROLE_IDS.filter((roleId) => roleId !== base.roles[0].id).sort();
+  for (const [surface, render] of renderers) {
+    assert.throws(render, (error) => {
+      if (error.name !== "CanonicalRoleContractError") return false;
+      const missing = error.errors
+        .filter((entry) => entry.code === "canonical-role" && entry.message.startsWith("missing canonical role "))
+        .map((entry) => entry.message.replace("missing canonical role ", ""));
+      return JSON.stringify(missing) === JSON.stringify(expectedMissing);
+    }, surface);
+  }
+});
+
 test("all native surfaces consume canonical role semantics with read-only safety", async () => {
   const core = await loadCore(process.cwd());
   const renders = [
