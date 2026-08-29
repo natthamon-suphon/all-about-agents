@@ -222,5 +222,58 @@
     ,{ "id": "cmd-set-environment-output", "action": { "command": "cmd /c set" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
     ,{ "id": "shell-python-environment-output", "action": { "command": "sh -c 'python -c \"print(os.environ)\"'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
     ,{ "id": "shell-safe-format-text", "action": { "command": "sh -c 'echo format text'" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "wrapper-sudo-root-shell", "action": { "command": "sudo -u root sh -c 'rm -rf /'" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "wrapper-assignment-shell-force-push", "action": { "command": "VAR=1 sh -c 'git push origin main --force'" }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "wrapper-doas-environment", "action": { "command": "doas sh -c 'env'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "wrapper-nice-shell-discard", "action": { "command": "nice -n 10 bash -c 'git restore .'" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "shell-script-path-payload", "action": { "command": "sh -c /tmp/deploy.sh" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "shell-source-payload", "action": { "command": "sh -c 'source deploy.sh'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "shell-later-script-payload", "action": { "command": "sh -c 'echo ok; /tmp/deploy.sh'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "powershell-script-payload", "action": { "command": "pwsh -Command deploy.ps1" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "powershell-call-script-payload", "action": { "command": "pwsh -Command '& ./deploy.ps1'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "shell-source-script-payload", "action": { "command": "bash -c 'source /tmp/deploy.sh'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "recursive-dynamic-path", "action": { "command": "rm $X /" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "recursive-remove-item-dynamic-path", "action": { "command": "Remove-Item $X" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "git-clean-dynamic-options", "action": { "command": "git clean --$FLAGS" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "git-stash-dynamic-action", "action": { "command": "git stash $ACTION" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "git-restore-dynamic-options", "action": { "command": "git restore --$FLAGS" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "structured-git-clean-dynamic-options", "action": { "command": "git status", "gitOperation": { "command": "git clean", "args": ["$FLAGS"] } }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "powershell-safe-command", "action": { "command": "pwsh -NoProfile -Command Write-Output hello" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "powershell-safe-command-long", "action": { "command": "powershell -NoProfile -Command Write-Output hello" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "cmd-safe-command", "action": { "command": "cmd /d /c echo hello" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "bash-safe-command-option", "action": { "command": "bash -o pipefail -c echo hello" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "bash-safe-version", "action": { "command": "bash --version" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "interpreter-source-direct", "action": { "command": "source deploy.sh" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "interpreter-eval-direct", "action": { "command": "eval $SCRIPT" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "interpreter-external-script", "action": { "command": "timeout 5 bash deploy.sh" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "interpreter-cmd-call-script", "action": { "command": "cmd /c call deploy.bat" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "interpreter-python-env-output", "action": { "command": "python -c 'print(os.environ)'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "env-proc-self-output", "action": { "command": "cat /proc/self/environ" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "structured-git-nested-clean", "action": { "command": "git status", "gitOperation": { "metadata": { "operation": "clean", "args": ["-fdx"] } } }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "git-bat-discard", "action": { "command": "git.bat restore README" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "raw-add-content-dynamic-device", "action": { "command": "Add-Content -Path /dev/$DISK -Value x" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-rename-device", "action": { "command": "Rename-Item /dev/sda /dev/sdb" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-hdparm-erase", "action": { "command": "hdparm --security-erase NULL /dev/sda" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-blkdiscard", "action": { "command": "blkdiscard /dev/sda" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-mdadm-zero-superblock", "action": { "command": "mdadm --zero-superblock /dev/sda" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-remove-volume", "action": { "command": "Remove-Volume -DriveLetter E" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "wrapper-timeout-script", "action": { "command": "timeout 5 bash deploy.sh" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "wrapper-if-script", "action": { "command": "if true; then bash deploy.sh" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "wrapper-cmd-start-script", "action": { "command": "cmd start deploy.bat" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "direct-python-script", "action": { "command": "python deploy.py" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "direct-node-environment-output", "action": { "command": "node -e \"console.log(process.env)\"" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "ruby-environment-output", "action": { "command": "ruby -e 'puts ENV[\"TOKEN\"]'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "perl-environment-output", "action": { "command": "perl -e 'print $ENV{TOKEN}'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "shell-export-environment", "action": { "command": "export -p" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "shell-declare-environment", "action": { "command": "declare -x" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "shell-typeset-environment", "action": { "command": "typeset -x" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "discard-read-tree-reset", "action": { "command": "git read-tree -u --reset HEAD" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "structured-git-array-clean", "action": { "command": "git status", "gitOperation": [{ "operation": "clean", "args": ["$FLAGS"] }] }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "raw-copy-dynamic-device", "action": { "command": "cp /tmp/input /dev/$DISK" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-truncate-device", "action": { "command": "truncate -s 0 /dev/sda" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-cryptsetup-device", "action": { "command": "cryptsetup erase /dev/sda" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-pvremove-device", "action": { "command": "pvremove /dev/sda" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-nvme-sanitize-device", "action": { "command": "nvme sanitize /dev/nvme0" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "guardrail-dynamic-option-name", "action": { "command": "codex --sand$BOX" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
   ]
 }

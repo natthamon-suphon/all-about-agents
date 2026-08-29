@@ -223,7 +223,7 @@
     },
     {
       "relativePath": "hooks/emergency-policy.mjs",
-      "sha256": "61c309367cfd9c1108d2c02fa627d6ff073b8bc3bf114bbea7a7faec848d60ea",
+      "sha256": "20b8235bbd48e05fc3f48267e542c4e5536a3576d0d53c03a2fed60a946720f0",
       "mode": 493
     },
     {
@@ -416,7 +416,7 @@
     },
     {
       "relativePath": "hooks/emergency-policy.mjs",
-      "sha256": "61c309367cfd9c1108d2c02fa627d6ff073b8bc3bf114bbea7a7faec848d60ea"
+      "sha256": "20b8235bbd48e05fc3f48267e542c4e5536a3576d0d53c03a2fed60a946720f0"
     },
     {
       "relativePath": "hooks/hooks.json",

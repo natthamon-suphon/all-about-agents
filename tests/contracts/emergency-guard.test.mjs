@@ -363,6 +363,9 @@ test("rendered Claude and Codex guard wrappers deny emergency commands and defer
       await writeFile(policy, fileMap(result).get("hooks/emergency-guard.json"));
       for (const entry of fixture.cases) {
         const action = entry.action;
+        // Structured operation metadata is a canonical/adaptor seam concern;
+        // native vendor payloads expose only documented command/path fields.
+        if ((action.gitOperation && typeof action.gitOperation === "object") || (action.secretOperation && typeof action.secretOperation === "object")) continue;
         const command = fixtureCommand(action);
         const path = firstFixturePath(action);
         const wrapperArgs = [wrapper, "--surface", surface, "--policy-path", policy];

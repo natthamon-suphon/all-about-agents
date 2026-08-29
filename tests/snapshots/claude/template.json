@@ -117,7 +117,7 @@
     "hooks/bootstrap.mjs": "846d4f13a17f6ea7b42318b1400fa9442241c2342ff375ac64bb52eff60188c6",
     "hooks/emergency-guard.json": "f3a4bb8ac32be47d3f9204a114a854dfaeb0d88701f1386f598d9ccd2b24d2fd",
     "hooks/emergency-guard.mjs": "58b59e3d2715e52d9e28243dc540138ba642baec1fcf43ac63c0eeb4b0a5ca84",
-    "hooks/emergency-policy.mjs": "61c309367cfd9c1108d2c02fa627d6ff073b8bc3bf114bbea7a7faec848d60ea",
+    "hooks/emergency-policy.mjs": "20b8235bbd48e05fc3f48267e542c4e5536a3576d0d53c03a2fed60a946720f0",
     "hooks/hooks.json": "58e38a98edf8a094ab8c2317869a2b11fa680fa0701e0cdd2daa60b7afb63945",
     "hooks/pre-compact.mjs": "169f7589c1b39edd0e8ec63f0ee3a3fcd38629a75ce1788b942a0efa14be389d",
     "rules/authority-and-scope.md": "e954e78589912467fcc0f1e273cd7f7028efb014152ec22e9cdd6e99c821764f",
