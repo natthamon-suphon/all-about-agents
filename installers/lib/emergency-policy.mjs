@@ -22,6 +22,14 @@ const REASONS = Object.freeze({
 
 const ABSOLUTE_PATH = /^(?:[A-Za-z]:[\\/]|[\\/]{1,2})/u;
 const SECRET_PATH = /(?:^|[\\/])(?:\.env(?!\.example(?:$|[\\/]))|\.npmrc|credentials?(?:\.json)?|token|secret|id_(?:rsa|dsa|ecdsa|ed25519)|private[_-]?key|\.ssh(?:[\\/]|$)|\.aws[\\/]credentials(?:$|[\\/]))/iu;
+const MAX_SOURCE_LENGTH = 32_768;
+const MAX_TOKEN_COUNT = 2_048;
+const MAX_VARIANT_COUNT = 256;
+const MAX_STRUCTURED_DEPTH = 6;
+const MAX_STRUCTURED_NODES = 512;
+const MAX_SUBSTITUTION_DEPTH = 32;
+const MAX_WRAPPER_STEPS = 24;
+const PARSER_OVERFLOW_RULE = "guardrail-bypass";
 
 function isPlainObject(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -38,6 +46,7 @@ function normalized(value) {
 }
 
 function substitutionBodies(source) {
+  if (source.length > MAX_SOURCE_LENGTH) return [];
   const bodies = [];
   let quote = "";
   const balanced = (start) => {
@@ -95,8 +104,9 @@ function substitutionBodies(source) {
   return bodies;
 }
 
-function commandTokens(value) {
+function commandTokens(value, depth = 0, state = { count: 0 }) {
   const source = text(value);
+  if (source.length > MAX_SOURCE_LENGTH || depth > MAX_SUBSTITUTION_DEPTH) return ["__emergency_parser_overflow__"];
   const tokens = [];
   let current = "";
   let quote = "";
@@ -104,6 +114,7 @@ function commandTokens(value) {
     if (current.length > 0) {
       tokens.push(current);
       current = "";
+      state.count += 1;
     }
   };
   for (let index = 0; index < source.length; index += 1) {
@@ -132,17 +143,23 @@ function commandTokens(value) {
     current += character;
   }
   flush();
-  for (const body of substitutionBodies(source)) tokens.push(...commandTokens(body));
+  if (state.count > MAX_TOKEN_COUNT) return ["__emergency_parser_overflow__"];
+  for (const body of substitutionBodies(source)) {
+    if (depth >= MAX_SUBSTITUTION_DEPTH || state.count > MAX_TOKEN_COUNT) return ["__emergency_parser_overflow__"];
+    tokens.push(...commandTokens(body, depth + 1, state));
+    if (tokens.length > MAX_TOKEN_COUNT) return ["__emergency_parser_overflow__"];
+  }
   return tokens;
 }
 
 function commandSegments(value) {
   const source = text(value);
+  if (source.length > MAX_SOURCE_LENGTH) return [];
   const segments = [];
   let current = "";
   let quote = "";
   const flush = () => {
-    if (current.trim().length > 0) segments.push(current.trim());
+    if (current.trim().length > 0 && segments.length < MAX_VARIANT_COUNT) segments.push(current.trim());
     current = "";
   };
   for (let index = 0; index < source.length; index += 1) {
@@ -251,11 +268,12 @@ function interpreterIndex(words) {
 
 function lexicalWords(value) {
   const source = text(value);
+  if (source.length > MAX_SOURCE_LENGTH) return ["__emergency_parser_overflow__"];
   const words = [];
   let current = "";
   let quote = "";
   const flush = () => {
-    if (current.length > 0) {
+    if (current.length > 0 && words.length < MAX_TOKEN_COUNT) {
       words.push(current);
       current = "";
     }
@@ -283,6 +301,89 @@ function lexicalWords(value) {
   return words;
 }
 
+function sourceShapeExceeded(value) {
+  const source = text(value);
+  if (source.length > MAX_SOURCE_LENGTH) return true;
+  let substitutionDepth = 0;
+  let separatorCount = 0;
+  let tokenCount = 0;
+  let tokenStarted = false;
+  let quote = "";
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (quote) {
+      tokenStarted = true;
+      if (character === quote) quote = "";
+      continue;
+    }
+    if (character === "'" || character === '"') {
+      quote = character;
+      tokenStarted = true;
+      continue;
+    }
+    if (character === ";" || character === "&" || character === "|" || character === "\n" || character === "\r") separatorCount += 1;
+    if (separatorCount > MAX_VARIANT_COUNT) return true;
+    if (/\s/u.test(character) || ";&|<>".includes(character)) {
+      if (tokenStarted) {
+        tokenCount += 1;
+        tokenStarted = false;
+      }
+      if (tokenCount > MAX_TOKEN_COUNT) return true;
+    } else tokenStarted = true;
+    if (character === "$" && source[index + 1] === "(") {
+      substitutionDepth += 1;
+      if (substitutionDepth > MAX_SUBSTITUTION_DEPTH) return true;
+      index += 1;
+    } else if (character === ")" && substitutionDepth > 0) substitutionDepth -= 1;
+  }
+  return tokenCount + (tokenStarted ? 1 : 0) > MAX_TOKEN_COUNT;
+}
+
+function wrapperScanExceeded(value) {
+  for (const segment of commandSegments(value)) {
+    const words = lexicalWords(segment);
+    let index = 0;
+    let steps = 0;
+    while (index < words.length && steps < MAX_WRAPPER_STEPS) {
+      steps += 1;
+      if (isAssignmentToken(words[index])) {
+        index += 1;
+        continue;
+      }
+      const name = tokenName(words[index]);
+      if (!SHELL_PREFIXES.has(name)) break;
+      index += 1;
+      while (index < words.length && steps < MAX_WRAPPER_STEPS && (isAssignmentToken(words[index]) || normalized(words[index]).startsWith("-"))) {
+        steps += 1;
+        index += 1;
+      }
+    }
+    if (index < words.length && steps >= MAX_WRAPPER_STEPS && SHELL_PREFIXES.has(tokenName(words[index - 1] || ""))) return true;
+  }
+  return false;
+}
+
+function structuredBoundsExceeded(value, depth = 0, state = { nodes: 0 }, seen = new WeakSet()) {
+  if (typeof value === "string") return sourceShapeExceeded(value);
+  if (value === null || typeof value !== "object") return false;
+  if (depth > MAX_STRUCTURED_DEPTH || state.nodes >= MAX_STRUCTURED_NODES) return true;
+  if (seen.has(value)) return true;
+  seen.add(value);
+  state.nodes += 1;
+  if (Array.isArray(value)) {
+    if (value.length > MAX_STRUCTURED_NODES) return true;
+    return value.some((entry) => structuredBoundsExceeded(entry, depth + 1, state, seen));
+  }
+  if (!isPlainObject(value)) return true;
+  return Object.entries(value).some(([key, child]) => key !== "policy" && structuredBoundsExceeded(child, depth + 1, state, seen));
+}
+
+function parserBoundsExceeded(input) {
+  if (!isPlainObject(input)) return false;
+  if (structuredBoundsExceeded(input)) return true;
+  return sourceShapeExceeded(input.command) || sourceShapeExceeded(input.capability) || wrapperScanExceeded(input.command);
+}
+
 function commandVariants(value) {
   const variants = [];
   const seen = new Set();
@@ -292,6 +393,7 @@ function commandVariants(value) {
       const key = segment;
       if (seen.has(key)) continue;
       seen.add(key);
+      if (variants.length >= MAX_VARIANT_COUNT) return;
       variants.push(segment);
       for (const record of shellInvocationRecords(segment)) if (record.payload) visit(record.payload, depth + 1);
       for (const body of substitutionBodies(segment)) visit(body, depth + 1);
@@ -338,36 +440,77 @@ function isScriptPathToken(value) {
       || /\.(?:sh|bash|zsh|fish|ps1|psm1|bat|cmd|py|rb|pl|js|mjs|cjs)$/iu.test(token));
 }
 
+function isScriptRunnerName(value) {
+  const name = tokenName(value);
+  return /^(?:python(?:3(?:\.\d+)?)?|python3\.\d+|node(?:js)?|ruby|perl|deno|bun)$/u.test(name)
+    || SHELL_INTERPRETERS.has(name);
+}
+
+function isNonShellRunnerName(value) {
+  return /^(?:python(?:3(?:\.\d+)?)?|python3\.\d+|node(?:js)?|ruby|perl|deno|bun)$/u.test(tokenName(value));
+}
+
+function isOpaqueShellInputOption(value) {
+  const option = normalized(value);
+  return option === "-s" || option === "-i" || option === "-" || option === "--"
+    || option.startsWith("--split-string") || option.startsWith("-s=") || option.startsWith("-s:");
+}
+
+function launchWords(words) {
+  const start = wrapperEnd(words);
+  return { start, words: words.slice(start) };
+}
+
 function hasOpaqueScriptPayload(value) {
   for (const segment of commandSegments(value)) {
     const words = lexicalWords(segment);
     if (words.length === 0) continue;
+    const { words: launched } = launchWords(words);
     const first = tokenName(words[0]);
+    const launchedFirst = tokenName(launched[0] || "");
     const second = words[1] || "";
-    const runnerNames = new Set(["sh", "bash", "dash", "zsh", "ksh", "fish", "python", "python3", "node", "ruby", "perl", "pwsh", "powershell"]);
+    const runnerNames = new Set(["sh", "bash", "dash", "zsh", "ksh", "fish", "python", "python3", "node", "ruby", "perl", "pwsh", "powershell", "deno", "bun"]);
     if (["source", ".", "eval", "invoke-expression", "iex"].includes(first)) return true;
     if (first === "call" || first === "start") {
       if (second && (isScriptPathToken(second) || hasDynamicToken(second))) return true;
     }
     if (isScriptPathToken(words[0]) || hasDynamicToken(words[0]) && first === "&") return true;
     if (runnerNames.has(first) && second && !second.startsWith("-") && isScriptPathToken(second)) return true;
-    if (["python", "python3", "node", "ruby", "perl"].includes(first)
-      && second && !second.startsWith("-") && isScriptPathToken(second)) return true;
+    if (isScriptRunnerName(launchedFirst)) {
+      if (isOpaqueShellInputOption(launched[1] || "")) return true;
+      const candidate = launched[1] || "";
+      const windowsInterpreterOption = ["cmd", "cmd.exe", "powershell", "powershell.exe", "pwsh", "pwsh.exe"].includes(launchedFirst) && candidate.startsWith("/");
+      if (candidate && !candidate.startsWith("-") && !windowsInterpreterOption && isScriptPathToken(candidate)) return true;
+      if (isNonShellRunnerName(launchedFirst)
+        && candidate && !candidate.startsWith("-") && (hasDynamicToken(candidate) || isScriptPathToken(candidate))) return true;
+    }
     if (["python", "python3", "node", "ruby", "perl", "pwsh", "powershell"].includes(first)
       && /(?:\b(?:exec|eval|system|spawn|popen|open|require|child[_-]?process|start-process|invoke-command|invoke-expression)\b|process[.]env|os[.]environ)/iu.test(words.slice(1).join(" "))) return true;
+    if ((isNonShellRunnerName(launchedFirst) || ["pwsh", "powershell"].includes(launchedFirst))
+      && /(?:\b(?:exec|eval|system|spawn|popen|open|require|child[_-]?process|start-process|invoke-command|invoke-expression)\b|process[.]env|os[.]environ|deno[.]env|bun[.]env)/iu.test(launched.slice(1).join(" "))) return true;
+    if (first === "env") {
+      const splitIndex = words.findIndex((word) => {
+        const option = normalized(word);
+        return option === "-s" || option.startsWith("-s=") || option.startsWith("-s:")
+          || option === "--split-string" || option.startsWith("--split-string=") || option.startsWith("--split-string:");
+      });
+      if (splitIndex >= 0) return true;
+    }
     if (first === "find") {
       for (const [index, word] of words.entries()) {
         if (["-exec", "-execdir"].includes(normalized(word))) {
-          const candidate = words[index + 1] || "";
+          const candidateWords = words.slice(index + 1);
+          const candidate = candidateWords[0] || "";
           if (isScriptPathToken(candidate) || hasDynamicToken(candidate)) return true;
-          if (runnerNames.has(tokenName(candidate)) && (isScriptPathToken(words[index + 2] || "") || hasDynamicToken(words[index + 2] || ""))) return true;
+          if (isScriptRunnerName(candidate) && (isOpaqueShellInputOption(candidateWords[1] || "") || isScriptPathToken(candidateWords[1] || "") || hasDynamicToken(candidateWords[1] || ""))) return true;
         }
       }
     }
     if (first === "xargs") {
-      const args = words.slice(1).filter((word) => !word.startsWith("-"));
+      const args = words.slice(1);
       if (args.some(isScriptPathToken) || args.some(hasDynamicToken)) return true;
-      if (args.some((word, index) => runnerNames.has(tokenName(word)) && isScriptPathToken(args[index + 1] || ""))) return true;
+      if (args.some((word, index) => isScriptRunnerName(word) && (isOpaqueShellInputOption(args[index + 1] || "") || isScriptPathToken(args[index + 1] || "") || hasDynamicToken(args[index + 1] || "")))) return true;
+      if (args.some((word, index) => tokenName(word) === "env" && isOpaqueShellInputOption(args[index + 1] || ""))) return true;
     }
   }
   return false;
@@ -384,6 +527,11 @@ function shellInvocationRecords(value) {
     let foundCommand = false;
     while (optionIndex < words.length && optionIndex < index + 32) {
       const next = normalized(words[optionIndex]);
+      if (isOpaqueShellInputOption(next)) {
+        records.push({ opaque: true, dynamic: true, attached: false, payload: text(words.slice(optionIndex + 1).join(" ")).trim() });
+        foundCommand = true;
+        break;
+      }
       const opaque = SHELL_OPAQUE_OPTIONS.has(next)
         || [...SHELL_OPAQUE_OPTIONS].some((option) => next.startsWith(option) && next.length > option.length);
       if (opaque) {
@@ -507,6 +655,16 @@ function structuredGitRecords(value) {
   }
   const visit = (node, key, depth) => {
     if (depth > 6) return;
+    if (typeof node === "string") {
+      const invocation = gitInvocation(node);
+      records.push({
+        label: normalized(`${key} ${node}`),
+        command: node,
+        subcommand: invocation?.subcommand || tokenName(node),
+        args: invocation ? invocation.args : commandTokens(node).map(normalized)
+      });
+      return;
+    }
     if (Array.isArray(node)) {
       for (const [index, child] of node.entries()) visit(child, `${key}[${index}]`, depth + 1);
       return;
@@ -702,12 +860,12 @@ function verifiedDisposableTargets(rootValue, pathEntries) {
     || rootValue.targetsContained === true;
   if (isUnsafeNativeNamespace(root) || hasDynamicPathSyntax(root) || pathEntries.some((entry) => isUnsafeNativeNamespace(entry.path) || hasDynamicPathSyntax(entry.path))) return false;
   if (!resolved || !attestation || !isAbsolute(root) || pathEntries.length === 0 || !isDesignatedNarrowRoot(rootValue, root)) return false;
-  if (/(?:^|\/)\.\.?(?:\/|$)/u.test(cleanPath(root))) return false;
+  if (/(?:^|\/)\.\.(?:\/|$)/u.test(cleanPath(root))) return false;
   const declaredTargets = Array.isArray(rootValue.targets) ? rootValue.targets.map((entry) => cleanPath(typeof entry === "string" ? entry : entry?.resolvedPath || entry?.path)).filter(Boolean) : null;
   if (!declaredTargets || declaredTargets.some(hasDynamicPathSyntax) || declaredTargets.length !== pathEntries.length || declaredTargets.some((target) => !pathEntries.some((entry) => cleanPath(entry.path) === target))) return false;
   return pathEntries.every((entry) => {
     const target = cleanPath(entry.path);
-    if (/(?:^|\/)\.\.?(?:\/|$)/u.test(target)) return false;
+    if (/(?:^|\/)\.\.(?:\/|$)/u.test(target)) return false;
     return isContained(root, target) && !normalized(entry.kind).match(/(?:root|home|workspace|repository|drive)/u);
   });
 }
@@ -754,9 +912,9 @@ function recursiveErase(command, capability) {
     if (index >= segments.length - 1) return false;
     const source = lexicalWords(segment);
     const target = lexicalWords(segments[index + 1]);
-    const enumerator = ["get-child-item", "gci", "dir", "ls", "find"].includes(tokenName(source[0] || ""));
-    const remover = ["remove-item", "ri", "clear-item", "srm", "rm"].includes(commandName(target[0] || ""));
-    return enumerator && source.some(isRecursiveFlag) && remover && (target.length > 1);
+    const enumerator = ["get-child-item", "get-childitem", "gci", "dir", "ls", "find", "ri", "del"].includes(tokenName(source[0] || ""));
+    const remover = ["remove-item", "ri", "clear-item", "srm", "rm", "del", "erase"].includes(commandName(target[0] || ""));
+    return enumerator && source.some(isRecursiveFlag) && remover;
   });
   return recursiveCommand || findDelete || enumeratePipeline || /(?:recursive|erase|wipe|delete[-_ ]all|filesystem[-_ ]root)/u.test(capabilityText) || /(?:^|\s)filesystem[-_ ]root(?:\s|$)/u.test(commandText);
 }
@@ -773,7 +931,8 @@ function hasRawDiskDestruction(command, capability, operation) {
   const isUnsafeSegment = (segment) => {
     const value = normalized(segment).trim();
     const rawDeviceOperation = rawDevicePath.test(value) && /(?:>{1,2}|\b(?:set-content|out-file|add-content|copy-item|move-item|rename-item|remove-item|format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]disk|remove[-_ ]partition|remove-volume|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]copy|file[.]create|file[.]append|appendalltext|appendallbytes|truncate|cryptsetup|pvremove|nvme|cp|mv)\b|\bfile\]::(?:open|copy|create|writebyte|appendalltext|writealltext)\b)/u.test(value);
-    const dynamicRawOperation = hasDynamicToken(value) && /(?:\b(?:set-content|out-file|add-content|copy-item|move-item|rename-item|remove-item|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]copy|file[.]create|file[.]append|appendall(?:text|bytes)|truncate|cryptsetup|pvremove|nvme|dd|cp|mv)\b|\bfile\]::(?:open|copy|create|writebyte|appendalltext|writealltext)\b)/u.test(value);
+    const rawWriteHelper = /(?:\b(?:set-content|out-file|add-content|copy-item|move-item|rename-item|remove-item|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]copy|file[.]create|file[.]append|appendall(?:text|bytes)|truncate|cryptsetup|pvremove|nvme|dd|cp|mv|tee(?:-object)?)\b|\bfile\]::(?:open|copy|create|writebyte|appendalltext|writealltext)\b)/u;
+    const dynamicRawOperation = (hasDynamicToken(value) || /\bget-variable\b/u.test(value)) && rawWriteHelper.test(value);
     return formatCommand(value) || rawDeviceOperation || dynamicRawOperation || destructiveUtility.test(value);
   };
   if (commandVariants(command).some(isUnsafeSegment)) return true;
@@ -827,6 +986,8 @@ function hasHistoryRewrite(command, operation) {
       || invocation?.subcommand === "reflog" && invocation.args[0] === "expire"
       || invocation?.subcommand === "commit" && invocation.args.includes("--amend")
       || invocation?.subcommand === "push" && (invocation.args.includes("--delete") || invocation.args.some((argument) => argument.startsWith(":")))
+      || invocation?.subcommand === "branch" && invocation.args.some((argument) => ["-d", "-D", "--delete"].includes(argument) || argument === "--force")
+      || invocation?.subcommand === "update-ref" && invocation.args.some((argument) => ["-d", "--delete", "--stdin"].includes(argument))
       || dynamicSubcommand
       || dynamicHistoryFlag;
   });
@@ -839,6 +1000,8 @@ function hasHistoryRewrite(command, operation) {
       || subcommand === "reflog" && args.includes("expire")
       || subcommand === "commit" && args.includes("--amend")
       || subcommand === "push" && (args.includes("--delete") || args.some((argument) => argument.startsWith(":")))
+      || subcommand === "branch" && args.some((argument) => ["-d", "-D", "--delete"].includes(argument) || argument === "--force")
+      || subcommand === "update-ref" && args.some((argument) => ["-d", "--delete", "--stdin"].includes(argument))
       || /(?:^|\s)git(?:\s|$)/u.test(label) && /[\$%{}!`^\\(]/u.test(record.subcommand || "")
       || /(?:^|\s)(?:rebase|commit|reflog)(?:\s|$)/u.test(label) && args.some((argument) => /[\$%{}!`^\\(]/u.test(argument));
   })
@@ -859,6 +1022,7 @@ function hasDiscard(command, operation) {
       && invocation.args.some(hasDynamicToken);
     return invocation?.subcommand === "clean" && invocation.args.some(forceFlag)
       || invocation?.subcommand === "clean" && invocation.args.some((argument) => argument === "." || argument === "..")
+      || invocation?.subcommand === "clean" && /clean[.]requireforce\s*[=:]\s*false/u.test(normalized(variant))
       || ["checkout", "restore"].includes(invocation?.subcommand) && invocation.args.some((argument) => argument === "--" || forceFlag(argument) || argument === "--discard-changes" || argument === "." || argument === ".." || argument.startsWith("--pathspec-from-file"))
       || invocation?.subcommand === "restore" && (invocation.args.some((argument) => argument === "--staged" || argument === "--worktree" || argument.startsWith("--source")) || invocation.args.some((argument) => !argument.startsWith("-")))
       || invocation?.subcommand === "checkout" && (nonOptions.length > 1 || nonOptions.some(checkoutPathArgument) || invocation.args.some((argument) => argument.startsWith("--pathspec-from-file")))
@@ -883,6 +1047,7 @@ function hasDiscard(command, operation) {
       || subcommand === "read-tree" && args.includes("-u") && (args.includes("-m") || args.includes("--reset"))
       || subcommand === "switch" && args.some((argument) => forceFlag(argument) || argument === "--discard-changes")
       || subcommand === "clean" && (args.some(forceFlag) || args.includes(".") || args.includes(".."))
+      || subcommand === "clean" && /clean[.]requireforce\s*[=:]\s*false/u.test(label)
       || subcommand === "reset" && args.includes("--hard")
       || subcommand === "stash" && args.some((argument) => ["drop", "clear"].includes(argument))
       || dynamicDiscardArgument;
@@ -895,7 +1060,7 @@ function hasCredentialAccess(command, capability, operation, pathEntries) {
   const all = `${normalized(command)} ${normalized(capability)} ${operationText(operation)}`;
   const pathHit = pathEntries.some((entry) => {
     const path = cleanPath(entry.path);
-    const traversal = /(?:^|\/)\.\.?(?:\/|$)/u.test(path);
+    const traversal = /(?:^|\/)\.\.(?:\/|$)/u.test(path);
     return traversal || SECRET_PATH.test(path) && !isPublicExampleArtifact(path);
   });
   return pathHit || /(?:credential|secret|token|private[_-]?key|id_(?:rsa|dsa|ecdsa|ed25519)|secret[-_ ]store|password[-_ ]store)/u.test(all)
@@ -906,7 +1071,7 @@ function hasSecretOutput(command, capability, operation, pathEntries) {
   const all = `${normalized(command)} ${normalized(capability)} ${operationText(operation)}`;
   const secretPath = pathEntries.some((entry) => {
     const path = cleanPath(entry.path);
-    const traversal = /(?:^|\/)\.\.?(?:\/|$)/u.test(path);
+    const traversal = /(?:^|\/)\.\.(?:\/|$)/u.test(path);
     return traversal || SECRET_PATH.test(path) && !isPublicExampleArtifact(path);
   });
   const secretMarker = /(?:\$[a-z_][a-z0-9_]*|%[a-z_][a-z0-9_]*%|![a-z_][a-z0-9_]*!|token|secret|password|private[_-]?key|credential|env:|process[.]env|environment[.]getenvironmentvariable|environment\]::getenvironmentvariable)/u.test(all);
@@ -926,9 +1091,9 @@ function hasSecretOutput(command, capability, operation, pathEntries) {
   })
     || commandSegments(operationText(operation)).some((segment) => ["printenv", "env", "declare", "typeset"].includes(tokenName(commandTokens(segment)[0])))
     || /(?:\$\(|`)\s*(?:printenv|env)\b/u.test(normalized(command))
-    || /\benv\s+-s\s+(?:printenv|env)\b/u.test(normalized(command));
+    || /\benv\s+(?:-s|--split-string)(?:=|\s+)(?:printenv|env)\b/u.test(normalized(command));
   const environmentProvider = /(?:\benv\s*:|\/proc\/[^\s/]+\/environ\b)/u.test(all) && /(?:get-content|get-item|cat|type|read|print|echo|write|copy|export|head|tail|strings|xargs)/u.test(all);
-  const processEnvironment = /(?:process[.]env|os[.]environ|os[.]getenv|environment[.]getenvironmentvariable|environment\]::getenvironmentvariable|\b(?:python|python3|ruby|perl|node)\b[^;|&]*(?:\benv(?:ironment)?\b\s*[\[{:]))/u.test(all);
+  const processEnvironment = /(?:process\s*[.]\s*env|process\s*[\[({]\s*["']?env|os\s*[.]\s*(?:environ|getenv)|environment[.]getenvironmentvariable|environment\]::getenvironmentvariable|\b(?:python(?:3(?:[.]\d+)?)?|node(?:js)?|ruby|perl|deno|bun)\b[^;|&]*(?:\benv\b|\benviron(?:ment)?\b|%env\b|deno[.]env|bun[.]env))/u.test(all);
   const dynamicSecretRead = commandVariants(command).some((segment) => {
     const tokens = commandTokens(segment);
     const commandInfo = commandAfterWrappers(tokens);
@@ -946,7 +1111,8 @@ function hasGuardrailBypass(command, capability, operation) {
     || /^-(?:approval|sandbox|bypass|permission|guard|policy)[^\s;|]*[$%`!{}^\\(]/u.test(token));
   const dynamicHarnessArgument = commandSegments(command).some((segment) => {
     const words = lexicalWords(segment);
-    return ["codex", "agy", "claude"].includes(tokenName(words[0] || "")) && words.slice(1).some(hasDynamicToken);
+    const { words: launched } = launchWords(words);
+    return ["codex", "agy", "claude"].includes(tokenName(launched[0] || "")) && launched.slice(1).some(hasDynamicToken);
   });
   const dynamicGuardrailValue = /--(?:approval[-_ ]?policy|sandbox|bypass(?:[-_ ]?permissions)?)(?:\s*(?:=|:)\s*|\s+)([^\s;|]+)/gu;
   for (const match of scan.matchAll(dynamicGuardrailValue)) {
@@ -977,6 +1143,7 @@ function decision(reasonId) {
  * ambient state. A verified disposable-root exception is intentionally strict.
  */
 export function classifyEmergencyAction(input = {}) {
+  if (parserBoundsExceeded(input)) return decision(PARSER_OVERFLOW_RULE);
   const { capability = "", command = "", paths = [], gitOperation = null, secretOperation = null, verifiedDisposableRoot = null, policy = null } = isPlainObject(input) ? input : {};
   const pathEntries = [...valuesFromPaths(paths), ...valuesFromPaths(extractCandidatePaths(command)), ...valuesFromPaths(operationPaths(secretOperation))]
     .filter((entry, index, entries) => entries.findIndex((candidate) => cleanPath(candidate.path) === cleanPath(entry.path)) === index);

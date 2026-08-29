@@ -9,6 +9,7 @@ const NATIVE_FIELDS = Object.freeze(["hook_event_name", "tool_name", "tool_input
 const COMMAND_TOOLS = new Set(["bash", "powershell", "shell", "run_command"]);
 const READ_TOOLS = new Set(["read", "read_file", "view_file"]);
 const WRITE_TOOLS = new Set(["write", "write_file", "edit", "replace_file_content", "multi_replace_file_content", "delete", "delete_file"]);
+const MAX_STDIN_BYTES = 64 * 1024;
 const CANONICAL_REASONS = Object.freeze({
   "filesystem-root-erasure": "Denied: broad or unresolved filesystem erasure is an emergency action.",
   "raw-disk-destruction": "Denied: raw-disk or partition destruction is an emergency action.",
@@ -106,7 +107,13 @@ async function readPolicy(policyPath, canonicalRuleIds) {
 
 async function readStdin() {
   const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
+  let totalBytes = 0;
+  for await (const chunk of process.stdin) {
+    const chunkBytes = typeof chunk === "string" ? Buffer.byteLength(chunk, "utf8") : chunk.byteLength;
+    totalBytes += chunkBytes;
+    if (totalBytes > MAX_STDIN_BYTES) return null;
+    chunks.push(chunk);
+  }
   return Buffer.concat(chunks).toString("utf8");
 }
 
@@ -123,7 +130,9 @@ export async function runEmergencyGuard(argv = process.argv.slice(2), rawInput =
     return "{}";
   }
   const policy = await readPolicy(policyPath, policyModule.DEFAULT_RULE_IDS);
-  const request = parseInput(rawInput === null ? await readStdin() : rawInput);
+  const input = rawInput === null ? await readStdin() : rawInput;
+  if (typeof input !== "string" || Buffer.byteLength(input, "utf8") > MAX_STDIN_BYTES) return "{}";
+  const request = parseInput(input);
   const normalized = normalizeNativeRequest(surface, request);
   if (!normalized) return "{}";
   const verifiedDisposableRoot = parseVerifiedRoot(verifiedRoot);

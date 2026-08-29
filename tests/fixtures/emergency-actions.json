@@ -305,5 +305,38 @@
     ,{ "id": "structured-git-array-force-object", "action": { "command": "git status", "gitOperation": [{ "push": { "args": [{ "ref": "+main" }], "force": true } }] }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
     ,{ "id": "structured-git-nested-force-object", "action": { "command": "git status", "gitOperation": { "metadata": { "operation": "push", "args": [{ "ref": "main" }], "force": true } } }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
     ,{ "id": "git-remote-colon-delete", "action": { "command": "git push origin :feature" }, "expected": { "decision": "deny", "ruleId": "git-history-rewrite" } }
+    ,{ "id": "wrapper-python-versioned-script", "action": { "command": "sudo env JOB=1 timeout 5 command python3.12 /tmp/deploy.py" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "wrapper-node-script", "action": { "command": "sudo env JOB=1 timeout 5 command node /tmp/deploy.js" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "wrapper-ruby-script", "action": { "command": "sudo env JOB=1 timeout 5 command ruby /tmp/deploy.rb" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "wrapper-perl-script", "action": { "command": "sudo env JOB=1 timeout 5 command perl /tmp/deploy.pl" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "pipeline-recursive-ri", "action": { "command": "Get-ChildItem -Recurse | ri" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "pipeline-recursive-remove-item-alias", "action": { "command": "gci -Recurse | Remove-Item" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "pipeline-recursive-del-alias", "action": { "command": "dir -Recurse | del" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "find-exec-python-script", "action": { "command": "find /tmp -exec python3 /tmp/deploy.py {} +" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "xargs-shell-script", "action": { "command": "xargs sh -c 'rm -rf /'" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "xargs-python-script", "action": { "command": "xargs python3 /tmp/deploy.py" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "env-split-string-payload", "action": { "command": "env -S 'rm -rf /'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "env-split-string-dynamic-payload", "action": { "command": "env --split-string='rm $FLAGS /'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "shell-standard-input-mode", "action": { "command": "sh -s" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "shell-standard-input-dash", "action": { "command": "bash -" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "shell-standard-input-double-dash", "action": { "command": "bash --" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "shell-interactive-unclear", "action": { "command": "bash -i" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "python-os-environ-alias", "action": { "command": "python -c 'from os import environ; print(environ)'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "ruby-env-to-hash", "action": { "command": "ruby -e 'puts ENV.to_h'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "perl-percent-env", "action": { "command": "perl -e 'print %ENV'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "node-computed-process-env", "action": { "command": "node -e 'console.log(process[\"env\"])'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "deno-environment-output", "action": { "command": "deno eval 'console.log(Deno.env.toObject())'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "bun-environment-output", "action": { "command": "bun -e 'console.log(Bun.env)'" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "powershell-scriptblock-dynamic", "action": { "command": "pwsh Invoke-Command -ScriptBlock $SCRIPT" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "sudo-codex-dynamic-option", "action": { "command": "sudo -u root codex $OPTION" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "raw-tee-dynamic-target", "action": { "command": "tee-object $TARGET" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-get-variable-target", "action": { "command": "Set-Content -Path (Get-Variable TARGET).Value -Value x" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "git-clean-config-override", "action": { "command": "git -c clean.requireForce=false clean" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "git-branch-force-delete", "action": { "command": "git branch -D feature" }, "expected": { "decision": "deny", "ruleId": "git-history-rewrite" } }
+    ,{ "id": "git-update-ref-delete", "action": { "command": "git update-ref -d refs/heads/main" }, "expected": { "decision": "deny", "ruleId": "git-history-rewrite" } }
+    ,{ "id": "structured-git-array-branch-delete", "action": { "command": "git status", "gitOperation": ["git branch -D feature"] }, "expected": { "decision": "deny", "ruleId": "git-history-rewrite" } }
+    ,{ "id": "structured-git-nested-clean-force", "action": { "command": "git status", "gitOperation": { "metadata": { "clean": { "force": true } } } }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "normal-cat-dot-slash", "action": { "command": "cat ./README" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "normal-git-status-dot-slash", "action": { "command": "git status ./foo" }, "expected": { "decision": "allow", "ruleId": null } }
   ]
 }

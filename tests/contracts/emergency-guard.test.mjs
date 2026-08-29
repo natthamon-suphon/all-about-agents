@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import test from "node:test";
 
 import { classifyEmergencyAction, DEFAULT_RULE_IDS } from "../../installers/lib/emergency-policy.mjs";
-import { buildNativeDecision, normalizeNativeRequest } from "../../core/hooks/emergency-guard.mjs";
+import { buildNativeDecision, normalizeNativeRequest, runEmergencyGuard } from "../../core/hooks/emergency-guard.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
@@ -282,6 +282,29 @@ test("emergency policy remains bounded and total for hostile path data", () => {
     assert.ok([...result.reason].length <= 160);
     assert.doesNotMatch(result.reason, /TOKEN|tester|fixture/iu);
   }
+});
+
+test("emergency parser fails closed on boundedness violations and preserves dot-slash near misses", async () => {
+  const deeplyNested = `${"$(".repeat(1_024)}echo ok${")".repeat(1_024)}`;
+  const oversized = "echo " + "x".repeat(100_000);
+  const wrapperOverflow = `${"sudo ".repeat(64)}echo ok`;
+  let structuredOverflow = { value: "leaf" };
+  for (let index = 0; index < 12; index += 1) structuredOverflow = { nested: structuredOverflow };
+  const structuredArrayOverflow = Array.from({ length: 600 }, () => "git status");
+  const nestedResult = classifyEmergencyAction({ command: deeplyNested });
+  assert.deepEqual({ decision: nestedResult.decision, ruleId: nestedResult.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+  const oversizedResult = classifyEmergencyAction({ command: oversized });
+  assert.deepEqual({ decision: oversizedResult.decision, ruleId: oversizedResult.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+  const wrapperResult = classifyEmergencyAction({ command: wrapperOverflow });
+  assert.deepEqual({ decision: wrapperResult.decision, ruleId: wrapperResult.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+  const structuredResult = classifyEmergencyAction({ command: "git status", gitOperation: structuredOverflow });
+  assert.deepEqual({ decision: structuredResult.decision, ruleId: structuredResult.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+  const arrayResult = classifyEmergencyAction({ command: "git status", gitOperation: structuredArrayOverflow });
+  assert.deepEqual({ decision: arrayResult.decision, ruleId: arrayResult.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+  assert.deepEqual(classifyEmergencyAction({ command: "cat ./README" }), { decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." });
+  assert.deepEqual(classifyEmergencyAction({ command: "git status ./foo" }), { decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." });
+  const malformed = await runEmergencyGuard(["--surface", "claude", "--policy-path", resolve(process.cwd(), "core/hooks/emergency-guard.json")], oversized);
+  assert.equal(malformed, "{}");
 });
 
 function fileMap(result) {
