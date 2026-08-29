@@ -166,6 +166,20 @@ test("emergency policy classifies structured Git operation metadata", () => {
   assert.deepEqual({ decision: rebase.decision, ruleId: rebase.ruleId }, { decision: "deny", ruleId: "git-history-rewrite" });
   const discard = classifyEmergencyAction({ command: "git status", gitOperation: { checkout: { args: ["README"] } } });
   assert.deepEqual({ decision: discard.decision, ruleId: discard.ruleId }, { decision: "deny", ruleId: "git-discard-uncommitted" });
+  for (const [command, ruleId] of [
+    ["git clean -fdx", "git-discard-uncommitted"],
+    ["git reset --hard", "git-discard-uncommitted"],
+    ["git stash clear", "git-discard-uncommitted"],
+    ["git reflog expire --all", "git-history-rewrite"],
+    ["git commit --amend", "git-history-rewrite"]
+  ]) {
+    const result = classifyEmergencyAction({ command: "git status", gitOperation: { command } });
+    assert.deepEqual({ decision: result.decision, ruleId: result.ruleId }, { decision: "deny", ruleId }, command);
+  }
+  const benign = classifyEmergencyAction({ command: "git status", gitOperation: { command: "git status", args: ["--short"] } });
+  assert.deepEqual({ decision: benign.decision, ruleId: benign.ruleId }, { decision: "allow", ruleId: null });
+  const splitCommand = classifyEmergencyAction({ command: "git status", gitOperation: { command: "git", args: ["push", "origin", "main", "--force"] } });
+  assert.deepEqual({ decision: splitCommand.decision, ruleId: splitCommand.ruleId }, { decision: "deny", ruleId: "git-force-push" });
 });
 
 test("emergency policy classifies structured secret operation resources", () => {
@@ -181,6 +195,8 @@ function firstFixturePath(action) {
 }
 
 function fixtureCommand(action) {
+  if (typeof action.gitOperation === "string") return action.gitOperation;
+  if (typeof action.secretOperation === "string") return action.secretOperation;
   if (typeof action.command === "string") return action.command;
   if (action.gitOperation && typeof action.gitOperation.operation === "string") return action.gitOperation.operation;
   if (action.secretOperation && typeof action.secretOperation.operation === "string") return action.secretOperation.operation;
@@ -213,6 +229,8 @@ test("all emergency fixtures agree across canonical and four documented adapter 
       const classification = classifyEmergencyAction({
         ...normalized,
         paths: action.paths || normalized.paths,
+        gitOperation: action.gitOperation ?? normalized.gitOperation,
+        secretOperation: action.secretOperation ?? normalized.secretOperation,
         verifiedDisposableRoot: action.verifiedDisposableRoot,
         policy: emergencyPolicy
       });
