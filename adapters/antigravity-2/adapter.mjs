@@ -5,7 +5,7 @@ import antigravityEmergencyTemplate from "./templates/hooks/emergency-guard.json
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
-import { classifyEmergencyAction } from "../../installers/lib/emergency-policy.mjs";
+import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency-policy.mjs";
 
 const SURFACE = "antigravity-2";
 const DESKTOP_SURFACE = "antigravity-2-desktop";
@@ -314,7 +314,8 @@ export function normalizeAntigravityEmergencyRequest(request) {
 }
 
 export function mapAntigravityEmergencyDecision(classification) {
-  return classification?.decision === "deny" ? { decision: "deny", reason: classification.reason } : {};
+  const reason = classification?.decision === "deny" && Object.hasOwn(REASONS, classification.ruleId) ? REASONS[classification.ruleId] : "";
+  return reason ? { decision: "deny", reason } : {};
 }
 
 export function classifyAntigravityEmergencyRequest(request) {

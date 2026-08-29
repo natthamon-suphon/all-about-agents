@@ -38,6 +38,64 @@ function normalized(value) {
   return text(value).replace(/[\u0000-\u001f\u007f]/gu, " ").toLowerCase();
 }
 
+function substitutionBodies(source) {
+  const bodies = [];
+  let quote = "";
+  const balanced = (start) => {
+    let depth = 1;
+    let nestedQuote = "";
+    for (let index = start + 1; index < source.length; index += 1) {
+      const character = source[index];
+      if (nestedQuote) {
+        if (character === nestedQuote) nestedQuote = "";
+        continue;
+      }
+      if (character === "'" || character === '"') {
+        nestedQuote = character;
+        continue;
+      }
+      if (character === "(") depth += 1;
+      else if (character === ")") {
+        depth -= 1;
+        if (depth === 0) return { body: source.slice(start + 1, index), end: index };
+      }
+    }
+    return null;
+  };
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (quote === "'") {
+      if (character === "'") quote = "";
+      continue;
+    }
+    if (quote === '"' && character !== "$" && character !== "`") {
+      if (character === '"') quote = "";
+      continue;
+    }
+    if (character === "'" || character === '"') {
+      quote = character;
+      continue;
+    }
+    if (character === "`" || (character === "$" && source[index + 1] === "(")) {
+      const start = character === "`" ? index : index + 1;
+      if (character === "`") {
+        const end = source.indexOf("`", index + 1);
+        if (end >= 0) {
+          bodies.push(source.slice(index + 1, end));
+          index = end;
+        }
+      } else {
+        const match = balanced(start);
+        if (match) {
+          bodies.push(match.body);
+          index = match.end;
+        }
+      }
+    }
+  }
+  return bodies;
+}
+
 function commandTokens(value) {
   const source = text(value);
   const tokens = [];
@@ -75,6 +133,7 @@ function commandTokens(value) {
     current += character;
   }
   flush();
+  for (const body of substitutionBodies(source)) tokens.push(...commandTokens(body));
   return tokens;
 }
 
@@ -102,25 +161,29 @@ function gitInvocation(command) {
   return subcommand ? { subcommand, args: tokens.slice(index + 1).map(normalized) } : null;
 }
 
-function isPathLikeToken(value) {
+function pathTokenValue(value) {
   const candidate = text(value).trim();
-  const lower = candidate.toLowerCase();
-  return candidate.length > 0
-    && !candidate.startsWith("-")
-    && (candidate.includes("/") || candidate.includes("\\") || candidate.startsWith("~")
-      || /^(?:\.env(?:\.example)?|\.ssh|\.aws|credentials?(?:\.json)?|id_(?:rsa|dsa|ecdsa|ed25519)|private[_-]?key)$/iu.test(lower));
+  const path = candidate.startsWith("@") ? candidate.slice(1) : candidate;
+  const lower = path.toLowerCase();
+  return path.length > 0
+    && !path.startsWith("-")
+    && (path.includes("/") || path.includes("\\") || path.startsWith("~")
+      || /^(?:\.env(?:\.example)?|\.ssh|\.aws|credentials?(?:\.json)?|id_(?:rsa|dsa|ecdsa|ed25519)|private[_-]?key)$/iu.test(lower))
+    ? path
+    : "";
 }
 
 function optionPathValue(value) {
   const candidate = text(value).trim();
   const match = /^--?[A-Za-z][A-Za-z0-9_-]*(?:=|:)(.+)$/u.exec(candidate);
-  return match && isPathLikeToken(match[1]) ? match[1] : "";
+  return match && pathTokenValue(match[1]) ? match[1].startsWith("@") ? match[1].slice(1) : match[1] : "";
 }
 
 export function extractCandidatePaths(command) {
   const candidates = [];
   for (const token of commandTokens(command)) {
-    if (isPathLikeToken(token)) candidates.push(token);
+    const path = pathTokenValue(token);
+    if (path) candidates.push(path);
     const optionValue = optionPathValue(token);
     if (optionValue) candidates.push(optionValue);
   }
@@ -248,6 +311,7 @@ function verifiedDisposableTargets(rootValue, pathEntries) {
 function isRecursiveFlag(value) {
   const token = normalized(value);
   if (token === "/s" || token === "--recursive" || token === "--recurse" || token === "-recurse") return true;
+  if (/^-(?:recurse|r)(?::|=)(?:\$?true|1)$/u.test(token)) return true;
   return /^-[a-z]*r[a-z]*$/u.test(token);
 }
 
@@ -265,15 +329,17 @@ function recursiveErase(command, capability) {
 
 function hasRawDiskDestruction(command, capability, operation) {
   const all = `${normalized(command)} ${normalized(capability)} ${operationText(operation)}`;
-  return /(?:\b(?:format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|clear[-_ ]disk|remove[-_ ]partition)\b|\bdiskutil\s+(?:erase(?:disk|volume)|partitiondisk)\b|(?:raw|physical)[-_ ]?(?:disk|device)|(?:partition|volume)[-_ ]?(?:delete|destroy|format)|\\\\\.\\[a-z]:|>{1,2}\s*(?:\/dev\/[^\s]+|[\\/]{1,2}(?:\?\?|[.?]|device)[\\/][^\s]+))/u.test(all)
-    && !/\b(?:format|formatting)\s+(?:text|json|date|number)/u.test(all);
+  const rawDevicePath = /(?:\/dev\/[^\s"']+|[\\/]{1,2}(?:\?\?|[.?]|device)[\\/][^\s"']+)/u;
+  const rawDeviceOperation = rawDevicePath.test(all) && /(?:>{1,2}|\b(?:set-content|out-file|format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]partition)\b)/u.test(all);
+  const destructiveUtility = /(?:\b(?:format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]partition)\b|\bdiskutil\s+(?:erase(?:disk|volume)|partitiondisk|apfs\s+(?:deletevolume|resizecontainer))\b|(?:raw|physical)[-_ ]?(?:disk|device)|(?:partition|volume)[-_ ]?(?:delete|destroy|format)|\\\\\.\\[a-z]:)/u.test(all);
+  return rawDeviceOperation || destructiveUtility && !/\b(?:format|formatting)\s+(?:text|json|date|number)/u.test(all);
 }
 
 function hasForcePush(command, operation) {
   const all = `${normalized(command)} ${operationText(operation)}`;
   const invocation = gitInvocation(command);
   if (invocation?.subcommand === "push") {
-    return invocation.args.some((argument) => /^--force(?:-with-lease)?(?:=.*)?$/u.test(argument) || /^-f+$/u.test(argument) || /^\+[^:]+:[^:]+$/u.test(argument));
+    return invocation.args.some((argument) => /^--(?:force(?:-with-lease)?|mirror)(?:=.*)?$/u.test(argument) || /^-f+$/u.test(argument) || /^\+.+/u.test(argument));
   }
   return /\bforce[-_ ]?push\b/u.test(all);
 }
@@ -292,7 +358,8 @@ function hasDiscard(command, operation) {
   const invocation = gitInvocation(command);
   const forceFlag = (argument) => /^-[a-z]*f[a-z]*$/u.test(argument) || /^--force(?:=.*)?$/u.test(argument);
   const discard = invocation?.subcommand === "clean" && invocation.args.some(forceFlag)
-    || ["checkout", "restore"].includes(invocation?.subcommand) && invocation.args.some((argument) => argument === "--" || forceFlag(argument) || argument === "--discard-changes")
+    || invocation?.subcommand === "clean" && invocation.args.some((argument) => argument === "." || argument === "..")
+    || ["checkout", "restore"].includes(invocation?.subcommand) && invocation.args.some((argument) => argument === "--" || forceFlag(argument) || argument === "--discard-changes" || argument === "." || argument === "..")
     || invocation?.subcommand === "reset" && invocation.args.includes("--hard")
     || invocation?.subcommand === "stash" && ["drop", "clear"].includes(invocation.args[0]);
   return discard
@@ -326,7 +393,8 @@ function hasSecretOutput(command, capability, operation, pathEntries) {
 
 function hasGuardrailBypass(command, capability, operation) {
   const all = `${normalized(command)} ${normalized(capability)} ${operationText(operation)}`;
-  return /(?:dangerously-skip-permissions|dangerously-bypass|bypass[-_ ]?permissions|full[-_ ]?access|disable[-_ ]?(?:safety|guard|hook|deny)|skip[-_ ]?(?:safety|guard|hook|verification)|hooks?\s+(?:off|disable)|permissions?\s+(?:off|disable)|--no-verify\b|(?:approval[-_ ]policy|sandbox)\s*(?:=|\s+)\s*(?:never|danger-full-access)\b|--no-sandbox\b)/u.test(all);
+  const scan = all.replace(/["']/gu, "");
+  return /(?:dangerously-skip-permissions|dangerously-bypass|bypass[-_ ]?permissions|full[-_ ]?access|disable[-_ ]?(?:safety|guard|hook|deny)|skip[-_ ]?(?:safety|guard|hook|verification)|hooks?\s+(?:off|disable)|permissions?\s+(?:off|disable)|--no-verify\b|(?:approval[-_ ]policy|sandbox)\s*(?:=|\s+)\s*(?:never|danger-full-access)\b|--no-sandbox\b)/u.test(scan);
 }
 
 function ruleIds(policy) {

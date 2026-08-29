@@ -218,12 +218,12 @@
     },
     {
       "relativePath": "hooks/emergency-guard.mjs",
-      "sha256": "afd73f64b4f3845f72bffc429f63066215bb00bea9d70b6bc0abe7c204f5901c",
+      "sha256": "58b59e3d2715e52d9e28243dc540138ba642baec1fcf43ac63c0eeb4b0a5ca84",
       "mode": 493
     },
     {
       "relativePath": "hooks/emergency-policy.mjs",
-      "sha256": "c7525721206c46d0e80f7b391a1bef2d8a9a958d14cc7b2699fcbe6f9ba90490",
+      "sha256": "b9fe1760b69a1e877cda47403b619e2c4c5615cb45c0885ac7b1b870bad089c4",
       "mode": 493
     },
     {
@@ -412,11 +412,11 @@
     },
     {
       "relativePath": "hooks/emergency-guard.mjs",
-      "sha256": "afd73f64b4f3845f72bffc429f63066215bb00bea9d70b6bc0abe7c204f5901c"
+      "sha256": "58b59e3d2715e52d9e28243dc540138ba642baec1fcf43ac63c0eeb4b0a5ca84"
     },
     {
       "relativePath": "hooks/emergency-policy.mjs",
-      "sha256": "c7525721206c46d0e80f7b391a1bef2d8a9a958d14cc7b2699fcbe6f9ba90490"
+      "sha256": "b9fe1760b69a1e877cda47403b619e2c4c5615cb45c0885ac7b1b870bad089c4"
     },
     {
       "relativePath": "hooks/hooks.json",

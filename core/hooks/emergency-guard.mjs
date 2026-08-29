@@ -9,6 +9,16 @@ const NATIVE_FIELDS = Object.freeze(["hook_event_name", "tool_name", "tool_input
 const COMMAND_TOOLS = new Set(["bash", "powershell", "shell", "run_command"]);
 const READ_TOOLS = new Set(["read", "read_file", "view_file"]);
 const WRITE_TOOLS = new Set(["write", "write_file", "edit", "replace_file_content", "multi_replace_file_content", "delete", "delete_file"]);
+const CANONICAL_REASONS = Object.freeze({
+  "filesystem-root-erasure": "Denied: broad or unresolved filesystem erasure is an emergency action.",
+  "raw-disk-destruction": "Denied: raw-disk or partition destruction is an emergency action.",
+  "git-force-push": "Denied: force-push would rewrite shared Git history.",
+  "git-history-rewrite": "Denied: destructive Git history rewriting is an emergency action.",
+  "git-discard-uncommitted": "Denied: this operation can discard uncommitted user work.",
+  "secret-credential-access": "Denied: credential or secret-store access is an emergency action.",
+  "secret-output-or-transmission": "Denied: secret output or transmission is an emergency action.",
+  "guardrail-bypass": "Denied: disabling or bypassing safety guardrails is an emergency action."
+});
 
 function isPlainObject(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -74,12 +84,13 @@ export function normalizeNativeRequest(surface, request) {
 }
 
 export function buildNativeDecision(surface, classification) {
-  if (!AUTOMATIC_SURFACES.has(surface) || !isPlainObject(classification) || classification.decision !== "deny" || typeof classification.reason !== "string" || [...classification.reason].length > 160 || /[\u0000-\u001f\u007f]/u.test(classification.reason)) return {};
+  const reason = isPlainObject(classification) && Object.hasOwn(CANONICAL_REASONS, classification.ruleId) ? CANONICAL_REASONS[classification.ruleId] : "";
+  if (!AUTOMATIC_SURFACES.has(surface) || !isPlainObject(classification) || classification.decision !== "deny" || !reason) return {};
   return {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: "deny",
-      permissionDecisionReason: classification.reason
+      permissionDecisionReason: reason
     }
   };
 }

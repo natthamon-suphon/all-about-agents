@@ -5,7 +5,7 @@ import agyEmergencyTemplate from "./templates/hooks/emergency-guard.json" with {
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, roleCapabilities, SEMANTIC_CAPABILITIES, isRoleReadOnly } from "../../core/roles/contract.mjs";
-import { classifyEmergencyAction } from "../../installers/lib/emergency-policy.mjs";
+import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency-policy.mjs";
 
 const SURFACE = "agy";
 const PLUGIN_ROOT = "";
@@ -421,7 +421,8 @@ export function normalizeAgyEmergencyRequest(request) {
 }
 
 export function mapAgyEmergencyDecision(classification) {
-  return classification?.decision === "deny" ? { decision: "deny", reason: classification.reason } : {};
+  const reason = classification?.decision === "deny" && Object.hasOwn(REASONS, classification.ruleId) ? REASONS[classification.ruleId] : "";
+  return reason ? { decision: "deny", reason } : {};
 }
 
 export function classifyAgyEmergencyRequest(request) {

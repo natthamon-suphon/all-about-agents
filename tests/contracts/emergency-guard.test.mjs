@@ -175,6 +175,20 @@ test("all emergency fixtures agree across canonical and four documented adapter 
   }
 });
 
+test("native decision mappers derive bounded reasons from canonical rule IDs", () => {
+  const forged = { decision: "deny", ruleId: "git-force-push", reason: "attacker-controlled secret path" };
+  const expectedReason = "Denied: force-push would rewrite shared Git history.";
+  assert.equal(buildNativeDecision("claude", forged).hookSpecificOutput.permissionDecisionReason, expectedReason);
+  assert.equal(buildNativeDecision("codex", forged).hookSpecificOutput.permissionDecisionReason, expectedReason);
+  assert.deepEqual(mapAntigravityEmergencyDecision(forged), { decision: "deny", reason: expectedReason });
+  assert.deepEqual(mapAgyEmergencyDecision(forged), { decision: "deny", reason: expectedReason });
+  const unknown = { decision: "deny", ruleId: "unrecognized-rule", reason: "arbitrary" };
+  assert.deepEqual(buildNativeDecision("claude", unknown), {});
+  assert.deepEqual(buildNativeDecision("codex", unknown), {});
+  assert.deepEqual(mapAntigravityEmergencyDecision(unknown), {});
+  assert.deepEqual(mapAgyEmergencyDecision(unknown), {});
+});
+
 test("emergency policy remains bounded and total for hostile path data", () => {
   const hostile = [
     `rm -rf "/tmp/quoted ${String.fromCodePoint(0x1f680)}"`,
