@@ -15,12 +15,13 @@ const INTENT_SIGNALS = Object.freeze({
   "security-reviewer": Object.freeze([/\b(?:threat|secret)\b.*\buntrusted\s+input\b/iu, /\bprivilege\s+(?:elevation|risk)\b.*\b(?:destructive|containment)\b/iu, /\bstride\s+threats?\b/iu, /\bsecurity\s+containment\b.*\bprivilege\b/iu])
 });
 
-const NEGATION_BEFORE_SIGNAL = /\b(?:do\s+not|don't|dont|never|without|not|no)\b(?:\s+[a-z0-9'-]+){0,4}\s*$/iu;
+const NEGATION_CUE = /\b(?:do\s+not|don't|dont|never|no(?:\s+(?:need|reason|intention|desire))?|without|not)\b/iu;
 
 function hasUnnegatedSignal(text, signal) {
   const match = signal.exec(text);
   if (!match) return false;
-  return !NEGATION_BEFORE_SIGNAL.test(text.slice(0, match.index));
+  const clauseBeforeSignal = text.slice(0, match.index).split(/[.!?;:]/u).at(-1) || "";
+  return !NEGATION_CUE.test(clauseBeforeSignal);
 }
 
 function containsKeyword(text, keyword) {

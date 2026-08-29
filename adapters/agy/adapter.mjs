@@ -470,7 +470,7 @@ function nativeAcceptance(platform) {
     productVersion: "unknown",
     executablePath: "unknown",
     platform,
-    reason: "agy is not on PATH for this repository run; no native executable was invoked.",
+    reason: "Native acceptance was not run for this repository render; no native executable was invoked.",
     manualSequence: ["agy --help", "agy models", "agy agents", "agy plugin list"],
     disposablePackageInstall: "agy plugin install PACKAGE_DIRECTORY",
     manualOnly: true
@@ -523,7 +523,7 @@ export function renderAgy(input = {}) {
     {
       code: "agy-native-not-run",
       severity: "warning",
-      message: "agy is not on PATH for this repository run; native acceptance is not run and must be performed manually.",
+      message: "Native acceptance was not run for this repository render and must be performed manually; no native executable was invoked.",
       sourcePath: "research-agy-2.md"
     },
     {

@@ -249,7 +249,8 @@ test("native acceptance is not run and records exact later manual sequence", asy
   assert.equal(acceptance.productVersion, "unknown");
   assert.equal(acceptance.executablePath, "unknown");
   assert.equal(acceptance.platform, "unknown");
-  assert.match(acceptance.reason, /agy.*not on PATH|agy.*absent.*PATH/iu);
+  assert.equal(acceptance.reason, "Native acceptance was not run for this repository render; no native executable was invoked.");
+  assert.doesNotMatch(acceptance.reason, /not on PATH|absent.*PATH/iu);
   assert.deepEqual(acceptance.manualSequence, ["agy --help", "agy models", "agy agents", "agy plugin list"]);
   assert.equal(acceptance.disposablePackageInstall, "agy plugin install PACKAGE_DIRECTORY");
   const rendered = resultFor().registrations.find((entry) => entry.kind === "native-acceptance");

@@ -168,7 +168,7 @@
     "productVersion": "unknown",
     "executablePath": "unknown",
     "platform": "unknown",
-    "reason": "agy is not on PATH for this repository run; no native executable was invoked.",
+    "reason": "Native acceptance was not run for this repository render; no native executable was invoked.",
     "manualSequence": [
       "agy --help",
       "agy models",

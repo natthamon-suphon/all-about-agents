@@ -365,7 +365,7 @@
       "productVersion": "unknown",
       "executablePath": "unknown",
       "platform": "win32",
-      "reason": "agy is not on PATH for this repository run; no native executable was invoked.",
+      "reason": "Native acceptance was not run for this repository render; no native executable was invoked.",
       "manualSequence": [
         "agy --help",
         "agy models",
@@ -380,7 +380,7 @@
     {
       "code": "agy-native-not-run",
       "severity": "warning",
-      "message": "agy is not on PATH for this repository run; native acceptance is not run and must be performed manually.",
+      "message": "Native acceptance was not run for this repository render and must be performed manually; no native executable was invoked.",
       "sourcePath": "research-agy-2.md"
     },
     {

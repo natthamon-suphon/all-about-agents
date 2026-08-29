@@ -9,6 +9,19 @@ export const CANONICAL_ROLE_IDS = Object.freeze([
   "security-reviewer"
 ]);
 
+// Role capabilities are an allowlist at the native boundary. Keep this table
+// aligned with each role.json; adapters must not infer extra powers from a
+// capability that happens to be valid for another canonical role.
+export const CANONICAL_ROLE_CAPABILITIES = Object.freeze({
+  researcher: Object.freeze(["external-research", "web-primary-sources", "repository-read"]),
+  investigator: Object.freeze(["repository-read", "filesystem-read", "evaluation"]),
+  architect: Object.freeze(["repository-read", "evaluation", "schema-validation"]),
+  implementer: Object.freeze(["repository-read", "repository-write", "isolated-write", "command-execution", "test-execution"]),
+  verifier: Object.freeze(["repository-read", "test-execution", "evaluation"]),
+  reviewer: Object.freeze(["repository-read", "evaluation", "schema-validation"]),
+  "security-reviewer": Object.freeze(["repository-read", "evaluation", "schema-validation"])
+});
+
 export const WRITE_SEMANTIC_CAPABILITIES = Object.freeze([
   "repository-write",
   "filesystem-write",
@@ -46,7 +59,9 @@ const WRITE_CAPABILITY_SET = new Set(WRITE_SEMANTIC_CAPABILITIES);
 const SEMANTIC_CAPABILITY_SET = new Set(SEMANTIC_CAPABILITIES);
 const PRIVILEGED_CAPABILITY_SET = new Set(PRIVILEGED_SEMANTIC_CAPABILITIES);
 const IMPLEMENTER_SCOPE_OPERATIONS = new Set(["create", "modify", "delete"]);
-const PROMPT_NATIVE_INSTRUCTION_PATTERN = /(?:\b(?:use|invoke|call|run|execute|launch)\s+(?:bash|git\s+bash|powershell|pwsh|edit|write|agent|subagent|run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|define_subagent|manage_subagents)\b|\b(?:bash|git\s+bash|powershell|pwsh|agent|subagent)\s+(?:tool|command|shell)\b|\b(?:git\s+bash|powershell|pwsh)\b|\b(?:claude\s+)?(?:edit|write)\s+tools?\b|`(?:bash|powershell|pwsh|edit|write|agent|subagent|run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|define_subagent|manage_subagents)`|\b(?:run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|define_subagent|manage_subagents)\b)/iu;
+const PROMPT_NATIVE_INSTRUCTION_PATTERN = /(?:\b(?:use|invoke|call|run|execute|launch)\s+(?:bash|git\s+bash|powershell|pwsh|edit|write|agent|subagent|view_file|shell|run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|define_subagent|manage_subagents)\b|\b(?:bash|git\s+bash|powershell|pwsh|agent|subagent|read|websearch|view_file|shell|skill)\s+tool\b|\b(?:git\s+bash|powershell|pwsh|view_file)\b|\b(?:claude\s+)?(?:edit|write)\s+tools?\b|`(?:bash|powershell|pwsh|edit|write|agent|subagent|read|websearch|view_file|shell|skill|run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|define_subagent|manage_subagents)`|\b(?:run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|define_subagent|manage_subagents)\b)/iu;
+const PROMPT_EXPLICIT_NATIVE_TOOL_PATTERN = /(?:\b(?:[Uu]se|[Ii]nvoke|[Cc]all|[Rr]un|[Ee]xecute|[Ll]aunch)\s+(?:Read|WebSearch|Skill)\b|\b(?:Read|WebSearch|Skill)\s+(?:tool|command|shell)\b|`(?:Read|WebSearch|Skill)`)/u;
+const PROMPT_CONTROL_PATTERN = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u;
 
 /** Keep mutation scopes portable and unambiguous at every native boundary. */
 export function isValidMutationScopePath(scopePath) {
@@ -65,7 +80,11 @@ export function isValidMutationScopeOperation(operation) {
 }
 
 export function isSafePortableRolePrompt(prompt) {
-  return typeof prompt === "string" && !PROMPT_NATIVE_INSTRUCTION_PATTERN.test(prompt);
+  return typeof prompt === "string" && !PROMPT_NATIVE_INSTRUCTION_PATTERN.test(prompt) && !PROMPT_EXPLICIT_NATIVE_TOOL_PATTERN.test(prompt);
+}
+
+export function isValidPortableRolePrompt(prompt) {
+  return typeof prompt === "string" && !/^---\s*$/mu.test(prompt) && !PROMPT_CONTROL_PATTERN.test(prompt);
 }
 
 export function isCanonicalRoleId(value) {
@@ -113,6 +132,24 @@ export function roleCapabilities(role) {
   ])];
 }
 
+export function canonicalRoleCapabilityErrors(role, path = "") {
+  const expected = CANONICAL_ROLE_CAPABILITIES[role?.id];
+  if (!expected) return [];
+  const declared = roleCapabilities(role);
+  const errors = declared
+    .filter((capability) => !expected.includes(capability))
+    .map((capability) => ({
+      code: WRITE_CAPABILITY_SET.has(capability)
+        ? "mutation-scope"
+        : PRIVILEGED_CAPABILITY_SET.has(capability)
+          ? "privileged-capability"
+          : "role-capability",
+      path: `${path}/capabilities`,
+      message: `canonical role ${role.id} cannot declare capability ${String(capability)}`
+    }));
+  return errors;
+}
+
 function contractError(errors, message = "Canonical role contract validation failed") {
   if (errors.length === 0) return;
   const error = new Error(message);
@@ -132,8 +169,11 @@ export function assertNativeRoleRecords(roles) {
         errors.push({ code: "semantic-capability", path: `${path}/capabilities`, message: `unknown semantic capability ${String(capability)}` });
       }
     }
+    errors.push(...canonicalRoleCapabilityErrors(role, path));
     if (typeof role.prompt !== "string" || role.prompt.trim().length === 0) {
       errors.push({ code: "prompt", path: `${path}/prompt`, message: "canonical role requires a non-empty prompt" });
+    } else if (!isValidPortableRolePrompt(role.prompt)) {
+      errors.push({ code: "prompt-format", path: `${path}/prompt`, message: "portable role prompt must be a body document without frontmatter or control characters" });
     } else if (!isSafePortableRolePrompt(role.prompt)) {
       errors.push({ code: "prompt-safety", path: `${path}/prompt`, message: "portable role prompts cannot invoke vendor-native mutable or command tools" });
     }
@@ -170,6 +210,11 @@ export function assertNativeRoleSemantics(roles) {
     if (!isCanonicalRoleId(role?.id)) continue;
     const path = `/roles/${index}`;
     const capabilities = roleCapabilities(role);
+    const expectedCapabilities = CANONICAL_ROLE_CAPABILITIES[role.id] || [];
+    const missingCapabilities = expectedCapabilities.filter((capability) => !capabilities.includes(capability));
+    for (const capability of missingCapabilities) {
+      errors.push({ code: "role-capability", path: `${path}/capabilities`, message: `canonical role ${role.id} must declare capability ${capability}` });
+    }
     const privilegedCapabilities = capabilities.filter((capability) => PRIVILEGED_CAPABILITY_SET.has(capability));
     if (privilegedCapabilities.length > 0) {
       errors.push({ code: "privileged-capability", path: `${path}/capabilities`, message: `canonical role cannot declare privileged capability ${privilegedCapabilities.join(", ")}` });

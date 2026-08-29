@@ -2,7 +2,7 @@ import { lstat, readFile, readdir, realpath, stat } from "node:fs/promises";
 import { dirname, extname, posix, relative, resolve, sep, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateSchema } from "./validate-schema.mjs";
-import { CANONICAL_ROLE_IDS, isSafePortableRolePrompt, isValidMutationScopeOperation, isValidMutationScopePath, PRIVILEGED_SEMANTIC_CAPABILITIES, SEMANTIC_CAPABILITIES, WRITE_SEMANTIC_CAPABILITIES } from "../../core/roles/contract.mjs";
+import { CANONICAL_ROLE_IDS, canonicalRoleCapabilityErrors, isSafePortableRolePrompt, isValidMutationScopeOperation, isValidMutationScopePath, PRIVILEGED_SEMANTIC_CAPABILITIES, SEMANTIC_CAPABILITIES, WRITE_SEMANTIC_CAPABILITIES } from "../../core/roles/contract.mjs";
 
 export { SEMANTIC_CAPABILITIES };
 
@@ -381,6 +381,14 @@ function roleContractErrors(entries, requireCanonical = false) {
       ...(Array.isArray(role.requiredCapabilities) ? role.requiredCapabilities : []),
       ...(Array.isArray(role.allowedCapabilities) ? role.allowedCapabilities : [])
     ];
+    for (const capabilityError of canonicalRoleCapabilityErrors(role)) {
+      const keyword = capabilityError.code === "mutation-scope"
+        ? "mutationScope"
+        : capabilityError.code === "privileged-capability"
+          ? "privilegedCapability"
+          : "roleCapability";
+      errors.push(errorRecord(sourcePath, capabilityError.path, keyword, capabilityError.message));
+    }
     const privilegedCapabilities = capabilities.filter((capability) => PRIVILEGED_SEMANTIC_CAPABILITIES.includes(capability));
     if (privilegedCapabilities.length > 0) {
       errors.push(errorRecord(sourcePath, "/capabilities", "privilegedCapability", `canonical role cannot declare privileged capability ${privilegedCapabilities.join(", ")}`));
@@ -530,7 +538,8 @@ async function mutationScopeContainmentErrors(repositoryRoot, entries) {
           errors.push(errorRecord(entry.sourcePath, `/mutationScope/paths/${index}`, "mutationScopeContainment", "mutation scope resolves outside the repository root"));
           continue;
         }
-        if (scopePath.replaceAll("\\", "/").endsWith("/**") && await pathExists(targetPath)) {
+        const recursiveScope = scopePath === "workspace" || scopePath.replaceAll("\\", "/").endsWith("/**");
+        if (recursiveScope && await pathExists(targetPath)) {
           errors.push(...await descendantContainmentErrors(rootRealpath, targetPath, entry, index));
         }
       } catch (error) {

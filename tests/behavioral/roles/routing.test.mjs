@@ -91,7 +91,10 @@ test("production router ignores explicitly negated role-intent signals", async (
     "Never apply the test-first vertical slice.",
     "Do not check privilege elevation and destructive-operation containment.",
     "Don't find the current official API specification.",
-    "Do not trace this failing stack."
+    "Do not trace this failing stack.",
+    "Never, ever apply the test-first vertical slice.",
+    "No need to run a fresh black-box check; just summarize the issue.",
+    "I do not want you to review the diff against the specification."
   ]) {
     const result = routeRole({ prompt, roles: core.roles });
     assert.equal(result.status, "no-route", prompt);
