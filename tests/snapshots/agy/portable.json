@@ -399,7 +399,7 @@
     }
   ],
   "contentHashes": {
-    "README.md": "79e7d737fb000ad12637447ca54f92d2761f6d528a9ac7a254a574e49d8002b8",
+    "README.md": "5f304e31c0df7cffef43801efbe3ffa07055c2b9009625de4ada091ff4b25afb",
     "agents/architect/agent.md": "c1b35ce562fd8121ff0def1f93cbb8c84e9837b8aa7c22a52b3871c2d06bb9fd",
     "agents/implementer/agent.md": "34ce4cd033c58d11257dd940833b02508402aa0662c4d0c3d02d80c01ae863d4",
     "agents/investigator/agent.md": "06bcdfe3b8bd204152ab77f8fce3ef86091e1c821965199112a3243a5b2567b7",
@@ -418,7 +418,7 @@
     "rules/hook-contract.md": "340dc390540dd0fa3bdb0fe0f154f75386d95f0a6ae78794fc77026f5efcc89d",
     "rules/implementation-quality.md": "b680c552b63c1b11ae103f96a439e1acceb09ba2deebb728bc5e08bf5177ce15",
     "rules/long-task-state.md": "62d1c22e14fa00a01136894dad2336e1d3c059b104e3e64eeb2d66bd3755b2af",
-    "rules/model-selection.md": "b912871a6560c1003a0548a782875844ef65f851bd9fe738046eafe6b354e79f",
+    "rules/model-selection.md": "3d8c70244e3baa1b47b9b30d3de52787eec77a41b2219cba7951e6145995c245",
     "rules/multi-agent-ownership.md": "b346e37ce93910abc0a4a967190502b223d0ec249095988bf3b42ce14e09c2d5",
     "rules/permission-safety.md": "4890141c44ace9e7e28de994b69589ffdddfd8ba990ab201738a3503674ff85d",
     "rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",
@@ -456,7 +456,7 @@
   "ownership": [
     {
       "relativePath": "README.md",
-      "sha256": "79e7d737fb000ad12637447ca54f92d2761f6d528a9ac7a254a574e49d8002b8"
+      "sha256": "5f304e31c0df7cffef43801efbe3ffa07055c2b9009625de4ada091ff4b25afb"
     },
     {
       "relativePath": "agents/architect/agent.md",
@@ -532,7 +532,7 @@
     },
     {
       "relativePath": "rules/model-selection.md",
-      "sha256": "b912871a6560c1003a0548a782875844ef65f851bd9fe738046eafe6b354e79f"
+      "sha256": "3d8c70244e3baa1b47b9b30d3de52787eec77a41b2219cba7951e6145995c245"
     },
     {
       "relativePath": "rules/multi-agent-ownership.md",

@@ -162,6 +162,18 @@ test("agy model and permission operations use the exact documented CLI controls"
   }
 });
 
+test("agy generated model docs use a shell-neutral argv representation", () => {
+  const files = fileMap(resultFor());
+  for (const path of ["README.md", "rules/model-selection.md"]) {
+    const body = files.get(path);
+    assert.doesNotMatch(body, /(?:^|\s)agy\s+-p\s+[^\n]*/mu, `${path} emitted a shell-form agy -p command`);
+    assert.doesNotMatch(body, /<prompt>/u, `${path} emitted the placeholder in prose`);
+    assert.match(body, /\[\s*"agy",\s*"-p",\s*"PROMPT_TEXT",\s*"--model",\s*"gemini-3\.7-flash-high",\s*"--effort",\s*"high"\s*\]/su);
+    assert.match(body, /process argv|spawn/iu);
+    assert.match(body, /agy models/u);
+  }
+});
+
 test("agy headless operation is an argument vector that preserves arbitrary prompt bytes", () => {
   const prompt = `Say "hi" with spaces, an apostrophe ' and a backslash ${String.fromCharCode(92)}`;
   assert.deepEqual(adapter.buildHeadlessArgs({ prompt }), [
