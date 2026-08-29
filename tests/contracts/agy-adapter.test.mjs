@@ -123,15 +123,36 @@ test("agy settings overlays use only documented sparse keys and preserve emergen
   assert.equal(template.artifactReviewPolicy, "always-proceed");
 });
 
-test("agy model and permission operations use the exact documented CLI controls", () => {
+test("agy settings registration names only the documented CLI destination", async () => {
+  const rendered = resultFor();
+  const registration = rendered.registrations.find((entry) => entry.kind === "settings-overlay");
+  assert.deepEqual(registration.destinationCandidates, ["~/.gemini/antigravity-cli/settings.json"]);
+  assert.equal(registration.status, "manual-discovery-required");
+  assert.match(registration.reason, /unknown|version-sensitive/iu);
+  assert.doesNotMatch(JSON.stringify(rendered), /~\/\.gemini\/config\/config\.json/u);
+
+  const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/agy.json"), "utf8"));
+  assert.deepEqual(manifest.settingsOverlay.destinationCandidates, ["~/.gemini/antigravity-cli/settings.json"]);
+  assert.doesNotMatch(JSON.stringify(manifest), /~\/\.gemini\/config\/config\.json/u);
+  assert.doesNotMatch(JSON.stringify(manifest), /~\/\.gemini\/antigravity\//u);
+  assert.equal(manifest.settingsOverlay.automaticWrite, false);
+});
+
+test("agy model and permission operations use the exact documented CLI controls", async () => {
   const result = resultFor("template");
   const files = fileMap(result);
   const model = result.registrations.find((entry) => entry.kind === "model-selection");
   const fullAccess = result.registrations.find((entry) => entry.kind === "full-access-per-run");
   assert.equal(model.model, "gemini-3.7-flash-high");
   assert.equal(model.effort, "high");
-  assert.equal(model.command, "agy -p \"<prompt>\" --model gemini-3.7-flash-high --effort high");
-  assert.equal(fullAccess.command, "agy -p \"<prompt>\" --model gemini-3.7-flash-high --effort high --dangerously-skip-permissions");
+  assert.deepEqual(model.args, ["agy", "-p", "<prompt>", "--model", "gemini-3.7-flash-high", "--effort", "high"]);
+  assert.deepEqual(fullAccess.args, ["agy", "-p", "<prompt>", "--model", "gemini-3.7-flash-high", "--effort", "high", "--dangerously-skip-permissions"]);
+  assert.equal(Object.hasOwn(model, "command"), false);
+  assert.equal(Object.hasOwn(fullAccess, "command"), false);
+  const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/agy.json"), "utf8"));
+  assert.deepEqual(manifest.modelPolicy.args, model.args);
+  assert.deepEqual(manifest.profiles.template.fullAccessArgs, fullAccess.args);
+  assert.equal(Object.hasOwn(manifest.profiles.template, "fullAccessPerRun"), false);
   assert.match(files.get("rules/permission-safety.md"), /toolPermission: always-proceed/u);
   assert.match(files.get("rules/permission-safety.md"), /Deny has precedence over Ask and Allow/u);
   assert.match(files.get("rules/permission-safety.md"), /--dangerously-skip-permissions/u);
@@ -139,6 +160,20 @@ test("agy model and permission operations use the exact documented CLI controls"
   for (const forbidden of ["--thinking", "--reasoning-effort", "--dry-run", "--mode=accept-edits", "modelKey", "model_key"]) {
     assert.equal(serialized.includes(forbidden), false, `forbidden agy term emitted: ${forbidden}`);
   }
+});
+
+test("agy headless operation is an argument vector that preserves arbitrary prompt bytes", () => {
+  const prompt = `Say "hi" with spaces, an apostrophe ' and a backslash ${String.fromCharCode(92)}`;
+  assert.deepEqual(adapter.buildHeadlessArgs({ prompt }), [
+    "agy",
+    "-p",
+    prompt,
+    "--model",
+    "gemini-3.7-flash-high",
+    "--effort",
+    "high"
+  ]);
+  assert.deepEqual(adapter.buildHeadlessArgs({ prompt, dangerouslySkipPermissions: true }).slice(-1), ["--dangerously-skip-permissions"]);
 });
 
 test("agy rejects forbidden terms after decoding generated file bodies", () => {
@@ -161,7 +196,7 @@ test("unknown model selection fails with discovery and explicit retry guidance",
   assert.match(diagnostic.message, /agy models/u);
   assert.match(diagnostic.message, /exact listed slug/u);
   assert.match(diagnostic.message, /No silent model substitution/u);
-  assert.throws(() => adapter.buildHeadlessCommand({ model: "unknown-model" }), /agy models/u);
+  assert.throws(() => adapter.buildHeadlessArgs({ model: "unknown-model" }), /agy models/u);
   assert.equal(adapter.diagnoseModelSelection({ requested: "gemini-3.7-flash-high", availableModels: ["gemini-3.7-flash-high"] }).status, "ready");
 });
 

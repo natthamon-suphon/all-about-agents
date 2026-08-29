@@ -6,6 +6,7 @@ import { renderSurface as validateSurface, validateRenderResult } from "../share
 const SURFACE = "agy";
 const PLUGIN_ROOT = "";
 const PLUGIN_NAME = "all-about-agents";
+export const AGY_DOCUMENTED_SETTINGS_DESTINATION = "~/.gemini/antigravity-cli/settings.json";
 
 const ACTION_IDS = Object.freeze([
   "aaa:design",
@@ -352,7 +353,7 @@ function renderSettingsRule() {
     "# agy settings overlay",
     "",
     "settings.overlay.json contains only the sparse keys documented by the current CLI settings and permission references.",
-    "Its destination and active merge behavior remain version-sensitive because the public sources conflict on shared and CLI-specific roots.",
+    `The only documented CLI destination candidate is \`${AGY_DOCUMENTED_SETTINGS_DESTINATION}\`. Shared configuration roots and the active merge behavior remain version-sensitive because the public sources conflict.`,
     "Review the overlay manually after discovery; this adapter does not stage, merge, replace, or write a persistent settings file.",
     ""
   ].join("\n"));
@@ -376,13 +377,15 @@ function renderPackageReadme() {
     "",
     "After model discovery, use the exact requested selection only if the installed CLI lists it:",
     "",
+    "The authoritative headless operation is the argument vector in the model registration; pass each item as a separate process argument. No generic cross-platform shell command string is emitted.",
+    "",
     "    agy -p \"<prompt>\" --model gemini-3.7-flash-high --effort high",
     "",
     "If the requested slug is unavailable, stop, inspect `agy models`, and retry only with an exact operator-selected slug or with the model option omitted. Never substitute a model automatically.",
     "",
     "For one explicitly approved full-access run, append `--dangerously-skip-permissions` manually. Emergency denies remain higher priority, and no execution mode is a permission bypass.",
     "",
-    "The settings overlay is intentionally sparse and manual. Runtime version, active path/layout, entitlement, agent tool vocabulary, and native acceptance are unknown until the operator performs discovery.",
+    `The settings overlay is intentionally sparse and manual. The only documented CLI destination candidate is \`${AGY_DOCUMENTED_SETTINGS_DESTINATION}\`; shared configuration paths, runtime version, active layout, entitlement, agent tool vocabulary, and native acceptance remain unknown until the operator performs discovery.`,
     ""
   ].join("\n"));
 }
@@ -436,23 +439,29 @@ export function diagnoseModelSelection({ requested = AGY_MODEL_POLICY.model, ava
   return { status: "ready", model: requested, effort: AGY_MODEL_POLICY.effort };
 }
 
-/** Build only the documented headless invocation for the pinned operator choice. */
-export function buildHeadlessCommand({ prompt = "<prompt>", model = AGY_MODEL_POLICY.model, effort = AGY_MODEL_POLICY.effort, dangerouslySkipPermissions = false } = {}) {
+/**
+ * Build the authoritative cross-platform agy argv vector.
+ *
+ * Each item is one process argument; no shell quoting or shell-specific
+ * command string is emitted. Operators invoking a shell must pass these items
+ * through that shell's native argv mechanism.
+ */
+export function buildHeadlessArgs({ prompt = "<prompt>", model = AGY_MODEL_POLICY.model, effort = AGY_MODEL_POLICY.effort, dangerouslySkipPermissions = false } = {}) {
   if (typeof prompt !== "string" || prompt.length === 0) throw new TypeError("prompt must be a non-empty string");
   if (model !== AGY_MODEL_POLICY.model || effort !== AGY_MODEL_POLICY.effort) {
     const diagnostic = diagnoseModelSelection({ requested: model });
     throw new TypeError(diagnostic.message);
   }
-  return [
+  return Object.freeze([
     "agy",
     "-p",
-    JSON.stringify(prompt),
+    prompt,
     "--model",
     AGY_MODEL_POLICY.model,
     "--effort",
     AGY_MODEL_POLICY.effort,
     ...(dangerouslySkipPermissions ? ["--dangerously-skip-permissions"] : [])
-  ].join(" ");
+  ]);
 }
 
 function nativeAcceptance(platform) {
@@ -579,14 +588,14 @@ export function renderAgy(input = {}) {
         surface: SURFACE,
         model: AGY_MODEL_POLICY.model,
         effort: AGY_MODEL_POLICY.effort,
-        command: buildHeadlessCommand(),
+        args: buildHeadlessArgs(),
         manualOnly: true,
         fallback: "Run agy models and retry with an exact listed slug or omit --model; no silent model substitution."
       },
       {
         kind: "full-access-per-run",
         surface: SURFACE,
-        command: buildHeadlessCommand({ dangerouslySkipPermissions: true }),
+        args: buildHeadlessArgs({ dangerouslySkipPermissions: true }),
         permission: "toolPermission: always-proceed",
         manualOnly: true,
         emergencyDeny: [...EMERGENCY_DENIES]
@@ -598,7 +607,9 @@ export function renderAgy(input = {}) {
         profile,
         manualOnly: true,
         automaticWrite: false,
-        destinationCandidates: ["~/.gemini/antigravity-cli/settings.json", "~/.gemini/config/config.json"]
+        status: "manual-discovery-required",
+        reason: "Shared settings roots, complete schema, and active merge behavior remain unknown or version-sensitive; only the documented CLI candidate is emitted.",
+        destinationCandidates: [AGY_DOCUMENTED_SETTINGS_DESTINATION]
       },
       {
         kind: "hook-contract",

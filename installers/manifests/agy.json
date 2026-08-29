@@ -29,8 +29,7 @@
       "permissions.deny"
     ],
     "destinationCandidates": [
-      "~/.gemini/antigravity-cli/settings.json",
-      "~/.gemini/config/config.json"
+      "~/.gemini/antigravity-cli/settings.json"
     ],
     "status": "manual-discovery-required",
     "automaticWrite": false,
@@ -60,12 +59,30 @@
         "write_file(.git/)",
         "write_file(/home/user/.ssh)"
       ],
-      "fullAccessPerRun": "agy -p \"<prompt>\" --model gemini-3.7-flash-high --effort high --dangerously-skip-permissions"
+      "fullAccessArgs": [
+        "agy",
+        "-p",
+        "<prompt>",
+        "--model",
+        "gemini-3.7-flash-high",
+        "--effort",
+        "high",
+        "--dangerously-skip-permissions"
+      ]
     }
   },
   "modelPolicy": {
     "model": "gemini-3.7-flash-high",
     "effort": "high",
+    "args": [
+      "agy",
+      "-p",
+      "<prompt>",
+      "--model",
+      "gemini-3.7-flash-high",
+      "--effort",
+      "high"
+    ],
     "selection": "manual after agy models",
     "unknownSelection": "Fail, run agy models, then retry with an exact operator-selected slug or omit --model; never substitute silently."
   },

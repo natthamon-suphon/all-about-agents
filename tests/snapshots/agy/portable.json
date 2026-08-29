@@ -88,14 +88,31 @@
       "surface": "agy",
       "model": "gemini-3.7-flash-high",
       "effort": "high",
-      "command": "agy -p \"<prompt>\" --model gemini-3.7-flash-high --effort high",
+      "args": [
+        "agy",
+        "-p",
+        "<prompt>",
+        "--model",
+        "gemini-3.7-flash-high",
+        "--effort",
+        "high"
+      ],
       "manualOnly": true,
       "fallback": "Run agy models and retry with an exact listed slug or omit --model; no silent model substitution."
     },
     {
       "kind": "full-access-per-run",
       "surface": "agy",
-      "command": "agy -p \"<prompt>\" --model gemini-3.7-flash-high --effort high --dangerously-skip-permissions",
+      "args": [
+        "agy",
+        "-p",
+        "<prompt>",
+        "--model",
+        "gemini-3.7-flash-high",
+        "--effort",
+        "high",
+        "--dangerously-skip-permissions"
+      ],
       "permission": "toolPermission: always-proceed",
       "manualOnly": true,
       "emergencyDeny": [
@@ -112,9 +129,10 @@
       "profile": "portable",
       "manualOnly": true,
       "automaticWrite": false,
+      "status": "manual-discovery-required",
+      "reason": "Shared settings roots, complete schema, and active merge behavior remain unknown or version-sensitive; only the documented CLI candidate is emitted.",
       "destinationCandidates": [
-        "~/.gemini/antigravity-cli/settings.json",
-        "~/.gemini/config/config.json"
+        "~/.gemini/antigravity-cli/settings.json"
       ]
     },
     {
@@ -381,7 +399,7 @@
     }
   ],
   "contentHashes": {
-    "README.md": "9cbad6cf3cb0ca73b5105b9844cc58bc596178017537fa272d14267db36cad8d",
+    "README.md": "79e7d737fb000ad12637447ca54f92d2761f6d528a9ac7a254a574e49d8002b8",
     "agents/architect/agent.md": "c1b35ce562fd8121ff0def1f93cbb8c84e9837b8aa7c22a52b3871c2d06bb9fd",
     "agents/implementer/agent.md": "34ce4cd033c58d11257dd940833b02508402aa0662c4d0c3d02d80c01ae863d4",
     "agents/investigator/agent.md": "06bcdfe3b8bd204152ab77f8fce3ef86091e1c821965199112a3243a5b2567b7",
@@ -404,7 +422,7 @@
     "rules/multi-agent-ownership.md": "b346e37ce93910abc0a4a967190502b223d0ec249095988bf3b42ce14e09c2d5",
     "rules/permission-safety.md": "4890141c44ace9e7e28de994b69589ffdddfd8ba990ab201738a3503674ff85d",
     "rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",
-    "rules/settings-overlay.md": "46f8d954af3e1bcdfdd1f8e45a32589decb7887651807a919ca73801bb653afc",
+    "rules/settings-overlay.md": "de99fa53e61ce5ff61fcda7508be26528c4e6b0306a8a16902fe540b3d11859c",
     "settings.overlay.json": "e2c9195d972a7caa588d21faab398a2a0307b5b7696566bf809c715866e3463c",
     "skills/brainstorming/SKILL.md": "34020e7addba6f3ed6f9649badf41fc0fb62e76f49f0c190f046af129cf1b0b2",
     "skills/codebase-design/SKILL.md": "eac82dd9b4e8b6861ad141681883d3b3b9aea67dd079bcdb7b53ea03a887a28c",
@@ -438,7 +456,7 @@
   "ownership": [
     {
       "relativePath": "README.md",
-      "sha256": "9cbad6cf3cb0ca73b5105b9844cc58bc596178017537fa272d14267db36cad8d"
+      "sha256": "79e7d737fb000ad12637447ca54f92d2761f6d528a9ac7a254a574e49d8002b8"
     },
     {
       "relativePath": "agents/architect/agent.md",
@@ -530,7 +548,7 @@
     },
     {
       "relativePath": "rules/settings-overlay.md",
-      "sha256": "46f8d954af3e1bcdfdd1f8e45a32589decb7887651807a919ca73801bb653afc"
+      "sha256": "de99fa53e61ce5ff61fcda7508be26528c4e6b0306a8a16902fe540b3d11859c"
     },
     {
       "relativePath": "settings.overlay.json",
