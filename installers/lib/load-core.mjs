@@ -1,41 +1,21 @@
-import { readFile, readdir, realpath, stat } from "node:fs/promises";
-import { dirname, extname, relative, resolve, sep } from "node:path";
+import { lstat, readFile, readdir, realpath, stat } from "node:fs/promises";
+import { dirname, extname, posix, relative, resolve, sep, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateSchema } from "./validate-schema.mjs";
-import { CANONICAL_ROLE_IDS, WRITE_SEMANTIC_CAPABILITIES } from "../../core/roles/contract.mjs";
+import { CANONICAL_ROLE_IDS, isSafePortableRolePrompt, isValidMutationScopeOperation, isValidMutationScopePath, PRIVILEGED_SEMANTIC_CAPABILITIES, SEMANTIC_CAPABILITIES, WRITE_SEMANTIC_CAPABILITIES } from "../../core/roles/contract.mjs";
+
+export { SEMANTIC_CAPABILITIES };
 
 const SCHEMA_NAMES = Object.freeze(["rule", "role", "workflow", "command", "skill"]);
 
 // These are the only capability names that may cross the portable/native seam.
 // Adapters map them to product-specific tools; the core never does that mapping.
-export const SEMANTIC_CAPABILITIES = Object.freeze([
-  "repository-read",
-  "repository-write",
-  "web-primary-sources",
-  "isolated-write",
-  "command-execution",
-  "filesystem-read",
-  "filesystem-write",
-  "git-read",
-  "git-write",
-  "test-execution",
-  "external-research",
-  "evaluation",
-  "role-dispatch",
-  "workflow-state",
-  "schema-validation",
-  "native-rendering"
-]);
-
 const CAPABILITY_SET = new Set(SEMANTIC_CAPABILITIES);
 const VENDOR_TOOL_VALUES = new Set(["Read", "Write", "Edit", "Bash", "Glob", "Grep", "LS", "NotebookEdit", "WebFetch", "WebSearch", "Task", "MultiEdit", "Agent", "Skill", "TodoWrite", "PowerShell"]);
 const VENDOR_TOOL_PATTERN = /(?:^|[^a-z0-9])(?:spawn_agent|invoke_subagent|run_command|view_file|grep_search|find_by_name|list_dir|write_to_file|replace_file_content|search_web|read_url_content|ask_question|manage_subagents|manage_task|generate_image|mcp__[a-z0-9_:-]+)(?:$|[^a-z0-9])/u;
 const VENDOR_FIELD_NAMES = new Set(["tool", "tools", "nativeTool", "nativeTools", "vendorTool", "vendorTools"]);
 const CANONICAL_ROLE_SET = new Set(CANONICAL_ROLE_IDS);
 const ROLE_WRITE_CAPABILITIES = new Set(WRITE_SEMANTIC_CAPABILITIES);
-const IMPLEMENTER_SCOPE_OPERATIONS = new Set(["create", "modify", "delete"]);
-const PROMPT_READ_ONLY_MUTATION_PATTERN = /(?:\b(?:use|invoke|call|run)\s+(?:bash|edit|write)\b|\bclaude\s+(?:bash|edit|write)\b|\b(?:bash|edit|write)\s+tools?\b|`(?:bash|edit|write)`|\b(?:run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|manage_subagents)\b)/iu;
-const PROMPT_VENDOR_BYPASS_PATTERN = /(?:\buse\s+(?:bash|edit|write)\b|\bclaude\s+(?:edit|write)\b|\b(?:run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|manage_subagents)\b)/iu;
 
 function compareText(left, right) {
   return left === right ? 0 : left < right ? -1 : 1;
@@ -280,6 +260,24 @@ async function loadJsonCollection(root, coreRoot, directoryName, kind, errors) {
   return entries;
 }
 
+async function promptContainmentErrors(repositoryRoot, promptPath, roleDirectory, sourcePath) {
+  const errors = [];
+  try {
+    const [rootRealpath, roleDirectoryRealpath, promptRealpath] = await Promise.all([
+      realpath(repositoryRoot),
+      realpath(roleDirectory),
+      realpath(promptPath)
+    ]);
+    const promptParent = dirname(promptRealpath);
+    if (!realpathIsContained(rootRealpath, promptRealpath) || promptParent !== roleDirectoryRealpath) {
+      errors.push(errorRecord(sourcePath, "", "promptContainment", "role prompt must resolve inside its sibling role directory and repository root"));
+    }
+  } catch (error) {
+    errors.push(errorRecord(sourcePath, "", "promptContainment", `unable to prove role prompt containment: ${error.message}`));
+  }
+  return errors;
+}
+
 async function loadRoleCollection(root, coreRoot, errors) {
   const entries = await loadJsonCollection(root, coreRoot, "roles", "role", errors);
   let directories = [];
@@ -296,15 +294,26 @@ async function loadRoleCollection(root, coreRoot, errors) {
   }
   for (const entry of entries) {
     const promptPath = resolve(dirname(entry.path), "prompt.md");
-    if (!(await pathExists(promptPath))) continue;
+    let promptExists;
+    try {
+      promptExists = await pathExists(promptPath);
+    } catch (error) {
+      errors.push(errorRecord(toPortablePath(root, promptPath), "", "promptContainment", `unable to inspect role prompt: ${error.message}`));
+      continue;
+    }
+    if (!promptExists) continue;
     const promptSourcePath = toPortablePath(root, promptPath);
     try {
+      const containmentErrors = await promptContainmentErrors(root, promptPath, dirname(entry.path), promptSourcePath);
+      if (containmentErrors.length > 0) {
+        errors.push(...containmentErrors);
+        continue;
+      }
       const prompt = await readUtf8(promptPath);
       if (prompt.trim().length === 0) {
         errors.push(errorRecord(promptSourcePath, "", "prompt", "role prompt must contain a non-empty body"));
       } else {
-        const readOnly = entry.record.mutationScope === "none";
-        if (CANONICAL_ROLE_SET.has(entry.record.id) && ((readOnly && PROMPT_READ_ONLY_MUTATION_PATTERN.test(prompt)) || (!readOnly && PROMPT_VENDOR_BYPASS_PATTERN.test(prompt)))) {
+        if (CANONICAL_ROLE_SET.has(entry.record.id) && !isSafePortableRolePrompt(prompt)) {
           errors.push(errorRecord(promptSourcePath, "", "promptSafety", "portable role prompts cannot invoke vendor-native mutable or command tools"));
         }
         entry.record.prompt = prompt;
@@ -357,18 +366,25 @@ function roleContractErrors(entries, requireCanonical = false) {
     if (!role.evidenceContract || typeof role.evidenceContract !== "object" || Array.isArray(role.evidenceContract)) {
       errors.push(errorRecord(sourcePath, "/evidenceContract", "evidenceContract", "canonical role requires a structured evidence contract"));
     } else {
-      if (!Array.isArray(role.evidenceContract.required) || role.evidenceContract.required.length === 0) errors.push(errorRecord(sourcePath, "/evidenceContract/required", "evidenceContract", "evidenceContract.required must be non-empty"));
+      if (!Array.isArray(role.evidenceContract.required) || role.evidenceContract.required.length === 0 || role.evidenceContract.required.some((item) => typeof item !== "string" || item.trim().length === 0)) errors.push(errorRecord(sourcePath, "/evidenceContract/required", "evidenceContract", "evidenceContract.required must contain non-empty strings"));
       if (typeof role.evidenceContract.format !== "string" || role.evidenceContract.format.trim().length === 0) errors.push(errorRecord(sourcePath, "/evidenceContract/format", "evidenceContract", "evidenceContract.format must be non-empty"));
-      if (!Array.isArray(role.evidenceContract.limitations) || role.evidenceContract.limitations.length === 0) errors.push(errorRecord(sourcePath, "/evidenceContract/limitations", "evidenceContract", "evidenceContract.limitations must be non-empty"));
+      if (!Array.isArray(role.evidenceContract.limitations) || role.evidenceContract.limitations.length === 0 || role.evidenceContract.limitations.some((item) => typeof item !== "string" || item.trim().length === 0)) errors.push(errorRecord(sourcePath, "/evidenceContract/limitations", "evidenceContract", "evidenceContract.limitations must contain non-empty strings"));
     }
-    if (!role.outputContract || typeof role.outputContract !== "object" || Array.isArray(role.outputContract) || !Object.hasOwn(role.outputContract, "evidence")) {
-      errors.push(errorRecord(sourcePath, "/outputContract", "evidenceContract", "outputContract must declare evidence"));
+    const outputEvidenceValid = typeof role.outputContract?.evidence === "string"
+      ? role.outputContract.evidence.trim().length > 0
+      : Array.isArray(role.outputContract?.evidence) && role.outputContract.evidence.length > 0 && role.outputContract.evidence.every((item) => typeof item === "string" && item.trim().length > 0);
+    if (!role.outputContract || typeof role.outputContract !== "object" || Array.isArray(role.outputContract) || !outputEvidenceValid) {
+      errors.push(errorRecord(sourcePath, "/outputContract/evidence", "evidenceContract", "outputContract must declare non-empty evidence"));
     }
     const capabilities = [
       ...(Array.isArray(role.capabilities) ? role.capabilities : []),
       ...(Array.isArray(role.requiredCapabilities) ? role.requiredCapabilities : []),
       ...(Array.isArray(role.allowedCapabilities) ? role.allowedCapabilities : [])
     ];
+    const privilegedCapabilities = capabilities.filter((capability) => PRIVILEGED_SEMANTIC_CAPABILITIES.includes(capability));
+    if (privilegedCapabilities.length > 0) {
+      errors.push(errorRecord(sourcePath, "/capabilities", "privilegedCapability", `canonical role cannot declare privileged capability ${privilegedCapabilities.join(", ")}`));
+    }
     const writeCapabilities = capabilities.filter((capability) => ROLE_WRITE_CAPABILITIES.has(capability));
     if (role.id !== "implementer" && writeCapabilities.length > 0) {
       errors.push(errorRecord(sourcePath, "/capabilities", "mutationScope", `read-only role cannot declare ${writeCapabilities.join(", ")}`));
@@ -384,8 +400,8 @@ function roleContractErrors(entries, requireCanonical = false) {
       const validScope = scope && typeof scope === "object" && !Array.isArray(scope) &&
         Array.isArray(scope.paths) && scope.paths.length > 0 &&
         Array.isArray(scope.operations) && scope.operations.length > 0 &&
-        scope.paths.every((path) => typeof path === "string" && /^workspace(?:\/|$)/u.test(path) && !path.includes("..")) &&
-        scope.operations.every((operation) => IMPLEMENTER_SCOPE_OPERATIONS.has(operation));
+        scope.paths.every(isValidMutationScopePath) &&
+        scope.operations.every(isValidMutationScopeOperation);
       if (!validScope) {
         errors.push(errorRecord(sourcePath, "/mutationScope", "mutationScope", "implementer must declare non-empty scoped paths and operations"));
       }
@@ -402,6 +418,12 @@ async function nearestExistingRealpath(path) {
       return await realpath(candidate);
     } catch (error) {
       if (error?.code !== "ENOENT" && error?.code !== "ENOTDIR") throw error;
+      try {
+        const candidateStat = await lstat(candidate);
+        if (candidateStat.isSymbolicLink()) throw new Error(`unable to resolve symbolic link ${candidate}`);
+      } catch (statError) {
+        if (statError?.code !== "ENOENT" && statError?.code !== "ENOTDIR") throw statError;
+      }
       const parent = resolve(candidate, "..");
       if (parent === candidate) return null;
       candidate = parent;
@@ -409,9 +431,85 @@ async function nearestExistingRealpath(path) {
   }
 }
 
+function pathIsAbsolute(value) {
+  return posix.isAbsolute(value) || win32.isAbsolute(value);
+}
+
+function realpathIsContained(rootRealpath, targetRealpath) {
+  const relativePath = relative(rootRealpath, targetRealpath);
+  if (pathIsAbsolute(relativePath)) return false;
+  if (relativePath === ".." || relativePath.startsWith(`..${sep}`) || relativePath.startsWith("../") || relativePath.startsWith("..\\")) return false;
+  const pathApi = /^[A-Za-z]:[\\/]/u.test(rootRealpath) || /^\\\\/u.test(rootRealpath) ? win32 : posix;
+  return pathApi.resolve(rootRealpath, relativePath) === pathApi.normalize(targetRealpath);
+}
+
+/** Resolve a portable virtual workspace scope without applying filesystem effects. */
+export function resolveWorkspaceScopePath({ repositoryRoot, scopePath } = {}) {
+  if (typeof repositoryRoot !== "string" || repositoryRoot.trim() === "") throw new TypeError("repositoryRoot must be a non-empty path");
+  if (typeof scopePath !== "string" || scopePath.trim() === "") throw new TypeError("scopePath must be a non-empty path");
+  const normalized = scopePath.replaceAll("\\", "/");
+  if (pathIsAbsolute(scopePath) || pathIsAbsolute(normalized)) throw new Error("mutation scope cannot be absolute");
+  if (scopePath.includes("\\")) throw new Error("mutation scope must be rooted at workspace and use portable separators");
+  if (!isValidMutationScopePath(scopePath)) throw new Error("mutation scope path is not a valid workspace path");
+  if (normalized.includes("*") && !normalized.endsWith("/**")) throw new Error("mutation scope glob must end with /**");
+  const literal = normalized.endsWith("/**") ? normalized.slice(0, -3).replace(/\/$/u, "") : normalized;
+  const segments = literal.split("/");
+  if (segments[0] !== "workspace" || segments.some((segment) => segment === ".." || segment === "" && segments.length > 1 || /^[A-Za-z]:$/u.test(segment))) throw new Error("mutation scope must be rooted at virtual workspace");
+  const tail = segments.slice(1).join("/");
+  const pathApi = /^[A-Za-z]:[\\/]/u.test(repositoryRoot) || /^\\\\/u.test(repositoryRoot) ? win32 : posix;
+  return pathApi.normalize(tail ? pathApi.resolve(repositoryRoot, ...tail.split("/")) : pathApi.resolve(repositoryRoot));
+}
+
+async function descendantContainmentErrors(rootRealpath, targetPath, entry, pathIndex) {
+  const errors = [];
+  async function visit(directory) {
+    let children;
+    try {
+      children = await readdir(directory, { withFileTypes: true });
+    } catch (error) {
+      if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return;
+      throw error;
+    }
+    children.sort((left, right) => compareText(left.name, right.name));
+    for (const child of children) {
+      const childPath = resolve(directory, child.name);
+      let childStat;
+      try {
+        childStat = await lstat(childPath);
+      } catch (error) {
+        if (error?.code === "ENOENT" || error?.code === "ENOTDIR") continue;
+        throw error;
+      }
+      let childRealpath;
+      try {
+        childRealpath = await realpath(childPath);
+      } catch (error) {
+        if (error?.code === "ENOENT" || error?.code === "ENOTDIR") {
+          if (childStat.isSymbolicLink()) errors.push(errorRecord(entry.sourcePath, `/mutationScope/paths/${pathIndex}`, "mutationScopeContainment", "mutation scope glob contains a symlink whose realpath cannot be proven contained"));
+          continue;
+        }
+        throw error;
+      }
+      if (!realpathIsContained(rootRealpath, childRealpath)) {
+        errors.push(errorRecord(entry.sourcePath, `/mutationScope/paths/${pathIndex}`, "mutationScopeContainment", "mutation scope glob contains a symlink or junction outside the repository root"));
+        continue;
+      }
+      if (childStat.isDirectory() && !childStat.isSymbolicLink()) await visit(childPath);
+    }
+  }
+  await visit(targetPath);
+  return errors;
+}
+
 async function mutationScopeContainmentErrors(repositoryRoot, entries) {
   const errors = [];
-  const rootRealpath = await nearestExistingRealpath(repositoryRoot);
+  let rootRealpath;
+  try {
+    rootRealpath = await nearestExistingRealpath(repositoryRoot);
+  } catch (error) {
+    errors.push(errorRecord("core/roles/implementer/role.json", "/mutationScope", "mutationScopeContainment", `unable to resolve repository root: ${error.message}`));
+    return errors;
+  }
   if (!rootRealpath) return errors;
   const implementers = entries.filter((entry) => entry.record?.id === "implementer");
   for (const entry of implementers) {
@@ -419,12 +517,24 @@ async function mutationScopeContainmentErrors(repositoryRoot, entries) {
     if (!Array.isArray(paths)) continue;
     for (const [index, scopePath] of paths.entries()) {
       if (typeof scopePath !== "string") continue;
-      const literal = scopePath.split("/**", 1)[0].replace(/\/$/u, "");
-      const targetRealpath = await nearestExistingRealpath(resolve(repositoryRoot, literal));
-      if (!targetRealpath) continue;
-      const relativePath = relative(rootRealpath, targetRealpath);
-      if (relativePath === ".." || relativePath.startsWith(`..${sep}`) || resolve(rootRealpath, relativePath) !== targetRealpath) {
+      let targetPath;
+      try {
+        targetPath = resolveWorkspaceScopePath({ repositoryRoot, scopePath });
+      } catch (error) {
         errors.push(errorRecord(entry.sourcePath, `/mutationScope/paths/${index}`, "mutationScopeContainment", "mutation scope resolves outside the repository root"));
+        continue;
+      }
+      try {
+        const targetRealpath = await nearestExistingRealpath(targetPath);
+        if (!targetRealpath || !realpathIsContained(rootRealpath, targetRealpath)) {
+          errors.push(errorRecord(entry.sourcePath, `/mutationScope/paths/${index}`, "mutationScopeContainment", "mutation scope resolves outside the repository root"));
+          continue;
+        }
+        if (scopePath.replaceAll("\\", "/").endsWith("/**") && await pathExists(targetPath)) {
+          errors.push(...await descendantContainmentErrors(rootRealpath, targetPath, entry, index));
+        }
+      } catch (error) {
+        errors.push(errorRecord(entry.sourcePath, `/mutationScope/paths/${index}`, "mutationScopeContainment", `unable to validate mutation scope: ${error.message}`));
       }
     }
   }

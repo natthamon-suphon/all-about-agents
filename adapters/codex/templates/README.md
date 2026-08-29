@@ -7,8 +7,9 @@ and standalone custom-agent TOML files under `.codex/agents/`.
 Every canonical role is registered in `config.toml` as `[agents.<role>]` with
 a relative `config_file` under the delivered `agents/` directory. The package
 maps its `.codex/agents/` source directory to that `$CODEX_HOME/agents/`
-destination, so the reference resolves after installation. The referenced role layer sets top-level
-`sandbox_mode`: `read-only` for six read-only roles and `workspace-write` only
+destination, so the reference resolves after installation. The referenced standalone role file contains
+`name`, `description`, `developer_instructions`, and top-level `sandbox_mode`:
+`read-only` for six read-only roles and `workspace-write` only
 for the scoped implementer. Relative paths resolve from the declaring
 `config.toml`, as documented by the official
 [Codex Configuration Reference](https://developers.openai.com/codex/config-reference/).
@@ -20,6 +21,9 @@ The shared `config.toml` overlay uses Sol with Max reasoning. The explicit
 the documented Terra model and Max reasoning keys for its global policy; it is
 selected manually with the CLI profile mechanism.
 Desktop Terra/Max selection remains a manual model-control step.
+
+Native workspace controls do not enforce the implementer's narrower task paths;
+those paths remain an outer approval boundary.
 
 The generated bootstrap skill links to the factual adapter guide at
 `.agents/skills/using-all-about-agents/references/adapter-capability-guidance.md`.

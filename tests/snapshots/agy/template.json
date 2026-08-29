@@ -1,5 +1,4 @@
 {
-  "fileCount": 53,
   "paths": [
     "README.md",
     "agents/architect/agent.md",
@@ -55,6 +54,7 @@
     "skills/writing-skills/SKILL.md",
     "skills/zero-downtime-migrations/SKILL.md"
   ],
+  "fileCount": 53,
   "ownership": [
     {
       "relativePath": "README.md",
@@ -62,31 +62,31 @@
     },
     {
       "relativePath": "agents/architect/agent.md",
-      "sha256": "cd315500b29070efbd9a10c056678c5753c9f304d9c0a86156667c9be5ceceb8"
+      "sha256": "784814cfdd4564f6846f0fec2046ba6be6384bedb0c66a76c3e4fcca522696f9"
     },
     {
       "relativePath": "agents/implementer/agent.md",
-      "sha256": "a8045777f8f6e72b5079f62f6008c88698e849002857b2e6a1367d0e69e12848"
+      "sha256": "649e20be45b6d72c23f70c0cc5fd9e3a30f7e760f12a993fd4c60c7a7248f756"
     },
     {
       "relativePath": "agents/investigator/agent.md",
-      "sha256": "613da42266a804ccbea65f6cd28b9be56bf2b903258eac52abd206ef1f75d8de"
+      "sha256": "308043c17a4e390e78488160beee23843040f95f3c3277396d53f7960bc730ac"
     },
     {
       "relativePath": "agents/researcher/agent.md",
-      "sha256": "14700da384bd472926a3f2f08b5526d7ff16a80db0d9e016c5015498dead88a2"
+      "sha256": "e2211212bcb057e354cd53cbc1a4285bf27f00ef2be0c33048b287d3c3e92178"
     },
     {
       "relativePath": "agents/reviewer/agent.md",
-      "sha256": "bf136731c6006ea8f3ecf5d23f2fea1d6a38f4d612a13b5420951e4fc48c6ec2"
+      "sha256": "dd77861e28449aaa5e0da997b587a3bdc945a16441410789d65559a06737fac8"
     },
     {
       "relativePath": "agents/security-reviewer/agent.md",
-      "sha256": "223d32b98fca5671283ed7491ccc6ee19dbabdcabd2a419424c7f43c99589aeb"
+      "sha256": "73cb4bc29dd8c2a9d9a1182178cf10ad4484ab89d1358a3f4ab40d2bbcbbd521"
     },
     {
       "relativePath": "agents/verifier/agent.md",
-      "sha256": "00a27febc44bf04eef479c09f45a8d0e3b87df9111c373d739c583c869b40b71"
+      "sha256": "145fba95a78f4625d5efa22765ae3f294b07c08ed3c44fee73ebba28ac236cb2"
     },
     {
       "relativePath": "hooks.json",
@@ -98,7 +98,7 @@
     },
     {
       "relativePath": "rules/adapter-capability-guidance.md",
-      "sha256": "efcf9d2a78f84598f128aa08fd0f6cc619d296cc64cc51e2f580f3e0444bfb08"
+      "sha256": "7e0c66d6c2d03162e767225be4b4b2480eb1fb1b83d8d0c2c76caa0a5e8c5ed0"
     },
     {
       "relativePath": "rules/authority-and-scope.md",
@@ -402,6 +402,144 @@
       "sourcePath": "research-agy-2.md"
     },
     {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role architect capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/architect/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role architect capability evaluation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/architect/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role architect capability schema-validation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/architect/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role implementer capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/implementer/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role implementer capability repository-write is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/implementer/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role implementer capability isolated-write is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/implementer/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role implementer capability command-execution is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/implementer/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role implementer capability test-execution is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/implementer/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role investigator capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/investigator/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role investigator capability filesystem-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/investigator/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role investigator capability evaluation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/investigator/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role researcher capability external-research is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/researcher/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role researcher capability web-primary-sources is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/researcher/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role researcher capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/researcher/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role reviewer capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/reviewer/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role reviewer capability evaluation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/reviewer/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role reviewer capability schema-validation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/reviewer/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role security-reviewer capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/security-reviewer/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role security-reviewer capability evaluation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/security-reviewer/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role security-reviewer capability schema-validation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/security-reviewer/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role verifier capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/verifier/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role verifier capability test-execution is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/verifier/role.json"
+    },
+    {
+      "code": "role-capability-unavailable",
+      "severity": "warning",
+      "message": "Role verifier capability evaluation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "sourcePath": "core/roles/verifier/role.json"
+    },
+    {
       "code": "agy-action-unknown",
       "severity": "warning",
       "message": "aaa:design has no documented agy native mapping; use a manual operation only after verifying the installed CLI.",
@@ -614,16 +752,16 @@
   ],
   "contentHashes": {
     "README.md": "5f304e31c0df7cffef43801efbe3ffa07055c2b9009625de4ada091ff4b25afb",
-    "agents/architect/agent.md": "cd315500b29070efbd9a10c056678c5753c9f304d9c0a86156667c9be5ceceb8",
-    "agents/implementer/agent.md": "a8045777f8f6e72b5079f62f6008c88698e849002857b2e6a1367d0e69e12848",
-    "agents/investigator/agent.md": "613da42266a804ccbea65f6cd28b9be56bf2b903258eac52abd206ef1f75d8de",
-    "agents/researcher/agent.md": "14700da384bd472926a3f2f08b5526d7ff16a80db0d9e016c5015498dead88a2",
-    "agents/reviewer/agent.md": "bf136731c6006ea8f3ecf5d23f2fea1d6a38f4d612a13b5420951e4fc48c6ec2",
-    "agents/security-reviewer/agent.md": "223d32b98fca5671283ed7491ccc6ee19dbabdcabd2a419424c7f43c99589aeb",
-    "agents/verifier/agent.md": "00a27febc44bf04eef479c09f45a8d0e3b87df9111c373d739c583c869b40b71",
+    "agents/architect/agent.md": "784814cfdd4564f6846f0fec2046ba6be6384bedb0c66a76c3e4fcca522696f9",
+    "agents/implementer/agent.md": "649e20be45b6d72c23f70c0cc5fd9e3a30f7e760f12a993fd4c60c7a7248f756",
+    "agents/investigator/agent.md": "308043c17a4e390e78488160beee23843040f95f3c3277396d53f7960bc730ac",
+    "agents/researcher/agent.md": "e2211212bcb057e354cd53cbc1a4285bf27f00ef2be0c33048b287d3c3e92178",
+    "agents/reviewer/agent.md": "dd77861e28449aaa5e0da997b587a3bdc945a16441410789d65559a06737fac8",
+    "agents/security-reviewer/agent.md": "73cb4bc29dd8c2a9d9a1182178cf10ad4484ab89d1358a3f4ab40d2bbcbbd521",
+    "agents/verifier/agent.md": "145fba95a78f4625d5efa22765ae3f294b07c08ed3c44fee73ebba28ac236cb2",
     "hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
     "plugin.json": "756ec24b1703be2d650e94914f6f7668ba98a1dd746cda65a42e8025e2ba6ead",
-    "rules/adapter-capability-guidance.md": "efcf9d2a78f84598f128aa08fd0f6cc619d296cc64cc51e2f580f3e0444bfb08",
+    "rules/adapter-capability-guidance.md": "7e0c66d6c2d03162e767225be4b4b2480eb1fb1b83d8d0c2c76caa0a5e8c5ed0",
     "rules/authority-and-scope.md": "e954e78589912467fcc0f1e273cd7f7028efb014152ec22e9cdd6e99c821764f",
     "rules/cross-platform-execution.md": "b0db23bbbee452ae698d68171bde816bbdc360464d7e8d3105b46eaefa1d8c62",
     "rules/destructive-actions.md": "69f0320c6279e4f2a5b3dc96381c08d80c5d3dc84a5aa34ae2e6e790b4b452f9",

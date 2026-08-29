@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
-import { assertCanonicalRoleRecords, assertNativeRoleSemantics, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const SURFACE = "antigravity-2";
 const DESKTOP_SURFACE = "antigravity-2-desktop";
@@ -101,7 +101,7 @@ const DEFAULT_ROLES = Object.freeze({
   }),
   implementer: Object.freeze({
     description: "Make scoped test-first changes and report fresh evidence.",
-    capabilities: ["repository-read", "repository-write", "isolated-write", "command-execution", "role-dispatch"]
+    capabilities: ["repository-read", "repository-write", "isolated-write", "command-execution"]
   }),
   verifier: Object.freeze({
     description: "Run fresh black-box checks without changing implementation files.",
@@ -173,10 +173,13 @@ function renderAgent(name, role) {
   if (tools.length === 0 && !role) tools = [...ANTIGRAVITY_SEMANTIC_MAPPINGS["repository-read"]];
   const readOnly = isRoleReadOnly(role || fallback);
   if (readOnly) tools = tools.filter((tool) => ![
-    "write_to_file", "replace_file_content", "multi_replace_file_content", "run_command"
+    "write_to_file", "replace_file_content", "multi_replace_file_content", "run_command",
+    "invoke_subagent", "define_subagent", "manage_subagents"
   ].includes(tool));
   tools = tools.filter((tool) => DESKTOP_TOOLS.includes(tool)).sort();
   const commandExecutionPolicy = tools.includes("run_command") ? "sandbox" : "off";
+  const roleDiagnostics = nativeCapabilityDiagnostics({ surface: SURFACE, role: role || fallback, mappings: ANTIGRAVITY_SEMANTIC_MAPPINGS, blockedNativeTools: ["write_to_file", "replace_file_content", "multi_replace_file_content", "run_command", "invoke_subagent", "define_subagent", "manage_subagents"] });
+  const promptDiagnostics = roleDiagnostics.map((entry) => entry.message.replace(/: [\s\S]*? Manual\/fail-closed guidance:/u, ": native read-only policy does not expose this capability. Manual/fail-closed guidance:"));
   const lines = [
     "---",
     `name: ${JSON.stringify(name)}`,
@@ -191,7 +194,7 @@ function renderAgent(name, role) {
     "plugins: []",
     "---",
     "",
-    role?.prompt || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`
+    `${role?.prompt || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${promptDiagnostics.length > 0 ? `\n\nNative capability diagnostics:\n${promptDiagnostics.map((message) => `- ${message}`).join("\n")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`
   ];
   return ensureText(lines.join("\n"));
 }
@@ -236,6 +239,8 @@ function capabilityGuidance() {
     "The Desktop Plugins page omits `agents/`; the Desktop Subagents page separately documents `agents/<role>.md`.",
     "Plugin-agent packaging is ambiguous and not guaranteed by the Plugins layout; verify agent discovery manually before relying on it.",
     "The published Desktop tools are the exact names used in agent frontmatter and semantic mappings.",
+    "Read-only capability diagnostics identify suppressed command or mutation semantics; record them as unavailable or not run and do not infer a substitute.",
+    "The implementer's Desktop write controls are workspace-wide; its declared task paths remain an outer approval boundary.",
     "No serialized application preferences, cross-conversation model key, or command-line option is part of this package.",
     ""
   ].join("\n"));
@@ -293,7 +298,7 @@ function hooksDocument() {
 /** Render the documented Antigravity 2.0 Desktop package without native settings writes. */
 export function renderAntigravity(input = {}) {
   coreShape(input.core);
-  assertCanonicalRoleRecords(input.core.roles);
+  assertNativeRoleRecords(input.core.roles);
   assertNativeRoleSemantics(input.core.roles);
   const profile = profileId(input.profile ?? "portable");
   if (typeof input.statuslineName !== "string") throw new TypeError("statuslineName must be a string");
@@ -316,7 +321,10 @@ export function renderAntigravity(input = {}) {
   files.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
   validateDesktopContent(files);
 
-  const diagnostics = [];
+  const diagnostics = [
+    ...input.core.roles.flatMap((role) => nativeCapabilityDiagnostics({ surface: SURFACE, role, mappings: ANTIGRAVITY_SEMANTIC_MAPPINGS, blockedNativeTools: ["write_to_file", "replace_file_content", "multi_replace_file_content", "run_command", "invoke_subagent", "define_subagent", "manage_subagents"] })),
+    ...nativeScopeDiagnostics(input.core.roles)
+  ];
   for (const skill of skillIds(input.core)) {
     if (!skillRecords.has(skill)) diagnostics.push({
       code: "missing-skill-source",

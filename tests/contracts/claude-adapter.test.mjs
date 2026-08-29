@@ -239,6 +239,7 @@ test("Claude ownership manifest documents roots, mappings, and native validation
   assert.equal(manifest.configRoot.environment, "CLAUDE_CONFIG_DIR");
   assert.deepEqual(manifest.configRoot.sharedBy, ["claude-code-cli", "claude-desktop-local-code"]);
   assert.deepEqual(manifest.semanticCapabilities["web-primary-sources"], ["WebSearch", "WebFetch"]);
+  assert.deepEqual([...manifest.readOnlyRoles.roles].sort(), ["architect", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]);
   assert.deepEqual(manifest.actions["aaa:design"], "commands/design.md");
   assert.deepEqual(manifest.nativeValidation.command, ["claude", "plugin", "validate", ".", "--strict"]);
   assert.deepEqual(manifest.pluginRegistration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]);

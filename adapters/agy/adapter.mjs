@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
-import { assertCanonicalRoleRecords, assertNativeRoleSemantics, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, roleCapabilities, SEMANTIC_CAPABILITIES, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const SURFACE = "agy";
 const PLUGIN_ROOT = "";
@@ -49,22 +49,7 @@ export const AGY_DOCUMENTED_AGENT_TOOLS = Object.freeze([]);
 
 /** Semantic capability names remain portable; no undocumented CLI tool is guessed. */
 export const AGY_SEMANTIC_MAPPINGS = Object.freeze(Object.fromEntries([
-  "repository-read",
-  "repository-write",
-  "web-primary-sources",
-  "isolated-write",
-  "command-execution",
-  "filesystem-read",
-  "filesystem-write",
-  "git-read",
-  "git-write",
-  "test-execution",
-  "external-research",
-  "evaluation",
-  "role-dispatch",
-  "workflow-state",
-  "schema-validation",
-  "native-rendering"
+  ...SEMANTIC_CAPABILITIES
 ].map((capability) => [capability, Object.freeze([])])));
 
 /** No canonical action has a documented native agy action mapping. */
@@ -251,12 +236,13 @@ function renderAgent(name, role) {
   ])].sort(compareCodePoints);
   const readOnly = isRoleReadOnly(role || fallback);
   const commandExecutionPolicy = readOnly ? "off" : "sandbox";
-  const prompt = role?.prompt || [
+  const roleDiagnostics = nativeCapabilityDiagnostics({ surface: SURFACE, role: role || fallback, unavailableCapabilities: roleCapabilities(role || fallback) });
+  const prompt = `${role?.prompt || [
     `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`,
     capabilities.length > 0 ? `Semantic capabilities: ${capabilities.join(", ")}.` : "",
     "The current public agy documentation does not publish a stable tool-name vocabulary; inspect the installed CLI before adding any tool names.",
     readOnly ? "This role is read-only: do not mutate files or execute commands." : "Apply only scoped changes and use the documented per-run approval controls."
-  ].filter(Boolean).join("\n\n");
+  ].filter(Boolean).join("\n\n")}${roleDiagnostics.length > 0 ? `\n\nNative capability diagnostics:\n${roleDiagnostics.map((entry) => `- ${entry.message}`).join("\n")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
   return ensureText([
     "---",
     `name: ${JSON.stringify(name)}`,
@@ -290,6 +276,8 @@ function renderCapabilityGuidance() {
     "The documented plugin install operation receives the package directory; this adapter never writes an installed profile.",
     "The current research records conflicting CLI and shared customization roots. Treat the active root for the installed version as unknown until manual discovery.",
     "The agent frontmatter field names are documented, but the published research does not provide a complete stable tool-name list. Empty tool arrays avoid guessing a name that could hang an agent.",
+    "Read-only capability diagnostics identify every semantic capability with no documented native mapping; record it as unavailable or not run and do not guess a tool.",
+    "Native controls are workspace-wide where available; the implementer's declared task paths remain an outer approval boundary.",
     "Run agy agents after discovery and add only tool names accepted by that installed version through an explicit operator change.",
     "",
     "PostToolUse contract: a documented tool event identifies the tool as toolCall.name; do not substitute a Desktop or legacy event field.",
@@ -501,7 +489,7 @@ function actionDiagnostics() {
 /** Render the complete portable agy CLI plugin package and manual overlays. */
 export function renderAgy(input = {}) {
   coreShape(input.core);
-  assertCanonicalRoleRecords(input.core.roles);
+  assertNativeRoleRecords(input.core.roles);
   assertNativeRoleSemantics(input.core.roles);
   const profile = profileId(input.profile ?? "portable");
   if (typeof input.statuslineName !== "string") throw new TypeError("statuslineName must be a string");
@@ -556,6 +544,8 @@ export function renderAgy(input = {}) {
       message: "The documented agent field list does not publish a complete stable agy tool vocabulary; generated agent tools remain empty pending agy agents discovery.",
       sourcePath: "research-agy-2.md"
     },
+    ...input.core.roles.flatMap((role) => nativeCapabilityDiagnostics({ surface: SURFACE, role, unavailableCapabilities: roleCapabilities(role) })),
+    ...nativeScopeDiagnostics(input.core.roles),
     ...actionDiagnostics(),
     ...canonicalSkillIds(input.core).filter((skill) => !skillRecords.has(skill)).map((skill) => ({
       code: "missing-skill-source",

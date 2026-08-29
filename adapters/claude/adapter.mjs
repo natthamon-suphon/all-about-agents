@@ -7,7 +7,7 @@ import {
   renderSurface as validateSurface,
   validateRenderResult
 } from "../shared/adapter-contract.mjs";
-import { assertCanonicalRoleRecords, assertNativeRoleSemantics, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const CLAUDE_SURFACE = "claude";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
@@ -260,7 +260,8 @@ function renderAgent(name, role) {
     Array.isArray(role?.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
     Array.isArray(role?.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
-  const body = role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.\n`;
+  const capabilityDiagnostics = nativeCapabilityDiagnostics({ surface: CLAUDE_SURFACE, role: role || fallback, mappings: CLAUDE_SEMANTIC_MAPPINGS, blockedNativeTools: READ_ONLY_NATIVE_TOOLS });
+  const body = `${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.\n`}${capabilityDiagnostics.length > 0 ? `\n\nNative capability diagnostic: ${capabilityDiagnostics.map((entry) => entry.message).join(" ")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
   const readOnly = isRoleReadOnly(role || fallback);
   const allowedTools = readOnly ? tools.filter((tool) => !READ_ONLY_NATIVE_TOOLS.includes(tool)) : tools;
   const restriction = readOnly
@@ -322,6 +323,8 @@ function mappingsDocument() {
     "",
     "Settings are shared by Claude Code CLI and Claude Desktop local Code through `CLAUDE_CONFIG_DIR`.",
     "Read-only agents use Claude's `disallowedTools` for `Agent`, `Bash`, `Edit`, and `Write`.",
+    "Read-only capability diagnostics identify any semantic action suppressed by that policy; record it as unavailable or not run rather than inferring a native substitute.",
+    "The implementer's native Write/Edit controls are workspace-wide; its declared task paths remain an outer approval boundary.",
     "The plugin never loads a root `CLAUDE.md`; rules are emitted as independent files under `rules/`."
   );
   return ensureText(lines.join("\n"));
@@ -347,7 +350,7 @@ export function renderClaude(input = {}) {
   for (const collection of ["rules", "skills", "workflows", "commands"]) {
     if (!Array.isArray(core[collection])) throw new TypeError(`core.${collection} must be an array`);
   }
-  assertCanonicalRoleRecords(core.roles);
+  assertNativeRoleRecords(core.roles);
   assertNativeRoleSemantics(core.roles);
   const profile = profileId(input.profile ?? "portable");
   const statuslineName = validStatuslineName(input.statuslineName ?? "");
@@ -418,6 +421,8 @@ export function renderClaude(input = {}) {
       }
     ],
     diagnostics: [
+      ...core.roles.flatMap((role) => nativeCapabilityDiagnostics({ surface: CLAUDE_SURFACE, role, mappings: CLAUDE_SEMANTIC_MAPPINGS, blockedNativeTools: READ_ONLY_NATIVE_TOOLS })),
+      ...nativeScopeDiagnostics(core.roles),
       ...missingSkills.map((skill) => ({
         code: "missing-skill-source",
         severity: "error",

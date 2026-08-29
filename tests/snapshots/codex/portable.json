@@ -1,5 +1,5 @@
 {
-  "fileCount": 48,
+  "fileCount": 41,
   "files": [
     {
       "relativePath": ".agents/skills/brainstorming/SKILL.md",
@@ -108,7 +108,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "08148813bdbb8de545ab109ab96ed6063f9a4db57b37f8c7095464acd4b68505",
+      "sha256": "39074e222089f2603d85ec0680c7ab66c9070d1364f69b2d9fb9f7f8ddfeddbf",
       "mode": null
     },
     {
@@ -152,73 +152,38 @@
       "mode": null
     },
     {
-      "relativePath": ".codex/agents/architect.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
-      "mode": null
-    },
-    {
       "relativePath": ".codex/agents/architect.toml",
-      "sha256": "1dcc929926c0430cfad412be0d6b0332e0c76d041975f09789890b15fd7866f1",
-      "mode": null
-    },
-    {
-      "relativePath": ".codex/agents/implementer.config.toml",
-      "sha256": "cc4f8f11ad3b2689b7b36b2ea9161ffb3a65327d60d8c73e508d9f3d378377a8",
+      "sha256": "9749c5dcb07fbecab98334eda05b407cb4c66ff0e2a22b579971a5a6c12f0208",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/implementer.toml",
-      "sha256": "ea7305449bc922b756fbc5ef38189d64b81bef47e8a7c5896d46e23553897d83",
-      "mode": null
-    },
-    {
-      "relativePath": ".codex/agents/investigator.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
+      "sha256": "7cef804ef5dc71481b6f40c5862d78e1d91fd4c43d83ffce536c6b36cc67d030",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/investigator.toml",
-      "sha256": "71a694c7bc6cf338e23cde33ff05881642f0dd6fa9a91e192e64516170afd58c",
-      "mode": null
-    },
-    {
-      "relativePath": ".codex/agents/researcher.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
+      "sha256": "8f966bf5e9a95132c9b175580b6c89147d908e493934760eb198aeb2a09d5de4",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/researcher.toml",
-      "sha256": "8fe30040612efc959815cb99585f2df4e4085d6669f27ba6badce5892b5ca014",
-      "mode": null
-    },
-    {
-      "relativePath": ".codex/agents/reviewer.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
+      "sha256": "2e1282f28eb037a14dab888b613b507fa105dd5676ceaf71919e1e09acd1492b",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/reviewer.toml",
-      "sha256": "be8c972c0e7c3fcefc4c94ca58735f4b50cca27bf87a5c8f026f5e87c39e8857",
-      "mode": null
-    },
-    {
-      "relativePath": ".codex/agents/security-reviewer.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
+      "sha256": "0561beb07ff8da825b482b0e5c823e5bf5af04afff184727a10b3f00e70c52c9",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/security-reviewer.toml",
-      "sha256": "30780ca94f5c4aeb0f11f0f618cdc77d4612a3fcfae5b819d02b1879e2cb7694",
-      "mode": null
-    },
-    {
-      "relativePath": ".codex/agents/verifier.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0",
+      "sha256": "5ae2940c218199d027064f39239365d379fd11461cdc8874938b00d62f477a7b",
       "mode": null
     },
     {
       "relativePath": ".codex/agents/verifier.toml",
-      "sha256": "e711c865c03a925f99fd6911051fd10d84c32b2e723a49955fb43120d7792fa8",
+      "sha256": "a81788af12cc4f7a2b57e9bf5064524db158b170a77e7106bb679ebade7d6971",
       "mode": null
     },
     {
@@ -228,7 +193,7 @@
     },
     {
       "relativePath": "config.toml",
-      "sha256": "2590e2a768b75456fc3f4d0d9c68172a5bb25a42cb1c5d074d646451dffa0b41",
+      "sha256": "47a791ea736aee9ecfa3f8f9929b296e2d4cd193f99bb01d44a96c92bc105cf6",
       "mode": null
     },
     {
@@ -238,7 +203,7 @@
     },
     {
       "relativePath": "terra-max.config.toml",
-      "sha256": "e80b34f49271ec5c97a7ed92d01dd1694ccefa908e803805b137577bbcb33222",
+      "sha256": "87343d577271242c0c68c379095432480f687b7a528877503a08eed7b00b6011",
       "mode": null
     }
   ],
@@ -329,7 +294,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "08148813bdbb8de545ab109ab96ed6063f9a4db57b37f8c7095464acd4b68505"
+      "sha256": "39074e222089f2603d85ec0680c7ab66c9070d1364f69b2d9fb9f7f8ddfeddbf"
     },
     {
       "relativePath": ".agents/skills/using-git-worktrees/SKILL.md",
@@ -364,60 +329,32 @@
       "sha256": "cbb2dec01497ad11ee629d7dc88b9000272cdbb37c26cb2501dd82e12e676d4d"
     },
     {
-      "relativePath": ".codex/agents/architect.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
-    },
-    {
       "relativePath": ".codex/agents/architect.toml",
-      "sha256": "1dcc929926c0430cfad412be0d6b0332e0c76d041975f09789890b15fd7866f1"
-    },
-    {
-      "relativePath": ".codex/agents/implementer.config.toml",
-      "sha256": "cc4f8f11ad3b2689b7b36b2ea9161ffb3a65327d60d8c73e508d9f3d378377a8"
+      "sha256": "9749c5dcb07fbecab98334eda05b407cb4c66ff0e2a22b579971a5a6c12f0208"
     },
     {
       "relativePath": ".codex/agents/implementer.toml",
-      "sha256": "ea7305449bc922b756fbc5ef38189d64b81bef47e8a7c5896d46e23553897d83"
-    },
-    {
-      "relativePath": ".codex/agents/investigator.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
+      "sha256": "7cef804ef5dc71481b6f40c5862d78e1d91fd4c43d83ffce536c6b36cc67d030"
     },
     {
       "relativePath": ".codex/agents/investigator.toml",
-      "sha256": "71a694c7bc6cf338e23cde33ff05881642f0dd6fa9a91e192e64516170afd58c"
-    },
-    {
-      "relativePath": ".codex/agents/researcher.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
+      "sha256": "8f966bf5e9a95132c9b175580b6c89147d908e493934760eb198aeb2a09d5de4"
     },
     {
       "relativePath": ".codex/agents/researcher.toml",
-      "sha256": "8fe30040612efc959815cb99585f2df4e4085d6669f27ba6badce5892b5ca014"
-    },
-    {
-      "relativePath": ".codex/agents/reviewer.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
+      "sha256": "2e1282f28eb037a14dab888b613b507fa105dd5676ceaf71919e1e09acd1492b"
     },
     {
       "relativePath": ".codex/agents/reviewer.toml",
-      "sha256": "be8c972c0e7c3fcefc4c94ca58735f4b50cca27bf87a5c8f026f5e87c39e8857"
-    },
-    {
-      "relativePath": ".codex/agents/security-reviewer.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
+      "sha256": "0561beb07ff8da825b482b0e5c823e5bf5af04afff184727a10b3f00e70c52c9"
     },
     {
       "relativePath": ".codex/agents/security-reviewer.toml",
-      "sha256": "30780ca94f5c4aeb0f11f0f618cdc77d4612a3fcfae5b819d02b1879e2cb7694"
-    },
-    {
-      "relativePath": ".codex/agents/verifier.config.toml",
-      "sha256": "b9dd3f91a3c073eb1c809efd60933e452da31025df2d1997fbebdccfc215d7f0"
+      "sha256": "5ae2940c218199d027064f39239365d379fd11461cdc8874938b00d62f477a7b"
     },
     {
       "relativePath": ".codex/agents/verifier.toml",
-      "sha256": "e711c865c03a925f99fd6911051fd10d84c32b2e723a49955fb43120d7792fa8"
+      "sha256": "a81788af12cc4f7a2b57e9bf5064524db158b170a77e7106bb679ebade7d6971"
     },
     {
       "relativePath": "AGENTS.md",
@@ -425,7 +362,7 @@
     },
     {
       "relativePath": "config.toml",
-      "sha256": "2590e2a768b75456fc3f4d0d9c68172a5bb25a42cb1c5d074d646451dffa0b41"
+      "sha256": "47a791ea736aee9ecfa3f8f9929b296e2d4cd193f99bb01d44a96c92bc105cf6"
     },
     {
       "relativePath": "docs/manual-desktop.md",
@@ -433,7 +370,7 @@
     },
     {
       "relativePath": "terra-max.config.toml",
-      "sha256": "e80b34f49271ec5c97a7ed92d01dd1694ccefa908e803805b137577bbcb33222"
+      "sha256": "87343d577271242c0c68c379095432480f687b7a528877503a08eed7b00b6011"
     }
   ],
   "registrations": [

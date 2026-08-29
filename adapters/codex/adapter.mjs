@@ -4,7 +4,7 @@ import { posix, win32 } from "node:path";
 import { createHash } from "node:crypto";
 import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
 import { AdapterContractError, renderSurface as validateSurface, validateCommandRecords, validateRenderResult } from "../shared/adapter-contract.mjs";
-import { assertCanonicalRoleRecords, assertNativeRoleSemantics, hasScopedMutation, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, hasScopedMutation, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const CODEX_SURFACE = "codex";
 const ACTION_IDS = Object.freeze([
@@ -116,7 +116,7 @@ function configFor(model, profile, includePermissions = true, roleRecords = []) 
     .map((role) => [
       "",
       `[agents.${role.id}]`,
-      `config_file = ${JSON.stringify(`agents/${role.id}.config.toml`)}`,
+      `config_file = ${JSON.stringify(`agents/${role.id}.toml`)}`,
       `description = ${JSON.stringify(role.description || role.purpose || `Canonical ${role.id} role.`)}`
     ].join("\n"));
   return ensureText(`${root.trimEnd()}${registrations.join("\n")}\n`);
@@ -174,19 +174,16 @@ function renderRole(name, role) {
     Array.isArray(role?.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
     Array.isArray(role?.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
-  const instructions = role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`;
+  const instructions = `${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
+  const readOnly = isRoleReadOnly(role);
+  const sandboxMode = readOnly || !hasScopedMutation(role) ? "read-only" : "workspace-write";
   return ensureText([
     `name = ${JSON.stringify(name)}`,
     `description = ${JSON.stringify(description)}`,
     `developer_instructions = ${JSON.stringify(instructions)}`,
+    `sandbox_mode = ${JSON.stringify(sandboxMode)}`,
     ""
   ].join("\n"));
-}
-
-function renderRoleConfig(role) {
-  const readOnly = isRoleReadOnly(role);
-  const sandboxMode = readOnly || !hasScopedMutation(role) ? "read-only" : "workspace-write";
-  return renderToml({ sandbox_mode: sandboxMode });
 }
 
 function pluginManifest() {
@@ -333,9 +330,10 @@ function capabilityGuidance() {
     "- `AGENTS.md` is rendered as a regular instruction file for the canonical rules and action-to-workflow mappings.",
     "- Skills are packaged under `.agents/skills/<skill>/SKILL.md`; missing canonical sources remain marked `DEFERRED`.",
     "- Custom roles are standalone custom-agent TOML files under `.codex/agents/<role>.toml`.",
-    "- Each canonical `[agents.<role>]` registration points `config_file` at a role-specific layer under the delivered `agents/` directory; the package maps `.codex/agents/` there. The layer sets top-level `sandbox_mode` (`read-only` for read-only roles and `workspace-write` only for scoped implementer mutation). Relative `config_file` paths resolve from the declaring `config.toml`.",
+    "- Each canonical `[agents.<role>]` registration points `config_file` at the delivered `agents/<role>.toml` role layer. That standalone file contains `developer_instructions` and top-level `sandbox_mode` (`read-only` for read-only roles and `workspace-write` only for the implementer). Relative `config_file` paths resolve from the declaring `config.toml`.",
     "- This role-layer pattern follows the official Codex Configuration Reference (https://developers.openai.com/codex/config-reference/); the published docs do not show one combined registration example, so native client acceptance remains a later manual check.",
     "- The primary overlay uses Sol/max; `terra-max.config.toml` preserves the same role registrations while providing the explicit Terra/max CLI alternative.",
+    "- Native `workspace-write` is workspace-wide; the implementer's declared task paths remain an outer approval boundary and are not enforced by this adapter.",
     "- Codex Desktop Terra/max selection is manual in its model controls.",
     "",
     "This adapter does not define repository schedules or a native statusline. If a selected Codex capability, path, syntax, or product surface is unavailable, report that condition and stop or ask for direction rather than inferring support.",
@@ -350,7 +348,7 @@ export function renderCodex(input = {}) {
   for (const collection of ["rules", "skills", "workflows", "commands"]) {
     if (!Array.isArray(core[collection])) throw new TypeError(`core.${collection} must be an array`);
   }
-  assertCanonicalRoleRecords(core.roles);
+  assertNativeRoleRecords(core.roles);
   assertNativeRoleSemantics(core.roles);
   const commandValidation = validateCommandRecords(core.commands, core.workflows);
   if (!commandValidation.valid) throw new AdapterContractError(commandValidation.errors);
@@ -376,7 +374,6 @@ export function renderCodex(input = {}) {
   for (const roleName of roleNames) {
     const role = roleRecords.get(roleName) || { id: roleName, ...DEFAULT_ROLES[roleName] };
     addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName)));
-    addFile(files, `.codex/agents/${roleName}.config.toml`, renderRoleConfig(role));
   }
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   for (const file of files) {
@@ -445,12 +442,15 @@ export function renderCodex(input = {}) {
         path: configRoot
       }
     ],
-    diagnostics: missingSkills.map(({ skill, hasRecord }) => ({
+    diagnostics: [
+      ...nativeScopeDiagnostics(core.roles),
+      ...missingSkills.map(({ skill, hasRecord }) => ({
       code: "missing-skill-source",
       severity: "error",
       message: `Canonical skill '${skill}' ${hasRecord ? "has no usable source content" : "has no source record"}; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.`,
       sourcePath: "core/inventory.json"
-    })),
+      }))
+    ],
     ownership: makeOwnership(files)
   };
   const validation = validateRenderResult(result);

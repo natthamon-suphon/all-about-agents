@@ -61,7 +61,40 @@ test("supported renderers preserve every production-selected canonical role id",
     for (const entry of scenario.cases) {
       const route = routeRole({ prompt: entry.prompt, roles: core.roles });
       assert.equal(route.status, "matched");
-      for (const [surface, files] of renders) assert.ok(files.has(filePath(surface, route.roleId)), `${surface}/${route.roleId}`);
+      for (const [surface, files] of renders) {
+        const artifact = files.get(filePath(surface, route.roleId));
+        assert.ok(artifact, `${surface}/${route.roleId}`);
+        const renderedId = surface === "codex"
+          ? (await import("../../../adapters/codex/adapter.mjs")).parseCodexToml(artifact).name
+          : /^name:\s*["']?([^"'\n]+)["']?/mu.exec(artifact)?.[1];
+        assert.equal(renderedId, route.roleId, `${surface} must preserve the production-selected canonical role id`);
+      }
     }
+  }
+});
+
+test("production router validates canonical ingress and ignores negated generic words", async () => {
+  const { routeRole } = await import("../../../core/roles/router.mjs");
+  const core = await loadCore(process.cwd());
+  assert.throws(() => routeRole({ prompt: "Review the source.", roles: [core.roles[0]] }), /canonical role|missing/iu);
+  for (const prompt of ["Do not modify files; just answer.", "This has risk.", "Review the source.", "Do not write files."]) {
+    const result = routeRole({ prompt, roles: core.roles });
+    assert.notEqual(result.status, "matched", prompt);
+  }
+});
+
+test("production router ignores explicitly negated role-intent signals", async () => {
+  const { routeRole } = await import("../../../core/roles/router.mjs");
+  const core = await loadCore(process.cwd());
+  for (const prompt of [
+    "Do not review the diff against the specification.",
+    "Never apply the test-first vertical slice.",
+    "Do not check privilege elevation and destructive-operation containment.",
+    "Don't find the current official API specification.",
+    "Do not trace this failing stack."
+  ]) {
+    const result = routeRole({ prompt, roles: core.roles });
+    assert.equal(result.status, "no-route", prompt);
+    assert.equal(result.roleId, null, prompt);
   }
 });

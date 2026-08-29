@@ -304,7 +304,7 @@ test("Codex maps each canonical role to a documented standalone TOML agent", () 
     assert.match(content, /^name = /mu);
     assert.match(content, /^description = /mu);
     assert.match(content, /^developer_instructions = /mu);
-    assert.doesNotMatch(content, /(?:tools|native|spawn_agent|invoke_subagent|mcp__)/iu);
+    assert.doesNotMatch(content, /(?:^|\n)\s*(?:tools|nativeTool|spawn_agent|invoke_subagent|mcp__)\b/imu);
   }
   assert.ok(result.registrations.some((entry) => entry.kind === "agents" && entry.destination === "agents"));
 });
@@ -331,10 +331,12 @@ test("Codex package manifest and Desktop guidance use only documented surfaces",
   assert.equal(manifest.configRoot.fallback, "~/.codex");
   assert.equal(manifest.components.instructions, "AGENTS.md");
   assert.equal(manifest.components.agents, ".codex/agents/{role}.toml");
+  assert.equal(Object.hasOwn(manifest.components, "roleConfigs"), false);
   assert.equal(manifest.components.skills, ".agents/skills/{skill}/SKILL.md");
   assert.equal(manifest.components.primaryConfig, "config.toml");
   assert.equal(manifest.components.alternateConfig, "terra-max.config.toml");
   assert.equal(manifest.components.manualDesktop, "docs/manual-desktop.md");
+  assert.equal(manifest.ownedPaths.includes(".codex/agents/{role}.config.toml"), false);
   assert.deepEqual(manifest.nativeValidation, {
     command: ["codex", "doctor", "--json", "--no-color"],
     requiredWhenAvailable: true

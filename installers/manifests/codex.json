@@ -15,7 +15,6 @@
     "instructions": "AGENTS.md",
     "skills": ".agents/skills/{skill}/SKILL.md",
     "agents": ".codex/agents/{role}.toml",
-    "roleConfigs": ".codex/agents/{role}.config.toml",
     "primaryConfig": "config.toml",
     "alternateConfig": "terra-max.config.toml",
     "manualDesktop": "docs/manual-desktop.md"
@@ -81,7 +80,6 @@
     "AGENTS.md",
     ".agents/skills/{skill}/SKILL.md",
     ".codex/agents/{role}.toml",
-    ".codex/agents/{role}.config.toml",
     "config.toml",
     "terra-max.config.toml",
     "docs/manual-desktop.md"

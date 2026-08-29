@@ -80,7 +80,7 @@
     "aaa:verify": "commands/verify.md"
   },
   "readOnlyRoles": {
-    "roles": ["investigator", "verifier", "reviewer", "security-reviewer"],
+    "roles": ["researcher", "investigator", "architect", "verifier", "reviewer", "security-reviewer"],
     "disallowedTools": ["Agent", "Bash", "Edit", "Write"]
   },
   "ownedPaths": [
