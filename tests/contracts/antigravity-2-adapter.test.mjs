@@ -164,6 +164,46 @@ test("Desktop manifest documents workspace/global discovery and no serialized se
   assert.deepEqual(plugin, { name: "all-about-agents" });
 });
 
+test("Desktop capability evidence records the current Medium/manual policy and unsupported Flash tier", async () => {
+  const evidence = JSON.parse(await readFile(resolve(process.cwd(), "adapters/antigravity-2/capabilities.json"), "utf8"));
+  assert.equal(evidence.checkedAt, "2026-08-29");
+  assert.equal(evidence.productVersion, "unknown");
+  const model = evidence.capabilities.find((entry) => entry.feature === "model.desktop");
+  assert.ok(model);
+  assert.equal(model.source, "research-antigravity-2.md");
+  assert.equal(model.support, "manual");
+  assert.deepEqual(model.value, {
+    displayName: "Gemini 3.7 Flash Medium",
+    selection: "manual",
+    persistence: "conversation-local",
+    applyVia: "Desktop model selector"
+  });
+  const effort = evidence.capabilities.find((entry) => entry.feature === "effort.desktop");
+  assert.ok(effort);
+  assert.equal(effort.source, "research-antigravity-2.md");
+  assert.equal(effort.support, "unsupported");
+  assert.equal(effort.stability, "unsupported");
+  assert.equal(effort.value, null);
+  assert.match(effort.notes, /Gemini 3\.7 Flash High.*unsupported/u);
+  assert.equal(Object.hasOwn(model.value, "thinkingLevel"), false);
+  assert.equal(Object.hasOwn(effort.value || {}, "effort"), false);
+  const persistence = evidence.capabilities.find((entry) => entry.feature === "desktop.model-persistence");
+  assert.ok(persistence);
+  assert.equal(persistence.source, "research-antigravity-2.md");
+  assert.equal(persistence.support, "unknown");
+  assert.equal(persistence.stability, "unknown");
+  assert.deepEqual(persistence.value, { nativeConfigKey: null, persistence: "unknown" });
+  const desktopPolicy = evidence.capabilities.filter((entry) => entry.feature.endsWith(".desktop") || entry.feature === "desktop.model-persistence");
+  for (const entry of desktopPolicy) {
+    assert.notEqual(entry.value, "High");
+    assert.notEqual(entry.value?.thinkingLevel, "High");
+    assert.notEqual(entry.value?.effort, "High");
+  }
+  const currentPolicy = JSON.stringify(desktopPolicy);
+  assert.doesNotMatch(currentPolicy, /gemini-3\.7-flash-high/iu);
+  assert.doesNotMatch(currentPolicy, /["']high["']/u);
+});
+
 test("Antigravity adapter satisfies the shared action contract and rejects incomplete mappings", () => {
   const result = adapter.renderSurface({ core, profile: { id: "portable" }, statuslineName: "" });
   assert.ok(result.files.length > 0);

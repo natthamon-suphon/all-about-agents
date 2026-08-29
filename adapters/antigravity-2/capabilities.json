@@ -1,32 +1,33 @@
 {
   "schemaVersion": 1,
   "surface": "antigravity-2",
-  "checkedAt": "2026-08-28",
+  "checkedAt": "2026-08-29",
   "productVersion": "unknown",
   "capabilities": [
     {
       "feature": "model.desktop",
       "support": "manual",
       "stability": "manual",
-      "source": "research-model-policy-antigravity.md",
-      "checkedAt": "2026-08-28",
+      "source": "research-antigravity-2.md",
+      "checkedAt": "2026-08-29",
       "productVersion": "unknown",
       "value": {
-        "displayName": "Gemini 3.7 Flash",
-        "thinkingLevel": "High",
-        "applyVia": "Desktop model selector / Model Usage settings"
+        "displayName": "Gemini 3.7 Flash Medium",
+        "selection": "manual",
+        "persistence": "conversation-local",
+        "applyVia": "Desktop model selector"
       },
-      "notes": "Documented Desktop UI selection; no public Desktop model slug is established."
+      "notes": "Documented Desktop conversation-local UI selection; no public Desktop model slug is established. Gemini 3.7 Flash High is unsupported."
     },
     {
       "feature": "effort.desktop",
-      "support": "manual",
-      "stability": "manual",
-      "source": "research-model-policy-antigravity.md",
-      "checkedAt": "2026-08-28",
+      "support": "unsupported",
+      "stability": "unsupported",
+      "source": "research-antigravity-2.md",
+      "checkedAt": "2026-08-29",
       "productVersion": "unknown",
-      "value": "High",
-      "notes": "Desktop documents Low, Medium, and High; max is not documented."
+      "value": null,
+      "notes": "Gemini 3.7 Flash High is unsupported in the Desktop selector; no Desktop effort value is emitted."
     },
     {
       "feature": "agents.discovery",
@@ -127,14 +128,14 @@
       "feature": "desktop.model-persistence",
       "support": "unknown",
       "stability": "unknown",
-      "source": "research-model-policy-antigravity.md",
-      "checkedAt": "2026-08-28",
+      "source": "research-antigravity-2.md",
+      "checkedAt": "2026-08-29",
       "productVersion": "unknown",
       "value": {
         "nativeConfigKey": null,
         "persistence": "unknown"
       },
-      "notes": "Public Desktop docs do not document a persisted key, file path, or slug; no persistence claim is made."
+      "notes": "Public Desktop docs only establish conversation-local stickiness; cross-session persistence is unknown and no native key is documented."
     }
   ]
 }
