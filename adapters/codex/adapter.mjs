@@ -4,7 +4,7 @@ import { posix, win32 } from "node:path";
 import { createHash } from "node:crypto";
 import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
 import { AdapterContractError, renderSurface as validateSurface, validateCommandRecords, validateRenderResult } from "../shared/adapter-contract.mjs";
-import { assertCanonicalRoleRecords, hasScopedMutation, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { assertCanonicalRoleRecords, assertNativeRoleSemantics, hasScopedMutation, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const CODEX_SURFACE = "codex";
 const ACTION_IDS = Object.freeze([
@@ -351,6 +351,7 @@ export function renderCodex(input = {}) {
     if (!Array.isArray(core[collection])) throw new TypeError(`core.${collection} must be an array`);
   }
   assertCanonicalRoleRecords(core.roles);
+  assertNativeRoleSemantics(core.roles);
   const commandValidation = validateCommandRecords(core.commands, core.workflows);
   if (!commandValidation.valid) throw new AdapterContractError(commandValidation.errors);
   validateCommandPresentation(core.commands);

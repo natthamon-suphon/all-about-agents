@@ -316,17 +316,19 @@ test("legacy generalist is quarantined from canonical role routing", async () =>
   assert.ok(edgeCases.cases.some((entry) => entry.expectedStatus === "no-route" && entry.expectedRole === null));
 });
 
-test("native mutation policy is derived from metadata rather than role-name lists", async () => {
+test("native mutation policy is derived from implementer metadata rather than a role-name default", async () => {
   const core = await loadCore(process.cwd());
-  const mutableResearcher = cloneCoreWithRole(core, "researcher", (role) => ({
+  const minimalImplementer = cloneCoreWithRole(core, "implementer", (role) => ({
     ...role,
     capabilities: ["repository-read", "repository-write"],
     mutationScope: { paths: ["workspace/docs/**"], operations: ["modify"] }
   }));
-  const claude = textFiles(renderClaude({ core: mutableResearcher, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })).get("agents/researcher.md");
-  const antigravity = textFiles(renderAntigravity({ core: mutableResearcher, profile: "portable", statuslineName: "roles" })).get(".agents/plugins/all-about-agents/agents/researcher.md");
+  const claude = textFiles(renderClaude({ core: minimalImplementer, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })).get("agents/implementer.md");
+  const antigravity = textFiles(renderAntigravity({ core: minimalImplementer, profile: "portable", statuslineName: "roles" })).get(".agents/plugins/all-about-agents/agents/implementer.md");
   assert.match(claude, /(?:^|\n)\s+- (?:Write|Edit)\b/u);
+  assert.doesNotMatch(claude, /(?:^|\n)\s+- Bash\b/u);
   assert.match(antigravity, /(?:write_to_file|replace_file_content)/u);
+  assert.doesNotMatch(antigravity, /(?:run_command|invoke_subagent)/u);
 });
 
 test("Codex registers every role with a role-specific effective sandbox config", async () => {
@@ -390,6 +392,39 @@ test("all renderers reject an incomplete canonical role collection deterministic
         .map((entry) => entry.message.replace("missing canonical role ", ""));
       return JSON.stringify(missing) === JSON.stringify(expectedMissing);
     }, surface);
+  }
+});
+
+test("all renderers reject forged canonical mutation semantics at the native boundary", async () => {
+  const base = await loadCore(process.cwd());
+  const forgedResearcher = cloneCoreWithRole(base, "researcher", (role) => ({
+    ...role,
+    mutationScope: { paths: ["workspace/docs/**"], operations: ["modify"] },
+    capabilities: [...role.capabilities, "repository-write"]
+  }));
+  const nonWritingImplementer = cloneCoreWithRole(base, "implementer", (role) => ({
+    ...role,
+    capabilities: role.capabilities.filter((capability) => !["repository-write", "isolated-write", "command-execution"].includes(capability))
+  }));
+  const malformedImplementer = cloneCoreWithRole(base, "implementer", (role) => ({
+    ...role,
+    mutationScope: { paths: ["../outside"], operations: ["modify"] }
+  }));
+  const cases = [
+    ["forged researcher", forgedResearcher, "mutation-scope"],
+    ["non-writing implementer", nonWritingImplementer, "semantic-capability"],
+    ["malformed implementer", malformedImplementer, "mutation-scope"]
+  ];
+  const renderers = [
+    ["claude", (core) => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity-2", (core) => renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
+    ["agy", (core) => renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+  ];
+  for (const [caseName, core, code] of cases) {
+    for (const [surface, render] of renderers) {
+      assert.throws(() => render(core), (error) => error.name === "CanonicalRoleContractError" && error.errors.some((entry) => entry.code === code), `${surface}/${caseName}`);
+    }
   }
 });
 

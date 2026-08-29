@@ -7,7 +7,7 @@ import {
   renderSurface as validateSurface,
   validateRenderResult
 } from "../shared/adapter-contract.mjs";
-import { assertCanonicalRoleRecords, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { assertCanonicalRoleRecords, assertNativeRoleSemantics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const CLAUDE_SURFACE = "claude";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
@@ -348,6 +348,7 @@ export function renderClaude(input = {}) {
     if (!Array.isArray(core[collection])) throw new TypeError(`core.${collection} must be an array`);
   }
   assertCanonicalRoleRecords(core.roles);
+  assertNativeRoleSemantics(core.roles);
   const profile = profileId(input.profile ?? "portable");
   const statuslineName = validStatuslineName(input.statuslineName ?? "");
   const files = [];

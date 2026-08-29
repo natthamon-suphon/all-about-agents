@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
-import { assertCanonicalRoleRecords, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { assertCanonicalRoleRecords, assertNativeRoleSemantics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const SURFACE = "antigravity-2";
 const DESKTOP_SURFACE = "antigravity-2-desktop";
@@ -294,6 +294,7 @@ function hooksDocument() {
 export function renderAntigravity(input = {}) {
   coreShape(input.core);
   assertCanonicalRoleRecords(input.core.roles);
+  assertNativeRoleSemantics(input.core.roles);
   const profile = profileId(input.profile ?? "portable");
   if (typeof input.statuslineName !== "string") throw new TypeError("statuslineName must be a string");
   const files = [];

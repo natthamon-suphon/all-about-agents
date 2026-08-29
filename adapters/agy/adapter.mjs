@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
-import { assertCanonicalRoleRecords, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { assertCanonicalRoleRecords, assertNativeRoleSemantics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 
 const SURFACE = "agy";
 const PLUGIN_ROOT = "";
@@ -502,6 +502,7 @@ function actionDiagnostics() {
 export function renderAgy(input = {}) {
   coreShape(input.core);
   assertCanonicalRoleRecords(input.core.roles);
+  assertNativeRoleSemantics(input.core.roles);
   const profile = profileId(input.profile ?? "portable");
   if (typeof input.statuslineName !== "string") throw new TypeError("statuslineName must be a string");
   const skillRecords = new Map(input.core.skills.map((record) => [record.id || record.name, record]));
