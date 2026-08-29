@@ -344,13 +344,31 @@ function hasOpaqueScriptPayload(value) {
     if (words.length === 0) continue;
     const first = tokenName(words[0]);
     const second = words[1] || "";
+    const runnerNames = new Set(["sh", "bash", "dash", "zsh", "ksh", "fish", "python", "python3", "node", "ruby", "perl", "pwsh", "powershell"]);
     if (["source", ".", "eval", "invoke-expression", "iex"].includes(first)) return true;
     if (first === "call" || first === "start") {
       if (second && (isScriptPathToken(second) || hasDynamicToken(second))) return true;
     }
     if (isScriptPathToken(words[0]) || hasDynamicToken(words[0]) && first === "&") return true;
-    if (["python", "python3", "node", "ruby", "perl", "pwsh", "powershell"].includes(first)
+    if (runnerNames.has(first) && second && !second.startsWith("-") && isScriptPathToken(second)) return true;
+    if (["python", "python3", "node", "ruby", "perl"].includes(first)
       && second && !second.startsWith("-") && isScriptPathToken(second)) return true;
+    if (["python", "python3", "node", "ruby", "perl", "pwsh", "powershell"].includes(first)
+      && /(?:\b(?:exec|eval|system|spawn|popen|open|require|child[_-]?process|start-process|invoke-command|invoke-expression)\b|process[.]env|os[.]environ)/iu.test(words.slice(1).join(" "))) return true;
+    if (first === "find") {
+      for (const [index, word] of words.entries()) {
+        if (["-exec", "-execdir"].includes(normalized(word))) {
+          const candidate = words[index + 1] || "";
+          if (isScriptPathToken(candidate) || hasDynamicToken(candidate)) return true;
+          if (runnerNames.has(tokenName(candidate)) && (isScriptPathToken(words[index + 2] || "") || hasDynamicToken(words[index + 2] || ""))) return true;
+        }
+      }
+    }
+    if (first === "xargs") {
+      const args = words.slice(1).filter((word) => !word.startsWith("-"));
+      if (args.some(isScriptPathToken) || args.some(hasDynamicToken)) return true;
+      if (args.some((word, index) => runnerNames.has(tokenName(word)) && isScriptPathToken(args[index + 1] || ""))) return true;
+    }
   }
   return false;
 }
@@ -417,7 +435,8 @@ function shellInvocationRecords(value) {
         optionIndex += 1;
         continue;
       }
-      if (next.startsWith("-") || next.startsWith("/")) {
+      const slashOption = ["cmd", "cmd.exe", "powershell", "powershell.exe", "pwsh", "pwsh.exe"].includes(interpreter) && next.startsWith("/");
+      if (next.startsWith("-") || slashOption) {
         const takesValue = next === "-o" || next === "--option" || next === "-executionpolicy" || next === "/executionpolicy";
         optionIndex += takesValue ? 2 : 1;
         continue;
@@ -705,7 +724,7 @@ function recursiveErase(command, capability) {
   const commandText = normalized(command);
   const capabilityText = normalized(capability);
   const dynamicCallOperator = /&\s*[$%`({]/u.test(text(command));
-  const recursiveCommands = new Set(["rm", "rmdir", "rd", "del", "erase", "shred", "remove-item"]);
+  const recursiveCommands = new Set(["rm", "rmdir", "rd", "del", "erase", "shred", "remove-item", "ri", "clear-item", "srm"]);
   const dynamicToken = (token) => /(?:\$|%[A-Za-z_]|![A-Za-z_]|`|[{}^])/u.test(text(token));
   const recursiveCommand = variants.some((variant) => {
     const tokens = lexicalWords(variant);
@@ -721,7 +740,8 @@ function recursiveErase(command, capability) {
       if (commandName(tokens[recursiveIndex]) === "remove-item" && rawDeviceTarget && !explicitRecursive) return false;
       return explicitRecursive || dynamicArgument;
     }
-    const dynamicExecutable = tokens.findIndex((token) => dynamicToken(token) && !token.startsWith("-"));
+    const executableStart = wrapperEnd(tokens);
+    const dynamicExecutable = dynamicToken(tokens[executableStart] || "") && !tokens[executableStart].startsWith("-") ? executableStart : -1;
     if (dynamicCallOperator && dynamicExecutable >= 0) return false;
     return dynamicExecutable >= 0 && tokens.slice(dynamicExecutable + 1).some((token) => isRecursiveFlag(token) || dynamicToken(token));
   });
@@ -730,7 +750,15 @@ function recursiveErase(command, capability) {
     const findIndex = tokens.findIndex((token) => tokenName(token) === "find");
     return findIndex >= 0 && tokens.slice(findIndex + 1).some((token) => normalized(token) === "-delete");
   });
-  return recursiveCommand || findDelete || /(?:recursive|erase|wipe|delete[-_ ]all|filesystem[-_ ]root)/u.test(capabilityText) || /(?:^|\s)filesystem[-_ ]root(?:\s|$)/u.test(commandText);
+  const enumeratePipeline = commandSegments(command).some((segment, index, segments) => {
+    if (index >= segments.length - 1) return false;
+    const source = lexicalWords(segment);
+    const target = lexicalWords(segments[index + 1]);
+    const enumerator = ["get-child-item", "gci", "dir", "ls", "find"].includes(tokenName(source[0] || ""));
+    const remover = ["remove-item", "ri", "clear-item", "srm", "rm"].includes(commandName(target[0] || ""));
+    return enumerator && source.some(isRecursiveFlag) && remover && (target.length > 1);
+  });
+  return recursiveCommand || findDelete || enumeratePipeline || /(?:recursive|erase|wipe|delete[-_ ]all|filesystem[-_ ]root)/u.test(capabilityText) || /(?:^|\s)filesystem[-_ ]root(?:\s|$)/u.test(commandText);
 }
 
 function hasRawDiskDestruction(command, capability, operation) {
@@ -745,7 +773,8 @@ function hasRawDiskDestruction(command, capability, operation) {
   const isUnsafeSegment = (segment) => {
     const value = normalized(segment).trim();
     const rawDeviceOperation = rawDevicePath.test(value) && /(?:>{1,2}|\b(?:set-content|out-file|add-content|copy-item|move-item|rename-item|remove-item|format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]disk|remove[-_ ]partition|remove-volume|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]copy|file[.]create|file[.]append|appendalltext|appendallbytes|truncate|cryptsetup|pvremove|nvme|cp|mv)\b|\bfile\]::(?:open|copy|create|writebyte|appendalltext|writealltext)\b)/u.test(value);
-    return formatCommand(value) || rawDeviceOperation || destructiveUtility.test(value);
+    const dynamicRawOperation = hasDynamicToken(value) && /(?:\b(?:set-content|out-file|add-content|copy-item|move-item|rename-item|remove-item|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]copy|file[.]create|file[.]append|appendall(?:text|bytes)|truncate|cryptsetup|pvremove|nvme|dd|cp|mv)\b|\bfile\]::(?:open|copy|create|writebyte|appendalltext|writealltext)\b)/u.test(value);
+    return formatCommand(value) || rawDeviceOperation || dynamicRawOperation || destructiveUtility.test(value);
   };
   if (commandVariants(command).some(isUnsafeSegment)) return true;
   return isUnsafeSegment(`${normalized(capability)} ${operationText(operation)}`);
@@ -797,7 +826,7 @@ function hasHistoryRewrite(command, operation) {
     return ["rebase", "filter-branch", "filter-repo", "replace"].includes(invocation?.subcommand)
       || invocation?.subcommand === "reflog" && invocation.args[0] === "expire"
       || invocation?.subcommand === "commit" && invocation.args.includes("--amend")
-      || invocation?.subcommand === "push" && invocation.args.includes("--delete")
+      || invocation?.subcommand === "push" && (invocation.args.includes("--delete") || invocation.args.some((argument) => argument.startsWith(":")))
       || dynamicSubcommand
       || dynamicHistoryFlag;
   });
@@ -809,7 +838,7 @@ function hasHistoryRewrite(command, operation) {
     return /(?:^|\s)(?:rebase|filter-branch|filter-repo|replace)(?:\s|$)/u.test(label)
       || subcommand === "reflog" && args.includes("expire")
       || subcommand === "commit" && args.includes("--amend")
-      || subcommand === "push" && args.includes("--delete")
+      || subcommand === "push" && (args.includes("--delete") || args.some((argument) => argument.startsWith(":")))
       || /(?:^|\s)git(?:\s|$)/u.test(label) && /[\$%{}!`^\\(]/u.test(record.subcommand || "")
       || /(?:^|\s)(?:rebase|commit|reflog)(?:\s|$)/u.test(label) && args.some((argument) => /[\$%{}!`^\\(]/u.test(argument));
   })
@@ -891,13 +920,14 @@ function hasSecretOutput(command, capability, operation, pathEntries) {
     const cmdSet = tokenName(tokens[0] || "") === "cmd"
       && tokens.some((token, index) => tokenName(token) === "set" && tokens.slice(index + 1).every((argument) => !argument.includes("=")));
     return ["printenv", "env", "declare", "typeset"].includes(commandInfo.name)
-      || commandInfo.name === "export" && commandInfo.args.includes("-p")
+      || commandInfo.name === "export" && (commandInfo.args.length === 0 || commandInfo.args.includes("-p"))
       || commandInfo.name === "set" && (commandInfo.args.length === 0 || commandInfo.args.every((argument) => !argument.includes("=")))
       || cmdSet;
   })
     || commandSegments(operationText(operation)).some((segment) => ["printenv", "env", "declare", "typeset"].includes(tokenName(commandTokens(segment)[0])))
-    || /(?:\$\(|`)\s*(?:printenv|env)\b/u.test(normalized(command));
-  const environmentProvider = /(?:\benv\s*:|\/proc\/self\/environ\b)/u.test(all) && /(?:get-content|get-item|cat|type|read|print|echo|write|copy|export|head|tail)/u.test(all);
+    || /(?:\$\(|`)\s*(?:printenv|env)\b/u.test(normalized(command))
+    || /\benv\s+-s\s+(?:printenv|env)\b/u.test(normalized(command));
+  const environmentProvider = /(?:\benv\s*:|\/proc\/[^\s/]+\/environ\b)/u.test(all) && /(?:get-content|get-item|cat|type|read|print|echo|write|copy|export|head|tail|strings|xargs)/u.test(all);
   const processEnvironment = /(?:process[.]env|os[.]environ|os[.]getenv|environment[.]getenvironmentvariable|environment\]::getenvironmentvariable|\b(?:python|python3|ruby|perl|node)\b[^;|&]*(?:\benv(?:ironment)?\b\s*[\[{:]))/u.test(all);
   const dynamicSecretRead = commandVariants(command).some((segment) => {
     const tokens = commandTokens(segment);
@@ -914,12 +944,17 @@ function hasGuardrailBypass(command, capability, operation) {
   const scan = all.replace(/["']/gu, "");
   const dynamicOptionName = all.split(/\s+/u).some((token) => /^--[^\s;|]*[$%`!{}^\\(]/u.test(token)
     || /^-(?:approval|sandbox|bypass|permission|guard|policy)[^\s;|]*[$%`!{}^\\(]/u.test(token));
+  const dynamicHarnessArgument = commandSegments(command).some((segment) => {
+    const words = lexicalWords(segment);
+    return ["codex", "agy", "claude"].includes(tokenName(words[0] || "")) && words.slice(1).some(hasDynamicToken);
+  });
   const dynamicGuardrailValue = /--(?:approval[-_ ]?policy|sandbox|bypass(?:[-_ ]?permissions)?)(?:\s*(?:=|:)\s*|\s+)([^\s;|]+)/gu;
   for (const match of scan.matchAll(dynamicGuardrailValue)) {
     if (/[\$%!]\w|\$\{|\$\(|`|\^|\\|\(|\)|\{|\}/u.test(match[1])) return true;
   }
   return hasDynamicShellPayload(command)
     || dynamicOptionName
+    || dynamicHarnessArgument
     || /(?:dangerously-skip-permissions|dangerously-bypass|bypass[-_ ]?permissions|full[-_ ]?access|disable[-_ ]?(?:safety|guard|hook|deny)|skip[-_ ]?(?:safety|guard|hook|verification)|hooks?\s+(?:off|disable)|permissions?\s+(?:off|disable)|--no-verify\b|(?:approval[-_ ]policy|sandbox)\s*(?:=|:|\s+)\s*(?:never|danger-full-access)\b|--no-sandbox\b)/u.test(scan)
     || /--(?:approval[-_ ]?policy|sandbox|bypass(?:[-_ ]?permissions)?)(?:\s*(?:=|:)\s*|\s+)[`$%!^\\({]/u.test(scan)
     || /--bypass(?:[-_ ]?permissions)?(?:[-_ ]+)[`$%!^\\({]/u.test(scan)

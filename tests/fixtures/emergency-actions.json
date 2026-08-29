@@ -275,5 +275,35 @@
     ,{ "id": "raw-pvremove-device", "action": { "command": "pvremove /dev/sda" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
     ,{ "id": "raw-nvme-sanitize-device", "action": { "command": "nvme sanitize /dev/nvme0" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
     ,{ "id": "guardrail-dynamic-option-name", "action": { "command": "codex --sand$BOX" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "wrapper-nested-absolute-script", "action": { "command": "sudo env VAR=1 timeout 5 command bash /tmp/deploy.sh" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "wrapper-nested-powershell-script", "action": { "command": "sudo -u root pwsh C:/deploy.ps1" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "shell-nested-absolute-script", "action": { "command": "sh -c 'bash /tmp/deploy.sh'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "find-exec-script", "action": { "command": "find /tmp -exec /tmp/deploy.sh {} \\;" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "find-exec-shell-script", "action": { "command": "find /tmp -exec bash /tmp/deploy.sh {} \\;" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "xargs-script-launch", "action": { "command": "xargs /tmp/deploy.sh" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "python-eval-script", "action": { "command": "python -c 'exec(open(\"/tmp/deploy.py\").read())'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "node-system-script", "action": { "command": "node -e 'require(\"child_process\").exec(\"rm -rf /\")'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "ruby-system-script", "action": { "command": "ruby -e 'system(\"rm -rf /\")'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "perl-system-script", "action": { "command": "perl -e 'system(\"rm -rf /\")'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "powershell-start-process-script", "action": { "command": "pwsh Start-Process -FilePath /tmp/deploy.ps1" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "powershell-invoke-command-script", "action": { "command": "pwsh Invoke-Command -FilePath /tmp/deploy.ps1" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "recursive-ri-alias", "action": { "command": "ri -Recurse /" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "recursive-clear-item-alias", "action": { "command": "Clear-Item -Recurse /" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "recursive-srm-alias", "action": { "command": "srm -rf /" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "recursive-enumerate-remove-pipeline", "action": { "command": "Get-ChildItem -Recurse | Remove-Item -Force" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "raw-dynamic-target-only", "action": { "command": "dd if=$SOURCE of=$TARGET" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-copy-dynamic-target-only", "action": { "command": "Copy-Item $SOURCE $TARGET" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-dotnet-dynamic-target-only", "action": { "command": "[IO.File]::WriteAllText($TARGET, 'x')" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "env-proc-pid-output", "action": { "command": "cat /proc/$PID/environ" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "env-strings-output", "action": { "command": "strings /proc/self/environ" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "env-xargs-output", "action": { "command": "xargs -0 -a /proc/self/environ" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "env-short-printenv-output", "action": { "command": "env -S printenv" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "shell-export-output", "action": { "command": "export" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "guardrail-variable-only-option", "action": { "command": "codex $OPTION" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "guardrail-agy-option-fragment", "action": { "command": "agy --permission$SUFFIX" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "guardrail-claude-option-fragment", "action": { "command": "claude --approval$POLICY" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "structured-git-array-force-object", "action": { "command": "git status", "gitOperation": [{ "push": { "args": [{ "ref": "+main" }], "force": true } }] }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "structured-git-nested-force-object", "action": { "command": "git status", "gitOperation": { "metadata": { "operation": "push", "args": [{ "ref": "main" }], "force": true } } }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "git-remote-colon-delete", "action": { "command": "git push origin :feature" }, "expected": { "decision": "deny", "ruleId": "git-history-rewrite" } }
   ]
 }
