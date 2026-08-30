@@ -9,7 +9,7 @@ import { readContainedUtf8Jsonl, runEvaluationBatch } from "../core/evals/runner
 import { loadCore } from "../installers/lib/load-core.mjs";
 import { parseArgs } from "../installers/lib/args.mjs";
 import { resolveDestinationRoot, assertSafeDestinationRoot } from "../installers/lib/roots.mjs";
-import { renderForSurface } from "../installers/lib/render.mjs";
+import { renderForSurface, materializeRenderResult } from "../installers/lib/render.mjs";
 import { buildPlan } from "../installers/lib/plan.mjs";
 import { applyPlan } from "../installers/lib/apply.mjs";
 import { readManagedState } from "../installers/lib/state.mjs";
@@ -36,6 +36,7 @@ const HELP_TEXT = [
 const ACTIONS = new Set(["install", "doctor", "validate", "diff", "eval"]);
 const REPOSITORY_VERSION_FALLBACK = "1.0.0";
 const CONTENT_ACTIONS = new Set(["create", "replace", "unchanged"]);
+const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function hasValidFoundation(cwd) {
   try {
@@ -185,7 +186,8 @@ async function renderPlans(options, cwd) {
   const core = await loadCore(cwd);
   const entries = [];
   for (const { surface, root } of roots) {
-    const payload = await renderForSurface({ repositoryRoot: cwd, core, surface, profile: options.profile, statuslineName: options.statuslineName, platform: process.platform, env: envForRoot(surface, options.destinationRoot ? root : null) });
+    const rendered = await renderForSurface({ repositoryRoot: cwd, core, surface, profile: options.profile, statuslineName: options.statuslineName, platform: process.platform, env: envForRoot(surface, options.destinationRoot ? root : null) });
+    const payload = materializeRenderResult(rendered);
     const validation = validateRenderResult(payload);
     if (!validation.valid) throw new Error(`render validation failed for ${surface}: ${JSON.stringify(validation.errors)}`);
     const previousState = await readManagedState(root);
@@ -411,9 +413,9 @@ function doctorStatus(checks) {
   return "pass";
 }
 
-async function doctor(args, output, errorOutput, cwd) {
+async function doctor(args, output, errorOutput, cwd, invocationCwd = cwd) {
   let options;
-  try { options = normalizeParsedOptions(parseArgs(["doctor", ...args]), cwd); } catch (error) { return emitError(error, wantsJson(args) ? "json" : "text", output, errorOutput, 2); }
+  try { options = normalizeParsedOptions(parseArgs(["doctor", ...args]), invocationCwd); } catch (error) { return emitError(error, wantsJson(args) ? "json" : "text", output, errorOutput, 2); }
   if (!hasValidFoundation(cwd)) return emitError(new Error("Foundation validation failed: package metadata is missing or invalid"), options.format, output, errorOutput, 1);
   const runtimes = { node: process.versions.node };
   const checks = [];
@@ -467,7 +469,8 @@ async function evaluate(args, output, errorOutput, cwd) {
 export { renderPlans };
 
 export async function main(args, output = process.stdout, errorOutput = process.stderr, runtime = {}) {
-  const cwd = process.cwd();
+  const invocationCwd = process.cwd();
+  const cwd = REPOSITORY_ROOT;
   const argv = Array.isArray(args) ? args : [];
   const runtimeOptions = runtime && typeof runtime === "object" ? runtime : {};
   const interactive = runtimeOptions.interactive === undefined
@@ -496,13 +499,13 @@ export async function main(args, output = process.stdout, errorOutput = process.
   if (action === "validate") return validate(rest, output, errorOutput, cwd);
   let options;
   try {
-    options = normalizeParsedOptions(parseArgs([action, ...rest]), cwd);
+    options = normalizeParsedOptions(parseArgs([action, ...rest]), invocationCwd);
     if (action === "install" && interactive && options.surfaces.includes("claude") && !hasOption(rest, "--statusline-name")) {
       const statuslineName = await prompt("Statusline display name");
-      options = normalizeParsedOptions(parseArgs([action, ...rest, "--statusline-name", statuslineName]), cwd);
+      options = normalizeParsedOptions(parseArgs([action, ...rest, "--statusline-name", statuslineName]), invocationCwd);
     }
   } catch (error) { return emitError(error, wantsJson(rest) ? "json" : "text", output, errorOutput, 2); }
-  if (action === "doctor") return doctor(rest, output, errorOutput, cwd);
+  if (action === "doctor") return doctor(rest, output, errorOutput, cwd, invocationCwd);
   if (!hasValidFoundation(cwd)) return emitError(new Error("Foundation validation failed: package metadata is missing or invalid"), options.format, output, errorOutput, 1);
   if (action === "install" || action === "diff") return installOrDiff(options, output, errorOutput, cwd);
   return 0;
