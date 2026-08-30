@@ -1,0 +1,51 @@
+name: Installer matrix
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clean-profile:
+    name: Clean profiles (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Use Node.js 22.12
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.12.0
+          package-manager-cache: false
+
+      - name: Run clean-profile installer matrix
+        run: >-
+          node --test
+          tests/integration/claude-install.test.mjs
+          tests/integration/codex-install.test.mjs
+          tests/integration/antigravity-2-install.test.mjs
+          tests/integration/agy-install.test.mjs
+          tests/integration/all-surfaces.test.mjs
+
+      - name: Smoke-test PowerShell launcher
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./installers/install.ps1 validate --scope all --format json
+
+      - name: Validate and smoke-test POSIX launcher
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          bash -n installers/install.sh
+          bash installers/install.sh validate --scope all --format json

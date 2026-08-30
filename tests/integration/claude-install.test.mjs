@@ -7,6 +7,7 @@ import test from "node:test";
 import { withTempRoot } from "../helpers/temp-root.mjs";
 
 const requiredOutputs = [
+  ".github/workflows/installer-matrix.yml",
   "tests/integration/claude-install.test.mjs",
   "tests/integration/codex-install.test.mjs",
   "tests/integration/antigravity-2-install.test.mjs",

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "task": "T049 clean-profile native acceptance",
+  "status": "not run",
+  "scope": "Manual product checks only; this record contains no fabricated pass results.",
+  "products": [
+    {
+      "id": "claude",
+      "version": { "status": "unknown", "value": null, "evidence": "not run: no Claude Code session was opened" },
+      "evidence": { "status": "not run", "artifacts": [], "notes": "No native clean-profile discovery evidence recorded." },
+      "procedure": [
+        "Create an empty disposable root and run: node scripts/aaa.mjs install --surface claude --destination-root <DISPOSABLE_ROOT>/claude --apply --format json.",
+        "From an unrelated working directory, start Claude Code with that disposable configuration root and record the exact `claude --version` output.",
+        "In a fresh session, invoke each canonical skill and record the resolved skill path plus one successful discovery observation.",
+        "Run: node scripts/aaa.mjs diff --surface claude --destination-root <DISPOSABLE_ROOT>/claude --format json; record an empty diff after the apply. Remove the disposable root after evidence capture."
+      ]
+    },
+    {
+      "id": "codex",
+      "version": { "status": "unknown", "value": null, "evidence": "not run: no Codex CLI/Desktop session was opened" },
+      "evidence": { "status": "not run", "artifacts": [], "notes": "No native clean-profile discovery evidence recorded." },
+      "procedure": [
+        "Create an empty disposable root and run: node scripts/aaa.mjs install --surface codex --destination-root <DISPOSABLE_ROOT>/codex --apply --format json.",
+        "From an unrelated working directory, start Codex with that disposable CODEX_HOME and record the exact `codex --version` output.",
+        "In a fresh session, inspect the installed AGENTS.md and invoke each canonical skill; record the resolved paths and one successful discovery observation.",
+        "Run: node scripts/aaa.mjs diff --surface codex --destination-root <DISPOSABLE_ROOT>/codex --format json; record an empty diff after the apply. Remove the disposable root after evidence capture."
+      ]
+    },
+    {
+      "id": "antigravity-2",
+      "version": { "status": "unknown", "value": null, "evidence": "not run: no Antigravity Desktop session was opened" },
+      "evidence": { "status": "not run", "artifacts": [], "notes": "No native clean-profile discovery evidence recorded; Desktop discovery is manual." },
+      "procedure": [
+        "Run: node scripts/aaa.mjs install --surface antigravity-2 --destination-root <DISPOSABLE_ROOT>/antigravity-2 --apply --format json.",
+        "Open Antigravity Desktop's documented plugin/extension discovery UI, add only the generated disposable package, and record the exact application version from its About screen.",
+        "Start a fresh workspace session and verify one canonical skill, one rule, and one agent are discoverable; record the UI path or command used and the observed artifact paths.",
+        "Do not infer successful native registration from filesystem presence; attach a screenshot or exported diagnostic and remove the disposable package after capture."
+      ]
+    },
+    {
+      "id": "agy",
+      "version": { "status": "unknown", "value": null, "evidence": "not run: no agy CLI session was opened" },
+      "evidence": { "status": "not run", "artifacts": [], "notes": "No native clean-profile discovery evidence recorded; no automatic persistent root is assumed." },
+      "procedure": [
+        "Run: node scripts/aaa.mjs install --surface agy --destination-root <DISPOSABLE_ROOT>/agy --apply --format json.",
+        "Record the exact `agy --version` output and the documented plugin installation/discovery command used by the installed agy CLI.",
+        "Install only the generated disposable package using that documented command, start a fresh session, and verify one canonical skill/rule/agent discovery result with its resolved path.",
+        "Run: node scripts/aaa.mjs diff --surface agy --destination-root <DISPOSABLE_ROOT>/agy --format json; record the result and remove the disposable root after evidence capture."
+      ]
+    }
+  ]
+}

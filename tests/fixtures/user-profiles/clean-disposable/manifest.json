@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "profile": "clean-disposable",
+  "purpose": "T049 isolated user-profile fixture",
+  "contents": [],
+  "secrets": false,
+  "liveVendorState": false
+}
