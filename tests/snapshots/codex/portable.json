@@ -68,7 +68,7 @@
     },
     {
       "relativePath": ".agents/skills/research/SKILL.md",
-      "sha256": "f2d71ac9fa9b44cd81b4492e427644211fc5ce6a5413ba66d38da98a0c6dc486",
+      "sha256": "02214ae5de5756a0920a84603a60fa9bcc2fc5ca991d1caafec7038fc1d38b7e",
       "mode": null
     },
     {
@@ -317,7 +317,7 @@
     },
     {
       "relativePath": ".agents/skills/research/SKILL.md",
-      "sha256": "f2d71ac9fa9b44cd81b4492e427644211fc5ce6a5413ba66d38da98a0c6dc486"
+      "sha256": "02214ae5de5756a0920a84603a60fa9bcc2fc5ca991d1caafec7038fc1d38b7e"
     },
     {
       "relativePath": ".agents/skills/resolving-merge-conflicts/SKILL.md",
@@ -685,12 +685,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'requesting-code-review' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'research' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {

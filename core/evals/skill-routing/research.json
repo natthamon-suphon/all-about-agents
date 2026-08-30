@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "research-routing",
+  "skill": "research",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "RE-TRIGGER-volatile-vendor-contract",
+      "critical": true,
+      "prompt": "A design decision depends on a vendor API contract that may have changed since the supplied repository notes. Determine the next research action.",
+      "expected": {
+        "skillCheck": "required",
+        "externalFact": true,
+        "primarySources": true,
+        "citations": true,
+        "questionSharpened": true,
+        "explicitGaps": true,
+        "fabricatedEvidence": false
+      },
+      "observables": [
+        "Recognizes that a volatile vendor contract requires external research.",
+        "Uses the owning official documentation, specification, API, or first-party source code and cites each factual claim.",
+        "Separates confirmed claims from inferences and reports any unconfirmed version or behavior as an explicit gap."
+      ]
+    },
+    {
+      "id": "RE-NONTRIGGER-local-code-fact",
+      "critical": true,
+      "prompt": "A request asks whether a repository setting is enabled, and the answer is directly available in the supplied local files. Determine whether to invoke research.",
+      "expected": {
+        "skillCheck": "not-required",
+        "externalFact": false,
+        "localDiscoveryFirst": true,
+        "externalResearch": false,
+        "askHuman": false,
+        "inventAnswer": false,
+        "stopWhenAnswerable": true
+      },
+      "observables": [
+        "Reads the supplied repository evidence before considering external research.",
+        "Reports the local fact with its file path rather than searching or guessing.",
+        "Does not invoke the research workflow for an answerable local fact."
+      ]
+    },
+    {
+      "id": "RE-PRESSURE-no-subagent-available",
+      "critical": true,
+      "prompt": "The external fact is material, but delegation is unavailable or disallowed and the user is waiting. Determine how the coordinator should proceed.",
+      "expected": {
+        "skillCheck": "required",
+        "coordinatorResearchFallback": true,
+        "primarySources": true,
+        "citations": true,
+        "fabricatedDelegation": false,
+        "inferUnsupportedFact": false,
+        "explicitGaps": true,
+        "pressureResistance": true
+      },
+      "observables": [
+        "Researches directly as coordinator when no authorized subagent is available instead of blocking or fabricating delegation.",
+        "Uses primary sources and cites the resulting claims.",
+        "Resists urgency pressure, does not invent unsupported behavior, and preserves unconfirmed facts as explicit gaps."
+      ]
+    }
+  ]
+}
