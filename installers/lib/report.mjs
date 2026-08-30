@@ -48,3 +48,36 @@ export function serializeApplyResult(result) {
   if (!validateApplyResult(result)) throw new TypeError("invalid ApplyResult");
   return `${JSON.stringify(result)}\n`;
 }
+
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value instanceof Uint8Array) return [...value];
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stableValue(value[key])]));
+  }
+  return value;
+}
+
+/** Serialize CLI reports with deterministic object-key ordering. */
+export function serializeReport(value) {
+  return `${JSON.stringify(stableValue(value))}\n`;
+}
+
+/** Render a compact, deterministic action table for human CLI output. */
+export function formatPlanText(plan) {
+  const lines = [`surface=${plan.surface} root=${plan.root}`];
+  for (const action of [...plan.actions].sort((left, right) => left.relativePath.localeCompare(right.relativePath) || left.kind.localeCompare(right.kind))) {
+    lines.push(`${action.kind}\t${action.relativePath}\t${action.reason}`);
+  }
+  for (const diagnostic of [...(plan.diagnostics || [])].sort((left, right) => String(left.code).localeCompare(String(right.code)))) {
+    lines.push(`diagnostic\t${diagnostic.severity}\t${diagnostic.code}\t${diagnostic.message}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+/** Render already redacted unified-diff records in deterministic order. */
+export function formatDiffText(records) {
+  const ordered = [...records].sort((left, right) => String(left.surface).localeCompare(String(right.surface)) || String(left.relativePath).localeCompare(String(right.relativePath)));
+  if (ordered.length === 0) return "No changes.\n";
+  return `${ordered.map((entry) => entry.diff).join("\n")}\n`;
+}
