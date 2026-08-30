@@ -38,19 +38,41 @@ function surfaceFor(payload) {
   throw new TypeError("payload must identify a supported surface through surface or profile-translation registration");
 }
 
-function stateOwnership(previousState, surface, diagnostics) {
+function selectedSurfaceSet(selectedSurfaces, surface) {
+  const values = selectedSurfaces === undefined ? [surface] : selectedSurfaces;
+  if (!Array.isArray(values) || values.length === 0 || values.some((value) => !SURFACES.has(value)) || new Set(values).size !== values.length || !values.includes(surface)) {
+    throw new TypeError("selectedSurfaces must be unique supported surfaces including the payload surface");
+  }
+  return new Set(values);
+}
+
+function namespacedOwner(parsed, relativePath) {
+  const matches = parsed.surfaces.filter((candidate) => relativePath.startsWith(`${candidate}/`));
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function stateOwnership(previousState, selectedSurfaces, diagnostics) {
   if (previousState === null || previousState === undefined) return null;
   const parsed = parseManagedState(previousState);
   if (!parsed) {
     diagnostics.push(issue("invalid-previous-state", "warning", "Previous managed state is missing or malformed; pruning is disabled."));
     return null;
   }
-  if (!parsed.surfaces.includes(surface)) {
-    diagnostics.push(issue("invalid-previous-state", "warning", "Previous managed state does not include the selected surface; pruning is disabled."));
+  const selected = new Set(selectedSurfaces);
+  if (!parsed.surfaces.some((surface) => selected.has(surface))) {
+    diagnostics.push(issue("managed-root-surface-conflict", "error", "Previous managed state belongs to a different surface; use a separate root or refresh all managed surfaces together."));
     return null;
   }
   const entries = new Map();
   for (const entry of parsed.ownedPaths) {
+    if (parsed.surfaces.length > 1) {
+      const owner = namespacedOwner(parsed, entry.relativePath);
+      if (owner === null) {
+        diagnostics.push(issue("ambiguous-previous-state", "error", "Multi-surface managed state contains ownership without an unambiguous surface namespace."));
+        return null;
+      }
+      if (!selected.has(owner)) continue;
+    }
     entries.set(entry.relativePath, entry.sha256);
   }
   return entries;
@@ -101,10 +123,11 @@ function payloadFiles(payload) {
 }
 
 /** Build a read-only deterministic plan from a rendered payload and root. */
-export function buildPlan({ payload, destinationRoot, previousState = null } = {}) {
+export function buildPlan({ payload, destinationRoot, previousState = null, selectedSurfaces } = {}) {
   if (typeof destinationRoot !== "string" || destinationRoot.trim() === "" || destinationRoot.includes("\0")) throw new TypeError("destinationRoot must be a non-empty path");
   const root = resolve(destinationRoot);
   const surface = surfaceFor(payload);
+  const selected = selectedSurfaceSet(selectedSurfaces, surface);
   const files = payloadFiles(payload);
   const diagnostics = Array.isArray(payload.diagnostics) ? payload.diagnostics.map((entry) => ({ ...entry })) : [];
   let rootSafetyError = null;
@@ -175,7 +198,7 @@ export function buildPlan({ payload, destinationRoot, previousState = null } = {
     actions.push(action(expectedHash === contentHash ? "unchanged" : "replace", relativePath, expectedHash, contentHash, expectedHash === contentHash ? "destination bytes already match" : "destination bytes differ"));
   }
 
-  const priorOwnership = stateOwnership(previousState, surface, diagnostics);
+  const priorOwnership = stateOwnership(previousState, selected, diagnostics);
   if (priorOwnership) {
     for (const [relativePath, expectedHash] of [...priorOwnership.entries()].sort(([left], [right]) => compare(left, right))) {
       if (desired.has(relativePath)) continue;

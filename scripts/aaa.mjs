@@ -181,6 +181,23 @@ function surfaceRoots(options) {
   }));
 }
 
+function namespacePayload(payload, surface) {
+  return {
+    ...payload,
+    files: payload.files.map((file) => ({ ...file, relativePath: `${surface}/${file.relativePath}` })),
+    ownership: payload.ownership.map((entry) => ({ ...entry, relativePath: `${surface}/${entry.relativePath}` }))
+  };
+}
+
+function usesSharedNamespace(previousState) {
+  if (previousState === null || previousState === undefined || previousState.surfaces.length <= 1) return false;
+  for (const entry of previousState.ownedPaths) {
+    const owners = previousState.surfaces.filter((surface) => entry.relativePath.startsWith(`${surface}/`));
+    if (owners.length !== 1) throw new Error("managed multi-surface root contains ambiguous ownership; refusing to mutate it");
+  }
+  return true;
+}
+
 async function renderPlans(options, cwd) {
   const roots = surfaceRoots(options);
   const core = await loadCore(cwd);
@@ -191,32 +208,35 @@ async function renderPlans(options, cwd) {
     const validation = validateRenderResult(payload);
     if (!validation.valid) throw new Error(`render validation failed for ${surface}: ${JSON.stringify(validation.errors)}`);
     const previousState = await readManagedState(root);
-    const plan = buildPlan({ payload, destinationRoot: root, previousState });
+    const selectedSurfaces = [surface];
+    const plan = buildPlan({ payload, destinationRoot: root, previousState, selectedSurfaces });
     const contents = new Map(payload.files.map((file) => [file.relativePath, file.content]));
-    entries.push({ surface, root, payload, plan, contents });
+    entries.push({ surface, root, payload, plan, contents, previousState, selectedSurfaces });
   }
   if (options.destinationRoot && entries.length > 1) {
     const [first] = entries;
     // An explicitly supplied shared root is a disposable/operator sandbox.
     // Namespace each independently rendered package so vendor-neutral files
     // (for example hooks/activity-audit.json) cannot overwrite one another.
-    const files = entries.flatMap((entry) => entry.payload.files.map((file) => ({
-      ...file,
-      relativePath: `${entry.surface}/${file.relativePath}`
-    })));
+    const namespaced = entries.map((entry) => namespacePayload(entry.payload, entry.surface));
+    const files = namespaced.flatMap((payload) => payload.files);
     const payload = {
       surface: first.surface,
       files,
       registrations: entries.flatMap((entry) => entry.payload.registrations),
       diagnostics: entries.flatMap((entry) => entry.payload.diagnostics),
-      ownership: entries.flatMap((entry) => entry.payload.ownership.map((ownership) => ({
-        ...ownership,
-        relativePath: `${entry.surface}/${ownership.relativePath}`
-      })))
+      ownership: namespaced.flatMap((entry) => entry.ownership)
     };
     const previousState = await readManagedState(first.root);
-    const plan = buildPlan({ payload, destinationRoot: first.root, previousState });
-    return [{ surface: first.surface, root: first.root, payload, plan, contents: new Map(files.map((file) => [file.relativePath, file.content])) }];
+    const selectedSurfaces = [...options.surfaces];
+    const plan = buildPlan({ payload, destinationRoot: first.root, previousState, selectedSurfaces });
+    return [{ surface: first.surface, root: first.root, payload, plan, contents: new Map(files.map((file) => [file.relativePath, file.content])), previousState, selectedSurfaces }];
+  }
+  if (options.destinationRoot && entries.length === 1 && usesSharedNamespace(entries[0].previousState)) {
+    const [entry] = entries;
+    const payload = namespacePayload(entry.payload, entry.surface);
+    const plan = buildPlan({ payload, destinationRoot: entry.root, previousState: entry.previousState, selectedSurfaces: entry.selectedSurfaces });
+    return [{ ...entry, payload, plan, contents: new Map(payload.files.map((file) => [file.relativePath, file.content])) }];
   }
   return entries;
 }
@@ -338,7 +358,7 @@ async function installOrDiff(options, output, errorOutput, cwd) {
   const results = [];
   let aggregateStatus = "complete";
   for (const entry of entries) {
-    const result = await applyPlan({ plan: entry.plan, fileSystem: { contents: entry.contents, repositoryVersion: repositoryVersion(cwd), profile: options.profile, surfaces: options.surfaces } });
+    const result = await applyPlan({ plan: entry.plan, fileSystem: { contents: entry.contents, repositoryVersion: repositoryVersion(cwd), profile: options.profile, surfaces: entry.selectedSurfaces, previousState: entry.previousState } });
     results.push(result);
     if (result.status !== "complete") {
       aggregateStatus = results.some((candidate) => candidate.completed.length > 0) ? "partial" : "failed";

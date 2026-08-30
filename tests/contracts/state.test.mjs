@@ -5,7 +5,7 @@ import test from "node:test";
 import { withTempRoot } from "../helpers/temp-root.mjs";
 import stateSchema from "../../installers/schemas/state.schema.json" with { type: "json" };
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
-import { buildManagedState, parseManagedState, readManagedState, serializeManagedState, STATE_RELATIVE_PATH } from "../../installers/lib/state.mjs";
+import { buildManagedState, mergeManagedState, parseManagedState, readManagedState, serializeManagedState, STATE_RELATIVE_PATH } from "../../installers/lib/state.mjs";
 import { hashBytes } from "../../installers/lib/hash.mjs";
 import { writeManagedState } from "../../installers/lib/state.mjs";
 
@@ -61,4 +61,84 @@ test("state rejects extra fields, duplicate ownership, invalid metadata, and non
   assert.throws(() => buildManagedState({ repositoryVersion: "x", profile: "portable", surfaces: ["claude"], ownedPaths: [{ relativePath: "a", sha256: "A".repeat(64) }] }), /SHA-256/u);
   assert.throws(() => buildManagedState({ repositoryVersion: "x", profile: "portable", surfaces: ["claude", "claude"], ownedPaths: [] }), /duplicate/u);
   assert.throws(() => buildManagedState({ repositoryVersion: "x", profile: "bad", surfaces: ["claude"], ownedPaths: [] }), /profile/u);
+});
+
+test("managed-state merge preserves unselected namespaces and replaces selected ownership", () => {
+  const previousState = buildManagedState({
+    repositoryVersion: "repo-old",
+    profile: "portable",
+    surfaces: ["claude", "codex"],
+    ownedPaths: [
+      { relativePath: "claude/old.txt", sha256: hashBytes(bytes("old")) },
+      { relativePath: "codex/keep.txt", sha256: hashBytes(bytes("keep")) }
+    ]
+  });
+  const merged = mergeManagedState({
+    repositoryVersion: "repo-old",
+    profile: "portable",
+    surfaces: ["claude"],
+    completed: [{ kind: "create", relativePath: "claude/new.txt", contentHash: hashBytes(bytes("new")) }],
+    previousState
+  });
+  assert.deepEqual(merged.surfaces, ["claude", "codex"]);
+  assert.deepEqual(merged.ownedPaths, [
+    { relativePath: "claude/new.txt", sha256: hashBytes(bytes("new")) },
+    { relativePath: "codex/keep.txt", sha256: hashBytes(bytes("keep")) }
+  ]);
+});
+
+test("managed-state merge rejects ambiguous multi-surface ownership", () => {
+  const previousState = buildManagedState({
+    repositoryVersion: "repo-old",
+    profile: "portable",
+    surfaces: ["claude", "codex"],
+    ownedPaths: [{ relativePath: "shared.txt", sha256: hashBytes(bytes("shared")) }]
+  });
+  assert.throws(() => mergeManagedState({
+    repositoryVersion: "repo-old",
+    profile: "portable",
+    surfaces: ["claude"],
+    completed: [],
+    previousState
+  }), /ambiguous.*surface/u);
+});
+
+test("managed-state merge rejects cross-surface adoption and mixed-version partial refresh", () => {
+  const single = buildManagedState({
+    repositoryVersion: "repo-old",
+    profile: "portable",
+    surfaces: ["claude"],
+    ownedPaths: [{ relativePath: "settings.json", sha256: hashBytes(bytes("settings")) }]
+  });
+  assert.throws(() => mergeManagedState({
+    repositoryVersion: "repo-new",
+    profile: "portable",
+    surfaces: ["codex"],
+    completed: [],
+    previousState: single
+  }), /different surface/u);
+
+  const aggregate = buildManagedState({
+    repositoryVersion: "repo-old",
+    profile: "portable",
+    surfaces: ["claude", "codex"],
+    ownedPaths: [
+      { relativePath: "claude/settings.json", sha256: hashBytes(bytes("claude")) },
+      { relativePath: "codex/config.toml", sha256: hashBytes(bytes("codex")) }
+    ]
+  });
+  assert.throws(() => mergeManagedState({
+    repositoryVersion: "repo-new",
+    profile: "portable",
+    surfaces: ["claude"],
+    completed: [],
+    previousState: aggregate
+  }), /refresh all managed surfaces/u);
+  assert.throws(() => mergeManagedState({
+    repositoryVersion: "repo-old",
+    profile: "template",
+    surfaces: ["claude"],
+    completed: [],
+    previousState: aggregate
+  }), /refresh all managed surfaces/u);
 });

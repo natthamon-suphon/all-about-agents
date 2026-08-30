@@ -4,7 +4,7 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { assertSafeDestinationRoot } from "./roots.mjs";
 import { hashBytes, SHA256_HEX } from "./hash.mjs";
 import { atomicReplaceFile } from "./atomic-write.mjs";
-import { buildManagedState, STATE_RELATIVE_PATH, writeManagedState } from "./state.mjs";
+import { mergeManagedState, STATE_RELATIVE_PATH, writeManagedState } from "./state.mjs";
 import { createApplyResult, failedAction } from "./report.mjs";
 
 const SURFACES = new Set(["claude", "codex", "antigravity-2", "agy"]);
@@ -212,6 +212,18 @@ export async function applyPlan({ plan, fileSystem } = {}) {
     return resultForFailure(actions, 0, action, `managed state metadata rejected before mutation: ${error.message}`);
   }
 
+  let nextState;
+  try {
+    nextState = mergeManagedState({
+      ...stateMetadata,
+      completed: actions.filter((action) => CONTENT_KINDS.has(action.kind)),
+      previousState: fileSystem.previousState ?? null
+    });
+  } catch (error) {
+    const action = actions[0] || failure(STATE_RELATIVE_PATH, error.message);
+    return resultForFailure(actions, 0, action, `managed state merge rejected before mutation: ${error.message}`);
+  }
+
   const preflightFailure = await validatePreconditions({ plan, actions, contents, fileSystem });
   if (preflightFailure) {
     const index = Math.max(0, actions.indexOf(preflightFailure.action));
@@ -229,12 +241,8 @@ export async function applyPlan({ plan, fileSystem } = {}) {
     }
   }
 
-  const state = buildManagedState({
-    ...stateMetadata,
-    ownedPaths: completed.filter((action) => CONTENT_KINDS.has(action.kind)).map((action) => ({ relativePath: action.relativePath, sha256: action.contentHash }))
-  });
   try {
-    await writeManagedState({ root: plan.root, state, fileSystem, relativePath: STATE_RELATIVE_PATH });
+    await writeManagedState({ root: plan.root, state: nextState, fileSystem, relativePath: STATE_RELATIVE_PATH });
   } catch (error) {
     return createApplyResult({ status: completed.length === 0 ? "failed" : "partial", completed, failed: stateFailureAction(error), notAttempted: [] });
   }

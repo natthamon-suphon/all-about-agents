@@ -5,6 +5,7 @@ import test from "node:test";
 
 import { withTempRoot } from "../helpers/temp-root.mjs";
 import { buildPlan } from "../../installers/lib/plan.mjs";
+import { buildManagedState } from "../../installers/lib/state.mjs";
 import { hashBytes } from "../../installers/lib/hash.mjs";
 import { applyPlan, STATE_RELATIVE_PATH } from "../../installers/lib/apply.mjs";
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
@@ -316,5 +317,29 @@ test("applyPlan is idempotent after a managed state-backed rerun and prunes only
     assert.equal(await access(join(root, "old.txt")).then(() => true, () => false), false);
     const files = await import("node:fs/promises").then(({ readdir }) => readdir(root));
     assert.ok(files.includes("keep.txt"));
+  });
+});
+
+test("applyPlan rejects ambiguous previous state before the first destination mutation", async () => {
+  await withTempRoot(async (root) => {
+    const previousState = buildManagedState({
+      repositoryVersion: "repo-old",
+      profile: "portable",
+      surfaces: ["claude", "codex"],
+      ownedPaths: [{ relativePath: "shared.txt", sha256: hashBytes(bytes("shared")) }]
+    });
+    let writes = 0;
+    const result = await applyPlan({
+      plan: planFor(root, [["new.txt", "new"]], previousState),
+      fileSystem: fsFor([["new.txt", "new"]], {
+        previousState,
+        writeFile: async (...args) => { writes += 1; return writeFile(...args); }
+      })
+    });
+    assert.equal(result.status, "failed");
+    assert.match(result.failed.reason, /ambiguous.*surface/u);
+    assert.equal(writes, 0);
+    assert.equal(await access(join(root, "new.txt")).then(() => true, () => false), false);
+    assert.equal(await access(join(root, STATE_RELATIVE_PATH)).then(() => true, () => false), false);
   });
 });

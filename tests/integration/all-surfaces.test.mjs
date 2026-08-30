@@ -101,6 +101,31 @@ test("explicit all-surface apply is namespaced and idempotent", async () => {
   });
 });
 
+test("single-surface refresh preserves every other surface in a shared managed root", async () => {
+  await withTempRoot(async (root) => {
+    const aggregate = await runCli(["install", "--surface", "all", "--destination-root", root, "--apply", "--format", "json"]);
+    assert.equal(aggregate.code, 0, aggregate.stderr);
+    const before = await snapshotTree(root);
+
+    const refresh = await runCli(["install", "--surface", "claude", "--destination-root", root, "--apply", "--format", "json"]);
+    assert.equal(refresh.code, 0, refresh.stderr);
+    assert.equal(refresh.report.status, "complete");
+    assert.ok(refresh.report.plans[0].actions.every((action) => !action.relativePath.startsWith("codex/") && !action.relativePath.startsWith("agy/") && !action.relativePath.startsWith("antigravity-2/")), "single-surface plan must not mutate another surface namespace");
+
+    const after = await snapshotTree(root);
+    for (const prefix of ["codex/", "agy/", "antigravity-2/"]) {
+      for (const [relativePath, content] of Object.entries(before)) {
+        if (relativePath.startsWith(prefix)) assert.equal(after[relativePath], content, `${relativePath} must be preserved byte-for-byte`);
+      }
+    }
+    assert.ok(Object.keys(after).some((relativePath) => relativePath.startsWith("claude/")), "Claude must remain in its shared-root namespace");
+    assert.equal(after["settings.json"], undefined, "shared-root refresh must not create an unnamespaced native collision");
+    const state = JSON.parse(Buffer.from(after[".all-about-agents/state.json"], "base64").toString("utf8"));
+    assert.deepEqual(new Set(state.surfaces), new Set(SURFACES));
+    assert.deepEqual(new Set(state.ownedPaths.map((entry) => entry.relativePath)), new Set(Object.keys(after).filter((relativePath) => relativePath !== ".all-about-agents/state.json")));
+  });
+});
+
 test("automatic all-surface apply fails before mutating discovered roots", async () => {
   await withTempRoot(async (root) => {
     const claudeRoot = join(root, "claude");

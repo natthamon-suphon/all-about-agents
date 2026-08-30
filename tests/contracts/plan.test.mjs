@@ -128,7 +128,50 @@ test("buildPlan prunes only when strict managed state includes the selected surf
     assert.equal(included.actions.find((action) => action.relativePath === "stale.txt").kind, "prune");
     const excluded = buildPlan({ payload: { ...payloadFor([]), registrations: [{ kind: "profile-translation", surface: "codex" }] }, destinationRoot: root, previousState: state });
     assert.equal(excluded.actions.some((action) => action.kind === "prune"), false);
-    assert.ok(excluded.diagnostics.some((diagnostic) => diagnostic.code === "invalid-previous-state"));
+    assert.ok(excluded.diagnostics.some((diagnostic) => diagnostic.code === "managed-root-surface-conflict" && diagnostic.severity === "error"));
+  });
+});
+
+test("buildPlan scopes aggregate ownership to selected surface namespaces", async () => {
+  await withTempRoot(async (root) => {
+    await mkdir(join(root, "claude"));
+    await mkdir(join(root, "codex"));
+    await writeFile(join(root, "claude", "stale.txt"), "claude");
+    await writeFile(join(root, "codex", "keep.txt"), "codex");
+    const previousState = {
+      schemaVersion: 1,
+      repositoryVersion: "repo-1",
+      profile: "portable",
+      surfaces: ["claude", "codex"],
+      ownedPaths: [
+        { relativePath: "claude/stale.txt", sha256: hashBytes(bytes("claude")) },
+        { relativePath: "codex/keep.txt", sha256: hashBytes(bytes("codex")) }
+      ]
+    };
+    const payload = payloadFor([{ relativePath: "claude/current.txt", content: bytes("current"), mode: null }]);
+    const plan = buildPlan({ payload, destinationRoot: root, previousState, selectedSurfaces: ["claude"] });
+    assert.equal(plan.actions.find((action) => action.relativePath === "claude/stale.txt").kind, "prune");
+    assert.equal(plan.actions.some((action) => action.relativePath === "codex/keep.txt"), false);
+  });
+});
+
+test("buildPlan rejects conflicting or ambiguous managed-root surface ownership", async () => {
+  await withTempRoot(async (root) => {
+    const owned = { relativePath: "shared.txt", sha256: hashBytes(bytes("owned")) };
+    const conflicting = buildPlan({
+      payload: { ...payloadFor([]), registrations: [{ kind: "profile-translation", surface: "codex" }] },
+      destinationRoot: root,
+      previousState: { schemaVersion: 1, repositoryVersion: "repo-1", profile: "portable", surfaces: ["claude"], ownedPaths: [owned] },
+      selectedSurfaces: ["codex"]
+    });
+    assert.ok(conflicting.diagnostics.some((diagnostic) => diagnostic.code === "managed-root-surface-conflict" && diagnostic.severity === "error"));
+    const ambiguous = buildPlan({
+      payload: payloadFor([]),
+      destinationRoot: root,
+      previousState: { schemaVersion: 1, repositoryVersion: "repo-1", profile: "portable", surfaces: ["claude", "codex"], ownedPaths: [owned] },
+      selectedSurfaces: ["claude"]
+    });
+    assert.ok(ambiguous.diagnostics.some((diagnostic) => diagnostic.code === "ambiguous-previous-state" && diagnostic.severity === "error"));
   });
 });
 

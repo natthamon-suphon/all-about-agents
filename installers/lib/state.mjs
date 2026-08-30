@@ -10,6 +10,7 @@ export const STATE_RELATIVE_PATH = ".all-about-agents/state.json";
 const SURFACES = new Set(["claude", "codex", "antigravity-2", "agy"]);
 const PROFILES = new Set(["portable", "template"]);
 const HASH = /^[0-9a-f]{64}$/u;
+const CONTENT_KINDS = new Set(["create", "replace", "unchanged"]);
 
 function object(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -70,6 +71,73 @@ export function stateFromPlan({ plan, repositoryVersion, profile, surfaces, comp
     .filter((action) => ["create", "replace", "unchanged"].includes(action?.kind))
     .map((action) => ({ relativePath: action.relativePath, sha256: action.contentHash }));
   return buildManagedState({ repositoryVersion, profile, surfaces, ownedPaths: ownership });
+}
+
+function pathSurface(relativePath, surfaces) {
+  const separator = relativePath.indexOf("/");
+  if (separator <= 0 || separator === relativePath.length - 1) return null;
+  const surface = relativePath.slice(0, separator);
+  return surfaces.includes(surface) ? surface : null;
+}
+
+/**
+ * Merge ownership from a partial refresh without allowing ambiguous state to
+ * silently authorize pruning or overwrite another surface's namespace.
+ */
+export function mergeManagedState({ repositoryVersion, profile, surfaces, completed, previousState = null } = {}) {
+  const selectedSurfaces = sortedUniqueStrings(surfaces, "surfaces", SURFACES);
+  if (!Array.isArray(completed)) throw new TypeError("completed actions are required");
+  let previous = previousState;
+  if (previous !== null && previous !== undefined) {
+    previous = parseManagedState(previous);
+    if (!previous) throw new TypeError("previousState must be a valid managed state");
+  } else {
+    previous = null;
+  }
+
+  const previousSurfaces = previous?.surfaces || [];
+  const previousIsMultiSurface = previousSurfaces.length > 1;
+  const partialPreviousRefresh = previousIsMultiSurface && previousSurfaces.some((surface) => !selectedSurfaces.includes(surface));
+  if (partialPreviousRefresh && (previous.repositoryVersion !== repositoryVersion || previous.profile !== profile)) {
+    throw new TypeError("partial multi-surface refresh must keep the existing repository version and profile; refresh all managed surfaces together");
+  }
+  const unionSurfaces = [...new Set([...previousSurfaces, ...selectedSurfaces])];
+  const knownSurfaces = [...new Set([...previousSurfaces, ...selectedSurfaces])];
+  const preserved = [];
+
+  if (previous) {
+    if (previousIsMultiSurface) {
+      for (const entry of previous.ownedPaths) {
+        const owner = pathSurface(entry.relativePath, previousSurfaces);
+        if (!owner) throw new TypeError(`ambiguous multi-surface ownership: ${entry.relativePath}`);
+        if (!selectedSurfaces.includes(owner)) preserved.push(entry);
+      }
+    } else if (!selectedSurfaces.includes(previousSurfaces[0])) {
+      throw new TypeError("previous managed state belongs to a different surface; use a separate root or refresh all managed surfaces together");
+    }
+  }
+
+  const ownership = [...preserved];
+  for (const action of completed) {
+    if (!CONTENT_KINDS.has(action?.kind)) continue;
+    if (typeof action.relativePath !== "string" || typeof action.contentHash !== "string") {
+      throw new TypeError("completed content actions require relativePath and contentHash");
+    }
+    let relativePath = action.relativePath;
+    if (unionSurfaces.length > 1) {
+      const owner = pathSurface(relativePath, knownSurfaces);
+      if (owner) {
+        if (!selectedSurfaces.includes(owner)) throw new TypeError(`completed ownership belongs to an unselected surface: ${relativePath}`);
+      } else if (selectedSurfaces.length === 1) {
+        relativePath = `${selectedSurfaces[0]}/${relativePath}`;
+      } else {
+        throw new TypeError(`ambiguous completed multi-surface ownership: ${relativePath}`);
+      }
+    }
+    ownership.push({ relativePath, sha256: action.contentHash });
+  }
+
+  return buildManagedState({ repositoryVersion, profile, surfaces: unionSurfaces, ownedPaths: ownership });
 }
 
 export function serializeManagedState(state) {
