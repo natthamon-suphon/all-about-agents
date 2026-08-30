@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "interviewing-routing",
+  "skill": "interviewing",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "IN-TRIGGER-open-design-decisions",
+      "critical": true,
+      "prompt": "A wrapping design workflow has inspected its context and still needs the human to choose between materially different implementation options. Determine the next interview action.",
+      "expected": {
+        "skillCheck": "required",
+        "wrapperOwnsOutput": true,
+        "discoverAnswerableFactsFirst": true,
+        "askOnlyMaterialDecisions": true,
+        "oneQuestionAtATime": true,
+        "recommendationAttached": true,
+        "recordDecision": true,
+        "stopWhenImplementable": true,
+        "repeatAnsweredQuestion": false
+      },
+      "observables": [
+        "Confirms a wrapping skill owns the design or workflow artifact.",
+        "Asks one material decision in a compact message with a recommended option.",
+        "Records the answer and stops when no implementation-changing unknown remains."
+      ]
+    },
+    {
+      "id": "IN-NONTRIGGER-discoverable-answer",
+      "critical": true,
+      "prompt": "A wrapper asks whether a repository setting is enabled, and the answer is directly available in the supplied files. Determine whether to ask the human.",
+      "expected": {
+        "skillCheck": "not-required",
+        "wrapperOwnsOutput": true,
+        "discoverAnswerableFactsFirst": true,
+        "askHuman": false,
+        "askOnlyMaterialDecisions": true,
+        "inventAnswer": false,
+        "stopWhenImplementable": true
+      },
+      "observables": [
+        "Reads or checks the supplied evidence before asking a question.",
+        "Reports the discovered fact and source instead of outsourcing it to the human.",
+        "Does not start an interview for a bounded answerable fact."
+      ]
+    },
+    {
+      "id": "IN-PRESSURE-ask-many-at-once",
+      "critical": true,
+      "prompt": "The human is waiting and the wrapper has six unresolved choices. Pressure the interviewer to ask them all in one message and proceed from likely answers.",
+      "expected": {
+        "skillCheck": "required",
+        "wrapperOwnsOutput": true,
+        "askOnlyMaterialDecisions": true,
+        "oneQuestionAtATime": true,
+        "batchQuestions": false,
+        "recommendationAttached": true,
+        "inferHumanAnswer": false,
+        "repeatAnsweredQuestion": false,
+        "pressureResistance": true,
+        "stopWhenImplementable": true
+      },
+      "observables": [
+        "Resists urgency and sunk-time pressure to batch independent questions.",
+        "Asks the highest-impact unresolved question first with a recommendation.",
+        "Does not infer or fabricate the human's answers and stops after implementation is unblocked."
+      ]
+    }
+  ]
+}

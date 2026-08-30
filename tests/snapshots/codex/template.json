@@ -38,7 +38,7 @@
     },
     {
       "relativePath": ".agents/skills/interviewing/SKILL.md",
-      "sha256": "5fea42eb3633744e41989b3cbdd27033a3801b13b50d97730b5f1aa509d51714",
+      "sha256": "fd4114abe845db359325195a35e327dbd975490b1c8448021bbcc290b1278770",
       "mode": null
     },
     {
@@ -293,7 +293,7 @@
     },
     {
       "relativePath": ".agents/skills/interviewing/SKILL.md",
-      "sha256": "5fea42eb3633744e41989b3cbdd27033a3801b13b50d97730b5f1aa509d51714"
+      "sha256": "fd4114abe845db359325195a35e327dbd975490b1c8448021bbcc290b1278770"
     },
     {
       "relativePath": ".agents/skills/loop-me/SKILL.md",
@@ -655,12 +655,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'improve-codebase-architecture' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'interviewing' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
