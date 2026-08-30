@@ -22,7 +22,7 @@ const PORT_FILE = process.env.BRAINSTORM_PORT_FILE || null;
 const TOKEN_FILE = process.env.BRAINSTORM_TOKEN_FILE || null;
 const HOST = process.env.BRAINSTORM_HOST || '127.0.0.1';
 const URL_HOST = process.env.BRAINSTORM_URL_HOST || (HOST === '127.0.0.1' ? 'localhost' : HOST);
-const ALLOW_REMOTE = process.env.BRAINSTORM_ALLOW_REMOTE === '1';
+const ALLOW_REMOTE = process.argv.includes('--allow-remote');
 const OWNER_PID = process.env.BRAINSTORM_OWNER_PID ? Number(process.env.BRAINSTORM_OWNER_PID) : null;
 const IDLE_TIMEOUT_MS = Number.isFinite(Number(process.env.BRAINSTORM_IDLE_TIMEOUT_MS)) && Number(process.env.BRAINSTORM_IDLE_TIMEOUT_MS) > 0
   ? Number(process.env.BRAINSTORM_IDLE_TIMEOUT_MS)

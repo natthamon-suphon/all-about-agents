@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { access, readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import test from "node:test";
 
 const skillId = "brainstorming";
@@ -112,4 +115,42 @@ test("companion does not write session tokens into server metadata or logs", asy
   assert.doesNotMatch(server, /server-info[\s\S]{0,300}companionUrl\(\)/u);
   assert.doesNotMatch(server, /console\.log\([\s\S]{0,160}TOKEN/u);
   assert.doesNotMatch(server, /console\.log\([\s\S]{0,160}key\s*:/iu);
+});
+
+test("remote binding authority is explicit argv, never inherited environment", async () => {
+  const [wrapper, server] = await Promise.all([
+    readFile(resolve(process.cwd(), "core/skills/brainstorming/scripts/start-server.sh"), "utf8"),
+    readFile(resolve(process.cwd(), "core/skills/brainstorming/scripts/server.cjs"), "utf8")
+  ]);
+  assert.match(wrapper, /unset BRAINSTORM_ALLOW_REMOTE/u);
+  assert.match(wrapper, /SERVER_ARGS\+=\("--allow-remote"\)/u);
+  assert.match(wrapper, /node "\$\{SERVER_ARGS\[@\]\}"/u);
+  assert.match(server, /process\.argv\.includes\(['"]--allow-remote['"]\)/u);
+  assert.doesNotMatch(server, /process\.env\.BRAINSTORM_ALLOW_REMOTE/u);
+});
+
+test("direct companion rejects inherited remote authorization without --allow-remote", () => {
+  const root = mkdtempSync(join(tmpdir(), "t017-remote-direct-"));
+  try {
+    const result = spawnSync(process.execPath, [
+      resolve(process.cwd(), "core/skills/brainstorming/scripts/server.cjs"),
+      "--brainstorm-server-id=t017-direct"
+    ], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        BRAINSTORM_DIR: root,
+        BRAINSTORM_HOST: "0.0.0.0",
+        BRAINSTORM_ALLOW_REMOTE: "1"
+      },
+      encoding: "utf8",
+      timeout: 3000,
+      windowsHide: true
+    });
+    assert.equal(result.status, 1, `${result.stdout}\n${result.stderr}`);
+    assert.match(`${result.stdout}\n${result.stderr}`, /non-loopback companion binding requires/iu);
+    assert.equal(existsSync(join(root, "state", "server-info")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

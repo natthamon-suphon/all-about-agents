@@ -33,7 +33,9 @@ if [[ -n "$IDLE_TIMEOUT_MINUTES" ]]; then
   [[ "$IDLE_TIMEOUT_MINUTES" =~ ^[1-9][0-9]*$ ]] || { echo '{"error":"--idle-timeout-minutes must be a positive integer"}'; exit 1; }
   export BRAINSTORM_IDLE_TIMEOUT_MS=$((IDLE_TIMEOUT_MINUTES * 60 * 1000))
 fi
-if [[ "$ALLOW_REMOTE" == "true" ]]; then export BRAINSTORM_ALLOW_REMOTE=1; fi
+# Environment is data, not authorization. Remote binding is enabled only by the
+# explicit argv flag parsed above and forwarded as a discrete child argument.
+unset BRAINSTORM_ALLOW_REMOTE
 
 if [[ -n "$PROJECT_DIR" ]]; then
   PROJECT_REAL="$(cd -- "$PROJECT_DIR" 2>/dev/null && pwd -P)" || { echo '{"error":"--project-dir must resolve to an existing directory"}'; exit 1; }
@@ -51,6 +53,8 @@ mkdir -p "$SESSION_DIR/content" "$STATE_DIR"
 umask 077
 SERVER_ID="$(printf '%s-%s-%s' "$$" "$(date +%s)" "${RANDOM:-0}" | tr -cd 'A-Za-z0-9_-')"
 printf '%s\n' "$SERVER_ID" > "$SERVER_ID_FILE"
+SERVER_ARGS=("$SCRIPT_DIR/server.cjs" "--brainstorm-server-id=$SERVER_ID")
+if [[ "$ALLOW_REMOTE" == "true" ]]; then SERVER_ARGS+=("--allow-remote"); fi
 
 if [[ -f "$PID_FILE" ]]; then
   OLD_PID="$(tr -cd '0-9' < "$PID_FILE")"
@@ -65,7 +69,7 @@ export BRAINSTORM_DIR="$SESSION_DIR" BRAINSTORM_HOST="$BIND_HOST" BRAINSTORM_URL
 if [[ -n "${CODEX_CI:-}" && "$FOREGROUND" != "true" && "$FORCE_BACKGROUND" != "true" ]]; then FOREGROUND="true"; fi
 
 if [[ "$FOREGROUND" == "true" ]]; then
-  node "$SCRIPT_DIR/server.cjs" "--brainstorm-server-id=$SERVER_ID" > "$STATE_DIR/server.log" 2>&1 &
+  node "${SERVER_ARGS[@]}" > "$STATE_DIR/server.log" 2>&1 &
   SERVER_PID=$!
   printf '%s\n' "$SERVER_PID" > "$PID_FILE"
   READY="false"
@@ -88,7 +92,7 @@ if [[ "$FOREGROUND" == "true" ]]; then
   exit $?
 fi
 
-nohup node "$SCRIPT_DIR/server.cjs" "--brainstorm-server-id=$SERVER_ID" > "$STATE_DIR/server.log" 2>&1 &
+nohup node "${SERVER_ARGS[@]}" > "$STATE_DIR/server.log" 2>&1 &
 SERVER_PID=$!
 disown "$SERVER_PID" 2>/dev/null || true
 printf '%s\n' "$SERVER_PID" > "$PID_FILE"
