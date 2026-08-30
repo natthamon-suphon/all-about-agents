@@ -43,12 +43,12 @@
     },
     {
       "relativePath": ".agents/skills/codebase-design/DEEPENING.md",
-      "sha256": "8da9d7a2d88512e22dc30f3b3764356516d1a938662bc6610623755ba9608006",
+      "sha256": "bebca021f9f8ec98a8f5b303e8f98fdaa4087706774cb38055cde6fe2a84ee92",
       "mode": null
     },
     {
       "relativePath": ".agents/skills/codebase-design/DESIGN-IT-TWICE.md",
-      "sha256": "798c65be42308ddcbb71a5b97cc510fd51902777f6ad802dddd024277ec45030",
+      "sha256": "3868f94691a2eb050087262d130849803c65790e996a83fca6bc8acbea551769",
       "mode": null
     },
     {
@@ -78,7 +78,7 @@
     },
     {
       "relativePath": ".agents/skills/improve-codebase-architecture/HTML-REPORT.md",
-      "sha256": "abe2ee636af86dbb2efe8da56251fb84c290e7b0a427c39ea007d1a69d423070",
+      "sha256": "4076cebca07d68abc2ac7178953419e1d10b42bf5e639bb6ae38964afb8ec7df",
       "mode": null
     },
     {
@@ -273,7 +273,7 @@
     },
     {
       "relativePath": ".agents/skills/test-driven-development/writing-good-tests.md",
-      "sha256": "be4d7e4057b2dc4f1b287c7ac2a4ed389ac4907944a91caeb3349ecfe55173c7",
+      "sha256": "59fa8700582255f43410c001e23298c14094cb2605bde5135a653162069da5d3",
       "mode": null
     },
     {
@@ -283,7 +283,7 @@
     },
     {
       "relativePath": ".agents/skills/threat-modeling-and-security/stride-checklist.md",
-      "sha256": "850ae27ecb0548a9d17a6d5989ca14c933aaff029c2636bfa825f410039d9285",
+      "sha256": "3ec34122e05503ba2999856cc5fc69187252fa01c5c8294fed59b539125cfed0",
       "mode": null
     },
     {
@@ -453,7 +453,7 @@
     },
     {
       "relativePath": "hooks/activity-audit.mjs",
-      "sha256": "6b8056af34b3db514a4caea0a873faefc1b555242b4820121adaddf43b7f70d6",
+      "sha256": "1403fa97eeaf4fd57f8fa364bac7084f1e742f14b96bb287c1ba72f7a0c2edf0",
       "mode": 493
     },
     {
@@ -468,7 +468,7 @@
     },
     {
       "relativePath": "hooks/bootstrap.mjs",
-      "sha256": "846d4f13a17f6ea7b42318b1400fa9442241c2342ff375ac64bb52eff60188c6",
+      "sha256": "753d71622c3f73f87bc648bed1b0635ff9f80e810670bc3cebb7be82f20a66a8",
       "mode": 493
     },
     {
@@ -483,7 +483,7 @@
     },
     {
       "relativePath": "hooks/emergency-guard.mjs",
-      "sha256": "dee395573ba036fe4effdb2b5e90681a69691438c041f39cc97e2b692013b605",
+      "sha256": "22e41534a48333b3f8d16b34b44b83049b63a3f64871270ce8501721bf120821",
       "mode": 493
     },
     {
@@ -498,7 +498,7 @@
     },
     {
       "relativePath": "hooks/pre-compact.mjs",
-      "sha256": "abfaa0c2a7d9d75b6580564adab095a18d6a64bd75c913280d2ec8f46c6f16b8",
+      "sha256": "b0e3e1c46e93938ee5716c6b078a45dfb0c81f3e29acef75cdcb148fe17ca364",
       "mode": 493
     }
   ],
@@ -537,11 +537,11 @@
     },
     {
       "relativePath": ".agents/skills/codebase-design/DEEPENING.md",
-      "sha256": "8da9d7a2d88512e22dc30f3b3764356516d1a938662bc6610623755ba9608006"
+      "sha256": "bebca021f9f8ec98a8f5b303e8f98fdaa4087706774cb38055cde6fe2a84ee92"
     },
     {
       "relativePath": ".agents/skills/codebase-design/DESIGN-IT-TWICE.md",
-      "sha256": "798c65be42308ddcbb71a5b97cc510fd51902777f6ad802dddd024277ec45030"
+      "sha256": "3868f94691a2eb050087262d130849803c65790e996a83fca6bc8acbea551769"
     },
     {
       "relativePath": ".agents/skills/codebase-design/SKILL.md",
@@ -565,7 +565,7 @@
     },
     {
       "relativePath": ".agents/skills/improve-codebase-architecture/HTML-REPORT.md",
-      "sha256": "abe2ee636af86dbb2efe8da56251fb84c290e7b0a427c39ea007d1a69d423070"
+      "sha256": "4076cebca07d68abc2ac7178953419e1d10b42bf5e639bb6ae38964afb8ec7df"
     },
     {
       "relativePath": ".agents/skills/improve-codebase-architecture/SKILL.md",
@@ -721,7 +721,7 @@
     },
     {
       "relativePath": ".agents/skills/test-driven-development/writing-good-tests.md",
-      "sha256": "be4d7e4057b2dc4f1b287c7ac2a4ed389ac4907944a91caeb3349ecfe55173c7"
+      "sha256": "59fa8700582255f43410c001e23298c14094cb2605bde5135a653162069da5d3"
     },
     {
       "relativePath": ".agents/skills/threat-modeling-and-security/SKILL.md",
@@ -729,7 +729,7 @@
     },
     {
       "relativePath": ".agents/skills/threat-modeling-and-security/stride-checklist.md",
-      "sha256": "850ae27ecb0548a9d17a6d5989ca14c933aaff029c2636bfa825f410039d9285"
+      "sha256": "3ec34122e05503ba2999856cc5fc69187252fa01c5c8294fed59b539125cfed0"
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/SKILL.md",
@@ -865,7 +865,7 @@
     },
     {
       "relativePath": "hooks/activity-audit.mjs",
-      "sha256": "6b8056af34b3db514a4caea0a873faefc1b555242b4820121adaddf43b7f70d6"
+      "sha256": "1403fa97eeaf4fd57f8fa364bac7084f1e742f14b96bb287c1ba72f7a0c2edf0"
     },
     {
       "relativePath": "hooks/audit-log.mjs",
@@ -877,7 +877,7 @@
     },
     {
       "relativePath": "hooks/bootstrap.mjs",
-      "sha256": "846d4f13a17f6ea7b42318b1400fa9442241c2342ff375ac64bb52eff60188c6"
+      "sha256": "753d71622c3f73f87bc648bed1b0635ff9f80e810670bc3cebb7be82f20a66a8"
     },
     {
       "relativePath": "hooks/checkpoint.json",
@@ -889,7 +889,7 @@
     },
     {
       "relativePath": "hooks/emergency-guard.mjs",
-      "sha256": "dee395573ba036fe4effdb2b5e90681a69691438c041f39cc97e2b692013b605"
+      "sha256": "22e41534a48333b3f8d16b34b44b83049b63a3f64871270ce8501721bf120821"
     },
     {
       "relativePath": "hooks/emergency-policy.mjs",
@@ -901,7 +901,7 @@
     },
     {
       "relativePath": "hooks/pre-compact.mjs",
-      "sha256": "abfaa0c2a7d9d75b6580564adab095a18d6a64bd75c913280d2ec8f46c6f16b8"
+      "sha256": "b0e3e1c46e93938ee5716c6b078a45dfb0c81f3e29acef75cdcb148fe17ca364"
     }
   ],
   "registrations": [

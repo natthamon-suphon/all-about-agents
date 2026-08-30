@@ -254,11 +254,11 @@
     },
     {
       "relativePath": "skills/codebase-design/DEEPENING.md",
-      "sha256": "8da9d7a2d88512e22dc30f3b3764356516d1a938662bc6610623755ba9608006"
+      "sha256": "bebca021f9f8ec98a8f5b303e8f98fdaa4087706774cb38055cde6fe2a84ee92"
     },
     {
       "relativePath": "skills/codebase-design/DESIGN-IT-TWICE.md",
-      "sha256": "798c65be42308ddcbb71a5b97cc510fd51902777f6ad802dddd024277ec45030"
+      "sha256": "3868f94691a2eb050087262d130849803c65790e996a83fca6bc8acbea551769"
     },
     {
       "relativePath": "skills/codebase-design/SKILL.md",
@@ -282,7 +282,7 @@
     },
     {
       "relativePath": "skills/improve-codebase-architecture/HTML-REPORT.md",
-      "sha256": "abe2ee636af86dbb2efe8da56251fb84c290e7b0a427c39ea007d1a69d423070"
+      "sha256": "4076cebca07d68abc2ac7178953419e1d10b42bf5e639bb6ae38964afb8ec7df"
     },
     {
       "relativePath": "skills/improve-codebase-architecture/SKILL.md",
@@ -438,7 +438,7 @@
     },
     {
       "relativePath": "skills/test-driven-development/writing-good-tests.md",
-      "sha256": "be4d7e4057b2dc4f1b287c7ac2a4ed389ac4907944a91caeb3349ecfe55173c7"
+      "sha256": "59fa8700582255f43410c001e23298c14094cb2605bde5135a653162069da5d3"
     },
     {
       "relativePath": "skills/threat-modeling-and-security/SKILL.md",
@@ -446,7 +446,7 @@
     },
     {
       "relativePath": "skills/threat-modeling-and-security/stride-checklist.md",
-      "sha256": "850ae27ecb0548a9d17a6d5989ca14c933aaff029c2636bfa825f410039d9285"
+      "sha256": "3ec34122e05503ba2999856cc5fc69187252fa01c5c8294fed59b539125cfed0"
     },
     {
       "relativePath": "skills/using-all-about-agents/SKILL.md",
@@ -978,14 +978,14 @@
     "skills/brainstorming/scripts/stop-server.sh": "7c871ab76a85ef58059a95faf9f6c3c2b349c240e3fdf7d07656cb6b4fb7976d",
     "skills/brainstorming/spec-document-reviewer-prompt.md": "3aa6b80cad6f981f545082430980accf399bcd9401f665134920aff98747d789",
     "skills/brainstorming/visual-companion.md": "c58a8e00e4a5240d049ccd8d111628c9ed63ece738bba09a3e3e59a3d20ee316",
-    "skills/codebase-design/DEEPENING.md": "8da9d7a2d88512e22dc30f3b3764356516d1a938662bc6610623755ba9608006",
-    "skills/codebase-design/DESIGN-IT-TWICE.md": "798c65be42308ddcbb71a5b97cc510fd51902777f6ad802dddd024277ec45030",
+    "skills/codebase-design/DEEPENING.md": "bebca021f9f8ec98a8f5b303e8f98fdaa4087706774cb38055cde6fe2a84ee92",
+    "skills/codebase-design/DESIGN-IT-TWICE.md": "3868f94691a2eb050087262d130849803c65790e996a83fca6bc8acbea551769",
     "skills/codebase-design/SKILL.md": "d0664b1cea11f0f95b0e8ad58a907db27c803baaa7d65b96b9bd7c13800daef5",
     "skills/dispatching-parallel-agents/SKILL.md": "031ee59a980e94926fd42c96a3fa20dbb3ff97253e164e79e4f1b4111d7671fd",
     "skills/executing-plans/SKILL.md": "0883448d2231aa6e46a639e7404e79f6bb5b0442ad82449f92352156c55ff28a",
     "skills/finishing-a-development-branch/SKILL.md": "bd40f7600d2bc38c5c101bc290c257b2dc1d1efc5e679171fab25f2e0ec95c84",
     "skills/handoff/SKILL.md": "2b2215927019954520af8cb6d3b7ecafce953f082c0bc39a9559e4cee600ee35",
-    "skills/improve-codebase-architecture/HTML-REPORT.md": "abe2ee636af86dbb2efe8da56251fb84c290e7b0a427c39ea007d1a69d423070",
+    "skills/improve-codebase-architecture/HTML-REPORT.md": "4076cebca07d68abc2ac7178953419e1d10b42bf5e639bb6ae38964afb8ec7df",
     "skills/improve-codebase-architecture/SKILL.md": "fd9bfd4073f6f9a786441b711c0254895b5446a53e0d36cf019193475e2fea62",
     "skills/interviewing/SKILL.md": "6f59914fb0c8ff442af69aa91eafa3c17f9fb71c380d8c6e1c3130290503592f",
     "skills/loop-me/SKILL.md": "c3b069cf009e9e07c0b9b4caada708ac72a285eb00292bb6ac198fa8287bd809",
@@ -1024,9 +1024,9 @@
     "skills/systematic-debugging/test-pressure-2.md": "b2030aeffba07050e8ad573ddf87486457c4a016a786bb326235bebd856f2016",
     "skills/systematic-debugging/test-pressure-3.md": "96b50a52e2c7989c9cf20fb752c47c1e9a3a70dc362f8f7989f8f5b64dac7708",
     "skills/test-driven-development/SKILL.md": "dbe8e2efd645d7e0d89ca99d95d98e061d4d5f7cb3938c8f5d48177c031922f2",
-    "skills/test-driven-development/writing-good-tests.md": "be4d7e4057b2dc4f1b287c7ac2a4ed389ac4907944a91caeb3349ecfe55173c7",
+    "skills/test-driven-development/writing-good-tests.md": "59fa8700582255f43410c001e23298c14094cb2605bde5135a653162069da5d3",
     "skills/threat-modeling-and-security/SKILL.md": "ec9ccc4c96aa9033f235b1644c1b62b0ca4c34538df287c6286d4af6ba21f6f4",
-    "skills/threat-modeling-and-security/stride-checklist.md": "850ae27ecb0548a9d17a6d5989ca14c933aaff029c2636bfa825f410039d9285",
+    "skills/threat-modeling-and-security/stride-checklist.md": "3ec34122e05503ba2999856cc5fc69187252fa01c5c8294fed59b539125cfed0",
     "skills/using-all-about-agents/SKILL.md": "0eb208139c1da219b398abc1b10784c243574661d51d8255e00397fee36c9772",
     "skills/using-all-about-agents/references/antigravity-tools.md": "85e1b4283f7a55486d07546014a70cc94a24bb58d300f2aaca0ba9ec5851d421",
     "skills/using-all-about-agents/references/codex-tools.md": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68",

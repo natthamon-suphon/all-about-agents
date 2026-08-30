@@ -33,6 +33,8 @@
         },
         "expectedHash": { "$ref": "#/$defs/hash" },
         "contentHash": { "$ref": "#/$defs/hash" },
+        "mode": { "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 511 }, { "type": "null" }] },
+        "expectedMode": { "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 511 }, { "type": "null" }] },
         "reason": { "type": "string", "minLength": 1 }
       }
     },

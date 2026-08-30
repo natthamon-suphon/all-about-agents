@@ -135,4 +135,3 @@ selects a candidate and grants the relevant mutation authority.
 - [ ] A complete plain Markdown report exists independent of visual tooling.
 - [ ] Optional HTML is safe, truthful, and non-blocking.
 - [ ] One top recommendation is ranked without implementing it.
-

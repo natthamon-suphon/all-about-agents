@@ -66,4 +66,3 @@ at the new interface.
 
 The migration is complete only when callers and tests use the same seam, old
 pass-through knowledge is gone, and failures remain localized.
-

@@ -155,6 +155,34 @@ test("diff redacts quoted JSON secret fields from disposable managed files", asy
   });
 });
 
+test("diff never exposes bytes from a replaced existing file", async () => {
+  await withTempRoot(async (root) => {
+    const applied = await capture(["install", "--surface", "claude", "--destination-root", root, "--apply", "--format", "json"]);
+    assert.equal(applied.code, 0);
+    const cases = [
+      "Authorization: Basic dXNlcjpzZWNyZXQ=\n",
+      "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\nAWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\n",
+      "Set-Cookie: aaa-session=do-not-print; HttpOnly\n",
+      "session=opaque-session-value\n",
+      "password=first-line-secret\nsecond-line-secret\n",
+      "utf8-secret=пароль-秘密-🔒\n",
+      "-----BEGIN PRIVATE KEY-----\nprivate-key-body\n-----END PRIVATE KEY-----\n"
+    ];
+    for (const body of cases) {
+      await writeFile(resolve(root, "settings.json"), body, "utf8");
+      const result = await capture(["diff", "--surface", "claude", "--destination-root", root, "--format", "json"]);
+      assert.equal(result.code, 0);
+      assert.doesNotMatch(result.stdout, new RegExp(body.trim().replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
+      assert.match(result.stdout, /sha256=[0-9a-f]{64}|bytes=\d+/u);
+    }
+    await writeFile(resolve(root, "settings.json"), Uint8Array.from([0, 255, 10, 13, 65, 66, 67]), "binary");
+    const binary = await capture(["diff", "--surface", "claude", "--destination-root", root, "--format", "json"]);
+    assert.equal(binary.code, 0);
+    assert.doesNotMatch(binary.stdout, /private-key|opaque-session|AWS_SECRET|Basic/iu);
+    assert.match(binary.stdout, /sha256=[0-9a-f]{64}|bytes=\d+/u);
+  });
+});
+
 test("PowerShell launcher preserves normalized output and exit-code parity", async () => {
   const result = spawnSync("pwsh", ["-NoProfile", "-File", resolve(process.cwd(), "installers", "install.ps1"), "doctor", "--surface", "claude", "--destination-root", resolve(process.cwd(), "tests", ".tmp", "launcher-doctor"), "--format", "json"], { cwd: process.cwd(), encoding: "utf8" });
   assert.equal(result.status, 1, result.stderr);

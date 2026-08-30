@@ -10,6 +10,7 @@ import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
 import { renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
 import { renderAgy } from "../../adapters/agy/adapter.mjs";
+import { MAX_STDIN_BYTES, runBootstrap } from "../../core/hooks/bootstrap.mjs";
 
 const requiredOutputs = [
   "core/hooks/bootstrap.json",
@@ -189,6 +190,27 @@ test("Codex production handler supports documented SessionStart sources and malf
   for (const input of ["{malformed", "[]", {}, { hook_event_name: "SessionStart", source: [] }, { hook_event_name: [], source: "startup" }]) {
     assert.deepEqual(await executeRendered(result, { ...base, input }), {});
   }
+});
+
+test("automatic bootstrap fails open when stdin exceeds the bounded collector limit", async () => {
+  const core = await loadCore(process.cwd());
+  const cases = [
+    { surface: "claude", result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CLAUDE_CONFIG_DIR: "C:/disposable" } }), skillPath: "skills/using-all-about-agents/SKILL.md" },
+    { surface: "codex", result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" } }), skillPath: ".agents/skills/using-all-about-agents/SKILL.md" }
+  ];
+  for (const item of cases) {
+    const input = { hook_event_name: "SessionStart", source: "startup", padding: "x".repeat(70_000) };
+    assert.deepEqual(await executeRendered(item.result, { surface: item.surface, runtimePath: "hooks/bootstrap.mjs", skillPath: item.skillPath, configPath: "hooks/bootstrap.json", input }), {});
+  }
+});
+
+test("bootstrap helper also bounds explicitly supplied raw input", async () => {
+  const skillPath = root("core/skills/using-all-about-agents/SKILL.md");
+  const configPath = root("core/hooks/bootstrap.json");
+  const rawInput = JSON.stringify({ hook_event_name: "SessionStart", source: "startup", padding: "x".repeat(MAX_STDIN_BYTES) });
+  assert.deepEqual(JSON.parse(await runBootstrap([
+    "--surface", "claude", "--skill-path", skillPath, "--config-path", configPath
+  ], rawInput)), {});
 });
 
 test("agy renders a visible probe-required diagnostic without an automatic command", async () => {

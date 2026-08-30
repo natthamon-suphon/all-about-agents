@@ -3,6 +3,24 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
+const DEFAULT_MAX_STDIN_BYTES = 64 * 1024;
+
+/** Collect hook input without allowing an unbounded stream to accumulate. */
+export async function readBoundedStdin(stream = process.stdin, maxBytes = DEFAULT_MAX_STDIN_BYTES) {
+  if (!Number.isInteger(maxBytes) || maxBytes < 1) throw new TypeError("maxBytes must be a positive integer");
+  const chunks = [];
+  let totalBytes = 0;
+  for await (const chunk of stream) {
+    const bytes = typeof chunk === "string" ? Buffer.from(chunk, "utf8") : Buffer.from(chunk);
+    totalBytes += bytes.byteLength;
+    if (totalBytes > maxBytes) return null;
+    chunks.push(bytes);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+export const MAX_STDIN_BYTES = DEFAULT_MAX_STDIN_BYTES;
+
 const EMPTY_OUTPUTS = Object.freeze({
   claude: Object.freeze({}),
   codex: Object.freeze({}),
@@ -92,12 +110,6 @@ export function serializeBootstrapOutput(surface, request, canonicalContent) {
   return JSON.stringify(buildBootstrapOutput(surface, request, canonicalContent));
 }
 
-async function readStdin() {
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
-  return Buffer.concat(chunks).toString("utf8");
-}
-
 function parseInput(rawInput) {
   try {
     const parsed = JSON.parse(rawInput);
@@ -135,6 +147,10 @@ function argumentValue(argv, name) {
   return index >= 0 && typeof argv[index + 1] === "string" ? argv[index + 1] : "";
 }
 
+function boundedRawInput(rawInput) {
+  return typeof rawInput === "string" && Buffer.byteLength(rawInput, "utf8") <= MAX_STDIN_BYTES ? rawInput : null;
+}
+
 /** Execute the package-local handler using only explicit argv and stdin inputs. */
 export async function runBootstrap(argv = process.argv.slice(2), rawInput = null) {
   const surface = argumentValue(argv, "--surface");
@@ -149,7 +165,7 @@ export async function runBootstrap(argv = process.argv.slice(2), rawInput = null
       canonicalContent = null;
     }
   }
-  const request = parseInput(rawInput === null ? await readStdin() : rawInput);
+  const request = parseInput(rawInput === null ? await readBoundedStdin() : boundedRawInput(rawInput));
   return serializeBootstrapOutput(surface, request, canonicalContent);
 }
 

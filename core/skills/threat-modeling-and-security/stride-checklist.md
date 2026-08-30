@@ -59,4 +59,3 @@ For every applicable threat capture:
 
 If evidence is missing, mark the item `unknown`; do not silently convert it into
 a universal framework, identity, database, cryptography, or infrastructure rule.
-

@@ -60,4 +60,3 @@ speculative abstraction.
 The comparison produces a recommendation, not implementation authority. Do not
 refactor, add dependencies, or change public compatibility until the active
 request owns those mutations. Record verification needs and checks not run.
-

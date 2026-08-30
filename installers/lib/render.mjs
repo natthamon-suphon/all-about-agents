@@ -1,6 +1,6 @@
 import { loadCore } from "./load-core.mjs";
 import { hashBytes, equalBytes } from "./hash.mjs";
-import { validateRenderResult } from "../../adapters/shared/adapter-contract.mjs";
+import { SURFACES, validateRenderResult } from "../../adapters/shared/adapter-contract.mjs";
 import { render as renderClaude } from "../../adapters/claude/adapter.mjs";
 import { render as renderCodex } from "../../adapters/codex/adapter.mjs";
 import { render as renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
@@ -12,6 +12,7 @@ export const SURFACE_RENDERERS = Object.freeze({
   "antigravity-2": renderAntigravity,
   agy: renderAgy
 });
+const SURFACE_ORDER = new Map(SURFACES.map((surface, index) => [surface, index]));
 
 function validateSurface(surface) {
   if (!Object.hasOwn(SURFACE_RENDERERS, surface)) throw new TypeError(`unsupported render surface: ${String(surface)}`);
@@ -98,6 +99,7 @@ export async function renderPayload({ repositoryRoot = process.cwd(), core = nul
   if (!Array.isArray(selected) || selected.length === 0) throw new TypeError("surfaces must contain at least one supported surface");
   const unique = [...new Set(selected)];
   if (unique.length !== selected.length) throw new TypeError("surfaces must not contain duplicates");
+  unique.sort((left, right) => (SURFACE_ORDER.get(left) ?? Number.MAX_SAFE_INTEGER) - (SURFACE_ORDER.get(right) ?? Number.MAX_SAFE_INTEGER));
   const loadedCore = core ?? await loadCore(repositoryRoot);
   const results = [];
   for (const selectedSurface of unique) {

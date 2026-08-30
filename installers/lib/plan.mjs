@@ -6,6 +6,7 @@ import { parseManagedState } from "./state.mjs";
 
 const SURFACES = new Set(["claude", "codex", "antigravity-2", "agy"]);
 const ACTION_KINDS = new Set(["create", "replace", "unchanged", "prune", "reject"]);
+const DEFAULT_FILE_MODE = 0o600;
 
 function object(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -25,8 +26,12 @@ function issue(code, severity, message, sourcePath = null) {
   return { code, severity, message, sourcePath };
 }
 
-function action(kind, relativePath, expectedHash, contentHash, reason) {
-  return { kind, relativePath, expectedHash, contentHash, reason };
+function validMode(value) {
+  return value === null || (Number.isInteger(value) && value >= 0 && value <= 0o777);
+}
+
+function action(kind, relativePath, expectedHash, contentHash, reason, mode = null, expectedMode = null) {
+  return { kind, relativePath, expectedHash, contentHash, mode, expectedMode, reason };
 }
 
 function surfaceFor(payload) {
@@ -114,18 +119,28 @@ function payloadFiles(payload) {
   const seen = new Set();
   const files = [];
   for (const file of payload.files) {
-    if (!object(file) || !safeRelativePath(file.relativePath) || !(file.content instanceof Uint8Array)) throw new TypeError("payload files require a safe relativePath and Uint8Array content");
+    if (!object(file) || !safeRelativePath(file.relativePath) || !(file.content instanceof Uint8Array) || !validMode(file.mode ?? null)) throw new TypeError("payload files require a safe relativePath, Uint8Array content, and mode null or a Unix mode from 0 through 0777");
     if (seen.has(file.relativePath)) throw new TypeError(`duplicate payload destination: ${file.relativePath}`);
     seen.add(file.relativePath);
-    files.push(file);
+    files.push({ ...file, mode: file.mode ?? null });
   }
   return files.sort((left, right) => compare(left.relativePath, right.relativePath));
 }
 
+function observedMode(metadata, platform) {
+  return platform === "win32" || !metadata ? null : metadata.mode & 0o777;
+}
+
+function modeMismatch(metadata, desiredMode, platform) {
+  if (platform === "win32" || !metadata) return false;
+  return (metadata.mode & 0o777) !== (desiredMode ?? DEFAULT_FILE_MODE);
+}
+
 /** Build a read-only deterministic plan from a rendered payload and root. */
-export function buildPlan({ payload, destinationRoot, previousState = null, selectedSurfaces } = {}) {
+export function buildPlan({ payload, destinationRoot, previousState = null, selectedSurfaces, platform = process.platform } = {}) {
   if (typeof destinationRoot !== "string" || destinationRoot.trim() === "" || destinationRoot.includes("\0")) throw new TypeError("destinationRoot must be a non-empty path");
   const root = resolve(destinationRoot);
+  if (typeof platform !== "string") throw new TypeError("platform must be a string");
   const surface = surfaceFor(payload);
   const selected = selectedSurfaceSet(selectedSurfaces, surface);
   const files = payloadFiles(payload);
@@ -155,47 +170,50 @@ export function buildPlan({ payload, destinationRoot, previousState = null, sele
     desired.add(relativePath);
     const contentHash = hashBytes(file.content);
     if (rootSafetyError) {
-      actions.push(action("reject", relativePath, null, contentHash, `destination root is unsafe: ${rootSafetyError.code || "unknown error"}`));
+      actions.push(action("reject", relativePath, null, contentHash, `destination root is unsafe: ${rootSafetyError.code || "unknown error"}`, file.mode));
       continue;
     }
     const declaredHash = ownership.get(relativePath);
     const target = resolve(root, ...relativePath.split("/"));
     const contained = relative(root, target);
     if (isAbsolute(contained) || contained === ".." || contained.startsWith(`..${"/"}`) || contained.startsWith(`..${"\\"}`)) {
-      actions.push(action("reject", relativePath, null, contentHash, "destination escapes the selected root"));
+      actions.push(action("reject", relativePath, null, contentHash, "destination escapes the selected root", file.mode));
       continue;
     }
     if (declaredHash !== undefined && declaredHash !== contentHash) {
-      actions.push(action("reject", relativePath, null, contentHash, "rendered ownership hash does not match exact file bytes"));
+      actions.push(action("reject", relativePath, null, contentHash, "rendered ownership hash does not match exact file bytes", file.mode));
       continue;
     }
     const targetStatus = targetKind(root, target);
     if (["unsafe-root", "invalid-root", "symlink", "unreadable", "parent-not-directory"].includes(targetStatus.kind)) {
-      actions.push(action("reject", relativePath, null, contentHash, `destination is ${targetStatus.kind.replaceAll("-", " ")}`));
+      actions.push(action("reject", relativePath, null, contentHash, `destination is ${targetStatus.kind.replaceAll("-", " ")}`, file.mode));
       continue;
     }
     const entry = lstatTarget(target);
     if (!entry.metadata) {
       if (entry.error?.code !== "ENOENT" && entry.error?.code !== "ENOTDIR") {
-        actions.push(action("reject", relativePath, null, contentHash, `destination is unreadable: ${entry.error?.message || "unknown error"}`));
+        actions.push(action("reject", relativePath, null, contentHash, `destination is unreadable: ${entry.error?.message || "unknown error"}`, file.mode));
       } else {
-        actions.push(action("create", relativePath, null, contentHash, "destination does not exist"));
+        actions.push(action("create", relativePath, null, contentHash, "destination does not exist", file.mode));
       }
       continue;
     }
     if (entry.metadata.isDirectory() || entry.metadata.isSymbolicLink()) {
-      actions.push(action("reject", relativePath, null, contentHash, entry.metadata.isSymbolicLink() ? "destination is a symlink or junction" : "destination is a directory"));
+      actions.push(action("reject", relativePath, null, contentHash, entry.metadata.isSymbolicLink() ? "destination is a symlink or junction" : "destination is a directory", file.mode));
       continue;
     }
     let currentBytes;
     try {
       currentBytes = readFileSync(target);
     } catch (error) {
-      actions.push(action("reject", relativePath, null, contentHash, `destination is unreadable: ${error.message}`));
+      actions.push(action("reject", relativePath, null, contentHash, `destination is unreadable: ${error.message}`, file.mode));
       continue;
     }
     const expectedHash = hashBytes(currentBytes);
-    actions.push(action(expectedHash === contentHash ? "unchanged" : "replace", relativePath, expectedHash, contentHash, expectedHash === contentHash ? "destination bytes already match" : "destination bytes differ"));
+    const mode = observedMode(entry.metadata, platform);
+    const modeChanged = modeMismatch(entry.metadata, file.mode, platform);
+    const sameContent = expectedHash === contentHash;
+    actions.push(action(sameContent && !modeChanged ? "unchanged" : "replace", relativePath, expectedHash, contentHash, modeChanged ? "destination mode differs" : sameContent ? "destination bytes already match" : "destination bytes differ", file.mode, mode));
   }
 
   const priorOwnership = stateOwnership(previousState, selected, diagnostics);
@@ -220,8 +238,9 @@ export function buildPlan({ payload, destinationRoot, previousState = null, sele
       }
       try {
         const actualHash = hashBytes(readFileSync(target));
-        if (actualHash === expectedHash) actions.push(action("prune", relativePath, expectedHash, null, "stale destination was previously owned and still matches its recorded hash"));
-        else actions.push(action("reject", relativePath, actualHash, null, "owned destination changed since the previous managed state; refusing to prune"));
+        const mode = observedMode(entry.metadata, platform);
+        if (actualHash === expectedHash) actions.push(action("prune", relativePath, expectedHash, null, "stale destination was previously owned and still matches its recorded hash", null, mode));
+        else actions.push(action("reject", relativePath, actualHash, null, "owned destination changed since the previous managed state; refusing to prune", null, mode));
       } catch (error) {
         actions.push(action("reject", relativePath, expectedHash, null, `owned destination is unreadable: ${error.message}`));
       }

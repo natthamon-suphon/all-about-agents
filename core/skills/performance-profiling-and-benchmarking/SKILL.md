@@ -109,4 +109,3 @@ inconclusive or `not run`; do not manufacture a precise number.
 - [ ] Raw observations, variance, failures, and uncertainty are retained.
 - [ ] Correctness and trade-offs are verified or reported not run.
 - [ ] No unsupported percentage or universal threshold is claimed.
-

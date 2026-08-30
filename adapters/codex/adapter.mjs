@@ -447,13 +447,14 @@ export function renderCodex(input = {}) {
   addFile(files, "hooks/audit-log.mjs", AUDIT_LOG_SOURCE, 0o755);
   addFile(files, "hooks/activity-audit.mjs", `#!/usr/bin/env node
 import { appendAuditEvent } from "./audit-log.mjs";
+import { readBoundedStdin } from "./bootstrap.mjs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-const chunks = [];
-for await (const chunk of process.stdin) chunks.push(chunk);
+const rawInput = await readBoundedStdin();
+if (rawInput === null) process.exit(0);
 try {
-  const payload = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+  const payload = JSON.parse(rawInput || "{}");
   await appendAuditEvent(join(dirname(fileURLToPath(import.meta.url)), "audit"), {
     surface: "codex",
     actionId: payload.actionId ?? payload.tool_name,
@@ -464,14 +465,15 @@ try {
 `, 0o755);
   addFile(files, "hooks/pre-compact.mjs", `#!/usr/bin/env node
 import { appendFile, mkdir } from "node:fs/promises";
+import { readBoundedStdin } from "./bootstrap.mjs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const safe = (value, fallback) => typeof value === "string" && value.trim() ? value.trim().replace(/[^A-Za-z0-9._-]/gu, "-").slice(0, 64) || fallback : fallback;
-const chunks = [];
-for await (const chunk of process.stdin) chunks.push(chunk);
+const rawInput = await readBoundedStdin();
+if (rawInput === null) process.exit(0);
 try {
-  const payload = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+  const payload = JSON.parse(rawInput || "{}");
   const checkpoint = {
     timestamp: new Date().toISOString(),
     workflowId: safe(payload.workflowId, "codex-hook"),

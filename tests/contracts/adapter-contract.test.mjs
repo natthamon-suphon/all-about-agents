@@ -14,6 +14,7 @@ import {
   renderText,
   renderToml
 } from "../../adapters/shared/render-utils.mjs";
+import { renderPayload } from "../../installers/lib/render.mjs";
 
 const actionIds = [
   "aaa:design",
@@ -269,4 +270,9 @@ test("renderSurface produces byte-identical complete outputs for identical input
     ownership: result.ownership
   });
   assert.deepEqual(snapshot(first), snapshot(second));
+});
+
+test("renderPayload dispatches selected surfaces in canonical order", async () => {
+  const results = await renderPayload({ surfaces: ["agy", "claude", "codex", "antigravity-2"], profile: "portable", platform: "win32" });
+  assert.deepEqual(results.map((result) => result.registrations.find((entry) => entry.kind === "profile-translation")?.surface), ["claude", "codex", "antigravity-2", "agy"]);
 });

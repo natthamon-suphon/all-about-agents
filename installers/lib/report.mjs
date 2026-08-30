@@ -1,6 +1,10 @@
 const ACTION_KINDS = new Set(["create", "replace", "unchanged", "prune", "reject"]);
 const HASH = /^[0-9a-f]{64}$/u;
 
+function validMode(value) {
+  return value === undefined || value === null || (Number.isInteger(value) && value >= 0 && value <= 0o777);
+}
+
 function object(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -13,6 +17,7 @@ export function isPlanAction(value) {
   if (!object(value) || !ACTION_KINDS.has(value.kind) || !validPath(value.relativePath) || typeof value.reason !== "string") return false;
   if (!(value.expectedHash === null || (typeof value.expectedHash === "string" && HASH.test(value.expectedHash)))) return false;
   if (!(value.contentHash === null || (typeof value.contentHash === "string" && HASH.test(value.contentHash)))) return false;
+  if (!validMode(value.mode) || !validMode(value.expectedMode)) return false;
   if (value.kind === "create" && (value.expectedHash !== null || value.contentHash === null)) return false;
   if (value.kind === "replace" && (value.expectedHash === null || value.contentHash === null)) return false;
   if (value.kind === "unchanged" && (value.expectedHash === null || value.contentHash === null)) return false;

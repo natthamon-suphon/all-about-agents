@@ -46,6 +46,19 @@ test("buildPlan creates, replaces, and leaves exact-byte matches unchanged in so
   });
 });
 
+test("buildPlan validates optional Unix modes at the payload seam", async () => {
+  await withTempRoot(async (root) => {
+    const content = bytes("script\n");
+    assert.throws(
+      () => buildPlan({
+        payload: payloadFor([{ relativePath: "run.sh", content, mode: 0o1000 }]),
+        destinationRoot: root
+      }),
+      /mode/u
+    );
+  });
+});
+
 test("buildPlan prunes only previously owned unchanged files and preserves unknown neighbors", async () => {
   await withTempRoot(async (root) => {
     await writeFile(join(root, "stale.txt"), "owned");

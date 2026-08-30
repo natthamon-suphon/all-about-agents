@@ -3,13 +3,13 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readBoundedStdin, MAX_STDIN_BYTES } from "./bootstrap.mjs";
 
 const AUTOMATIC_SURFACES = new Set(["claude", "codex"]);
 const NATIVE_FIELDS = Object.freeze(["hook_event_name", "tool_name", "tool_input", "tool_use_id"]);
 const COMMAND_TOOLS = new Set(["bash", "powershell", "shell", "run_command"]);
 const READ_TOOLS = new Set(["read", "read_file", "view_file"]);
 const WRITE_TOOLS = new Set(["write", "write_file", "edit", "replace_file_content", "multi_replace_file_content", "delete", "delete_file"]);
-const MAX_STDIN_BYTES = 64 * 1024;
 const CANONICAL_REASONS = Object.freeze({
   "filesystem-root-erasure": "Denied: broad or unresolved filesystem erasure is an emergency action.",
   "raw-disk-destruction": "Denied: raw-disk or partition destruction is an emergency action.",
@@ -105,18 +105,6 @@ async function readPolicy(policyPath, canonicalRuleIds) {
   }
 }
 
-async function readStdin() {
-  const chunks = [];
-  let totalBytes = 0;
-  for await (const chunk of process.stdin) {
-    const chunkBytes = typeof chunk === "string" ? Buffer.byteLength(chunk, "utf8") : chunk.byteLength;
-    totalBytes += chunkBytes;
-    if (totalBytes > MAX_STDIN_BYTES) return null;
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks).toString("utf8");
-}
-
 /** Execute an automatic Claude Code/Codex CLI guard from explicit argv/stdin. */
 export async function runEmergencyGuard(argv = process.argv.slice(2), rawInput = null) {
   const surface = argumentValue(argv, "--surface");
@@ -130,7 +118,7 @@ export async function runEmergencyGuard(argv = process.argv.slice(2), rawInput =
     return "{}";
   }
   const policy = await readPolicy(policyPath, policyModule.DEFAULT_RULE_IDS);
-  const input = rawInput === null ? await readStdin() : rawInput;
+  const input = rawInput === null ? await readBoundedStdin(process.stdin, MAX_STDIN_BYTES) : rawInput;
   if (typeof input !== "string" || Buffer.byteLength(input, "utf8") > MAX_STDIN_BYTES) return "{}";
   const request = parseInput(input);
   const normalized = normalizeNativeRequest(surface, request);

@@ -253,7 +253,7 @@ async function observedTarget(target) {
     const stats = await lstat(target);
     if (stats.isSymbolicLink()) return { kind: "symlink" };
     if (!stats.isFile()) return { kind: "not-file" };
-    return { kind: "file", bytes: await readFile(target) };
+    return { kind: "file", bytes: await readFile(target), mode: process.platform === "win32" ? null : stats.mode & 0o777 };
   } catch (error) {
     if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return { kind: "missing" };
     return { kind: "error", error };
@@ -293,6 +293,7 @@ async function preflightEntries(entries) {
         if (observed.kind !== "file") return { entry, action, reason: observed.error ? `destination cannot be read: ${observed.error.message}` : "destination is not a regular file" };
         const expected = action.kind === "unchanged" ? action.contentHash : action.expectedHash;
         if (hashBytes(observed.bytes) !== expected) return { entry, action, reason: "destination bytes changed after planning" };
+        if (process.platform !== "win32" && action.expectedMode !== null && action.expectedMode !== undefined && observed.mode !== action.expectedMode) return { entry, action, reason: "destination mode changed after planning" };
       }
     }
   }
@@ -371,11 +372,10 @@ async function installOrDiff(options, output, errorOutput, cwd) {
 
 function safeDiffText(bytes) {
   if (!(bytes instanceof Uint8Array)) return "";
-  let text;
-  try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { return `<binary sha256=${hashBytes(bytes)}>`; }
-  return text
-    .replace(/(Bearer\s+)[^\s"']+/giu, "$1[REDACTED]")
-    .replace(/((?:["']?(?:api[_ -]?key|password|secret|token)["']?\s*[:=]\s*))(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s,}\]]+)/giu, "$1[REDACTED]");
+  // Existing destination bytes are untrusted and must never become diff
+  // output. A hash and byte count preserve deterministic change evidence
+  // without attempting an incomplete, ever-growing secret blacklist.
+  return `[REDACTED] sha256=${hashBytes(bytes)} bytes=${bytes.byteLength}`;
 }
 
 function unifiedDiff(relativePath, before, after) {

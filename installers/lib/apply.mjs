@@ -29,10 +29,15 @@ function safeTarget(root, relativePath) {
   return target;
 }
 
+function validMode(value) {
+  return value === undefined || value === null || (Number.isInteger(value) && value >= 0 && value <= 0o777);
+}
+
 function validAction(action) {
   if (!object(action) || !ACTION_KINDS.has(action.kind) || !safeRelativePath(action.relativePath) || typeof action.reason !== "string") return false;
   if (!(action.expectedHash === null || (typeof action.expectedHash === "string" && SHA256_HEX.test(action.expectedHash)))) return false;
   if (!(action.contentHash === null || (typeof action.contentHash === "string" && SHA256_HEX.test(action.contentHash)))) return false;
+  if (!validMode(action.mode) || !validMode(action.expectedMode)) return false;
   if (action.kind === "create" && (action.expectedHash !== null || action.contentHash === null)) return false;
   if (action.kind === "replace" && (action.expectedHash === null || action.contentHash === null)) return false;
   if (action.kind === "unchanged" && (action.expectedHash === null || action.contentHash === null)) return false;
@@ -46,7 +51,7 @@ function operation(fileSystem, name, fallback) {
 }
 
 function failure(relativePath, reason, kind = "reject", expectedHash = null, contentHash = null) {
-  return { kind, relativePath, expectedHash, contentHash, reason };
+  return { kind, relativePath, expectedHash, contentHash, mode: null, expectedMode: null, reason };
 }
 
 function resultForFailure(actions, index, action, reason) {
@@ -106,6 +111,7 @@ function expectedPrecondition(action, observed) {
     if (observed.kind === "error") return `destination cannot be read: ${observed.error.message}`;
     const expected = action.kind === "replace" || action.kind === "prune" ? action.expectedHash : action.contentHash;
     if (hashBytes(observed.bytes) !== expected) return "destination bytes changed after planning";
+    if (process.platform !== "win32" && action.expectedMode !== undefined && action.expectedMode !== null && observed.stats?.mode !== undefined && (observed.stats.mode & 0o777) !== action.expectedMode) return "destination mode changed after planning";
   }
   return null;
 }
@@ -157,7 +163,7 @@ async function applyAction({ plan, action, contents, fileSystem }) {
   assertSafeDestinationRoot(dirname(target));
   if (WRITE_KINDS.has(action.kind)) {
     const value = contents(action.relativePath);
-    await atomicReplaceFile({ destination: target, content: value, expectedHash: action.contentHash, fileSystem });
+    await atomicReplaceFile({ destination: target, content: value, expectedHash: action.contentHash, mode: action.mode ?? null, fileSystem });
   } else if (action.kind === "prune") {
     const remove = operation(fileSystem, "unlink", unlink);
     await remove(target);
@@ -181,14 +187,14 @@ function stateFailureAction(error) {
  * relativePath to its exact Uint8Array. It additionally supplies the required
  * repositoryVersion, profile, and surfaces metadata. Optional standard
  * fs/promises-compatible methods (lstat, readFile, mkdir, writeFile, rename,
- * unlink) are accepted for disposable failure injection.
+ * unlink, chmod) are accepted for disposable failure injection.
  */
 export async function applyPlan({ plan, fileSystem } = {}) {
   if (!object(plan) || plan.schemaVersion !== 1 || !SURFACES.has(plan.surface) || typeof plan.root !== "string" || !isAbsolute(plan.root) || !Array.isArray(plan.actions) || !Array.isArray(plan.diagnostics)) {
     throw new TypeError("plan must be a schemaVersion 1 InstallPlan");
   }
   if (!object(fileSystem) || Array.isArray(fileSystem)) throw new TypeError("fileSystem must be an object");
-  const actions = plan.actions.map((action) => ({ ...action }));
+  const actions = plan.actions.map((action) => ({ ...action, mode: action.mode ?? null, expectedMode: action.expectedMode ?? null }));
   const seen = new Set();
   if (actions.some((action) => !validAction(action) || seen.has(action.relativePath) || (seen.add(action.relativePath) && false))) {
     throw new TypeError("plan actions must be unique valid PlanAction values");

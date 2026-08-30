@@ -107,4 +107,3 @@ unverified rather than claiming universal security.
 - [ ] Controls are conditional on the actual architecture and least privilege.
 - [ ] Verification is safe, scoped, and truthful about not-run checks.
 - [ ] Every control and residual risk has an owner.
-

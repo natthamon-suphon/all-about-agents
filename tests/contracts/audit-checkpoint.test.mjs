@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -239,6 +240,30 @@ test("every adapter production render consumes the audit and checkpoint contract
       assert.doesNotMatch(files.get("hooks/activity-audit.mjs"), /intentionally emits no arguments or results/iu, `${packageSpec.surface} must render a consuming activity audit hook`);
       assert.doesNotMatch(files.get("hooks/pre-compact.mjs"), /does not rewrite user files/iu, `${packageSpec.surface} must render a consuming checkpoint hook`);
     }
+  }
+});
+
+test("Claude and Codex activity/checkpoint wrappers fail open on oversized stdin", async () => {
+  const core = await loadCore(process.cwd());
+  const packages = [
+    { surface: "claude", result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }) },
+    { surface: "codex", result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", targetRuntime: "cli" }) }
+  ];
+  for (const item of packages) {
+    await withTempRoot(async (root) => {
+      for (const file of item.result.files) {
+        const target = join(root, ...file.relativePath.split("/"));
+        await mkdir(resolve(target, ".."), { recursive: true });
+        await writeFile(target, file.content);
+      }
+      const oversized = JSON.stringify({ actionId: "aaa:review", outcome: "success", session_id: "bounded", padding: "x".repeat(70_000) });
+      for (const name of ["activity-audit.mjs", "pre-compact.mjs"]) {
+        const result = spawnSync(process.execPath, [join(root, "hooks", name)], { input: oversized, encoding: "utf8" });
+        assert.equal(result.status, 0, `${item.surface}/${name}: ${result.stderr}`);
+      }
+      assert.equal(await access(join(root, "hooks", "audit")).then(() => true, () => false), false);
+      assert.equal(await access(join(root, "hooks", "checkpoints")).then(() => true, () => false), false);
+    });
   }
 });
 

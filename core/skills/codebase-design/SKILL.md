@@ -135,4 +135,3 @@ to make a diagram look cleaner.
 - [ ] Depth, leverage, locality, seam placement, and adapter need are evidenced.
 - [ ] The recommendation is proportional and preserves unauthorized scope.
 - [ ] Verification and compatibility evidence are explicit and truthful.
-

@@ -22,6 +22,8 @@
         "relativePath": { "type": "string", "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$)).+$" },
         "expectedHash": { "anyOf": [{ "type": "string", "pattern": "^[0-9a-f]{64}$" }, { "type": "null" }] },
         "contentHash": { "anyOf": [{ "type": "string", "pattern": "^[0-9a-f]{64}$" }, { "type": "null" }] },
+        "mode": { "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 511 }, { "type": "null" }] },
+        "expectedMode": { "anyOf": [{ "type": "integer", "minimum": 0, "maximum": 511 }, { "type": "null" }] },
         "reason": { "type": "string" }
       }
     }

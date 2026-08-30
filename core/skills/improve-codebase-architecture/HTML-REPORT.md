@@ -84,4 +84,3 @@ cannot be rendered safely or offline, use the caption and Markdown evidence.
 - Compare candidate count, strengths, evidence, and top recommendation against
   the Markdown source.
 - Record preview or accessibility checks not run; never call them passed.
-

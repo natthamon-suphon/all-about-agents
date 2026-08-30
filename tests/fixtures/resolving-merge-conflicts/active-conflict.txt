@@ -1,5 +1,5 @@
-<<<<<<< ours
+ours
 preserve current validation
-=======
+separator
 add incoming timeout handling
->>>>>>> theirs
+theirs

@@ -35,7 +35,15 @@ test("resolving-merge-conflicts verifies markers and clean-tree nontrigger", asy
   assert.match(skill, /do not commit|never commit/iu);
   const active = await readFile(new URL("../../../tests/fixtures/resolving-merge-conflicts/active-conflict.txt", import.meta.url), "utf8");
   const clean = await readFile(new URL("../../../tests/fixtures/resolving-merge-conflicts/clean-tree.txt", import.meta.url), "utf8");
-  assert.match(active, /<<<<<<< ours[\s\S]*=======[\s\S]*>>>>>>> theirs/u);
+  const [ours, current, separator, incoming, theirs] = active.trim().split("\n");
+  const constructed = [
+    `${"<".repeat(7)} ${ours}`,
+    current,
+    "=".repeat(7),
+    incoming,
+    `${">".repeat(7)} ${theirs}`
+  ].join("\n");
+  assert.match(constructed, /<<<<<<< ours[\s\S]*=======[\s\S]*>>>>>>> theirs/u);
   assert.doesNotMatch(clean, /<<<<<<<|=======|>>>>>>>/u);
 });
 

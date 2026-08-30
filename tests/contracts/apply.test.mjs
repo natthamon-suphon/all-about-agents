@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { access, mkdir, readFile, rename, symlink, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, readFile, rename, stat, symlink, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 import test from "node:test";
 
 import { withTempRoot } from "../helpers/temp-root.mjs";
@@ -10,6 +11,7 @@ import { hashBytes } from "../../installers/lib/hash.mjs";
 import { applyPlan, STATE_RELATIVE_PATH } from "../../installers/lib/apply.mjs";
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 import reportSchema from "../../installers/schemas/report.schema.json" with { type: "json" };
+import planSchema from "../../installers/schemas/plan.schema.json" with { type: "json" };
 
 const requiredOutputs = [
   "installers/lib/apply.mjs",
@@ -60,6 +62,56 @@ test("applyPlan validates every rendered byte before its first destination write
     assert.equal(writes, 0);
     assert.deepEqual(result.notAttempted.map((action) => action.relativePath), ["a.txt"]);
     assert.equal(await access(join(root, "a.txt")).then(() => true, () => false), false);
+  });
+});
+
+test("applyPlan preserves an explicit executable mode and repairs same-content mode drift", async (t) => {
+  await withTempRoot(async (root) => {
+    const script = "#!/bin/sh\nprintf 'mode-ok\\n'\n";
+    const scriptPath = join(root, "bin", "run.sh");
+    await mkdir(join(root, "bin"));
+    await writeFile(scriptPath, script, { mode: 0o644 });
+    await chmod(scriptPath, 0o644);
+    const content = bytes(script);
+    const payload = {
+      files: [{ relativePath: "bin/run.sh", content, mode: 0o755 }],
+      registrations: [{ kind: "profile-translation", surface: "claude" }],
+      diagnostics: [],
+      ownership: [{ relativePath: "bin/run.sh", sha256: hashBytes(content) }]
+    };
+    const plan = buildPlan({ destinationRoot: root, payload, platform: "linux" });
+    assert.equal(plan.actions[0].kind, "replace", "same content with wrong executable mode must not be unchanged");
+    assert.equal(plan.actions[0].mode, 0o755);
+    assert.equal(validateSchema({ schema: planSchema, value: plan, sourcePath: "plan.json" }).valid, true);
+    if (process.platform === "win32") {
+      t.skip("POSIX executable bits are not meaningful on Windows");
+      return;
+    }
+    const originalUmask = process.umask(0o077);
+    let result;
+    try {
+      result = await applyPlan({ plan, fileSystem: fsFor([["bin/run.sh", script]]) });
+    } finally {
+      process.umask(originalUmask);
+    }
+    assert.equal(result.status, "complete");
+    assert.equal((await stat(scriptPath)).mode & 0o777, 0o755);
+    const executed = spawnSync(scriptPath, { encoding: "utf8" });
+    assert.equal(executed.status, 0, executed.stderr);
+    assert.equal(executed.stdout, "mode-ok\n");
+  });
+});
+
+test("plan and apply contracts reject invalid Unix modes", async () => {
+  await withTempRoot(async (root) => {
+    const plan = planFor(root, [["mode.txt", "content"]]);
+    assert.equal(validateSchema({ schema: planSchema, value: plan, sourcePath: "plan.json" }).valid, true);
+    const invalid = {
+      ...plan,
+      actions: plan.actions.map((action) => ({ ...action, mode: 0o1000 }))
+    };
+    assert.equal(validateSchema({ schema: planSchema, value: invalid, sourcePath: "plan.json" }).valid, false);
+    await assert.rejects(() => applyPlan({ plan: invalid, fileSystem: fsFor([["mode.txt", "content"]]) }), TypeError);
   });
 });
 

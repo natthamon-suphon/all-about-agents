@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, basename, resolve } from "node:path";
 
 import { hashBytes } from "./hash.mjs";
@@ -38,7 +38,7 @@ async function removeTemp(path, remove) {
  * overrides. They exist for disposable tests and must not change the
  * same-directory temporary-file and post-rename hash-verification contract.
  */
-export async function atomicReplaceFile({ destination, content, expectedHash, fileSystem = {} } = {}) {
+export async function atomicReplaceFile({ destination, content, expectedHash, mode = null, fileSystem = {} } = {}) {
   if (typeof destination !== "string" || destination.length === 0 || destination.includes("\0")) {
     throw new TypeError("destination must be a non-empty path");
   }
@@ -46,9 +46,13 @@ export async function atomicReplaceFile({ destination, content, expectedHash, fi
   if (typeof expectedHash !== "string" || !/^[0-9a-f]{64}$/u.test(expectedHash)) {
     throw new TypeError("expectedHash must be a lower-case SHA-256 hash");
   }
+  if (!(mode === null || (Number.isInteger(mode) && mode >= 0 && mode <= 0o777))) {
+    throw new TypeError("mode must be null or a Unix mode from 0 through 0777");
+  }
 
   const makeDirectory = operation(fileSystem, "mkdir", mkdir);
   const write = operation(fileSystem, "writeFile", writeFile);
+  const setMode = operation(fileSystem, "chmod", chmod);
   const replace = operation(fileSystem, "rename", rename);
   const remove = operation(fileSystem, "unlink", unlink);
   const read = operation(fileSystem, "readFile", readFile);
@@ -63,8 +67,15 @@ export async function atomicReplaceFile({ destination, content, expectedHash, fi
   let temporaryCreated = false;
   try {
     verifyDirectory();
-    await write(temporaryPath, value, { flag: "wx", mode: 0o600 });
+    // A null mode keeps the existing safe default for ordinary files and
+    // managed state; explicit modes (notably 0755 scripts) survive rename.
+    await write(temporaryPath, value, { flag: "wx", mode: mode ?? 0o600 });
     temporaryCreated = true;
+    verifyDirectory();
+    // Creation modes are filtered through the process umask. Apply the
+    // validated explicit mode after creation so the requested executable bit
+    // is exact on POSIX, while leaving Windows ACL semantics untouched.
+    if (mode !== null && process.platform !== "win32") await setMode(temporaryPath, mode);
     verifyDirectory();
     await replace(temporaryPath, destinationPath);
     verifyDirectory();
