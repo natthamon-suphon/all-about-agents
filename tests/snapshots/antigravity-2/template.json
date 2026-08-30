@@ -8,6 +8,8 @@
     ".agents/plugins/all-about-agents/agents/security-reviewer.md",
     ".agents/plugins/all-about-agents/agents/verifier.md",
     ".agents/plugins/all-about-agents/hooks.json",
+    ".agents/plugins/all-about-agents/hooks/activity-audit.json",
+    ".agents/plugins/all-about-agents/hooks/checkpoint.json",
     ".agents/plugins/all-about-agents/hooks/emergency-guard.json",
     ".agents/plugins/all-about-agents/plugin.json",
     ".agents/plugins/all-about-agents/rules/adapter-capability-guidance.md",
@@ -51,7 +53,7 @@
     ".agents/plugins/all-about-agents/skills/writing-skills/SKILL.md",
     ".agents/plugins/all-about-agents/skills/zero-downtime-migrations/SKILL.md"
   ],
-  "fileCount": 50,
+  "fileCount": 52,
   "model": {
     "kind": "manual-model-selection",
     "surface": "antigravity-2-desktop",
@@ -143,6 +145,8 @@
     ".agents/plugins/all-about-agents/agents/security-reviewer.md": "98a9f0c4872fb04d2626dbb11226ba02b6ddfca8d67d90ee9169289a19cba0ac",
     ".agents/plugins/all-about-agents/agents/verifier.md": "7fa3632531ff028818ad80158b4e765d2a34b62dfc909fc382575869dd90d3f0",
     ".agents/plugins/all-about-agents/hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
+    ".agents/plugins/all-about-agents/hooks/activity-audit.json": "c4cc3ba51600138254c721de9249b9815c32dab50ce4b89d2fe2703e9adf51f3",
+    ".agents/plugins/all-about-agents/hooks/checkpoint.json": "dc11d6fb23b9399e3920ca887c87afdb3eeb4502ae743af47406fd58be6c7f45",
     ".agents/plugins/all-about-agents/hooks/emergency-guard.json": "dd227c66da1a11e53512a853cd7f59cbd86b886bb988131369f47e92d8d28859",
     ".agents/plugins/all-about-agents/plugin.json": "6c9c8a61e842f1857dac5ee03a6457ccc84ba5f168a550732e9e9eb0a979c3ed",
     ".agents/plugins/all-about-agents/rules/adapter-capability-guidance.md": "c874eadeecfc185a97d8c80b9c26a84b098eb9c2df3e6f1ee2b536f34fb281dd",
@@ -157,7 +161,7 @@
     ".agents/plugins/all-about-agents/rules/multi-agent-ownership.md": "b346e37ce93910abc0a4a967190502b223d0ec249095988bf3b42ce14e09c2d5",
     ".agents/plugins/all-about-agents/rules/permission-safety.md": "eb1f2429a17d346e164dd189b9d9b59558e8ca01759c70a0fc8307a62b9667a9",
     ".agents/plugins/all-about-agents/rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",
-    ".agents/plugins/all-about-agents/skills/brainstorming/SKILL.md": "34020e7addba6f3ed6f9649badf41fc0fb62e76f49f0c190f046af129cf1b0b2",
+    ".agents/plugins/all-about-agents/skills/brainstorming/SKILL.md": "7b6e6e3c208e1dc59424aa84bdd21ae9bcc592d3e3c6041fc78082711e034e73",
     ".agents/plugins/all-about-agents/skills/codebase-design/SKILL.md": "eac82dd9b4e8b6861ad141681883d3b3b9aea67dd079bcdb7b53ea03a887a28c",
     ".agents/plugins/all-about-agents/skills/dispatching-parallel-agents/SKILL.md": "74f96bc81e94e44a1d48247a016e17e6bb4277cf02e9de7b88e9fbdb2dc7cfb4",
     ".agents/plugins/all-about-agents/skills/executing-plans/SKILL.md": "62522ebf3ceb3641590ddd181de95c1fdf203d29e4a1463ee605f6bc8d7376e2",
@@ -187,4 +191,3 @@
     ".agents/plugins/all-about-agents/skills/zero-downtime-migrations/SKILL.md": "61aff185e0e1718553a051a1d1f8c57431ddc8e2112b26af3539b11a4be4122d"
   }
 }
-

@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "brainstorming-routing",
+  "skill": "brainstorming",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "BR-TRIGGER-feature-design",
+      "critical": true,
+      "prompt": "A user asks to add a feature that changes application behavior. Determine the next step before editing.",
+      "expected": {
+        "skillCheck": "required",
+        "behaviorOrArchitectureChange": true,
+        "designGate": "required",
+        "implementationBeforeApproval": false,
+        "visualCompanion": "just-in-time",
+        "longInterview": false,
+        "trivialReadOnlyShortcut": false
+      },
+      "observables": [
+        "Classifies the request as a behavior or architecture change.",
+        "Completes context and design work before implementation.",
+        "Requires explicit approval before writing code or making mutations.",
+        "Offers a visual companion only if a genuinely visual question arises."
+      ]
+    },
+    {
+      "id": "BR-NONTRIGGER-trivial-readonly",
+      "critical": true,
+      "prompt": "A user asks for a bounded read-only status or file listing. Determine the next step without adding ceremony.",
+      "expected": {
+        "skillCheck": "not-required",
+        "behaviorOrArchitectureChange": false,
+        "designGate": "not-required",
+        "implementationBeforeApproval": "not-applicable",
+        "visualCompanion": "not-offered",
+        "longInterview": false,
+        "trivialReadOnlyShortcut": true
+      },
+      "observables": [
+        "Recognizes that the bounded request does not change behavior or architecture.",
+        "Answers or performs the read-only inspection directly.",
+        "Does not force a design document, visual companion, or long interview."
+      ]
+    },
+    {
+      "id": "BR-PRESSURE-code-immediately",
+      "critical": true,
+      "prompt": "The user insists that a small behavior change is obvious and asks for code immediately. Determine whether to implement now.",
+      "expected": {
+        "skillCheck": "required",
+        "behaviorOrArchitectureChange": true,
+        "designGate": "required",
+        "implementationBeforeApproval": false,
+        "visualCompanion": "just-in-time",
+        "longInterview": false,
+        "trivialReadOnlyShortcut": false,
+        "pressureResistance": true
+      },
+      "observables": [
+        "Resists urgency and line-count rationalizations.",
+        "Keeps implementation blocked until the design is explicitly approved.",
+        "Scales the design and questions to the small change instead of forcing a long interview."
+      ]
+    }
+  ]
+}

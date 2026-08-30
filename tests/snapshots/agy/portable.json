@@ -1,7 +1,8 @@
 {
-  "fileCount": 54,
+  "fileCount": 56,
   "paths": [
     "README.md",
+    "activity-audit.json",
     "agents/architect/agent.md",
     "agents/implementer/agent.md",
     "agents/investigator/agent.md",
@@ -9,6 +10,7 @@
     "agents/reviewer/agent.md",
     "agents/security-reviewer/agent.md",
     "agents/verifier/agent.md",
+    "checkpoint.json",
     "emergency-guard.json",
     "hooks.json",
     "plugin.json",
@@ -62,6 +64,10 @@
       "sha256": "5f304e31c0df7cffef43801efbe3ffa07055c2b9009625de4ada091ff4b25afb"
     },
     {
+      "relativePath": "activity-audit.json",
+      "sha256": "b27f619ae09b6c99516dcb90d72655c220f828d7ef61b4e1d3fca14d37fce98f"
+    },
+    {
       "relativePath": "agents/architect/agent.md",
       "sha256": "784814cfdd4564f6846f0fec2046ba6be6384bedb0c66a76c3e4fcca522696f9"
     },
@@ -88,6 +94,10 @@
     {
       "relativePath": "agents/verifier/agent.md",
       "sha256": "145fba95a78f4625d5efa22765ae3f294b07c08ed3c44fee73ebba28ac236cb2"
+    },
+    {
+      "relativePath": "checkpoint.json",
+      "sha256": "3056071e586cfb879c22d8c26e33f016f44d0e2974dc2b627232161678ecaad0"
     },
     {
       "relativePath": "emergency-guard.json",
@@ -163,7 +173,7 @@
     },
     {
       "relativePath": "skills/brainstorming/SKILL.md",
-      "sha256": "34020e7addba6f3ed6f9649badf41fc0fb62e76f49f0c190f046af129cf1b0b2"
+      "sha256": "7b6e6e3c208e1dc59424aa84bdd21ae9bcc592d3e3c6041fc78082711e034e73"
     },
     {
       "relativePath": "skills/codebase-design/SKILL.md",
@@ -370,6 +380,40 @@
           "On a disposable package, perform an explicit probe and record the observed first-invocation fields before proposing an executable handler."
         ]
       }
+    },
+    {
+      "kind": "activity-audit",
+      "surface": "agy",
+      "relativePath": "activity-audit.json",
+      "event": "PostToolUse",
+      "optional": true,
+      "automatic": false,
+      "probeRequired": true,
+      "status": "not run",
+      "failureMode": "fail-open",
+      "recordedFields": [
+        "timestamp",
+        "surface",
+        "actionId",
+        "outcome",
+        "sessionKeyHash"
+      ]
+    },
+    {
+      "kind": "checkpoint",
+      "surface": "agy",
+      "relativePath": "checkpoint.json",
+      "automatic": false,
+      "nativeHookEquivalent": false,
+      "durableWorkflow": "explicit",
+      "failureMode": "fail-open",
+      "recordedFields": [
+        "timestamp",
+        "workflowId",
+        "taskId",
+        "state",
+        "status"
+      ]
     },
     {
       "kind": "emergency-guard",
@@ -644,12 +688,6 @@
     {
       "code": "missing-skill-source",
       "severity": "error",
-      "message": "Canonical skill 'brainstorming' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
       "message": "Canonical skill 'codebase-design' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
@@ -806,6 +844,7 @@
   ],
   "contentHashes": {
     "README.md": "5f304e31c0df7cffef43801efbe3ffa07055c2b9009625de4ada091ff4b25afb",
+    "activity-audit.json": "b27f619ae09b6c99516dcb90d72655c220f828d7ef61b4e1d3fca14d37fce98f",
     "agents/architect/agent.md": "784814cfdd4564f6846f0fec2046ba6be6384bedb0c66a76c3e4fcca522696f9",
     "agents/implementer/agent.md": "649e20be45b6d72c23f70c0cc5fd9e3a30f7e760f12a993fd4c60c7a7248f756",
     "agents/investigator/agent.md": "308043c17a4e390e78488160beee23843040f95f3c3277396d53f7960bc730ac",
@@ -813,6 +852,7 @@
     "agents/reviewer/agent.md": "dd77861e28449aaa5e0da997b587a3bdc945a16441410789d65559a06737fac8",
     "agents/security-reviewer/agent.md": "73cb4bc29dd8c2a9d9a1182178cf10ad4484ab89d1358a3f4ab40d2bbcbbd521",
     "agents/verifier/agent.md": "145fba95a78f4625d5efa22765ae3f294b07c08ed3c44fee73ebba28ac236cb2",
+    "checkpoint.json": "3056071e586cfb879c22d8c26e33f016f44d0e2974dc2b627232161678ecaad0",
     "emergency-guard.json": "c10172f609495f8b3546b54cdcd9b1bcc496d55d31b5ec76ee66dbe7789c952a",
     "hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
     "plugin.json": "756ec24b1703be2d650e94914f6f7668ba98a1dd746cda65a42e8025e2ba6ead",
@@ -831,7 +871,7 @@
     "rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",
     "rules/settings-overlay.md": "de99fa53e61ce5ff61fcda7508be26528c4e6b0306a8a16902fe540b3d11859c",
     "settings.overlay.json": "e2c9195d972a7caa588d21faab398a2a0307b5b7696566bf809c715866e3463c",
-    "skills/brainstorming/SKILL.md": "34020e7addba6f3ed6f9649badf41fc0fb62e76f49f0c190f046af129cf1b0b2",
+    "skills/brainstorming/SKILL.md": "7b6e6e3c208e1dc59424aa84bdd21ae9bcc592d3e3c6041fc78082711e034e73",
     "skills/codebase-design/SKILL.md": "eac82dd9b4e8b6861ad141681883d3b3b9aea67dd079bcdb7b53ea03a887a28c",
     "skills/dispatching-parallel-agents/SKILL.md": "74f96bc81e94e44a1d48247a016e17e6bb4277cf02e9de7b88e9fbdb2dc7cfb4",
     "skills/executing-plans/SKILL.md": "62522ebf3ceb3641590ddd181de95c1fdf203d29e4a1463ee605f6bc8d7376e2",
@@ -861,4 +901,3 @@
     "skills/zero-downtime-migrations/SKILL.md": "61aff185e0e1718553a051a1d1f8c57431ddc8e2112b26af3539b11a4be4122d"
   }
 }
-

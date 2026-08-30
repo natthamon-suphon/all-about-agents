@@ -1,9 +1,9 @@
 {
-  "fileCount": 47,
+  "fileCount": 52,
   "files": [
     {
       "relativePath": ".agents/skills/brainstorming/SKILL.md",
-      "sha256": "fdc3d52a080443d2d4521fbe040339821103ddde0b4411bc2b78c83b53c94253",
+      "sha256": "92ef6058f7ab86f74c61263c3feb078a11fd5798ee641856a9f19d3932a260e5",
       "mode": null
     },
     {
@@ -202,6 +202,21 @@
       "mode": null
     },
     {
+      "relativePath": "hooks/activity-audit.json",
+      "sha256": "63fa46120fb9454ad3c7faa7d33dd59a2fc90da1470e70f532e9ced210eca1c0",
+      "mode": null
+    },
+    {
+      "relativePath": "hooks/activity-audit.mjs",
+      "sha256": "6b8056af34b3db514a4caea0a873faefc1b555242b4820121adaddf43b7f70d6",
+      "mode": 493
+    },
+    {
+      "relativePath": "hooks/audit-log.mjs",
+      "sha256": "1919d1d5e39ff08f69a9136426f8f1a7ce61949f1ca59b762be2436991a2604d",
+      "mode": 493
+    },
+    {
       "relativePath": "hooks/bootstrap.json",
       "sha256": "75744088db1bf98a66bc3c5e4d94a938a2a81486b01d72b9f90a35075b1595aa",
       "mode": null
@@ -210,6 +225,11 @@
       "relativePath": "hooks/bootstrap.mjs",
       "sha256": "846d4f13a17f6ea7b42318b1400fa9442241c2342ff375ac64bb52eff60188c6",
       "mode": 493
+    },
+    {
+      "relativePath": "hooks/checkpoint.json",
+      "sha256": "5c0989dfafcdcd0a8501afa502e700efae070b878b37f31d5a0d24465324690c",
+      "mode": null
     },
     {
       "relativePath": "hooks/emergency-guard.json",
@@ -228,8 +248,13 @@
     },
     {
       "relativePath": "hooks/hooks.json",
-      "sha256": "f4c7261fd2d9863ccf1ea036d2d50d345108f131207c5f1a5f0acce97f1c20b4",
+      "sha256": "5d7915c197a06b61e1ddc592bad5af358819ca2555360af875f9206cdb418c4c",
       "mode": null
+    },
+    {
+      "relativePath": "hooks/pre-compact.mjs",
+      "sha256": "abfaa0c2a7d9d75b6580564adab095a18d6a64bd75c913280d2ec8f46c6f16b8",
+      "mode": 493
     },
     {
       "relativePath": "terra-max.config.toml",
@@ -240,7 +265,7 @@
   "ownership": [
     {
       "relativePath": ".agents/skills/brainstorming/SKILL.md",
-      "sha256": "fdc3d52a080443d2d4521fbe040339821103ddde0b4411bc2b78c83b53c94253"
+      "sha256": "92ef6058f7ab86f74c61263c3feb078a11fd5798ee641856a9f19d3932a260e5"
     },
     {
       "relativePath": ".agents/skills/codebase-design/SKILL.md",
@@ -399,12 +424,28 @@
       "sha256": "9928b5d787efa032def1825b818c6f0b274a440a170fdb988496c7dc9f159590"
     },
     {
+      "relativePath": "hooks/activity-audit.json",
+      "sha256": "63fa46120fb9454ad3c7faa7d33dd59a2fc90da1470e70f532e9ced210eca1c0"
+    },
+    {
+      "relativePath": "hooks/activity-audit.mjs",
+      "sha256": "6b8056af34b3db514a4caea0a873faefc1b555242b4820121adaddf43b7f70d6"
+    },
+    {
+      "relativePath": "hooks/audit-log.mjs",
+      "sha256": "1919d1d5e39ff08f69a9136426f8f1a7ce61949f1ca59b762be2436991a2604d"
+    },
+    {
       "relativePath": "hooks/bootstrap.json",
       "sha256": "75744088db1bf98a66bc3c5e4d94a938a2a81486b01d72b9f90a35075b1595aa"
     },
     {
       "relativePath": "hooks/bootstrap.mjs",
       "sha256": "846d4f13a17f6ea7b42318b1400fa9442241c2342ff375ac64bb52eff60188c6"
+    },
+    {
+      "relativePath": "hooks/checkpoint.json",
+      "sha256": "5c0989dfafcdcd0a8501afa502e700efae070b878b37f31d5a0d24465324690c"
     },
     {
       "relativePath": "hooks/emergency-guard.json",
@@ -420,7 +461,11 @@
     },
     {
       "relativePath": "hooks/hooks.json",
-      "sha256": "f4c7261fd2d9863ccf1ea036d2d50d345108f131207c5f1a5f0acce97f1c20b4"
+      "sha256": "5d7915c197a06b61e1ddc592bad5af358819ca2555360af875f9206cdb418c4c"
+    },
+    {
+      "relativePath": "hooks/pre-compact.mjs",
+      "sha256": "abfaa0c2a7d9d75b6580564adab095a18d6a64bd75c913280d2ec8f46c6f16b8"
     },
     {
       "relativePath": "terra-max.config.toml",
@@ -459,6 +504,40 @@
       "matcher": "^startup$",
       "trustRequired": true,
       "desktopManualOnly": true
+    },
+    {
+      "kind": "activity-audit",
+      "surface": "codex",
+      "relativePath": "hooks/hooks.json",
+      "event": "PostToolUse",
+      "matcher": ".*",
+      "optional": true,
+      "automatic": true,
+      "failureMode": "fail-open",
+      "recordedFields": [
+        "timestamp",
+        "surface",
+        "actionId",
+        "outcome",
+        "sessionKeyHash"
+      ]
+    },
+    {
+      "kind": "checkpoint",
+      "surface": "codex",
+      "relativePath": "hooks/hooks.json",
+      "event": "PreCompact",
+      "matcher": ".*",
+      "automatic": true,
+      "durableWorkflow": "explicit",
+      "failureMode": "fail-open",
+      "recordedFields": [
+        "timestamp",
+        "workflowId",
+        "taskId",
+        "state",
+        "status"
+      ]
     },
     {
       "kind": "emergency-guard",
@@ -542,12 +621,6 @@
     }
   ],
   "diagnostics": [
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'brainstorming' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
     {
       "code": "missing-skill-source",
       "severity": "error",

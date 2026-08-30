@@ -135,7 +135,7 @@
     "rules/long-task-state.md": "62d1c22e14fa00a01136894dad2336e1d3c059b104e3e64eeb2d66bd3755b2af",
     "rules/multi-agent-ownership.md": "b346e37ce93910abc0a4a967190502b223d0ec249095988bf3b42ce14e09c2d5",
     "rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",
-    "skills/brainstorming/SKILL.md": "fdc3d52a080443d2d4521fbe040339821103ddde0b4411bc2b78c83b53c94253",
+    "skills/brainstorming/SKILL.md": "92ef6058f7ab86f74c61263c3feb078a11fd5798ee641856a9f19d3932a260e5",
     "skills/codebase-design/SKILL.md": "f7ebc05e24729ebc2c27142ff6bd215aa626087a7f7351da235b6be496830b61",
     "skills/dispatching-parallel-agents/SKILL.md": "da02a4d2fafd88a4bc157ca72257e48e57731519e1cda8af88cea4a4a7728a49",
     "skills/executing-plans/SKILL.md": "4b6662b89f7afc1b8898b91aaf8c7a34d7a3cf60f0ee33f0efee80bd162167ed",
