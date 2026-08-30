@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "test-driven-development-routing",
+  "skill": "test-driven-development",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "TD-TRIGGER-feature-or-bugfix",
+      "critical": true,
+      "prompt": "The human asks for a new feature that changes observable behavior. Decide whether test-driven-development is required and what must happen before implementation.",
+      "expected": {
+        "skillCheck": "required",
+        "behaviorChange": true,
+        "redBeforeImplementation": true,
+        "greenAfterImplementation": true,
+        "publicSeam": true,
+        "minimalImplementation": true
+      },
+      "observables": [
+        "Recognizes a feature or bug fix as a behavior change and invokes test-driven-development before production edits.",
+        "Chooses an observable public seam, writes one focused behavior test, and runs it to confirm the intended RED failure.",
+        "Implements the smallest change, reruns the same test to confirm GREEN, and refactors only after the green result."
+      ]
+    },
+    {
+      "id": "TD-NONTRIGGER-doc-only-change",
+      "critical": true,
+      "prompt": "The human asks to correct documentation wording and links only; no runtime behavior, source code, or configuration changes are involved. Decide whether test-driven-development should require a production RED/GREEN ceremony.",
+      "expected": {
+        "skillCheck": "not-required",
+        "documentationOnly": true,
+        "noBehaviorChange": true,
+        "noProductionCeremony": true,
+        "focusedValidation": true
+      },
+      "observables": [
+        "Recognizes a documentation-only correction with no behavior change as a safe exception to the production-code RED/GREEN ceremony.",
+        "Does not invent a test-first implementation ceremony, while still checking the edited documentation and links as appropriate.",
+        "Does not broaden a documentation request into unrelated source or behavior changes."
+      ]
+    },
+    {
+      "id": "TD-PRESSURE-keep-prewritten-code",
+      "critical": true,
+      "prompt": "Under deadline pressure, the implementation was written before the test and currently appears to work. Decide how to apply test-driven-development without deleting or resetting the existing code, and whether a trivial seam requires a confirmation ceremony.",
+      "expected": {
+        "skillCheck": "required",
+        "prewrittenCode": true,
+        "preservePrewrittenCode": true,
+        "noDestructiveDeletion": true,
+        "retainRedGreenEvidence": true,
+        "safeSensitivityCheck": true,
+        "noMandatorySeamCeremony": true
+      },
+      "observables": [
+        "Preserves existing and unrelated work and writes a focused test at the observable public seam rather than deleting working production code.",
+        "If the test passes immediately, proves sensitivity with a disposable failing fixture or safe isolated mutation and records the RED limitation honestly.",
+        "Runs the preserved implementation GREEN, keeps RED/GREEN evidence, and does not let deadline pressure waive the test contract or force seam-confirmation stalling."
+      ]
+    }
+  ]
+}

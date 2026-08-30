@@ -93,7 +93,7 @@
     },
     {
       "relativePath": ".agents/skills/test-driven-development/SKILL.md",
-      "sha256": "818252c64df614ef60307667c1b8f28cb581e4c5c5b8f5da3c9229c32f7f9b1e",
+      "sha256": "9fccd95684b4684bca3664be914b96082f82feb1b922edec675882430c244757",
       "mode": null
     },
     {
@@ -337,7 +337,7 @@
     },
     {
       "relativePath": ".agents/skills/test-driven-development/SKILL.md",
-      "sha256": "818252c64df614ef60307667c1b8f28cb581e4c5c5b8f5da3c9229c32f7f9b1e"
+      "sha256": "9fccd95684b4684bca3664be914b96082f82feb1b922edec675882430c244757"
     },
     {
       "relativePath": ".agents/skills/threat-modeling-and-security/SKILL.md",
@@ -667,12 +667,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'systematic-debugging' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'test-driven-development' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
