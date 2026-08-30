@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "improve-codebase-architecture-routing",
+  "skill": "improve-codebase-architecture",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "IA-TRIGGER-explicit-architecture-survey",
+      "critical": true,
+      "prompt": "Survey this repository for evidence-backed architecture and deepening opportunities, rank the candidates, and stop before implementation.",
+      "expected": {
+        "skillCheck": "required",
+        "architectureSurvey": true,
+        "readOnlyInspection": true,
+        "markdownReport": true,
+        "rankCandidates": true,
+        "topRecommendation": true,
+        "noImplementation": true
+      },
+      "observables": [
+        "Invokes improve-codebase-architecture, confirms read-only scope, and consults codebase-design vocabulary.",
+        "Inspects real callers, tests, change evidence, interfaces, seams, and deletion-test outcomes before ranking candidates.",
+        "Produces a complete Markdown report with one top recommendation and stops before design or implementation."
+      ]
+    },
+    {
+      "id": "IA-NONTRIGGER-fix-one-bug",
+      "critical": true,
+      "prompt": "Fix one reproducible null-handling bug in a named function. No architecture survey or broader refactor was requested.",
+      "expected": {
+        "skillCheck": "not-required",
+        "fixOnly": true,
+        "noArchitectureSurvey": true,
+        "noScopeExpansion": true
+      },
+      "observables": [
+        "Recognizes the focused bug fix as a nontrigger for a codebase-wide architecture survey.",
+        "Uses the appropriate debugging and implementation workflow for the named behavior.",
+        "Does not create architecture artifacts, scan unrelated modules, or expand the refactor scope."
+      ]
+    },
+    {
+      "id": "IA-PRESSURE-require-HTML",
+      "critical": true,
+      "prompt": "Complete the architecture analysis, but treat an interactive HTML dashboard and CDN diagrams as mandatory even when browser or visual tooling is unavailable.",
+      "expected": {
+        "skillCheck": "required",
+        "markdownFallback": true,
+        "htmlOptional": true,
+        "analysisNotBlocked": true,
+        "noFabricatedPreview": true,
+        "safeUntrustedContent": true
+      },
+      "observables": [
+        "Completes the portable Markdown survey before any optional visual work.",
+        "Treats HTML, browser preview, CDN, and diagrams as optional and reports unavailable checks truthfully.",
+        "Does not fabricate a visual result or insert unescaped repository content, and the analysis still completes."
+      ]
+    }
+  ]
+}
+

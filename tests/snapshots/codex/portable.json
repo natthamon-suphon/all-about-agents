@@ -33,7 +33,7 @@
     },
     {
       "relativePath": ".agents/skills/improve-codebase-architecture/SKILL.md",
-      "sha256": "60a160521e84972f5e5d9e35d5e8ca9520a552bda18f32d9ec9b6a7573f76bb5",
+      "sha256": "42d1b18fc8ae431e64377e081044f6db93f046cf3402eb3d9a789001066375c5",
       "mode": null
     },
     {
@@ -289,7 +289,7 @@
     },
     {
       "relativePath": ".agents/skills/improve-codebase-architecture/SKILL.md",
-      "sha256": "60a160521e84972f5e5d9e35d5e8ca9520a552bda18f32d9ec9b6a7573f76bb5"
+      "sha256": "42d1b18fc8ae431e64377e081044f6db93f046cf3402eb3d9a789001066375c5"
     },
     {
       "relativePath": ".agents/skills/interviewing/SKILL.md",
@@ -621,12 +621,6 @@
     }
   ],
   "diagnostics": [
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'improve-codebase-architecture' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
     {
       "code": "missing-skill-source",
       "severity": "error",
