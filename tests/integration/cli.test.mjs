@@ -41,10 +41,10 @@ test("doctor returns the exact independent check contract", async () => {
   }
 });
 
-async function capture(args) {
+async function capture(args, runtime) {
   let stdout = "";
   let stderr = "";
-  const code = await main(args, { write: (value) => { stdout += value; } }, { write: (value) => { stderr += value; } });
+  const code = await main(args, { write: (value) => { stdout += value; } }, { write: (value) => { stderr += value; } }, runtime);
   return { code, stdout, stderr };
 }
 
@@ -52,6 +52,26 @@ function jsonOutput(result) {
   assert.equal(result.stderr, "", result.stderr);
   return JSON.parse(result.stdout);
 }
+
+test("interactive install prompts once for the omitted Claude statusline name", async () => {
+  await withTempRoot(async (root) => {
+    let promptCount = 0;
+    const labels = [];
+    const result = await capture(["install", "--surface", "claude", "--destination-root", root, "--apply", "--format", "json"], {
+      interactive: true,
+      prompt: async (label) => {
+        promptCount += 1;
+        labels.push(label);
+        return "T048 interactive";
+      }
+    });
+    assert.equal(result.code, 0);
+    assert.equal(promptCount, 1);
+    assert.deepEqual(labels, ["Statusline display name"]);
+    const statusline = JSON.parse(await readFile(resolve(root, "config", "statusline.json"), "utf8"));
+    assert.equal(statusline.displayName, "T048 interactive");
+  });
+});
 
 test("no-root rendering passes the resolved environment root to the adapter", async () => {
   await withTempRoot(async (root) => {

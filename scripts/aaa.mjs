@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { lstat, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 
@@ -129,6 +130,21 @@ function emitError(error, format, output, errorOutput, code = 1) {
 
 function wantsJson(args) {
   return args.some((value, index) => value === "--format=json" || (value === "--format" && args[index + 1] === "json"));
+}
+
+function hasOption(args, name) {
+  return args.some((value) => value === name || value.startsWith(`${name}=`));
+}
+
+async function terminalPrompt(label) {
+  // Keep machine-readable stdout clean when an interactive caller requests
+  // JSON; prompts belong on the diagnostic stream.
+  const readline = createInterface({ input: process.stdin, output: process.stderr });
+  try {
+    return await readline.question(`${label}: `);
+  } finally {
+    readline.close();
+  }
 }
 
 function emitValidationResult(result, output, errorOutput) {
@@ -442,9 +458,14 @@ async function evaluate(args, output, errorOutput, cwd) {
 
 export { renderPlans };
 
-export async function main(args, output = process.stdout, errorOutput = process.stderr) {
+export async function main(args, output = process.stdout, errorOutput = process.stderr, runtime = {}) {
   const cwd = process.cwd();
   const argv = Array.isArray(args) ? args : [];
+  const runtimeOptions = runtime && typeof runtime === "object" ? runtime : {};
+  const interactive = runtimeOptions.interactive === undefined
+    ? output === process.stdout && process.stdin.isTTY === true && process.stdout.isTTY === true
+    : runtimeOptions.interactive === true;
+  const prompt = runtimeOptions.prompt || terminalPrompt;
   const first = argv[0];
   if (argv.length === 0 || first === "-h" || first === "--help") {
     if (argv.length > 1) return emitError(new Error("Help does not accept additional arguments."), "text", output, errorOutput, 2);
@@ -466,7 +487,13 @@ export async function main(args, output = process.stdout, errorOutput = process.
   if (action === "eval") return evaluate(rest, output, errorOutput, cwd);
   if (action === "validate") return validate(rest, output, errorOutput, cwd);
   let options;
-  try { options = parseArgs([action, ...rest]); } catch (error) { return emitError(error, wantsJson(rest) ? "json" : "text", output, errorOutput, 2); }
+  try {
+    options = parseArgs([action, ...rest]);
+    if (action === "install" && interactive && options.surfaces.includes("claude") && !hasOption(rest, "--statusline-name")) {
+      const statuslineName = await prompt("Statusline display name");
+      options = parseArgs([action, ...rest, "--statusline-name", statuslineName]);
+    }
+  } catch (error) { return emitError(error, wantsJson(rest) ? "json" : "text", output, errorOutput, 2); }
   if (action === "doctor") return doctor(rest, output, errorOutput, cwd);
   if (!hasValidFoundation(cwd)) return emitError(new Error("Foundation validation failed: package metadata is missing or invalid"), options.format, output, errorOutput, 1);
   if (action === "install" || action === "diff") return installOrDiff(options, output, errorOutput, cwd);
