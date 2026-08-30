@@ -101,6 +101,19 @@ test("profile seam rejects unavailable model-policy evidence and inconsistent se
     () => resolveProfile({ ...profiles.template, authority: "controlled" }, { surface: "claude", modelPolicyRefs: PROFILE_MODEL_POLICY_REFS.claude }),
     /invalid authority\/advisor\/model pairing/u
   );
+  const reordered = {
+    ...profiles.template,
+    modelPolicies: {
+      agy: "approved-cli-flash",
+      "antigravity-2": "approved-desktop-flash",
+      codex: "approved-sol-terra",
+      claude: "approved-opus-sonnet"
+    }
+  };
+  assert.equal(resolveProfile(reordered, { surface: "claude", modelPolicyRefs: PROFILE_MODEL_POLICY_REFS.claude }).id, "template");
+  const builtin = resolveProfile("portable", { surface: "claude", modelPolicyRefs: PROFILE_MODEL_POLICY_REFS.claude });
+  assert.equal(Object.isFrozen(builtin), true);
+  assert.equal(Object.isFrozen(builtin.modelPolicies), true);
 });
 
 test("every adapter translates both complete profiles and keeps all skills implicit", () => {

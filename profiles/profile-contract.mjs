@@ -11,9 +11,16 @@ export const PROFILE_MODEL_POLICY_REFS = Object.freeze({
 });
 
 const PROFILE_IDS = Object.freeze(["portable", "template"]);
+
+function deepFreeze(value) {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+  for (const child of Object.values(value)) deepFreeze(child);
+  return Object.freeze(value);
+}
+
 const BUILTIN_PROFILES = Object.freeze({
-  portable: Object.freeze(portableProfile),
-  template: Object.freeze(templateProfile)
+  portable: deepFreeze(portableProfile),
+  template: deepFreeze(templateProfile)
 });
 
 function profileId(input) {
@@ -36,7 +43,8 @@ function assertSemanticPairing(profile) {
         advisor: "disabled",
         modelPolicies: Object.fromEntries(Object.keys(PROFILE_MODEL_POLICY_REFS).map((surface) => [surface, "surface-default"]))
       };
-  if (profile.authority !== expected.authority || profile.reasoning !== expected.reasoning || profile.advisor !== expected.advisor || JSON.stringify(profile.modelPolicies) !== JSON.stringify(expected.modelPolicies)) {
+  const modelPairingValid = Object.entries(expected.modelPolicies).every(([surface, reference]) => profile.modelPolicies[surface] === reference);
+  if (profile.authority !== expected.authority || profile.reasoning !== expected.reasoning || profile.advisor !== expected.advisor || !modelPairingValid) {
     throw new TypeError(`profile ${profile.id} has an invalid authority/advisor/model pairing`);
   }
 }
