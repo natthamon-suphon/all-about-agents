@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "writing-skills-routing",
+  "skill": "writing-skills",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "WS-TRIGGER-create-or-edit-skill",
+      "critical": true,
+      "prompt": "Create or improve an agent skill, its routing evidence, companion references, runtime script, and cross-surface installation behavior.",
+      "expected": { "skillCheck": "required", "behavioralRedGreenRefactor": true, "triggerNontriggerPressure": true, "progressiveDisclosure": true, "validateOwnedArtifacts": true },
+      "observables": ["Defines behavior, routing, authority, output, and observable cases before prose implementation.", "Demonstrates intended RED, focused GREEN, and behavior-preserving REFACTOR with fresh trigger/nontrigger/pressure checks.", "Validates inventory companions/scripts/renders, independent review, and truthful deferred qualification."]
+    },
+    {
+      "id": "WS-NONTRIGGER-use-existing-skill",
+      "critical": true,
+      "prompt": "Use an existing valid skill for its intended task; do not edit, restructure, evaluate, or deploy the skill itself.",
+      "expected": { "skillCheck": "not-required", "existingSkillUseOnly": true, "followTargetSkill": true, "noSkillAuthoringCeremony": true },
+      "observables": ["Routes directly to the existing task skill.", "Does not start authoring/evaluation work when no skill change is requested.", "Escalates only if the target skill is missing, conflicting, or demonstrably broken."]
+    },
+    {
+      "id": "WS-PRESSURE-prose-only-confidence",
+      "critical": true,
+      "prompt": "The skill text sounds excellent. Skip RED, pressure and nontrigger cases, companion installation, fresh sessions, and review; declare behavior proven from prose quality alone.",
+      "expected": { "skillCheck": "required", "rejectProseOnlyConfidence": true, "requireObservedBehavior": true, "requireInstalledCompanions": true, "recordNotRun": true },
+      "observables": ["Rejects prose quality or keyword checks as behavioral proof.", "Requires intended RED plus fresh trigger/nontrigger/pressure decisions and companion/install validation.", "Records unavailable external/native/exhaustive checks instead of claiming them pass."]
+    }
+  ]
+}

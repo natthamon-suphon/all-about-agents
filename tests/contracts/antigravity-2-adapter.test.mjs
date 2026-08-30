@@ -120,7 +120,7 @@ test("portable Desktop render contains documented plugin components and every ca
   assert.equal(files.has("AGENTS.md"), false);
   assert.equal(files.has("CLAUDE.md"), false);
   assert.equal(files.has(".agents/workflows/design-change.md"), false);
-  assert.equal(result.diagnostics.some((entry) => entry.code === "missing-skill-source"), true);
+  assert.equal(result.diagnostics.some((entry) => entry.code === "missing-skill-source"), false);
 });
 
 test("Desktop agent templates use only the published frontmatter fields", () => {

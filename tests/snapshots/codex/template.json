@@ -138,7 +138,7 @@
     },
     {
       "relativePath": ".agents/skills/writing-skills/SKILL.md",
-      "sha256": "a35dd207262684d595fcb0a30f34ff74e3cda775e379e738f2a987f9e27496bc",
+      "sha256": "84c1f4ca7ccc7f7e7c04622fd130c3ef0d26b521ddb8793584870dcdf49721e6",
       "mode": null
     },
     {
@@ -373,7 +373,7 @@
     },
     {
       "relativePath": ".agents/skills/writing-skills/SKILL.md",
-      "sha256": "a35dd207262684d595fcb0a30f34ff74e3cda775e379e738f2a987f9e27496bc"
+      "sha256": "84c1f4ca7ccc7f7e7c04622fd130c3ef0d26b521ddb8793584870dcdf49721e6"
     },
     {
       "relativePath": ".agents/skills/zero-downtime-migrations/SKILL.md",
@@ -620,12 +620,5 @@
       "path": "C:/disposable/codex-home"
     }
   ],
-  "diagnostics": [
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'writing-skills' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    }
-  ]
+  "diagnostics": []
 }

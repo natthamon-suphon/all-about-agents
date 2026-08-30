@@ -133,27 +133,27 @@ test("Codex render emits a regular AGENTS.md and every canonical skill without r
   assert.doesNotMatch(JSON.stringify(result.registrations), /(?:automations|cron)/iu);
 });
 
-test("Codex preserves supplied skill content and marks the next missing canonical skill deferred", () => {
+test("Codex preserves supplied skill content and renders the final canonical skill", () => {
   const files = fileMap(resultFor());
   const supplied = files.get(".agents/skills/using-all-about-agents/SKILL.md");
   assert.match(supplied, /^---\nname: using-all-about-agents\n/u);
   assert.equal((supplied.match(/^---$/gmu) ?? []).length, 2);
-  const deferred = files.get(".agents/skills/writing-skills/SKILL.md");
-  assert.match(deferred, /DEFERRED: canonical source is missing/u);
-  assert.match(deferred, /Owner: cycle-05-skill-remediation \(T017-T043\)/u);
-  assert.doesNotMatch(deferred, /installed by the All About Agents Codex plugin/u);
+  const finalSkill = files.get(".agents/skills/writing-skills/SKILL.md");
+  assert.match(finalSkill, /^---\nname: writing-skills\n/u);
+  assert.doesNotMatch(finalSkill, /DEFERRED: canonical source is missing/u);
   const missing = resultFor().diagnostics.filter((diagnostic) => diagnostic.code === "missing-skill-source");
   assert.equal(missing.length, core.inventory.skills.length - core.skills.length);
   assert.ok(missing.every((diagnostic) => diagnostic.severity === "error"));
   assert.ok(missing.every((diagnostic) => diagnostic.sourcePath === "core/inventory.json"));
 });
 
-test("Codex reports absent and whitespace canonical skill sources separately", () => {
-  const absent = resultFor();
+test("Codex reports synthetic absent and whitespace canonical skill sources separately", () => {
+  const absentCore = { ...core, skills: core.skills.filter((entry) => entry.id !== "writing-skills") };
+  const absent = resultFor("portable", { core: absentCore });
   assert.ok(absent.diagnostics.some((diagnostic) => /writing-skills/u.test(diagnostic.message) && /no source record/u.test(diagnostic.message)));
   const whitespaceCore = {
     ...core,
-    skills: [...core.skills, { id: "writing-skills", description: "Whitespace source", content: " \r\n\t " }]
+    skills: core.skills.map((entry) => entry.id === "writing-skills" ? { id: "writing-skills", description: "Whitespace source", content: " \r\n\t " } : entry)
   };
   const whitespace = resultFor("portable", { core: whitespaceCore });
   const diagnostics = whitespace.diagnostics.filter((diagnostic) => /writing-skills/u.test(diagnostic.message));

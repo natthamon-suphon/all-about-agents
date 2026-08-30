@@ -1,0 +1,16 @@
+digraph SkillBehaviorCycle {
+  graph [rankdir=LR, bgcolor="transparent", fontname="Arial"];
+  node [shape=box, style="rounded,filled", fillcolor="#EEF4FF", color="#365486", fontname="Arial"];
+  edge [color="#365486", fontname="Arial"];
+
+  contract [label="Behavior contract\ntrigger / nontrigger / pressure"];
+  red [label="RED\nobserve intended failure", fillcolor="#FFE8E8"];
+  green [label="GREEN\nsmallest complete behavior", fillcolor="#E8F7EC"];
+  refactor [label="REFACTOR\nprogressive disclosure", fillcolor="#FFF5D9"];
+  verify [label="Fresh evaluation\nand independent review"];
+  defer [label="Named deferred\nqualification", shape=note, fillcolor="#F1ECFF"];
+
+  contract -> red -> green -> refactor -> verify;
+  verify -> red [label="behavior gap"];
+  verify -> defer [label="native / external / exhaustive"];
+}

@@ -212,13 +212,17 @@ test("Claude hook prerequisites reject a clean host without Node.js", () => {
   });
 });
 
-test("Claude reports the next missing canonical skill source with an owning remediation ticket", () => {
-  const result = resultFor();
+test("Claude renders every canonical skill and retains synthetic missing-source diagnostics", () => {
+  const complete = resultFor();
+  assert.match(fileMap(complete).get("skills/writing-skills/SKILL.md"), /^---\nname: writing-skills\n/u);
+  assert.equal(complete.diagnostics.filter((diagnostic) => diagnostic.code === "missing-skill-source").length, 0);
+  const incompleteCore = { ...core, skills: core.skills.filter((entry) => entry.id !== "writing-skills") };
+  const result = resultFor("portable", { core: incompleteCore });
   const deferredSkill = fileMap(result).get("skills/writing-skills/SKILL.md");
   assert.match(deferredSkill, /DEFERRED: canonical source is missing/u);
   assert.doesNotMatch(deferredSkill, /installed by the All About Agents Claude plugin/u);
   const missing = result.diagnostics.filter((diagnostic) => diagnostic.code === "missing-skill-source");
-  assert.equal(missing.length, core.inventory.skills.length - core.skills.length);
+  assert.equal(missing.length, 1);
   assert.ok(missing.every((diagnostic) => diagnostic.severity === "error"));
   assert.ok(missing.every((diagnostic) => diagnostic.sourcePath === "core/inventory.json"));
   assert.ok(missing.every((diagnostic) => /owner: cycle-05-skill-remediation \(T017-T043\)/u.test(diagnostic.message)));
