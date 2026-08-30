@@ -78,7 +78,7 @@
     },
     {
       "relativePath": ".agents/skills/session-compaction-resilience/SKILL.md",
-      "sha256": "6239a998406557b23dca02f414adbee9aca6e32f2192687b33c490e44fce2f9c",
+      "sha256": "faa762482dc7d3ae434a3c06a0f3ded70184bf0ed0ba7a59f6f84dd87b0c12c1",
       "mode": null
     },
     {
@@ -325,7 +325,7 @@
     },
     {
       "relativePath": ".agents/skills/session-compaction-resilience/SKILL.md",
-      "sha256": "6239a998406557b23dca02f414adbee9aca6e32f2192687b33c490e44fce2f9c"
+      "sha256": "faa762482dc7d3ae434a3c06a0f3ded70184bf0ed0ba7a59f6f84dd87b0c12c1"
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/SKILL.md",
@@ -667,12 +667,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'resolving-merge-conflicts' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'session-compaction-resilience' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
