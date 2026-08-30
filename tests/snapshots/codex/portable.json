@@ -48,7 +48,7 @@
     },
     {
       "relativePath": ".agents/skills/nano-image-generator/SKILL.md",
-      "sha256": "b08b2a00c7a6cdb3f827ff203a6b94de024197eda47d1dcf04eaf070785bf1a6",
+      "sha256": "a9de65b7a45e93138781ff4aebdfbf7c8288b937a79d8e247c32f80664185222",
       "mode": null
     },
     {
@@ -301,7 +301,7 @@
     },
     {
       "relativePath": ".agents/skills/nano-image-generator/SKILL.md",
-      "sha256": "b08b2a00c7a6cdb3f827ff203a6b94de024197eda47d1dcf04eaf070785bf1a6"
+      "sha256": "a9de65b7a45e93138781ff4aebdfbf7c8288b937a79d8e247c32f80664185222"
     },
     {
       "relativePath": ".agents/skills/performance-profiling-and-benchmarking/SKILL.md",
@@ -621,12 +621,6 @@
     }
   ],
   "diagnostics": [
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'nano-image-generator' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
     {
       "code": "missing-skill-source",
       "severity": "error",

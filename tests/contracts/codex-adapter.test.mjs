@@ -138,7 +138,7 @@ test("Codex preserves supplied skill content and marks the next missing canonica
   const supplied = files.get(".agents/skills/using-all-about-agents/SKILL.md");
   assert.match(supplied, /^---\nname: using-all-about-agents\n/u);
   assert.equal((supplied.match(/^---$/gmu) ?? []).length, 2);
-  const deferred = files.get(".agents/skills/nano-image-generator/SKILL.md");
+  const deferred = files.get(".agents/skills/writing-skills/SKILL.md");
   assert.match(deferred, /DEFERRED: canonical source is missing/u);
   assert.match(deferred, /Owner: cycle-05-skill-remediation \(T017-T043\)/u);
   assert.doesNotMatch(deferred, /installed by the All About Agents Codex plugin/u);
@@ -150,17 +150,17 @@ test("Codex preserves supplied skill content and marks the next missing canonica
 
 test("Codex reports absent and whitespace canonical skill sources separately", () => {
   const absent = resultFor();
-  assert.ok(absent.diagnostics.some((diagnostic) => /nano-image-generator/u.test(diagnostic.message) && /no source record/u.test(diagnostic.message)));
+  assert.ok(absent.diagnostics.some((diagnostic) => /writing-skills/u.test(diagnostic.message) && /no source record/u.test(diagnostic.message)));
   const whitespaceCore = {
     ...core,
-    skills: [...core.skills, { id: "nano-image-generator", description: "Whitespace source", content: " \r\n\t " }]
+    skills: [...core.skills, { id: "writing-skills", description: "Whitespace source", content: " \r\n\t " }]
   };
   const whitespace = resultFor("portable", { core: whitespaceCore });
-  const diagnostics = whitespace.diagnostics.filter((diagnostic) => /nano-image-generator/u.test(diagnostic.message));
+  const diagnostics = whitespace.diagnostics.filter((diagnostic) => /writing-skills/u.test(diagnostic.message));
   assert.equal(diagnostics.length, 1);
   assert.equal(diagnostics[0].code, "missing-skill-source");
   assert.match(diagnostics[0].message, /no usable source content/u);
-  assert.match(fileMap(whitespace).get(".agents/skills/nano-image-generator/SKILL.md"), /DEFERRED: canonical source is missing/u);
+  assert.match(fileMap(whitespace).get(".agents/skills/writing-skills/SKILL.md"), /DEFERRED: canonical source is missing/u);
 });
 
 test("Codex bootstrap skill links to a resolvable factual capability guide", () => {
