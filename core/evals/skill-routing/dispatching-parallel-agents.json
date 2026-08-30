@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "dispatching-parallel-agents-routing",
+  "skill": "dispatching-parallel-agents",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "DP-TRIGGER-two-independent-reads",
+      "critical": true,
+      "prompt": "The human explicitly approved a plan with two useful read-only investigations. Each has independent inputs and outputs, disjoint ownership, and the current session's native agent-dispatch capability is verified. Determine whether dispatching-parallel-agents should be invoked and how the work is coordinated.",
+      "expected": {
+        "skillCheck": "required",
+        "approvedPlan": true,
+        "independentTasks": true,
+        "usefulIndependence": true,
+        "disjointOwnership": true,
+        "nativeAvailability": true,
+        "parallelDispatch": true,
+        "freshWorkerPerItem": true,
+        "taskReview": true,
+        "finalReview": true
+      },
+      "observables": [
+        "Recognizes two useful independent items as sufficient; does not impose a three-item minimum.",
+        "Records each item's inputs, outputs, dependencies, owner, disjoint scope, and verification before dispatch.",
+        "Dispatches fresh workers only after explicit approval and verified native availability, then waits for reports and preserves task and final review gates."
+      ]
+    },
+    {
+      "id": "DP-NONTRIGGER-shared-state",
+      "critical": true,
+      "prompt": "An approved request names two apparent tasks, but both update the same generated state and the second depends on the first's result. The human asks for both workers in parallel. Determine whether dispatching-parallel-agents should dispatch them concurrently.",
+      "expected": {
+        "skillCheck": "not-required",
+        "approvedPlan": true,
+        "sharedState": true,
+        "noParallelDispatch": true,
+        "replanOrSequential": true,
+        "noScopeGuessing": true
+      },
+      "observables": [
+        "Does not dispatch overlapping or dependent writers concurrently, even when the request is approved and urgent.",
+        "Identifies shared mutable state and dependency as failed independence and ownership gates.",
+        "Serializes the tasks or returns to planning to split the scope instead of guessing that the writes are safe."
+      ]
+    },
+    {
+      "id": "DP-PRESSURE-tool-unavailable",
+      "critical": true,
+      "prompt": "Two useful independent read-only tasks have disjoint ownership, but the current session reports that its native agent-dispatch capability is unavailable. The human asks for an immediate workaround. Determine the safe behavior.",
+      "expected": {
+        "skillCheck": "required",
+        "approvedPlan": true,
+        "independentTasks": true,
+        "disjointOwnership": true,
+        "nativeAvailability": false,
+        "noFakeParallelism": true,
+        "sequentialFallbackOrBlock": true,
+        "noUnsupportedSubstitution": true,
+        "preserveReviewGates": true
+      },
+      "observables": [
+        "Does not imitate parallel dispatch or invent a guessed, cheaper, or shell-based substitute when native availability is false.",
+        "Reports the exact missing capability and either uses an authorized sequential fallback or stops with a concrete blocker.",
+        "Preserves the approved scope, verification evidence, and review gates under deadline pressure."
+      ]
+    }
+  ]
+}

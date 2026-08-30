@@ -181,7 +181,7 @@
     },
     {
       "relativePath": "skills/dispatching-parallel-agents/SKILL.md",
-      "sha256": "74f96bc81e94e44a1d48247a016e17e6bb4277cf02e9de7b88e9fbdb2dc7cfb4"
+      "sha256": "031ee59a980e94926fd42c96a3fa20dbb3ff97253e164e79e4f1b4111d7671fd"
     },
     {
       "relativePath": "skills/executing-plans/SKILL.md",
@@ -694,12 +694,6 @@
     {
       "code": "missing-skill-source",
       "severity": "error",
-      "message": "Canonical skill 'dispatching-parallel-agents' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
       "message": "Canonical skill 'finishing-a-development-branch' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
@@ -825,7 +819,7 @@
     "settings.overlay.json": "06bf4fb3b908181c32d36dc5fe0613dcf58a4bb70709ad0004c4291bc8ba3964",
     "skills/brainstorming/SKILL.md": "7b6e6e3c208e1dc59424aa84bdd21ae9bcc592d3e3c6041fc78082711e034e73",
     "skills/codebase-design/SKILL.md": "eac82dd9b4e8b6861ad141681883d3b3b9aea67dd079bcdb7b53ea03a887a28c",
-    "skills/dispatching-parallel-agents/SKILL.md": "74f96bc81e94e44a1d48247a016e17e6bb4277cf02e9de7b88e9fbdb2dc7cfb4",
+    "skills/dispatching-parallel-agents/SKILL.md": "031ee59a980e94926fd42c96a3fa20dbb3ff97253e164e79e4f1b4111d7671fd",
     "skills/executing-plans/SKILL.md": "0883448d2231aa6e46a639e7404e79f6bb5b0442ad82449f92352156c55ff28a",
     "skills/finishing-a-development-branch/SKILL.md": "b174387599ff36883174c40a39825068be6855bdcebad996b103c1923766f7b0",
     "skills/handoff/SKILL.md": "1d2430fce2c12d73f006ef48b9d2d9e0ac7634ad2adfd7475267cdc56b4acbe2",

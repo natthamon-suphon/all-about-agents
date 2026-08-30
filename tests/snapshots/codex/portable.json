@@ -13,7 +13,7 @@
     },
     {
       "relativePath": ".agents/skills/dispatching-parallel-agents/SKILL.md",
-      "sha256": "da02a4d2fafd88a4bc157ca72257e48e57731519e1cda8af88cea4a4a7728a49",
+      "sha256": "fb8d10a271b89e2d5b0f4cc7e74e2a2a14640f2707da9ff71401887995c85c47",
       "mode": null
     },
     {
@@ -273,7 +273,7 @@
     },
     {
       "relativePath": ".agents/skills/dispatching-parallel-agents/SKILL.md",
-      "sha256": "da02a4d2fafd88a4bc157ca72257e48e57731519e1cda8af88cea4a4a7728a49"
+      "sha256": "fb8d10a271b89e2d5b0f4cc7e74e2a2a14640f2707da9ff71401887995c85c47"
     },
     {
       "relativePath": ".agents/skills/executing-plans/SKILL.md",
@@ -625,12 +625,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'codebase-design' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'dispatching-parallel-agents' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
