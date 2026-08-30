@@ -73,7 +73,7 @@
     },
     {
       "relativePath": ".agents/skills/resolving-merge-conflicts/SKILL.md",
-      "sha256": "b943a203182ebb5a0ecb87fcc5a805a3b0520077f29706c8c176fec41d2c53af",
+      "sha256": "9fbb2515b9ccd53844b312c37668cfaa00833b35249da9478be0257135e04ff0",
       "mode": null
     },
     {
@@ -321,7 +321,7 @@
     },
     {
       "relativePath": ".agents/skills/resolving-merge-conflicts/SKILL.md",
-      "sha256": "b943a203182ebb5a0ecb87fcc5a805a3b0520077f29706c8c176fec41d2c53af"
+      "sha256": "9fbb2515b9ccd53844b312c37668cfaa00833b35249da9478be0257135e04ff0"
     },
     {
       "relativePath": ".agents/skills/session-compaction-resilience/SKILL.md",
@@ -643,12 +643,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'performance-profiling-and-benchmarking' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'resolving-merge-conflicts' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {

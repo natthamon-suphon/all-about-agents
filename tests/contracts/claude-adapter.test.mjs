@@ -214,7 +214,7 @@ test("Claude hook prerequisites reject a clean host without Node.js", () => {
 
 test("Claude reports the next missing canonical skill source with an owning remediation ticket", () => {
   const result = resultFor();
-  const deferredSkill = fileMap(result).get("skills/resolving-merge-conflicts/SKILL.md");
+  const deferredSkill = fileMap(result).get("skills/codebase-design/SKILL.md");
   assert.match(deferredSkill, /DEFERRED: canonical source is missing/u);
   assert.doesNotMatch(deferredSkill, /installed by the All About Agents Claude plugin/u);
   const missing = result.diagnostics.filter((diagnostic) => diagnostic.code === "missing-skill-source");

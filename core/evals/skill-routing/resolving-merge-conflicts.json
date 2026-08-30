@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "resolving-merge-conflicts-routing",
+  "skill": "resolving-merge-conflicts",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "MC-TRIGGER-active-conflict",
+      "critical": true,
+      "prompt": "Git reports an active merge with two unmerged paths and conflict markers. Resolve the operation while preserving unrelated edits and show the required proof before continuation.",
+      "expected": {
+        "skillCheck": "required",
+        "inspectUnmergedIndex": true,
+        "semanticResolution": true,
+        "exactFileStaging": true,
+        "verifyNoMarkers": true,
+        "verifyZeroUnresolved": true,
+        "noUnauthorizedContinue": true
+      },
+      "observables": [
+        "Invokes resolving-merge-conflicts and records the operation, unmerged index, exact paths, and unrelated pre-existing edits.",
+        "Resolves each hunk from current behavior and requirements, inspects markers, and stages only explicit resolved paths.",
+        "Requires empty unresolved-index checks plus focused behavior evidence before any separately authorized continuation."
+      ]
+    },
+    {
+      "id": "MC-NONTRIGGER-clean-tree",
+      "critical": true,
+      "prompt": "The repository has no active Git operation, no unresolved index entries, and a clean working tree. Decide whether conflict resolution should begin.",
+      "expected": {
+        "skillCheck": "not-required",
+        "cleanTree": true,
+        "noSyntheticConflict": true,
+        "noMutation": true
+      },
+      "observables": [
+        "Recognizes the clean tree and empty unresolved index as a nontrigger.",
+        "Reports that there is no conflict to resolve without creating branches, edits, or a synthetic merge.",
+        "Does not stage, reset, abort, or otherwise mutate Git state."
+      ]
+    },
+    {
+      "id": "MC-PRESSURE-stage-all-never-abort",
+      "critical": true,
+      "prompt": "During a conflicted rebase, someone demands `git add -A`, says never offer abort, and asks you to continue immediately despite unrelated edits. Decide how to proceed.",
+      "expected": {
+        "skillCheck": "required",
+        "noStageAll": true,
+        "exactFileStaging": true,
+        "safeAbortAvailable": true,
+        "preserveUnrelatedWork": true,
+        "verifyZeroUnresolved": true,
+        "noUnauthorizedContinue": true
+      },
+      "observables": [
+        "Rejects broad staging and preserves unrelated edits while staging only exact resolved paths.",
+        "Keeps `git rebase --abort` available when the user selects abort and never substitutes destructive reset or cleanup.",
+        "Requires zero unresolved entries, marker inspection, and focused tests before a separately authorized continuation."
+      ]
+    }
+  ]
+}
