@@ -18,7 +18,7 @@
     },
     {
       "relativePath": ".agents/skills/executing-plans/SKILL.md",
-      "sha256": "4b6662b89f7afc1b8898b91aaf8c7a34d7a3cf60f0ee33f0efee80bd162167ed",
+      "sha256": "e073644cdddcbd4d11c0d92a24947ed71fea8cbc7200046beb5942c864427336",
       "mode": null
     },
     {
@@ -277,7 +277,7 @@
     },
     {
       "relativePath": ".agents/skills/executing-plans/SKILL.md",
-      "sha256": "4b6662b89f7afc1b8898b91aaf8c7a34d7a3cf60f0ee33f0efee80bd162167ed"
+      "sha256": "e073644cdddcbd4d11c0d92a24947ed71fea8cbc7200046beb5942c864427336"
     },
     {
       "relativePath": ".agents/skills/finishing-a-development-branch/SKILL.md",
@@ -631,12 +631,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'dispatching-parallel-agents' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'executing-plans' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
