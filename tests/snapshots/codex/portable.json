@@ -88,7 +88,7 @@
     },
     {
       "relativePath": ".agents/skills/systematic-debugging/SKILL.md",
-      "sha256": "6346f60df20af05d6396e0565d000a8b55d62b6f1b487e9e3744f55e0a7406e7",
+      "sha256": "a2cd796ba706a8c30f40b028a82d8310a3ba668d3a12143c806546ade3a2ff0d",
       "mode": null
     },
     {
@@ -333,7 +333,7 @@
     },
     {
       "relativePath": ".agents/skills/systematic-debugging/SKILL.md",
-      "sha256": "6346f60df20af05d6396e0565d000a8b55d62b6f1b487e9e3744f55e0a7406e7"
+      "sha256": "a2cd796ba706a8c30f40b028a82d8310a3ba668d3a12143c806546ade3a2ff0d"
     },
     {
       "relativePath": ".agents/skills/test-driven-development/SKILL.md",
@@ -661,12 +661,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'resolving-merge-conflicts' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'systematic-debugging' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {

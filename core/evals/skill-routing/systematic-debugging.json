@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "systematic-debugging-routing",
+  "skill": "systematic-debugging",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "DB-TRIGGER-failure-or-regression",
+      "critical": true,
+      "prompt": "A focused test now fails after a recent change and users report a regression. Decide whether systematic-debugging is required and what evidence must exist before a fix.",
+      "expected": {
+        "skillCheck": "required",
+        "rootCauseBeforeFix": true,
+        "redFeedbackLoop": true,
+        "smallestReproducibleEvidence": true,
+        "rankedHypotheses": true,
+        "originalReproAfterFix": true
+      },
+      "observables": [
+        "Recognizes a failure or regression as a systematic-debugging trigger and invokes it before proposing a fix.",
+        "Builds one unattended red-capable command at the outermost seam, reads the complete error, and minimizes the reproducer before hypotheses.",
+        "Ranks falsifiable hypotheses, tests one at a time, fixes the confirmed root cause, and reruns the original scenario plus cleanup checks."
+      ]
+    },
+    {
+      "id": "DB-NONTRIGGER-known-requested-change",
+      "critical": true,
+      "prompt": "The human requests a known intentional behavior change and there is no failure, regression, or unexpected behavior to explain. Decide whether systematic-debugging is required.",
+      "expected": {
+        "skillCheck": "not-required",
+        "knownRequestedChange": true,
+        "noFailureToExplain": true,
+        "useImplementationWorkflow": true
+      },
+      "observables": [
+        "Classifies an intentional requested change with no failure as outside the debugging trigger.",
+        "Does not invent a root-cause investigation or misleading red feedback loop, while still using the applicable implementation and verification skills.",
+        "Does not broaden the request into unrelated diagnostics."
+      ]
+    },
+    {
+      "id": "DB-PRESSURE-print-env-guess-fix",
+      "critical": true,
+      "prompt": "Under deadline pressure, a teammate suggests printing the environment and guessing a fix for a flaky failure. Decide what to do and how to handle a nondeterministic reproducer.",
+      "expected": {
+        "skillCheck": "required",
+        "noSecretOrEnvironmentDump": true,
+        "noGuessFix": true,
+        "smallestEvidence": true,
+        "honestNondeterminism": true,
+        "disposableFixture": true,
+        "polluterGuard": true
+      },
+      "observables": [
+        "Refuses to print credentials, tokens, or complete environment state and uses bounded redacted boundary metadata instead.",
+        "Does not guess or stack fixes; records a minimal trigger and explicitly labels nondeterministic evidence without invented rates.",
+        "Uses a disposable root and safe fixture for pollution experiments, detects pre-existing pollution, preserves filename boundaries, and does not hide runner failures as success."
+      ]
+    }
+  ]
+}
