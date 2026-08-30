@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import agyBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
 import agyEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
+import agyActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
+import agyCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
 
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
@@ -528,6 +530,8 @@ export function renderAgy(input = {}) {
   addFile(files, "plugin.json", renderPluginManifest());
   addFile(files, "README.md", renderPackageReadme());
   addFile(files, "hooks.json", renderJson(hookDocument()));
+  addFile(files, "activity-audit.json", renderJson(agyActivityTemplate));
+  addFile(files, "checkpoint.json", renderJson(agyCheckpointTemplate));
   addFile(files, "emergency-guard.json", renderJson(agyEmergencyTemplate));
   addFile(files, "settings.overlay.json", renderSettingsOverlay(profile));
   addFile(files, "rules/adapter-capability-guidance.md", renderCapabilityGuidance());
@@ -667,6 +671,28 @@ export function renderAgy(input = {}) {
           status: "not run",
           manualSequence: [...agyBootstrapTemplate.probe.manualSequence]
         }
+      },
+      {
+        kind: "activity-audit",
+        surface: SURFACE,
+        relativePath: "activity-audit.json",
+        event: agyActivityTemplate.event,
+        optional: true,
+        automatic: false,
+        probeRequired: true,
+        status: agyActivityTemplate.probe.status,
+        failureMode: agyActivityTemplate.failureMode,
+        recordedFields: [...agyActivityTemplate.recordedFields]
+      },
+      {
+        kind: "checkpoint",
+        surface: SURFACE,
+        relativePath: "checkpoint.json",
+        automatic: false,
+        nativeHookEquivalent: false,
+        durableWorkflow: agyCheckpointTemplate.durableWorkflow,
+        failureMode: agyCheckpointTemplate.failureMode,
+        recordedFields: [...agyCheckpointTemplate.recordedFields]
       },
       {
         kind: "emergency-guard",

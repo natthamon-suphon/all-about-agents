@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 
 import antigravityBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
 import antigravityEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
+import antigravityActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
+import antigravityCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
@@ -336,6 +338,8 @@ export function renderAntigravity(input = {}) {
 
   addFile(files, `${PLUGIN_ROOT}/plugin.json`, renderJson({ name: "all-about-agents" }));
   addFile(files, `${PLUGIN_ROOT}/hooks.json`, renderJson(hooksDocument()));
+  addFile(files, `${PLUGIN_ROOT}/hooks/activity-audit.json`, renderJson(antigravityActivityTemplate));
+  addFile(files, `${PLUGIN_ROOT}/hooks/checkpoint.json`, renderJson(antigravityCheckpointTemplate));
   addFile(files, `${PLUGIN_ROOT}/hooks/emergency-guard.json`, renderJson(antigravityEmergencyTemplate));
   addFile(files, `${PLUGIN_ROOT}/rules/adapter-capability-guidance.md`, capabilityGuidance());
   addFile(files, `${PLUGIN_ROOT}/rules/model-selection.md`, modelRule());
@@ -430,6 +434,28 @@ export function renderAntigravity(input = {}) {
           reason: antigravityBootstrapTemplate.probe.reason,
           manualSequence: [...antigravityBootstrapTemplate.probe.manualSequence]
         }
+      },
+      {
+        kind: "activity-audit",
+        surface: DESKTOP_SURFACE,
+        relativePath: `${PLUGIN_ROOT}/hooks/activity-audit.json`,
+        event: antigravityActivityTemplate.event,
+        optional: true,
+        automatic: false,
+        probeRequired: true,
+        status: antigravityActivityTemplate.probe.status,
+        failureMode: antigravityActivityTemplate.failureMode,
+        recordedFields: [...antigravityActivityTemplate.recordedFields]
+      },
+      {
+        kind: "checkpoint",
+        surface: DESKTOP_SURFACE,
+        relativePath: `${PLUGIN_ROOT}/hooks/checkpoint.json`,
+        automatic: false,
+        nativeHookEquivalent: false,
+        durableWorkflow: antigravityCheckpointTemplate.durableWorkflow,
+        failureMode: antigravityCheckpointTemplate.failureMode,
+        recordedFields: [...antigravityCheckpointTemplate.recordedFields]
       },
       {
         kind: "emergency-guard",

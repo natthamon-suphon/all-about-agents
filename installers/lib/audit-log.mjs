@@ -129,6 +129,20 @@ async function prune(root, maxFiles) {
   }
 }
 
+async function enforceByteCap(root, maxBytes, maxFiles) {
+  const candidates = [AUDIT_FILE, ...Array.from({ length: maxFiles - 1 }, (_, index) => rotationName(index + 1))];
+  for (const name of candidates) {
+    const path = join(root, name);
+    try {
+      const info = await lstat(path);
+      if (!info.isFile()) throw new Error("audit target is not a regular file");
+      if (info.size > maxBytes) await unlink(path);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+  }
+}
+
 async function appendAuditEventInternal(root, event, limits) {
   const normalized = normalizeEvent(event);
   const bounded = normalizeLimits(limits);
@@ -141,6 +155,7 @@ async function appendAuditEventInternal(root, event, limits) {
   const active = join(root, AUDIT_FILE);
   const knownState = activeStates.get(root);
   const stateMatches = knownState && knownState.maxBytes === bounded.maxBytes && knownState.maxFiles === bounded.maxFiles;
+  if (!stateMatches) await enforceByteCap(root, bounded.maxBytes, bounded.maxFiles);
   const currentSize = stateMatches
     ? knownState.size
     : await fileSize(active);

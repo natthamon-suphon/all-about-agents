@@ -5,6 +5,8 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import codexBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
 import codexEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
+import codexActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
+import codexCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
 import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
 import { AdapterContractError, renderSurface as validateSurface, validateCommandRecords, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, hasScopedMutation, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
@@ -16,6 +18,7 @@ const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap
 const EMERGENCY_GUARD_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.mjs", import.meta.url), "utf8");
 const EMERGENCY_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.json", import.meta.url), "utf8");
 const EMERGENCY_POLICY_SOURCE = readFileSync(new URL("../../installers/lib/emergency-policy.mjs", import.meta.url), "utf8");
+const AUDIT_LOG_SOURCE = readFileSync(new URL("../../installers/lib/audit-log.mjs", import.meta.url), "utf8");
 const ACTION_IDS = Object.freeze([
   "aaa:design",
   "aaa:build",
@@ -226,6 +229,22 @@ function bootstrapHooks(targetRuntime) {
       ]
     }
   };
+  hooks.hooks[codexActivityTemplate.event] = [{
+    matcher: codexActivityTemplate.nativeMatcher,
+    hooks: [{
+      type: "command",
+      command: codexActivityTemplate.command,
+      commandWindows: codexActivityTemplate.commandWindows
+    }]
+  }];
+  hooks.hooks[codexCheckpointTemplate.event] = [{
+    matcher: codexCheckpointTemplate.nativeMatcher,
+    hooks: [{
+      type: "command",
+      command: codexCheckpointTemplate.command,
+      commandWindows: codexCheckpointTemplate.commandWindows
+    }]
+  }];
   if (targetRuntime === "cli") {
     hooks.hooks[codexEmergencyTemplate.event] = [{
       matcher: codexEmergencyTemplate.nativeMatcher,
@@ -411,6 +430,48 @@ export function renderCodex(input = {}) {
   addFile(files, "hooks/hooks.json", renderJson(bootstrapHooks(targetRuntime)));
   addFile(files, "hooks/bootstrap.json", BOOTSTRAP_CONFIG_SOURCE);
   addFile(files, `hooks/${codexBootstrapTemplate.module}.mjs`, BOOTSTRAP_SOURCE, 0o755);
+  addFile(files, "hooks/activity-audit.json", renderJson(codexActivityTemplate));
+  addFile(files, "hooks/checkpoint.json", renderJson(codexCheckpointTemplate));
+  addFile(files, "hooks/audit-log.mjs", AUDIT_LOG_SOURCE, 0o755);
+  addFile(files, "hooks/activity-audit.mjs", `#!/usr/bin/env node
+import { appendAuditEvent } from "./audit-log.mjs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const chunks = [];
+for await (const chunk of process.stdin) chunks.push(chunk);
+try {
+  const payload = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+  await appendAuditEvent(join(dirname(fileURLToPath(import.meta.url)), "audit"), {
+    surface: "codex",
+    actionId: payload.actionId ?? payload.tool_name,
+    outcome: payload.outcome ?? "success",
+    sessionKey: payload.sessionKey ?? payload.session_id ?? payload.tool_use_id
+  });
+} catch { /* optional audit is fail-open */ }
+`, 0o755);
+  addFile(files, "hooks/pre-compact.mjs", `#!/usr/bin/env node
+import { appendFile, mkdir } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const safe = (value, fallback) => typeof value === "string" && value.trim() ? value.trim().replace(/[^A-Za-z0-9._-]/gu, "-").slice(0, 64) || fallback : fallback;
+const chunks = [];
+for await (const chunk of process.stdin) chunks.push(chunk);
+try {
+  const payload = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+  const checkpoint = {
+    timestamp: new Date().toISOString(),
+    workflowId: safe(payload.workflowId, "codex-hook"),
+    taskId: safe(payload.taskId, "pre-compact"),
+    state: safe(payload.state, "compacting"),
+    status: safe(payload.status, "checkpointed")
+  };
+  const root = join(dirname(fileURLToPath(import.meta.url)), "checkpoints");
+  await mkdir(root, { recursive: true });
+  await appendFile(join(root, "checkpoint.jsonl"), JSON.stringify(checkpoint) + "\\n", { encoding: "utf8", flag: "a" });
+} catch { /* durable checkpoint is fail-open */ }
+`, 0o755);
   if (targetRuntime === "cli") {
     addFile(files, "hooks/emergency-guard.json", EMERGENCY_CONFIG_SOURCE);
     addFile(files, "hooks/emergency-guard.mjs", EMERGENCY_GUARD_SOURCE, 0o755);
@@ -487,6 +548,28 @@ export function renderCodex(input = {}) {
         matcher: codexBootstrapTemplate.nativeMatcher,
         trustRequired: true,
         desktopManualOnly: true
+      },
+      {
+        kind: "activity-audit",
+        surface: CODEX_SURFACE,
+        relativePath: "hooks/hooks.json",
+        event: codexActivityTemplate.event,
+        matcher: codexActivityTemplate.nativeMatcher,
+        optional: true,
+        automatic: true,
+        failureMode: codexActivityTemplate.failureMode,
+        recordedFields: [...codexActivityTemplate.recordedFields]
+      },
+      {
+        kind: "checkpoint",
+        surface: CODEX_SURFACE,
+        relativePath: "hooks/hooks.json",
+        event: codexCheckpointTemplate.event,
+        matcher: codexCheckpointTemplate.nativeMatcher,
+        automatic: true,
+        durableWorkflow: "explicit",
+        failureMode: codexCheckpointTemplate.failureMode,
+        recordedFields: [...codexCheckpointTemplate.recordedFields]
       },
       emergencyRegistration,
       {

@@ -5,6 +5,8 @@ import { join, posix } from "node:path";
 
 import claudeBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
 import claudeEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
+import claudeActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
+import claudeCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
 
 import { renderJson } from "../shared/render-utils.mjs";
 import {
@@ -21,6 +23,7 @@ const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap
 const EMERGENCY_GUARD_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.mjs", import.meta.url), "utf8");
 const EMERGENCY_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.json", import.meta.url), "utf8");
 const EMERGENCY_POLICY_SOURCE = readFileSync(new URL("../../installers/lib/emergency-policy.mjs", import.meta.url), "utf8");
+const AUDIT_LOG_SOURCE = readFileSync(new URL("../../installers/lib/audit-log.mjs", import.meta.url), "utf8");
 
 /** Static installer preflight for the Node.js entrypoint used by every hook. */
 export const CLAUDE_PREREQUISITES = Object.freeze({
@@ -134,16 +137,43 @@ const DEFAULT_ROLES = Object.freeze({
 
 const HOOK_SOURCES = Object.freeze({
   "activity-audit.mjs": `#!/usr/bin/env node
-// Activity audit is optional and intentionally emits no arguments or results.
+import { appendAuditEvent } from "./audit-log.mjs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
 const chunks = [];
 for await (const chunk of process.stdin) chunks.push(chunk);
-try { JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"); } catch { /* fail open */ }
+try {
+  const payload = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+  await appendAuditEvent(join(dirname(fileURLToPath(import.meta.url)), "audit"), {
+    surface: "claude",
+    actionId: payload.actionId ?? payload.tool_name,
+    outcome: payload.outcome ?? "success",
+    sessionKey: payload.sessionKey ?? payload.session_id ?? payload.tool_use_id
+  });
+} catch { /* optional audit is fail-open */ }
 `,
   "pre-compact.mjs": `#!/usr/bin/env node
-// Checkpointing is owned by the durable workflow; this hook does not rewrite user files.
+import { appendFile, mkdir } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const safe = (value, fallback) => typeof value === "string" && value.trim() ? value.trim().replace(/[^A-Za-z0-9._-]/gu, "-").slice(0, 64) || fallback : fallback;
 const chunks = [];
 for await (const chunk of process.stdin) chunks.push(chunk);
-try { JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"); } catch { /* fail open */ }
+try {
+  const payload = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+  const checkpoint = {
+    timestamp: new Date().toISOString(),
+    workflowId: safe(payload.workflowId, "claude-hook"),
+    taskId: safe(payload.taskId, "pre-compact"),
+    state: safe(payload.state, "compacting"),
+    status: safe(payload.status, "checkpointed")
+  };
+  const root = join(dirname(fileURLToPath(import.meta.url)), "checkpoints");
+  await mkdir(root, { recursive: true });
+  await appendFile(join(root, "checkpoint.jsonl"), JSON.stringify(checkpoint) + "\\n", { encoding: "utf8", flag: "a" });
+} catch { /* durable checkpoint is fail-open */ }
 `
 });
 
@@ -307,8 +337,8 @@ function hookConfig() {
   return { hooks: {
     [claudeBootstrapTemplate.event]: [{ matcher: claudeBootstrapTemplate.nativeMatcher, hooks: [bootstrapCommand] }],
     PreToolUse: [{ matcher: claudeEmergencyTemplate.nativeMatcher, hooks: [emergencyCommand] }],
-    PostToolUse: [{ matcher: ".*", hooks: [command("activity-audit.mjs")] }],
-    PreCompact: [{ matcher: ".*", hooks: [command("pre-compact.mjs")] }]
+    [claudeActivityTemplate.event]: [{ matcher: claudeActivityTemplate.nativeMatcher, hooks: [command("activity-audit.mjs")] }],
+    [claudeCheckpointTemplate.event]: [{ matcher: claudeCheckpointTemplate.nativeMatcher, hooks: [command("pre-compact.mjs")] }]
   } };
 }
 
@@ -390,6 +420,9 @@ export function renderClaude(input = {}) {
   addFile(files, "hooks/emergency-guard.json", EMERGENCY_CONFIG_SOURCE);
   addFile(files, "hooks/emergency-guard.mjs", EMERGENCY_GUARD_SOURCE, 0o755);
   addFile(files, "hooks/emergency-policy.mjs", EMERGENCY_POLICY_SOURCE, 0o755);
+  addFile(files, "hooks/activity-audit.json", renderJson(claudeActivityTemplate));
+  addFile(files, "hooks/checkpoint.json", renderJson(claudeCheckpointTemplate));
+  addFile(files, "hooks/audit-log.mjs", AUDIT_LOG_SOURCE, 0o755);
   for (const [fileName, source] of Object.entries(HOOK_SOURCES)) addFile(files, `hooks/${fileName}`, source, 0o755);
   addFile(files, "statusline/statusline.mjs", STATUSLINE_SOURCE_TEXT, 0o755);
 
@@ -445,6 +478,28 @@ export function renderClaude(input = {}) {
         kind: "resolved-config-root",
         rootEnv: "CLAUDE_CONFIG_DIR",
         path: configRoot
+      },
+      {
+        kind: "activity-audit",
+        surface: CLAUDE_SURFACE,
+        relativePath: "hooks/hooks.json",
+        event: claudeActivityTemplate.event,
+        matcher: claudeActivityTemplate.nativeMatcher,
+        optional: true,
+        automatic: true,
+        failureMode: claudeActivityTemplate.failureMode,
+        recordedFields: [...claudeActivityTemplate.recordedFields]
+      },
+      {
+        kind: "checkpoint",
+        surface: CLAUDE_SURFACE,
+        relativePath: "hooks/hooks.json",
+        event: claudeCheckpointTemplate.event,
+        matcher: claudeCheckpointTemplate.nativeMatcher,
+        automatic: true,
+        durableWorkflow: "explicit",
+        failureMode: claudeCheckpointTemplate.failureMode,
+        recordedFields: [...claudeCheckpointTemplate.recordedFields]
       }
     ],
     diagnostics: [
