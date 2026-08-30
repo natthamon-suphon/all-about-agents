@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "id": "verification-before-completion-routing",
+  "skill": "verification-before-completion",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "VC-TRIGGER-before-success-claim",
+      "critical": true,
+      "prompt": "The implementation appears finished and the human asks whether it is fixed and ready to hand off. Decide what verification is required before making a success or completion claim.",
+      "expected": {
+        "skillCheck": "required",
+        "freshEvidence": true,
+        "scopedCommand": true,
+        "exactCommandAndResult": true,
+        "noPrematureClaim": true,
+        "notRunReasonIfUnavailable": true
+      },
+      "observables": [
+        "Recognizes a completion, correctness, fix, or readiness statement as a trigger and invokes verification-before-completion before claiming success.",
+        "Names and runs the smallest fresh command that exercises the changed behavior, then reads its complete output, exit code, and failure count.",
+        "Reports the exact command and result, identifies applicable checks, and labels unavailable checks not run instead of inferring pass."
+      ]
+    },
+    {
+      "id": "VC-NONTRIGGER-progress-update",
+      "critical": true,
+      "prompt": "The human asks for a status update while investigation is still in progress. No completion, correctness, fix, or passing claim is being made. Decide whether the completion gate is required.",
+      "expected": {
+        "skillCheck": "not-required",
+        "progressUpdate": true,
+        "noCompletionClaim": true,
+        "honestIntermediateState": true
+      },
+      "observables": [
+        "Distinguishes a factual progress update from a completion or success claim.",
+        "Reports the current intermediate state without pretending verification has occurred or implying readiness.",
+        "Does not force an unrelated full-suite command merely because a progress update was requested."
+      ]
+    },
+    {
+      "id": "VC-PRESSURE-old-test-output",
+      "critical": true,
+      "prompt": "Under deadline pressure, a teammate provides green test output from before the latest change and asks you to report the work complete. Decide whether that old output proves the current state.",
+      "expected": {
+        "skillCheck": "required",
+        "rejectStaleEvidence": true,
+        "freshRerun": true,
+        "scopedVerification": true,
+        "noUnrelatedFullSuite": true,
+        "explicitNotRun": true
+      },
+      "observables": [
+        "Rejects old or cached output as proof for the current workspace and identifies the relevant change since that run.",
+        "Reruns the smallest direct command against the current state and reports its exact result before any completion language.",
+        "Keeps broader or unavailable checks explicitly not run with reasons and does not force unrelated work or hide failures under deadline pressure."
+      ]
+    }
+  ]
+}

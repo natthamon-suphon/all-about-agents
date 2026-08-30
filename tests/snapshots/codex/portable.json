@@ -118,7 +118,7 @@
     },
     {
       "relativePath": ".agents/skills/verification-before-completion/SKILL.md",
-      "sha256": "b3b81f972133e02dc7f203f1c5104343b76885fcab5b9cfd9bd82b650a94b425",
+      "sha256": "071aabe06b83edac125b26e469285ae2941a0ca60c483032fd0e072df4010c04",
       "mode": null
     },
     {
@@ -357,7 +357,7 @@
     },
     {
       "relativePath": ".agents/skills/verification-before-completion/SKILL.md",
-      "sha256": "b3b81f972133e02dc7f203f1c5104343b76885fcab5b9cfd9bd82b650a94b425"
+      "sha256": "071aabe06b83edac125b26e469285ae2941a0ca60c483032fd0e072df4010c04"
     },
     {
       "relativePath": ".agents/skills/wait-what/SKILL.md",
@@ -667,12 +667,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'threat-modeling-and-security' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'verification-before-completion' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
