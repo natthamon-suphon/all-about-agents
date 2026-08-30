@@ -388,18 +388,25 @@ function wrapperScanExceeded(value) {
 }
 
 function structuredBoundsExceeded(value, depth = 0, state = { nodes: 0 }, seen = new WeakSet()) {
-  if (typeof value === "string") return sourceShapeExceeded(value);
+  if (typeof value === "string") {
+    state.leaves = (state.leaves || 0) + 1;
+    return state.leaves > MAX_STRUCTURED_NODES || sourceShapeExceeded(value);
+  }
   if (value === null || typeof value !== "object") return false;
   if (depth > MAX_STRUCTURED_DEPTH || state.nodes >= MAX_STRUCTURED_NODES) return true;
   if (seen.has(value)) return true;
   seen.add(value);
   state.nodes += 1;
   if (Array.isArray(value)) {
-    if (value.length > MAX_STRUCTURED_NODES) return true;
+    state.properties = (state.properties || 0) + value.length;
+    if (value.length > MAX_STRUCTURED_NODES || state.properties > MAX_STRUCTURED_NODES) return true;
     return value.some((entry) => structuredBoundsExceeded(entry, depth + 1, state, seen));
   }
   if (!isPlainObject(value)) return true;
-  return Object.entries(value).some(([key, child]) => key !== "policy" && structuredBoundsExceeded(child, depth + 1, state, seen));
+  const entries = Object.entries(value).filter(([key]) => key !== "policy");
+  state.properties = (state.properties || 0) + entries.length;
+  if (state.properties > MAX_STRUCTURED_NODES) return true;
+  return entries.some(([, child]) => structuredBoundsExceeded(child, depth + 1, state, seen));
 }
 
 function structuredShapeInvalid(value, depth = 0, seen = new WeakSet()) {
@@ -416,12 +423,26 @@ function structuredShapeInvalid(value, depth = 0, seen = new WeakSet()) {
   });
 }
 
+function structuredOperationInvalid(value) {
+  if (value === undefined || value === null || typeof value === "string") return false;
+  return !Array.isArray(value) && !isPlainObject(value) || structuredShapeInvalid(value);
+}
+
+function structuredPathsInvalid(value) {
+  if (!Array.isArray(value)) return true;
+  return value.some((entry) => {
+    if (typeof entry === "string") return false;
+    if (!isPlainObject(entry)) return true;
+    return ["path", "resolvedPath", "filePath", "kind", "scope"].some((key) => Object.hasOwn(entry, key) && typeof entry[key] !== "string");
+  });
+}
+
 function parserBoundsExceeded(input) {
   if (!isPlainObject(input)) return true;
   if (Object.hasOwn(input, "command") && typeof input.command !== "string") return true;
   if (Object.hasOwn(input, "capability") && typeof input.capability !== "string") return true;
-  if (Object.hasOwn(input, "paths") && !Array.isArray(input.paths)) return true;
-  if (structuredShapeInvalid(input.gitOperation) || structuredShapeInvalid(input.secretOperation)) return true;
+  if (Object.hasOwn(input, "paths") && structuredPathsInvalid(input.paths)) return true;
+  if (structuredOperationInvalid(input.gitOperation) || structuredOperationInvalid(input.secretOperation)) return true;
   if (structuredBoundsExceeded(input)) return true;
   return sourceShapeExceeded(input.command) || sourceShapeExceeded(input.capability) || wrapperScanExceeded(input.command);
 }
@@ -580,6 +601,12 @@ function hasOpaqueScriptPayload(value) {
     return ["-c", "-e", "--eval", "--command", "-command"].includes(candidate)
       || /^-(?:c|e)[^\s]/u.test(candidate);
   };
+  const interpreterModuleOption = (option) => {
+    const candidate = normalized(option);
+    return ["-m", "--module", "--import", "-r", "--require", "-M"].includes(candidate)
+      || /^-(?:m|M|r)[^\s]/u.test(candidate)
+      || /^(?:--import|--require)=/u.test(candidate);
+  };
   for (const segment of commandSegments(value)) {
     const words = lexicalWords(segment);
     if (words.length === 0) continue;
@@ -595,7 +622,7 @@ function hasOpaqueScriptPayload(value) {
     if (isScriptPathToken(words[0]) || hasDynamicToken(words[0]) && first === "&") return true;
     if (runnerNames.has(first) && second && !second.startsWith("-") && isScriptPathToken(second)) return true;
     if (isScriptRunnerName(launchedFirst)) {
-      if (isNonShellRunnerName(launchedFirst) && interpreterExecutionOption(launched[1] || "")) return true;
+      if (isNonShellRunnerName(launchedFirst) && (interpreterExecutionOption(launched[1] || "") || interpreterModuleOption(launched[1] || ""))) return true;
       if (isOpaqueShellInputOption(launched[1] || "")) return true;
       const candidate = launched[1] || "";
       const windowsInterpreterOption = ["cmd", "cmd.exe", "powershell", "powershell.exe", "pwsh", "pwsh.exe"].includes(launchedFirst) && candidate.startsWith("/");
@@ -622,14 +649,14 @@ function hasOpaqueScriptPayload(value) {
           const candidateWords = words.slice(index + 1);
           const candidate = candidateWords[0] || "";
           if (isScriptPathToken(candidate) || hasDynamicToken(candidate)) return true;
-          if (isScriptRunnerName(candidate) && (isOpaqueShellInputOption(candidateWords[1] || "") || isScriptPathToken(candidateWords[1] || "") || hasDynamicToken(candidateWords[1] || ""))) return true;
+          if (isScriptRunnerName(candidate) && (isOpaqueShellInputOption(candidateWords[1] || "") || interpreterModuleOption(candidateWords[1] || "") || isScriptPathToken(candidateWords[1] || "") || hasDynamicToken(candidateWords[1] || ""))) return true;
         }
       }
     }
     if (first === "xargs") {
       const args = words.slice(1);
       if (args.some(isScriptPathToken) || args.some(hasDynamicToken)) return true;
-      if (args.some((word, index) => isScriptRunnerName(word) && (interpreterExecutionOption(args[index + 1] || "") || isOpaqueShellInputOption(args[index + 1] || "") || isScriptPathToken(args[index + 1] || "") || hasDynamicToken(args[index + 1] || "")))) return true;
+      if (args.some((word, index) => isScriptRunnerName(word) && (interpreterExecutionOption(args[index + 1] || "") || interpreterModuleOption(args[index + 1] || "") || isOpaqueShellInputOption(args[index + 1] || "") || isScriptPathToken(args[index + 1] || "") || hasDynamicToken(args[index + 1] || "")))) return true;
       if (args.some((word, index) => tokenName(word) === "env" && isOpaqueShellInputOption(args[index + 1] || ""))) return true;
     }
     if (words.some((word) => ["source", ".", "eval", "invoke-expression", "iex"].includes(tokenName(word)))) return true;
@@ -1257,8 +1284,8 @@ function hasGuardrailBypass(command, capability, operation) {
     || /^-(?:approval|sandbox|bypass|permission|guard|policy)[^\s;|]*[$%`!{}^\\(]/u.test(token));
   const dynamicHarnessArgument = commandSegments(command).some((segment) => {
     const words = lexicalWords(segment);
-    const { words: launched } = launchWords(words);
-    return ["codex", "codex.exe", "agy", "agy.exe", "claude", "claude.exe"].includes(tokenName(launched[0] || "")) && launched.slice(1).some(hasDynamicToken);
+    const harnessIndex = words.findIndex((word) => ["codex", "codex.exe", "agy", "agy.exe", "claude", "claude.exe"].includes(tokenName(word)));
+    return harnessIndex >= 0 && words.slice(harnessIndex + 1).some(hasDynamicToken);
   });
   const dynamicProcessLaunch = commandSegments(command).some((segment) => {
     const words = lexicalWords(segment);

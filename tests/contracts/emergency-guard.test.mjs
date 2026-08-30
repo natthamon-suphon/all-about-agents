@@ -410,7 +410,11 @@ test("rendered Claude and Codex guard wrappers deny emergency commands and defer
         const action = entry.action;
         // Structured operation metadata is a canonical/adaptor seam concern;
         // native vendor payloads expose only documented command/path fields.
-        if ((action.gitOperation && typeof action.gitOperation === "object") || (action.secretOperation && typeof action.secretOperation === "object")) continue;
+        const unsupportedOperationMetadata = ["gitOperation", "secretOperation"].some((key) => Object.hasOwn(action, key)
+          && action[key] !== null && action[key] !== undefined && typeof action[key] !== "string");
+        const malformedPathMetadata = Array.isArray(action.paths) && action.paths.some((entry) => entry === null
+          || typeof entry === "undefined" || typeof entry === "number" || typeof entry === "boolean");
+        if (unsupportedOperationMetadata || malformedPathMetadata) continue;
         const command = fixtureCommand(action);
         const path = firstFixturePath(action);
         const wrapperArgs = [wrapper, "--surface", surface, "--policy-path", policy];
