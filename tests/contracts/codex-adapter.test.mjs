@@ -128,7 +128,10 @@ test("Codex render emits a regular AGENTS.md and every canonical skill without r
   assert.ok(agents.content instanceof Uint8Array);
   assert.match(files.get("AGENTS.md"), /All About Agents/u);
   assert.doesNotMatch(files.get("AGENTS.md"), /(?:scheduled|automation|cron)/iu);
-  for (const skill of core.inventory.skills) assert.ok(files.has(`.agents/skills/${skill}/SKILL.md`), `missing canonical skill ${skill}`);
+  for (const skill of core.inventory.skills) {
+    assert.ok(files.has(`.agents/skills/${skill}/SKILL.md`), `missing canonical skill ${skill}`);
+    for (const companion of core.skills.find((record) => record.id === skill).companions) assert.ok(files.has(`.agents/skills/${skill}/${companion.relativePath}`), `missing companion ${skill}/${companion.relativePath}`);
+  }
   assert.equal(result.files.some((file) => /(?:automations|cron)/iu.test(file.relativePath)), false);
   assert.doesNotMatch(JSON.stringify(result.registrations), /(?:automations|cron)/iu);
 });

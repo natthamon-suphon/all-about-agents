@@ -18,6 +18,11 @@ const VENDOR_TOOL_PATTERN = new RegExp(`(?:^|[^a-z0-9])(?:${VENDOR_IDENTIFIER_NA
 const VENDOR_FIELD_NAMES = new Set(["tool", "tools", "nativeTool", "nativeTools", "vendorTool", "vendorTools"]);
 const CANONICAL_ROLE_SET = new Set(CANONICAL_ROLE_IDS);
 const ROLE_WRITE_CAPABILITIES = new Set(WRITE_SEMANTIC_CAPABILITIES);
+const SKILL_SELECTION_KEYS = Object.freeze([
+  "skillPack", "skillPacks", "selectedSkills", "includeSkills", "excludeSkills",
+  "coreSkills", "optionalSkills", "personalSkills"
+]);
+const SKILL_SELECTION_FLAG = /^--(?:(?:skill-)?packs?|skills|(?:core|optional|personal)-skills?)(?:=|$)/u;
 
 function compareText(left, right) {
   return left === right ? 0 : left < right ? -1 : 1;
@@ -62,6 +67,42 @@ export class CoreLoadError extends Error {
     this.name = "CoreLoadError";
     this.errors = sorted;
   }
+}
+
+/** Fail closed when a caller attempts to split the always-complete skill portfolio. */
+export function assertUnifiedSkillPortfolio(options = {}) {
+  if (options === undefined || options === null) return;
+  if (typeof options !== "object" || Array.isArray(options)) throw new TypeError("skill portfolio options must be an object");
+  const locations = [options, options.profile].filter((value) => value && typeof value === "object" && !Array.isArray(value));
+  for (const location of locations) {
+    for (const key of SKILL_SELECTION_KEYS) {
+      if (Object.hasOwn(location, key)) throw new TypeError(`skill pack selection (${key}) is unsupported; install the complete skill portfolio`);
+    }
+  }
+  if (Object.hasOwn(options, "argv")) {
+    if (!Array.isArray(options.argv) || options.argv.some((value) => typeof value !== "string")) throw new TypeError("argv must be an array of strings");
+    const forbidden = options.argv.find((value) => SKILL_SELECTION_FLAG.test(value));
+    if (forbidden) throw new TypeError(`skill pack selection (${forbidden.split("=")[0]}) is unsupported; install the complete skill portfolio`);
+  }
+}
+
+/** Validate the already-contained companion records before an adapter renders them. */
+export function skillCompanionsFor(record) {
+  if (record?.companions === undefined) return [];
+  if (!Array.isArray(record.companions)) throw new TypeError("skill companions must be an array");
+  const seen = new Set();
+  return record.companions.map((companion) => {
+    if (!companion || typeof companion !== "object" || Array.isArray(companion)) throw new TypeError("skill companion must be an object");
+    const { canonicalPath, relativePath, kind, content, mode } = companion;
+    if (!validPortableInventoryPath(relativePath) || relativePath === "SKILL.md" || relativePath.startsWith("../")) throw new TypeError("skill companion destination must be a contained portable path");
+    if (seen.has(relativePath)) throw new TypeError(`duplicate skill companion destination ${relativePath}`);
+    seen.add(relativePath);
+    if (!validPortableInventoryPath(canonicalPath) || typeof content !== "string") throw new TypeError("skill companion source and UTF-8 content are required");
+    if (kind !== "asset" && kind !== "script") throw new TypeError("skill companion kind must be asset or script");
+    const expectedMode = kind === "script" ? 0o755 : null;
+    if (mode !== expectedMode) throw new TypeError(`skill companion ${relativePath} has an invalid executable mode`);
+    return { canonicalPath, relativePath, kind, content, mode };
+  }).sort((left, right) => compareText(left.relativePath, right.relativePath));
 }
 
 async function pathExists(path) {
@@ -552,7 +593,84 @@ async function mutationScopeContainmentErrors(repositoryRoot, entries) {
   return errors;
 }
 
-async function loadSkills(root, coreRoot, errors) {
+function validPortableInventoryPath(value) {
+  return typeof value === "string" && value.length > 0 && !value.includes("\\") && !value.includes("\0") && !value.includes(":") && !posix.isAbsolute(value) && !win32.isAbsolute(value) && posix.normalize(value) === value && !value.split("/").some((segment) => segment === "" || segment === "." || segment === "..");
+}
+
+async function attachSkillCompanions(root, coreRoot, inventory, entries, errors) {
+  if (!Array.isArray(inventory?.skillSources)) return;
+  const records = new Map(entries.map((entry) => [entry.record?.id, entry]));
+  let repositoryRealpath;
+  try {
+    repositoryRealpath = await realpath(root);
+  } catch (error) {
+    errors.push(errorRecord(toPortablePath(root, coreRoot), "/skillSources", "companionContainment", `unable to resolve repository root: ${error.message}`));
+    return;
+  }
+  for (const [sourceIndex, source] of inventory.skillSources.entries()) {
+    if (!source || typeof source !== "object" || Array.isArray(source) || typeof source.name !== "string") continue;
+    const owner = source.name;
+    const ownerRoot = `skills/${owner}`;
+    const ownerEntry = records.get(owner);
+    if (!ownerEntry) {
+      errors.push(errorRecord("core/inventory.json", `/skillSources/${sourceIndex}/name`, "companionOwner", `skill source owner ${owner} has no canonical skill record`));
+      continue;
+    }
+    if (source.source !== `${ownerRoot}/SKILL.md`) {
+      errors.push(errorRecord("core/inventory.json", `/skillSources/${sourceIndex}/source`, "companionContainment", `skill source must be ${ownerRoot}/SKILL.md`));
+    }
+    const companions = [];
+    const destinations = new Set();
+    for (const [field, kind, mode] of [["assets", "asset", null], ["scripts", "script", 0o755]]) {
+      const declared = Array.isArray(source[field]) ? source[field] : [];
+      for (const [pathIndex, canonicalPath] of declared.entries()) {
+        const pointer = `/skillSources/${sourceIndex}/${field}/${pathIndex}`;
+        if (!validPortableInventoryPath(canonicalPath) || !canonicalPath.startsWith(`${ownerRoot}/`)) {
+          errors.push(errorRecord("core/inventory.json", pointer, "companionContainment", `companion must be a normalized portable path inside ${ownerRoot}`));
+          continue;
+        }
+        const relativePath = posix.relative(ownerRoot, canonicalPath);
+        if (!relativePath || relativePath === "SKILL.md" || relativePath.startsWith("../") || posix.isAbsolute(relativePath)) {
+          errors.push(errorRecord("core/inventory.json", pointer, "companionContainment", "companion destination must remain beside, but not replace, its owning SKILL.md"));
+          continue;
+        }
+        if (destinations.has(relativePath)) {
+          errors.push(errorRecord("core/inventory.json", pointer, "duplicateDestination", `duplicate companion destination ${relativePath}`));
+          continue;
+        }
+        destinations.add(relativePath);
+        const coreCandidate = resolve(coreRoot, ...canonicalPath.split("/"));
+        const legacyCandidate = resolve(root, ...canonicalPath.split("/"));
+        const path = await pathExists(coreCandidate) ? coreCandidate : legacyCandidate;
+        const sourcePath = toPortablePath(root, path);
+        try {
+          const metadata = await lstat(path);
+          if (!metadata.isFile() || metadata.isSymbolicLink()) {
+            errors.push(errorRecord(sourcePath, "", "companionContainment", "companion must be a regular, non-symlink file"));
+            continue;
+          }
+          const selectedRoot = path === coreCandidate ? coreRoot : root;
+          const [pathRealpath, selectedRootRealpath, ownerRealpath] = await Promise.all([
+            realpath(path),
+            realpath(selectedRoot),
+            realpath(resolve(selectedRoot, ...ownerRoot.split("/")))
+          ]);
+          if (!realpathIsContained(repositoryRealpath, pathRealpath) || !realpathIsContained(selectedRootRealpath, pathRealpath) || !realpathIsContained(ownerRealpath, pathRealpath)) {
+            errors.push(errorRecord(sourcePath, "", "companionContainment", "companion realpath must stay inside its owning skill, selected source root, and repository root"));
+            continue;
+          }
+          const content = (await readUtf8(path)).replace(/\r\n?/gu, "\n");
+          companions.push({ canonicalPath, relativePath, kind, content, mode });
+        } catch (error) {
+          errors.push(errorRecord(sourcePath, "", "companionRead", `unable to load declared companion: ${error.message}`));
+        }
+      }
+    }
+    ownerEntry.record.companions = companions.sort((left, right) => compareText(left.canonicalPath, right.canonicalPath));
+  }
+}
+
+async function loadSkills(root, coreRoot, inventory, errors) {
   const directory = resolve(coreRoot, "skills");
   const files = await listFiles(directory, (_path, name) => name === "SKILL.md" || (extname(name).toLowerCase() === ".json" && !name.endsWith(".schema.json")));
   const schema = await schemaFor(root, "skill", errors);
@@ -594,6 +712,7 @@ async function loadSkills(root, coreRoot, errors) {
     errors.push(...portableMetadataErrors(record, sourcePath), ...capabilityErrors(record, sourcePath));
     entries.push({ record, sourcePath, path });
   }
+  await attachSkillCompanions(root, coreRoot, inventory, entries, errors);
   return entries;
 }
 
@@ -667,13 +786,30 @@ function validateInventory(inventory, sourcePath, errors) {
     return;
   }
   if (!Array.isArray(inventory.skills)) errors.push(errorRecord(sourcePath, "/skills", "type", "inventory.skills must be an array"));
-  else inventory.skills.forEach((skill, index) => {
-    if (typeof skill !== "string" || !/^[a-z0-9][a-z0-9-]*$/u.test(skill)) errors.push(errorRecord(sourcePath, `/skills/${index}`, "pattern", "inventory skill IDs must be kebab-case strings"));
-  });
+  else {
+    const names = new Map();
+    inventory.skills.forEach((skill, index) => {
+      if (typeof skill !== "string" || !/^[a-z0-9][a-z0-9-]*$/u.test(skill)) errors.push(errorRecord(sourcePath, `/skills/${index}`, "pattern", "inventory skill IDs must be kebab-case strings"));
+      else if (names.has(skill)) errors.push(errorRecord(sourcePath, `/skills/${index}`, "duplicateSkill", `duplicate public skill name ${skill}`));
+      else names.set(skill, index);
+    });
+    if (Array.isArray(inventory.skillSources)) {
+      const sourceNames = new Map();
+      inventory.skillSources.forEach((entry, index) => {
+        const name = entry?.name;
+        if (typeof name !== "string") return;
+        if (sourceNames.has(name)) errors.push(errorRecord(sourcePath, `/skillSources/${index}/name`, "duplicateSkillSource", `duplicate skillSources entry ${name}`));
+        else sourceNames.set(name, index);
+        if (!names.has(name)) errors.push(errorRecord(sourcePath, `/skillSources/${index}/name`, "unknownSkillSource", `skillSources entry ${name} is not a public skill`));
+      });
+      for (const name of names.keys()) if (!sourceNames.has(name)) errors.push(errorRecord(sourcePath, "/skillSources", "missingSkillSource", `public skill ${name} must have exactly one skillSources entry`));
+    }
+  }
 }
 
-export async function loadCore(root) {
+export async function loadCore(root, options = {}) {
   if (typeof root !== "string" || root.trim() === "") throw new TypeError("loadCore(root) requires a non-empty root path");
+  assertUnifiedSkillPortfolio(options);
   const repositoryRoot = resolve(root);
   const nestedCore = resolve(repositoryRoot, "core");
   const coreRoot = await pathExists(resolve(nestedCore, "inventory.json")) ? nestedCore : repositoryRoot;
@@ -693,7 +829,7 @@ export async function loadCore(root) {
   const [rules, roles, skills, workflows, commands, evals] = await Promise.all([
     loadJsonCollection(repositoryRoot, coreRoot, "rules", "rule", errors),
     loadRoleCollection(repositoryRoot, coreRoot, errors),
-    loadSkills(repositoryRoot, coreRoot, errors),
+    loadSkills(repositoryRoot, coreRoot, inventory, errors),
     loadJsonCollection(repositoryRoot, coreRoot, "workflows", "workflow", errors),
     loadJsonCollection(repositoryRoot, coreRoot, "commands", "command", errors),
     loadEvaluations(repositoryRoot, coreRoot, errors)

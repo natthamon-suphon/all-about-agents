@@ -165,3 +165,14 @@ test("loadCore validates inventory against its strict schema when the schema is 
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("unified skill portfolio rejects every pack-selection argument shape", async () => {
+  const { assertUnifiedSkillPortfolio } = await loader();
+  for (const options of [
+    { skillPack: "core" },
+    { skillPacks: ["optional"] },
+    { profile: { id: "portable", personalSkills: ["local"] } },
+    { argv: ["--skills=research"] }
+  ]) assert.throws(() => assertUnifiedSkillPortfolio(options), /complete skill portfolio/iu);
+  assert.doesNotThrow(() => assertUnifiedSkillPortfolio({ profile: { id: "portable" }, argv: ["--surface", "claude"] }));
+});

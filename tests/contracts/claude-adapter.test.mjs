@@ -102,6 +102,7 @@ test("portable Claude render contains every native component and all canonical s
   }
   for (const skill of core.inventory.skills) {
     assert.ok(files.has(`skills/${skill}/SKILL.md`), `missing canonical skill ${skill}`);
+    for (const companion of core.skills.find((record) => record.id === skill).companions) assert.ok(files.has(`skills/${skill}/${companion.relativePath}`), `missing companion ${skill}/${companion.relativePath}`);
   }
   assert.equal(files.has("CLAUDE.md"), false);
   assert.equal(files.has(".claude/CLAUDE.md"), false);

@@ -10,6 +10,7 @@ import codexCheckpointTemplate from "./templates/hooks/checkpoint.json" with { t
 import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
 import { AdapterContractError, renderSurface as validateSurface, validateCommandRecords, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, hasScopedMutation, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 
 const CODEX_SURFACE = "codex";
 const CODEX_TARGET_RUNTIMES = Object.freeze(["cli", "desktop"]);
@@ -99,7 +100,9 @@ function profileId(profile) {
   return id;
 }
 
-function addFile(files, relativePath, content, mode = null) {
+function addFile(files, relativePath, content, mode = null, contentKind = "generated") {
+  if (contentKind !== "generated" && contentKind !== "companion") throw new TypeError("unknown rendered content kind");
+  if (typeof content !== "string") throw new TypeError("rendered file content must be a string");
   files.push({ relativePath, content: new TextEncoder().encode(content), mode });
 }
 
@@ -413,6 +416,7 @@ function capabilityGuidance() {
 
 /** Render the initial deterministic Codex policy overlays. */
 export function renderCodex(input = {}) {
+  assertUnifiedSkillPortfolio(input);
   const targetRuntime = targetRuntimeOf(input);
   const core = input.core;
   if (!core || typeof core !== "object") throw new TypeError("core is required");
@@ -486,6 +490,7 @@ try {
     const rendered = renderSkill(skill, skillRecords.get(skill));
     if (!rendered.hasSource) missingSkills.push({ skill, hasRecord: skillRecords.has(skill) });
     addFile(files, `.agents/skills/${skill}/SKILL.md`, rendered.content);
+    for (const companion of skillCompanionsFor(skillRecords.get(skill))) addFile(files, `.agents/skills/${skill}/${companion.relativePath}`, companion.content, companion.mode, "companion");
   }
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
   const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort(compareCodePoints);

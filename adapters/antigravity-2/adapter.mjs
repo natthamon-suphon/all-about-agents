@@ -8,10 +8,12 @@ import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency-policy.mjs";
+import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 
 const SURFACE = "antigravity-2";
 const DESKTOP_SURFACE = "antigravity-2-desktop";
 const PLUGIN_ROOT = ".agents/plugins/all-about-agents";
+const compareCodePoints = (left, right) => left === right ? 0 : left < right ? -1 : 1;
 
 const ACTION_IDS = [
   "aaa:design", "aaa:build", "aaa:fix", "aaa:review",
@@ -204,14 +206,17 @@ function renderAgent(name, role) {
   return ensureText(lines.join("\n"));
 }
 
-function addFile(files, relativePath, content, mode = null) {
-  files.push({ relativePath, content: new TextEncoder().encode(ensureText(content)), mode });
+function addFile(files, relativePath, content, mode = null, contentKind = "generated") {
+  const body = contentKind === "companion" ? content : ensureText(content);
+  if (typeof body !== "string") throw new TypeError("rendered file content must be a string");
+  files.push({ relativePath, content: new TextEncoder().encode(body), mode });
 }
 
-function validateDesktopContent(files) {
+function validateDesktopContent(files, opaqueCompanionPaths = new Set()) {
   const decoder = new TextDecoder();
   for (const file of files) {
     const content = decoder.decode(file.content);
+    if (opaqueCompanionPaths.has(file.relativePath)) continue;
     for (const forbidden of FORBIDDEN_DESKTOP_CONTENT) {
       if (forbidden.pattern.test(content)) {
         throw new TypeError(`Antigravity Desktop render rejected forbidden Desktop content (${forbidden.label}) in ${file.relativePath}`);
@@ -224,7 +229,7 @@ function ownership(files) {
   return files.map((file) => ({
     relativePath: file.relativePath,
     sha256: createHash("sha256").update(file.content).digest("hex")
-  })).sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+  })).sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
 }
 
 function coreShape(core) {
@@ -327,6 +332,7 @@ export function classifyAntigravityEmergencyRequest(request) {
 
 /** Render the documented Antigravity 2.0 Desktop package without native settings writes. */
 export function renderAntigravity(input = {}) {
+  assertUnifiedSkillPortfolio(input);
   coreShape(input.core);
   assertNativeRoleRecords(input.core.roles);
   assertNativeRoleSemantics(input.core.roles);
@@ -347,12 +353,20 @@ export function renderAntigravity(input = {}) {
   for (const rule of [...input.core.rules].sort((left, right) => String(left.id).localeCompare(String(right.id)))) {
     addFile(files, `${PLUGIN_ROOT}/rules/${rule.id}.md`, renderRule(rule));
   }
-  for (const skill of skillIds(input.core)) addFile(files, `${PLUGIN_ROOT}/skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill)));
+  const opaqueCompanionPaths = new Set();
+  for (const skill of skillIds(input.core)) {
+    addFile(files, `${PLUGIN_ROOT}/skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill)));
+    for (const companion of skillCompanionsFor(skillRecords.get(skill))) {
+      const path = `${PLUGIN_ROOT}/skills/${skill}/${companion.relativePath}`;
+      addFile(files, path, companion.content, companion.mode, "companion");
+      opaqueCompanionPaths.add(path);
+    }
+  }
 
   const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort();
   for (const role of roleNames) addFile(files, `${PLUGIN_ROOT}/agents/${role}.md`, renderAgent(role, roleRecords.get(role)));
-  files.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
-  validateDesktopContent(files);
+  files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
+  validateDesktopContent(files, opaqueCompanionPaths);
 
   const diagnostics = [
     ...input.core.roles.flatMap((role) => nativeCapabilityDiagnostics({ surface: SURFACE, role, mappings: ANTIGRAVITY_SEMANTIC_MAPPINGS, blockedNativeTools: ["write_to_file", "replace_file_content", "multi_replace_file_content", "run_command", "invoke_subagent", "define_subagent", "manage_subagents"] })),

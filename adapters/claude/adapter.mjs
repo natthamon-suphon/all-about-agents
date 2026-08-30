@@ -14,10 +14,12 @@ import {
   validateRenderResult
 } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 
 const CLAUDE_SURFACE = "claude";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
 const CONTROL_OR_ANSI = /[\u0000-\u001f\u007f]|\u001b\[[0-?]*[ -/]*[@-~]/u;
+const compareCodePoints = (left, right) => left === right ? 0 : left < right ? -1 : 1;
 const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
 const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.json", import.meta.url), "utf8");
 const EMERGENCY_GUARD_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.mjs", import.meta.url), "utf8");
@@ -375,8 +377,10 @@ function mappingsDocument() {
   return ensureText(lines.join("\n"));
 }
 
-function addFile(files, relativePath, content, mode = null) {
-  files.push({ relativePath, content: new TextEncoder().encode(ensureText(content)), mode });
+function addFile(files, relativePath, content, mode = null, contentKind = "generated") {
+  const body = contentKind === "companion" ? content : ensureText(content);
+  if (typeof body !== "string") throw new TypeError("rendered file content must be a string");
+  files.push({ relativePath, content: new TextEncoder().encode(body), mode });
 }
 
 function makeOwnership(files) {
@@ -385,11 +389,12 @@ function makeOwnership(files) {
       relativePath: file.relativePath,
       sha256: createHash("sha256").update(file.content).digest("hex")
     }))
-    .sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+    .sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
 }
 
 /** Render one complete deterministic Claude package and config overlay. */
 export function renderClaude(input = {}) {
+  assertUnifiedSkillPortfolio(input);
   const core = input.core;
   if (!core || typeof core !== "object") throw new TypeError("core is required");
   for (const collection of ["rules", "skills", "workflows", "commands"]) {
@@ -425,6 +430,7 @@ export function renderClaude(input = {}) {
     const rendered = renderSkill(skill, skillRecords.get(skill));
     if (!rendered.hasSource) missingSkills.push(skill);
     addFile(files, `skills/${skill}/SKILL.md`, rendered.content);
+    for (const companion of skillCompanionsFor(skillRecords.get(skill))) addFile(files, `skills/${skill}/${companion.relativePath}`, companion.content, companion.mode, "companion");
   }
   for (const rule of [...core.rules].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `rules/${rule.id}.md`, renderRule(rule));
 
@@ -432,7 +438,7 @@ export function renderClaude(input = {}) {
   for (const roleName of roleNames) addFile(files, `agents/${roleName}.md`, renderAgent(roleName, roleRecords.get(roleName)));
   for (const command of [...core.commands].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `commands/${command.id}.md`, renderCommand(command));
 
-  files.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+  files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   const configRoot = resolveClaudeConfigDir(input);
   const result = {
     files,

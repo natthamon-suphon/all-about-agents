@@ -114,6 +114,7 @@ test("portable Desktop render contains documented plugin components and every ca
   }
   for (const skill of core.inventory.skills) {
     assert.ok(files.has(`.agents/plugins/all-about-agents/skills/${skill}/SKILL.md`), `missing canonical skill ${skill}`);
+    for (const companion of core.skills.find((record) => record.id === skill).companions) assert.ok(files.has(`.agents/plugins/all-about-agents/skills/${skill}/${companion.relativePath}`), `missing companion ${skill}/${companion.relativePath}`);
   }
   assert.equal(files.has("settings.json"), false);
   assert.equal(files.has("config/settings.json"), false);

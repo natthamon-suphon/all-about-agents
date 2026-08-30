@@ -56,7 +56,10 @@ test("agy renders nested agents and every canonical skill and rule", () => {
   for (const role of ["researcher", "investigator", "architect", "implementer", "verifier", "reviewer", "security-reviewer"]) {
     assert.ok(files.has(`agents/${role}/agent.md`), `missing nested agent ${role}`);
   }
-  for (const skill of core.inventory.skills) assert.ok(files.has(`skills/${skill}/SKILL.md`), `missing canonical skill ${skill}`);
+  for (const skill of core.inventory.skills) {
+    assert.ok(files.has(`skills/${skill}/SKILL.md`), `missing canonical skill ${skill}`);
+    for (const companion of core.skills.find((record) => record.id === skill).companions) assert.ok(files.has(`skills/${skill}/${companion.relativePath}`), `missing companion ${skill}/${companion.relativePath}`);
+  }
   for (const rule of core.rules) assert.ok(files.has(`rules/${rule.id}.md`), `missing canonical rule ${rule.id}`);
   for (const path of [
     "rules/adapter-capability-guidance.md",

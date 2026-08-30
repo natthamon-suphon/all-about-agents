@@ -8,6 +8,7 @@ import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, roleCapabilities, SEMANTIC_CAPABILITIES, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency-policy.mjs";
+import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 
 const SURFACE = "agy";
 const PLUGIN_ROOT = "";
@@ -188,10 +189,12 @@ function coreShape(core) {
   }
 }
 
-function addFile(files, relativePath, content, mode = null) {
+function addFile(files, relativePath, content, mode = null, contentKind = "generated") {
+  const body = contentKind === "companion" ? content : ensureText(content);
+  if (typeof body !== "string") throw new TypeError("rendered file content must be a string");
   files.push({
     relativePath: PLUGIN_ROOT ? `${PLUGIN_ROOT}/${relativePath}` : relativePath,
-    content: new TextEncoder().encode(ensureText(content)),
+    content: new TextEncoder().encode(body),
     mode
   });
 }
@@ -432,7 +435,7 @@ export function classifyAgyEmergencyRequest(request) {
   return normalized ? classifyEmergencyAction(normalized) : { decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." };
 }
 
-function validateAgyContent(files) {
+function validateAgyContent(files, opaqueCompanionPaths = new Set()) {
   const decoder = new TextDecoder("utf-8", { fatal: true });
   for (const file of files) {
     let body;
@@ -441,6 +444,7 @@ function validateAgyContent(files) {
     } catch {
       throw new TypeError(`agy render rejected non-UTF-8 body in ${file.relativePath}`);
     }
+    if (opaqueCompanionPaths.has(file.relativePath)) continue;
     for (const forbidden of FORBIDDEN_AGY_CONTENT) {
       if (forbidden.pattern.test(body)) {
         throw new TypeError(`agy render rejected ${forbidden.label} in ${file.relativePath}`);
@@ -518,6 +522,7 @@ function actionDiagnostics() {
 
 /** Render the complete portable agy CLI plugin package and manual overlays. */
 export function renderAgy(input = {}) {
+  assertUnifiedSkillPortfolio(input);
   coreShape(input.core);
   assertNativeRoleRecords(input.core.roles);
   assertNativeRoleSemantics(input.core.roles);
@@ -543,14 +548,20 @@ export function renderAgy(input = {}) {
   for (const rule of [...input.core.rules].sort((left, right) => String(left.id).localeCompare(String(right.id)))) {
     addFile(files, `rules/${rule.id}.md`, renderRule(rule));
   }
+  const opaqueCompanionPaths = new Set();
   for (const skill of canonicalSkillIds(input.core)) {
     addFile(files, `skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill)));
+    for (const companion of skillCompanionsFor(skillRecords.get(skill))) {
+      const path = `skills/${skill}/${companion.relativePath}`;
+      addFile(files, path, companion.content, companion.mode, "companion");
+      opaqueCompanionPaths.add(path);
+    }
   }
   const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort(compareCodePoints);
   for (const roleName of roleNames) addFile(files, `agents/${roleName}/agent.md`, renderAgent(roleName, roleRecords.get(roleName)));
 
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
-  validateAgyContent(files);
+  validateAgyContent(files, opaqueCompanionPaths);
 
   const diagnostics = [
     {
