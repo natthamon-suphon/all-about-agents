@@ -42,12 +42,18 @@ infer a leak from one high-water mark or from incomparable cache states.
 ## Database
 
 Use the database's actual-plan facility only on an approved representative
-dataset. For PostgreSQL-compatible systems, adapt:
+dataset. `EXPLAIN ANALYZE` executes the statement, so the default recipe accepts
+a read-only SELECT only. For PostgreSQL-compatible systems, adapt:
 
 ```sql
 EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
-<PARAMETERIZED_QUERY>;
+<PARAMETERIZED_READ_ONLY_SELECT>;
 ```
+
+Do not substitute `INSERT`, `UPDATE`, `DELETE`, DDL, or a side-effecting function.
+For a mutating plan, use non-executing `EXPLAIN` first. Execution requires an
+isolated disposable database plus explicit mutation authority; a transaction
+and `ROLLBACK` alone may not contain external effects from triggers or functions.
 
 Preserve parameter distribution, row estimates versus actual rows, timing,
 buffers, locks, and write/storage trade-offs. Do not paste secrets or production
@@ -83,4 +89,3 @@ Use only for isolated mechanisms that the end-to-end profile identifies. Keep
 setup outside the measured region, consume results to prevent elimination, and
 test representative input shapes. A microbenchmark does not prove user-visible
 improvement; remeasure the full workload afterward.
-

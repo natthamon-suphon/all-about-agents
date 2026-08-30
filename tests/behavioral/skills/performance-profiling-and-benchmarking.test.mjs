@@ -35,6 +35,7 @@ test("profiling recipes are illustrative and avoid universal benchmark parameter
   assert.match(recipes, /database/iu);
   assert.match(recipes, /frontend|client/iu);
   assert.match(recipes, /production-like|representative/iu);
+  assert.match(recipes, /read-only SELECT|ROLLBACK/iu);
   assert.doesNotMatch(recipes, /-c 100 -d 10|2026-01-01|zero-overhead/iu);
 });
 
