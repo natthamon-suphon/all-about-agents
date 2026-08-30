@@ -9,6 +9,7 @@ import { renderSurface as validateSurface, validateRenderResult } from "../share
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency-policy.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
+import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 
 const SURFACE = "antigravity-2";
 const DESKTOP_SURFACE = "antigravity-2-desktop";
@@ -87,8 +88,8 @@ const EMERGENCY_DENIES = Object.freeze([
 ]);
 
 export const ANTIGRAVITY_PERMISSION_POLICY = Object.freeze({
-  portable: Object.freeze({ preset: "Default", manualOnly: true, deny: EMERGENCY_DENIES }),
-  template: Object.freeze({ preset: "Unrestricted", manualOnly: true, deny: EMERGENCY_DENIES })
+  controlled: Object.freeze({ preset: "Default", manualOnly: true, deny: EMERGENCY_DENIES }),
+  full: Object.freeze({ preset: "Unrestricted", manualOnly: true, deny: EMERGENCY_DENIES })
 });
 
 const DEFAULT_ROLES = Object.freeze({
@@ -126,12 +127,6 @@ const DEFAULT_ROLES = Object.freeze({
     readOnly: true
   })
 });
-
-function profileId(profile) {
-  const id = typeof profile === "string" ? profile : profile?.id;
-  if (!Object.hasOwn(ANTIGRAVITY_PERMISSION_POLICY, id)) throw new TypeError("profile.id must be portable or template");
-  return id;
-}
 
 function ensureText(value) {
   return renderText(typeof value === "string" ? value : String(value ?? ""));
@@ -261,7 +256,16 @@ function capabilityGuidance() {
   ].join("\n"));
 }
 
-function modelRule() {
+function modelRule(profile) {
+  if (profile.modelPolicies[SURFACE] === "surface-default") {
+    return ensureText([
+      "# Desktop model selection",
+      "",
+      "The portable profile keeps the current Desktop model and effort selection unchanged.",
+      "No model key or persistent settings path is emitted.",
+      ""
+    ].join("\n"));
+  }
   return ensureText([
     "# Desktop model selection",
     "",
@@ -341,7 +345,12 @@ export function renderAntigravity(input = {}) {
   coreShape(input.core);
   assertNativeRoleRecords(input.core.roles);
   assertNativeRoleSemantics(input.core.roles);
-  const profile = profileId(input.profile ?? "portable");
+  const semanticProfile = resolveProfile(input.profile ?? "portable", {
+    surface: SURFACE,
+    modelPolicyRefs: ["surface-default", "approved-desktop-flash"]
+  });
+  const profile = semanticProfile.id;
+  const modelSelected = semanticProfile.modelPolicies[SURFACE] !== "surface-default";
   if (typeof input.statuslineName !== "string") throw new TypeError("statuslineName must be a string");
   const files = [];
   const skillRecords = new Map(input.core.skills.map((record) => [record.id || record.name, record]));
@@ -353,7 +362,7 @@ export function renderAntigravity(input = {}) {
   addFile(files, `${PLUGIN_ROOT}/hooks/checkpoint.json`, renderJson(antigravityCheckpointTemplate));
   addFile(files, `${PLUGIN_ROOT}/hooks/emergency-guard.json`, renderJson(antigravityEmergencyTemplate));
   addFile(files, `${PLUGIN_ROOT}/rules/adapter-capability-guidance.md`, capabilityGuidance());
-  addFile(files, `${PLUGIN_ROOT}/rules/model-selection.md`, modelRule());
+  addFile(files, `${PLUGIN_ROOT}/rules/model-selection.md`, modelRule(semanticProfile));
   addFile(files, `${PLUGIN_ROOT}/rules/permission-safety.md`, permissionRule());
   for (const rule of [...input.core.rules].sort((left, right) => String(left.id).localeCompare(String(right.id)))) {
     addFile(files, `${PLUGIN_ROOT}/rules/${rule.id}.md`, renderRule(rule));
@@ -385,7 +394,7 @@ export function renderAntigravity(input = {}) {
       sourcePath: "core/inventory.json"
     });
   }
-  diagnostics.push({
+  if (modelSelected) diagnostics.push({
     code: "desktop-model-high-unsupported",
     severity: "warning",
     message: "Desktop Gemini 3.7 Flash High is not a documented selector value; use the manual Gemini 3.7 Flash Medium step.",
@@ -407,6 +416,7 @@ export function renderAntigravity(input = {}) {
   const result = {
     files,
     registrations: [
+      profileTranslation(semanticProfile, SURFACE),
       {
         kind: "plugin-registration",
         surface: DESKTOP_SURFACE,
@@ -414,30 +424,29 @@ export function renderAntigravity(input = {}) {
         discovery: "Desktop workspace plugin discovery",
         manualOnly: true
       },
-      {
+      ...(modelSelected ? [{
         kind: "manual-model-selection",
         surface: DESKTOP_SURFACE,
         model: ANTIGRAVITY_MODEL_POLICY.desktop.displayName,
         status: ANTIGRAVITY_MODEL_POLICY.desktop.status,
         persistence: ANTIGRAVITY_MODEL_POLICY.desktop.persistence,
         applyVia: "Desktop model selector"
-      },
-      {
+      }, {
         kind: "unsupported-diagnostic",
         surface: DESKTOP_SURFACE,
         claim: ANTIGRAVITY_MODEL_POLICY.requestedDesktopFlashHigh.claim,
         status: ANTIGRAVITY_MODEL_POLICY.requestedDesktopFlashHigh.status,
         source: ANTIGRAVITY_MODEL_POLICY.requestedDesktopFlashHigh.source,
         manual_step: "Open the Desktop model selector and choose the currently offered Gemini 3.7 Flash Medium; do not enter a model key or persist the choice outside the conversation."
-      },
+      }] : []),
       {
         kind: "permission-ui",
         surface: DESKTOP_SURFACE,
         profile,
-        preset: ANTIGRAVITY_PERMISSION_POLICY[profile].preset,
+        preset: ANTIGRAVITY_PERMISSION_POLICY[semanticProfile.authority].preset,
         manualOnly: true,
         precedence: "Deny > Ask > Allow",
-        deny: [...ANTIGRAVITY_PERMISSION_POLICY[profile].deny]
+        deny: [...ANTIGRAVITY_PERMISSION_POLICY[semanticProfile.authority].deny]
       },
       {
         kind: "hook-contract",

@@ -14,6 +14,10 @@
     "rules": "rules/{rule}.md",
     "settingsOverlay": "settings.overlay.json"
   },
+  "profileContract": {
+    "source": "profiles/{profile}/profile.json",
+    "modelPolicyRefs": ["surface-default", "approved-cli-flash"]
+  },
   "pluginManifestSchema": {
     "documentedProperties": ["$schema", "name", "description"],
     "additionalProperties": false,

@@ -313,7 +313,7 @@ test("Codex maps each canonical role to a documented standalone TOML agent", () 
 });
 
 test("Codex package manifest and Desktop guidance use only documented surfaces", async () => {
-  const files = fileMap(resultFor());
+  const files = fileMap(resultFor("template"));
   assert.ok(files.has(".codex-plugin/plugin.json"));
   const plugin = JSON.parse(files.get(".codex-plugin/plugin.json"));
   assert.deepEqual(plugin, {

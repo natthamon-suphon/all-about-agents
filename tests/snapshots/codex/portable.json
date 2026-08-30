@@ -1,5 +1,5 @@
 {
-  "fileCount": 101,
+  "fileCount": 100,
   "files": [
     {
       "relativePath": ".agents/skills/brainstorming/SKILL.md",
@@ -293,7 +293,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "39074e222089f2603d85ec0680c7ab66c9070d1364f69b2d9fb9f7f8ddfeddbf",
+      "sha256": "9850c60c51dbc3fccfeee2539b9431a3affb8374df2fdd707f942520a86c7067",
       "mode": null
     },
     {
@@ -438,12 +438,12 @@
     },
     {
       "relativePath": "config.toml",
-      "sha256": "47a791ea736aee9ecfa3f8f9929b296e2d4cd193f99bb01d44a96c92bc105cf6",
+      "sha256": "70e5b30818502bb75390e34ab63615d2c1d2352b7ff6614d73296b12f7772216",
       "mode": null
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "9928b5d787efa032def1825b818c6f0b274a440a170fdb988496c7dc9f159590",
+      "sha256": "29259ca6280dcf623cdd56f97f056f3c21510a673f6736bfe2f427201e9512a1",
       "mode": null
     },
     {
@@ -500,11 +500,6 @@
       "relativePath": "hooks/pre-compact.mjs",
       "sha256": "abfaa0c2a7d9d75b6580564adab095a18d6a64bd75c913280d2ec8f46c6f16b8",
       "mode": 493
-    },
-    {
-      "relativePath": "terra-max.config.toml",
-      "sha256": "87343d577271242c0c68c379095432480f687b7a528877503a08eed7b00b6011",
-      "mode": null
     }
   ],
   "ownership": [
@@ -742,7 +737,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "39074e222089f2603d85ec0680c7ab66c9070d1364f69b2d9fb9f7f8ddfeddbf"
+      "sha256": "9850c60c51dbc3fccfeee2539b9431a3affb8374df2fdd707f942520a86c7067"
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/antigravity-tools.md",
@@ -858,11 +853,11 @@
     },
     {
       "relativePath": "config.toml",
-      "sha256": "47a791ea736aee9ecfa3f8f9929b296e2d4cd193f99bb01d44a96c92bc105cf6"
+      "sha256": "70e5b30818502bb75390e34ab63615d2c1d2352b7ff6614d73296b12f7772216"
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "9928b5d787efa032def1825b818c6f0b274a440a170fdb988496c7dc9f159590"
+      "sha256": "29259ca6280dcf623cdd56f97f056f3c21510a673f6736bfe2f427201e9512a1"
     },
     {
       "relativePath": "hooks/activity-audit.json",
@@ -907,13 +902,19 @@
     {
       "relativePath": "hooks/pre-compact.mjs",
       "sha256": "abfaa0c2a7d9d75b6580564adab095a18d6a64bd75c913280d2ec8f46c6f16b8"
-    },
-    {
-      "relativePath": "terra-max.config.toml",
-      "sha256": "87343d577271242c0c68c379095432480f687b7a528877503a08eed7b00b6011"
     }
   ],
   "registrations": [
+    {
+      "kind": "profile-translation",
+      "surface": "codex",
+      "profile": "portable",
+      "authority": "controlled",
+      "reasoning": "surface-default",
+      "advisor": "disabled",
+      "modelPolicyRef": "surface-default",
+      "skillSelection": "all-implicit"
+    },
     {
       "kind": "plugin-package",
       "relativePath": ".codex-plugin/plugin.json",
@@ -1038,22 +1039,6 @@
         "codex-cli",
         "codex-desktop"
       ]
-    },
-    {
-      "kind": "profile",
-      "name": "terra-max",
-      "relativePath": "terra-max.config.toml",
-      "rootEnv": "CODEX_HOME",
-      "destination": "terra-max.config.toml",
-      "consumers": [
-        "codex-cli"
-      ]
-    },
-    {
-      "kind": "manual-step",
-      "surface": "codex-desktop",
-      "id": "terra-max-model",
-      "instruction": "Select gpt-5.6-terra and max reasoning in the Desktop model controls."
     },
     {
       "kind": "resolved-config-root",

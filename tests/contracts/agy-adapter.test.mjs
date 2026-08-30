@@ -202,7 +202,7 @@ test("agy model and permission operations use the exact documented CLI controls"
 });
 
 test("agy generated model docs use a shell-neutral argv representation", () => {
-  const files = fileMap(resultFor());
+  const files = fileMap(resultFor("template"));
   for (const path of ["README.md", "rules/model-selection.md"]) {
     const body = files.get(path);
     assert.doesNotMatch(body, /(?:^|\s)agy\s+-p\s+[^\n]*/mu, `${path} emitted a shell-form agy -p command`);

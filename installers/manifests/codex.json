@@ -19,18 +19,15 @@
     "alternateConfig": "terra-max.config.toml",
     "manualDesktop": "docs/manual-desktop.md"
   },
+  "profileContract": {
+    "source": "profiles/{profile}/profile.json",
+    "modelPolicyRefs": ["surface-default", "approved-sol-terra"]
+  },
   "profiles": {
     "portable": {
       "config": {
-        "model": "gpt-5.6-sol",
-        "model_reasoning_effort": "max",
         "sandbox_mode": "workspace-write",
         "approval_policy": "on-request"
-      },
-      "alternate": {
-        "name": "terra-max",
-        "model": "gpt-5.6-terra",
-        "model_reasoning_effort": "max"
       }
     },
     "template": {

@@ -293,7 +293,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "39074e222089f2603d85ec0680c7ab66c9070d1364f69b2d9fb9f7f8ddfeddbf",
+      "sha256": "6646a48caf9bf655ab79aee780c6cfeadff6a19d4f0afabd0b109b0cc2f3d0c5",
       "mode": null
     },
     {
@@ -443,7 +443,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "9928b5d787efa032def1825b818c6f0b274a440a170fdb988496c7dc9f159590",
+      "sha256": "dda44c0ce3295f9864374e5c6d89dc41e8fc6e35d3dbbf539d9a4fa77856f701",
       "mode": null
     },
     {
@@ -742,7 +742,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "39074e222089f2603d85ec0680c7ab66c9070d1364f69b2d9fb9f7f8ddfeddbf"
+      "sha256": "6646a48caf9bf655ab79aee780c6cfeadff6a19d4f0afabd0b109b0cc2f3d0c5"
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/antigravity-tools.md",
@@ -862,7 +862,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "9928b5d787efa032def1825b818c6f0b274a440a170fdb988496c7dc9f159590"
+      "sha256": "dda44c0ce3295f9864374e5c6d89dc41e8fc6e35d3dbbf539d9a4fa77856f701"
     },
     {
       "relativePath": "hooks/activity-audit.json",
@@ -914,6 +914,16 @@
     }
   ],
   "registrations": [
+    {
+      "kind": "profile-translation",
+      "surface": "codex",
+      "profile": "template",
+      "authority": "full",
+      "reasoning": "maximum-supported",
+      "advisor": "fable",
+      "modelPolicyRef": "approved-sol-terra",
+      "skillSelection": "all-implicit"
+    },
     {
       "kind": "plugin-package",
       "relativePath": ".codex-plugin/plugin.json",

@@ -531,6 +531,16 @@
   ],
   "registrations": [
     {
+      "kind": "profile-translation",
+      "surface": "agy",
+      "profile": "template",
+      "authority": "full",
+      "reasoning": "maximum-supported",
+      "advisor": "fable",
+      "modelPolicyRef": "approved-cli-flash",
+      "skillSelection": "all-implicit"
+    },
+    {
       "kind": "plugin-registration",
       "surface": "agy",
       "relativePath": "plugin.json",

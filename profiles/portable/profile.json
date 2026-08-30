@@ -1,0 +1,14 @@
+{
+  "$schema": "../../core/schemas/profile.schema.json",
+  "schemaVersion": 1,
+  "id": "portable",
+  "authority": "controlled",
+  "reasoning": "surface-default",
+  "advisor": "disabled",
+  "modelPolicies": {
+    "claude": "surface-default",
+    "codex": "surface-default",
+    "antigravity-2": "surface-default",
+    "agy": "surface-default"
+  }
+}

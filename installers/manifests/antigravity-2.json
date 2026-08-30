@@ -21,6 +21,10 @@
     },
     "hooks": ".agents/plugins/<plugin>/hooks.json"
   },
+  "profileContract": {
+    "source": "profiles/{profile}/profile.json",
+    "modelPolicyRefs": ["surface-default", "approved-desktop-flash"]
+  },
   "profiles": {
     "portable": {
       "securityPreset": "Default",

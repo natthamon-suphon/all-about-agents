@@ -1,0 +1,14 @@
+{
+  "$schema": "../../core/schemas/profile.schema.json",
+  "schemaVersion": 1,
+  "id": "template",
+  "authority": "full",
+  "reasoning": "maximum-supported",
+  "advisor": "fable",
+  "modelPolicies": {
+    "claude": "approved-opus-sonnet",
+    "codex": "approved-sol-terra",
+    "antigravity-2": "approved-desktop-flash",
+    "agy": "approved-cli-flash"
+  }
+}

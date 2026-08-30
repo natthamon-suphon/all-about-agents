@@ -110,7 +110,7 @@
   "ownership": [
     {
       "relativePath": "README.md",
-      "sha256": "5f304e31c0df7cffef43801efbe3ffa07055c2b9009625de4ada091ff4b25afb"
+      "sha256": "f654cb0abd56570eb9ffc2787cc5eea14048d23f9f1d153e83f5e9bd6528fb09"
     },
     {
       "relativePath": "activity-audit.json",
@@ -198,7 +198,7 @@
     },
     {
       "relativePath": "rules/model-selection.md",
-      "sha256": "3d8c70244e3baa1b47b9b30d3de52787eec77a41b2219cba7951e6145995c245"
+      "sha256": "62f1c78be6b051901448c0c48fa286c48e9677e674d391aa8ed4e31fc221296f"
     },
     {
       "relativePath": "rules/multi-agent-ownership.md",
@@ -531,6 +531,16 @@
   ],
   "registrations": [
     {
+      "kind": "profile-translation",
+      "surface": "agy",
+      "profile": "portable",
+      "authority": "controlled",
+      "reasoning": "surface-default",
+      "advisor": "disabled",
+      "modelPolicyRef": "surface-default",
+      "skillSelection": "all-implicit"
+    },
+    {
       "kind": "plugin-registration",
       "surface": "agy",
       "relativePath": "plugin.json",
@@ -556,45 +566,6 @@
       "surface": "agy",
       "command": "agy models",
       "manualOnly": true
-    },
-    {
-      "kind": "model-selection",
-      "surface": "agy",
-      "model": "gemini-3.7-flash-high",
-      "effort": "high",
-      "args": [
-        "agy",
-        "-p",
-        "<prompt>",
-        "--model",
-        "gemini-3.7-flash-high",
-        "--effort",
-        "high"
-      ],
-      "manualOnly": true,
-      "fallback": "Run agy models and retry with an exact listed slug or omit --model; no silent model substitution."
-    },
-    {
-      "kind": "full-access-per-run",
-      "surface": "agy",
-      "args": [
-        "agy",
-        "-p",
-        "<prompt>",
-        "--model",
-        "gemini-3.7-flash-high",
-        "--effort",
-        "high",
-        "--dangerously-skip-permissions"
-      ],
-      "permission": "toolPermission: always-proceed",
-      "manualOnly": true,
-      "emergencyDeny": [
-        "command(rm -rf)",
-        "command(sudo)",
-        "write_file(.git/)",
-        "write_file(/home/user/.ssh)"
-      ]
     },
     {
       "kind": "settings-overlay",
@@ -932,7 +903,7 @@
     }
   ],
   "contentHashes": {
-    "README.md": "5f304e31c0df7cffef43801efbe3ffa07055c2b9009625de4ada091ff4b25afb",
+    "README.md": "f654cb0abd56570eb9ffc2787cc5eea14048d23f9f1d153e83f5e9bd6528fb09",
     "activity-audit.json": "b27f619ae09b6c99516dcb90d72655c220f828d7ef61b4e1d3fca14d37fce98f",
     "agents/architect/agent.md": "784814cfdd4564f6846f0fec2046ba6be6384bedb0c66a76c3e4fcca522696f9",
     "agents/implementer/agent.md": "649e20be45b6d72c23f70c0cc5fd9e3a30f7e760f12a993fd4c60c7a7248f756",
@@ -954,7 +925,7 @@
     "rules/hook-contract.md": "361f8852427ff6a8785d4d09af834aba98e2e1e692ce292b4cce238d4460dffc",
     "rules/implementation-quality.md": "b680c552b63c1b11ae103f96a439e1acceb09ba2deebb728bc5e08bf5177ce15",
     "rules/long-task-state.md": "62d1c22e14fa00a01136894dad2336e1d3c059b104e3e64eeb2d66bd3755b2af",
-    "rules/model-selection.md": "3d8c70244e3baa1b47b9b30d3de52787eec77a41b2219cba7951e6145995c245",
+    "rules/model-selection.md": "62f1c78be6b051901448c0c48fa286c48e9677e674d391aa8ed4e31fc221296f",
     "rules/multi-agent-ownership.md": "b346e37ce93910abc0a4a967190502b223d0ec249095988bf3b42ce14e09c2d5",
     "rules/permission-safety.md": "4890141c44ace9e7e28de994b69589ffdddfd8ba990ab201738a3503674ff85d",
     "rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",

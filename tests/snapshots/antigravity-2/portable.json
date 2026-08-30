@@ -103,14 +103,6 @@
     ".agents/plugins/all-about-agents/skills/zero-downtime-migrations/postgres-expand-contract-examples.md"
   ],
   "fileCount": 101,
-  "model": {
-    "kind": "manual-model-selection",
-    "surface": "antigravity-2-desktop",
-    "model": "Gemini 3.7 Flash Medium",
-    "status": "verified",
-    "persistence": "conversation-local",
-    "applyVia": "Desktop model selector"
-  },
   "permission": {
     "kind": "permission-ui",
     "surface": "antigravity-2-desktop",
@@ -125,16 +117,7 @@
       "write_file(/home/user/.ssh)"
     ]
   },
-  "diagnostics": [
-    {
-      "kind": "unsupported-diagnostic",
-      "surface": "antigravity-2-desktop",
-      "claim": "Gemini 3.7 Flash High",
-      "status": "unsupported",
-      "source": "research-antigravity-2.md",
-      "manual_step": "Open the Desktop model selector and choose the currently offered Gemini 3.7 Flash Medium; do not enter a model key or persist the choice outside the conversation."
-    }
-  ],
+  "diagnostics": [],
   "actionDiagnostics": [
     {
       "code": "desktop-action-unknown",
@@ -206,7 +189,7 @@
     ".agents/plugins/all-about-agents/rules/git-and-user-work.md": "b65c9ad2095d570a7ad6299e53a5811698cebc9148c7d38e0d9e77d132404872",
     ".agents/plugins/all-about-agents/rules/implementation-quality.md": "b680c552b63c1b11ae103f96a439e1acceb09ba2deebb728bc5e08bf5177ce15",
     ".agents/plugins/all-about-agents/rules/long-task-state.md": "62d1c22e14fa00a01136894dad2336e1d3c059b104e3e64eeb2d66bd3755b2af",
-    ".agents/plugins/all-about-agents/rules/model-selection.md": "5558fa6f85d26f1e027ef9c087e835df6bc7483e6ad580bbcb5716b7fa79be92",
+    ".agents/plugins/all-about-agents/rules/model-selection.md": "649440532129397927da1416d7d21198c32c75779c414776a66bf2e2258546f9",
     ".agents/plugins/all-about-agents/rules/multi-agent-ownership.md": "b346e37ce93910abc0a4a967190502b223d0ec249095988bf3b42ce14e09c2d5",
     ".agents/plugins/all-about-agents/rules/permission-safety.md": "eb1f2429a17d346e164dd189b9d9b59558e8ca01759c70a0fc8307a62b9667a9",
     ".agents/plugins/all-about-agents/rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",

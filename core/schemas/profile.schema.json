@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Portable agent-system profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schemaVersion", "id", "authority", "reasoning", "advisor", "modelPolicies"],
+  "properties": {
+    "$schema": { "const": "../../core/schemas/profile.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "id": { "enum": ["portable", "template"] },
+    "authority": { "enum": ["controlled", "full"] },
+    "reasoning": { "enum": ["surface-default", "maximum-supported"] },
+    "advisor": { "enum": ["disabled", "fable"] },
+    "modelPolicies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claude", "codex", "antigravity-2", "agy"],
+      "properties": {
+        "claude": { "enum": ["surface-default", "approved-opus-sonnet"] },
+        "codex": { "enum": ["surface-default", "approved-sol-terra"] },
+        "antigravity-2": { "enum": ["surface-default", "approved-desktop-flash"] },
+        "agy": { "enum": ["surface-default", "approved-cli-flash"] }
+      }
+    }
+  }
+}

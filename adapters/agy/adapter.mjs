@@ -9,6 +9,7 @@ import { renderSurface as validateSurface, validateRenderResult } from "../share
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, roleCapabilities, SEMANTIC_CAPABILITIES, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency-policy.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
+import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 
 const SURFACE = "agy";
 const PLUGIN_ROOT = "";
@@ -79,13 +80,13 @@ const EMERGENCY_DENIES = Object.freeze([
 ]);
 
 const AGY_PROFILE_SETTINGS = Object.freeze({
-  portable: Object.freeze({
+  controlled: Object.freeze({
     toolPermission: "request-review",
     artifactReviewPolicy: "asks-for-review",
     allowNonWorkspaceAccess: false,
     enableTerminalSandbox: true
   }),
-  template: Object.freeze({
+  full: Object.freeze({
     toolPermission: "always-proceed",
     artifactReviewPolicy: "always-proceed",
     allowNonWorkspaceAccess: true,
@@ -154,12 +155,6 @@ const FORBIDDEN_AGY_CONTENT = Object.freeze([
 
 function compareCodePoints(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
-}
-
-function profileId(profile) {
-  const id = typeof profile === "string" ? profile : profile?.id;
-  if (!Object.hasOwn(AGY_PROFILE_SETTINGS, id)) throw new TypeError("profile.id must be portable or template");
-  return id;
 }
 
 function ensureText(value) {
@@ -269,9 +264,9 @@ function renderAgent(name, role) {
   ].join("\n"));
 }
 
-function renderSettingsOverlay(profile) {
+function renderSettingsOverlay(authority) {
   return renderJson({
-    ...AGY_PROFILE_SETTINGS[profile],
+    ...AGY_PROFILE_SETTINGS[authority],
     permissions: { deny: [...EMERGENCY_DENIES] }
   });
 }
@@ -294,7 +289,16 @@ function renderCapabilityGuidance() {
   ].join("\n"));
 }
 
-function renderModelRule() {
+function renderModelRule(profile) {
+  if (profile.modelPolicies[SURFACE] === "surface-default") {
+    return ensureText([
+      "# agy model selection",
+      "",
+      "The portable profile keeps the current agy model and effort selection unchanged.",
+      "Use `agy models` for manual discovery; no preferred slug or effort is emitted.",
+      ""
+    ].join("\n"));
+  }
   return ensureText([
     "# agy model selection",
     "",
@@ -357,7 +361,18 @@ function renderSettingsRule() {
   ].join("\n"));
 }
 
-function renderPackageReadme() {
+function renderPackageReadme(profile) {
+  if (profile.modelPolicies[SURFACE] === "surface-default") {
+    return ensureText([
+      "# all-about-agents agy plugin",
+      "",
+      "This is a portable package artifact. Rendering does not install a plugin, write a profile, enable hooks, or execute a command.",
+      "The portable profile keeps the installed agy model and effort unchanged.",
+      "Review this directory in a disposable explicit target, then run `agy --help`, `agy models`, `agy agents`, and `agy plugin list` manually; install only a selected disposable package with `agy plugin install PACKAGE_DIRECTORY`.",
+      `The settings overlay is manual and names only the documented CLI candidate ${AGY_DOCUMENTED_SETTINGS_DESTINATION}; it is never written automatically.`,
+      ""
+    ].join("\n"));
+  }
   return ensureText([
     "# all-about-agents agy plugin",
     "",
@@ -526,21 +541,26 @@ export function renderAgy(input = {}) {
   coreShape(input.core);
   assertNativeRoleRecords(input.core.roles);
   assertNativeRoleSemantics(input.core.roles);
-  const profile = profileId(input.profile ?? "portable");
+  const semanticProfile = resolveProfile(input.profile ?? "portable", {
+    surface: SURFACE,
+    modelPolicyRefs: ["surface-default", "approved-cli-flash"]
+  });
+  const profile = semanticProfile.id;
+  const modelSelected = semanticProfile.modelPolicies[SURFACE] !== "surface-default";
   if (typeof input.statuslineName !== "string") throw new TypeError("statuslineName must be a string");
   const skillRecords = new Map(input.core.skills.map((record) => [record.id || record.name, record]));
   const roleRecords = new Map(input.core.roles.map((record) => [record.id || record.name, record]));
   const files = [];
 
   addFile(files, "plugin.json", renderPluginManifest());
-  addFile(files, "README.md", renderPackageReadme());
+  addFile(files, "README.md", renderPackageReadme(semanticProfile));
   addFile(files, "hooks.json", renderJson(hookDocument()));
   addFile(files, "activity-audit.json", renderJson(agyActivityTemplate));
   addFile(files, "checkpoint.json", renderJson(agyCheckpointTemplate));
   addFile(files, "emergency-guard.json", renderJson(agyEmergencyTemplate));
-  addFile(files, "settings.overlay.json", renderSettingsOverlay(profile));
+  addFile(files, "settings.overlay.json", renderSettingsOverlay(semanticProfile.authority));
   addFile(files, "rules/adapter-capability-guidance.md", renderCapabilityGuidance());
-  addFile(files, "rules/model-selection.md", renderModelRule());
+  addFile(files, "rules/model-selection.md", renderModelRule(semanticProfile));
   addFile(files, "rules/permission-safety.md", renderPermissionRule());
   addFile(files, "rules/hook-contract.md", renderHooksRule());
   addFile(files, "rules/settings-overlay.md", renderSettingsRule());
@@ -615,6 +635,7 @@ export function renderAgy(input = {}) {
   const result = {
     files,
     registrations: [
+      profileTranslation(semanticProfile, SURFACE),
       {
         kind: "plugin-registration",
         surface: SURFACE,
@@ -642,7 +663,7 @@ export function renderAgy(input = {}) {
         command: "agy models",
         manualOnly: true
       },
-      {
+      ...(modelSelected ? [{
         kind: "model-selection",
         surface: SURFACE,
         model: AGY_MODEL_POLICY.model,
@@ -650,15 +671,14 @@ export function renderAgy(input = {}) {
         args: buildHeadlessArgs(),
         manualOnly: true,
         fallback: "Run agy models and retry with an exact listed slug or omit --model; no silent model substitution."
-      },
-      {
+      }, {
         kind: "full-access-per-run",
         surface: SURFACE,
         args: buildHeadlessArgs({ dangerouslySkipPermissions: true }),
         permission: "toolPermission: always-proceed",
         manualOnly: true,
         emergencyDeny: [...EMERGENCY_DENIES]
-      },
+      }] : []),
       {
         kind: "settings-overlay",
         surface: SURFACE,

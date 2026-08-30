@@ -172,7 +172,7 @@ test("plugin-agent packaging exposes the documented documentation split", async 
 });
 
 test("Desktop model output is a manual Medium selection with an explicit unsupported High diagnostic", () => {
-  const result = resultFor();
+  const result = resultFor("template");
   const model = result.registrations.find((entry) => entry.kind === "manual-model-selection");
   assert.deepEqual(model, {
     kind: "manual-model-selection",
@@ -383,7 +383,9 @@ test("Desktop render is deterministic and matches both checked-in snapshots", as
     );
     const bodyExpectations = new Map([
       [".agents/plugins/all-about-agents/rules/adapter-capability-guidance.md", /Plugins page[\s\S]*omits[\s\S]*agents\//iu],
-      [".agents/plugins/all-about-agents/rules/model-selection.md", /Gemini 3\.7 Flash Medium[\s\S]*Gemini 3\.7 Flash High[\s\S]*unsupported/iu],
+      [".agents/plugins/all-about-agents/rules/model-selection.md", profile === "template"
+        ? /Gemini 3\.7 Flash Medium[\s\S]*Gemini 3\.7 Flash High[\s\S]*unsupported/iu
+        : /keeps the current Desktop model[\s\S]*No model key/iu],
       [".agents/plugins/all-about-agents/rules/permission-safety.md", /Deny > Ask > Allow/iu],
       [".agents/plugins/all-about-agents/agents/architect.md", /commandExecutionPolicy: off/iu]
     ]);

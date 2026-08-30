@@ -11,6 +11,7 @@ import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
 import { AdapterContractError, renderSurface as validateSurface, validateCommandRecords, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, hasScopedMutation, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
+import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 
 const CODEX_SURFACE = "codex";
 const CODEX_TARGET_RUNTIMES = Object.freeze(["cli", "desktop"]);
@@ -71,8 +72,6 @@ function compareCodePoints(left, right) {
 
 export const CODEX_MODEL_POLICY = Object.freeze({
   portable: Object.freeze({
-    model: "gpt-5.6-sol",
-    model_reasoning_effort: "max",
     sandbox_mode: "workspace-write",
     approval_policy: "on-request"
   }),
@@ -94,12 +93,6 @@ export function resolveCodexHome({ env = process.env, homeDir = homedir(), platf
   return configured || (platform === "win32" ? win32.join(homeDir, ".codex") : posix.join(homeDir, ".codex"));
 }
 
-function profileId(profile) {
-  const id = typeof profile === "string" ? profile : profile?.id;
-  if (id !== "portable" && id !== "template") throw new TypeError("profile.id must be portable or template");
-  return id;
-}
-
 function addFile(files, relativePath, content, mode = null, contentKind = "generated") {
   if (contentKind !== "generated" && contentKind !== "companion") throw new TypeError("unknown rendered content kind");
   if (typeof content !== "string") throw new TypeError("rendered file content must be a string");
@@ -115,17 +108,20 @@ function makeOwnership(files) {
 
 function configFor(model, profile, includePermissions = true, roleRecords = []) {
   const policy = includePermissions ? CODEX_MODEL_POLICY[profile] : CODEX_MODEL_POLICY.alternate;
-  const root = renderToml(includePermissions
+  const config = includePermissions
     ? {
       approval_policy: policy.approval_policy,
-      model: model ?? policy.model,
-      model_reasoning_effort: policy.model_reasoning_effort,
       sandbox_mode: policy.sandbox_mode
     }
     : {
       model: model ?? policy.model,
       model_reasoning_effort: policy.model_reasoning_effort
-    });
+    };
+  if (includePermissions && typeof policy.model === "string") {
+    config.model = model ?? policy.model;
+    config.model_reasoning_effort = policy.model_reasoning_effort;
+  }
+  const root = renderToml(config);
   const registrations = [...roleRecords]
     .sort((left, right) => compareCodePoints(left.id, right.id))
     .map((role) => [
@@ -267,15 +263,20 @@ function desktopEmergencyContract() {
   return contract;
 }
 
-function desktopInstructions() {
+function desktopInstructions(profile) {
+  const modelLines = profile.modelPolicies[CODEX_SURFACE] === "surface-default"
+    ? ["The portable profile keeps the current Codex model and reasoning controls unchanged."]
+    : [
+      "The template profile selects gpt-5.6-sol with max reasoning.",
+      "",
+      "To use the explicit alternate in Codex Desktop, select gpt-5.6-terra and max reasoning in the Desktop model controls for the current thread.",
+      "",
+      "Desktop model selection is manual because no documented Desktop profile selector is assumed by this adapter."
+    ];
   return ensureText([
     "# Codex Desktop manual setup",
     "",
-    "The shared default uses gpt-5.6-sol with max reasoning.",
-    "",
-    "To use the explicit alternate in Codex Desktop, select gpt-5.6-terra and max reasoning in the Desktop model controls for the current thread.",
-    "",
-    "Desktop model selection is manual because no documented Desktop profile selector is assumed by this adapter.",
+    ...modelLines,
     "The emergency PreToolUse guard is automatic only for the explicit Codex CLI target; Desktop output remains probe-required and contains no copied emergency runtime.",
     ""
   ].join("\n"));
@@ -393,7 +394,10 @@ function validateCommandPresentation(commands) {
   if (errors.length > 0) throw new AdapterContractError(errors);
 }
 
-function capabilityGuidance() {
+function capabilityGuidance(profile) {
+  const modelGuidance = profile.modelPolicies[CODEX_SURFACE] === "surface-default"
+    ? "- The portable profile leaves model and reasoning selection unchanged."
+    : "- The template primary overlay uses Sol/max; `terra-max.config.toml` provides the explicit Terra/max CLI alternative.";
   return ensureText([
     "# Codex adapter capability guidance",
     "",
@@ -405,7 +409,7 @@ function capabilityGuidance() {
     "- Custom roles are standalone custom-agent TOML files under `.codex/agents/<role>.toml`.",
     "- Each canonical `[agents.<role>]` registration points `config_file` at the delivered `agents/<role>.toml` role layer. That standalone file contains `developer_instructions` and top-level `sandbox_mode` (`read-only` for read-only roles and `workspace-write` only for the implementer). Relative `config_file` paths resolve from the declaring `config.toml`.",
     "- This role-layer pattern follows the official Codex Configuration Reference (https://developers.openai.com/codex/config-reference/); the published docs do not show one combined registration example, so native client acceptance remains a later manual check.",
-    "- The primary overlay uses Sol/max; `terra-max.config.toml` preserves the same role registrations while providing the explicit Terra/max CLI alternative.",
+    modelGuidance,
     "- Native `workspace-write` is workspace-wide; the implementer's declared task paths remain an outer approval boundary and are not enforced by this adapter.",
     "- Codex Desktop Terra/max selection is manual in its model controls.",
     "",
@@ -428,7 +432,11 @@ export function renderCodex(input = {}) {
   const commandValidation = validateCommandRecords(core.commands, core.workflows);
   if (!commandValidation.valid) throw new AdapterContractError(commandValidation.errors);
   validateCommandPresentation(core.commands);
-  const profile = profileId(input.profile ?? "portable");
+  const semanticProfile = resolveProfile(input.profile ?? "portable", {
+    surface: CODEX_SURFACE,
+    modelPolicyRefs: ["surface-default", "approved-sol-terra"]
+  });
+  const profile = semanticProfile.id;
   const files = [];
   addFile(files, ".codex-plugin/plugin.json", renderJson(pluginManifest()));
   addFile(files, "hooks/hooks.json", renderJson(bootstrapHooks(targetRuntime)));
@@ -482,8 +490,8 @@ try {
     addFile(files, "hooks/emergency-policy.mjs", EMERGENCY_POLICY_SOURCE, 0o755);
   }
   addFile(files, "AGENTS.md", renderAgentsDocument(core));
-  addFile(files, ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md", capabilityGuidance());
-  addFile(files, "docs/manual-desktop.md", desktopInstructions());
+  addFile(files, ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md", capabilityGuidance(semanticProfile));
+  addFile(files, "docs/manual-desktop.md", desktopInstructions(semanticProfile));
   const skillRecords = new Map(core.skills.map((record) => [record.id || record.name, record]));
   const missingSkills = [];
   for (const skill of canonicalSkillIds(core)) {
@@ -495,8 +503,8 @@ try {
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
   const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort(compareCodePoints);
   const renderedRoles = roleNames.map((roleName) => roleRecords.get(roleName) || { id: roleName, ...DEFAULT_ROLES[roleName] });
-  addFile(files, "config.toml", configFor("gpt-5.6-sol", profile, true, renderedRoles));
-  addFile(files, "terra-max.config.toml", configFor("gpt-5.6-terra", profile, false, renderedRoles));
+  addFile(files, "config.toml", configFor(null, profile, true, renderedRoles));
+  if (semanticProfile.modelPolicies[CODEX_SURFACE] !== "surface-default") addFile(files, "terra-max.config.toml", configFor(null, profile, false, renderedRoles));
   for (const roleName of roleNames) {
     const role = roleRecords.get(roleName) || { id: roleName, ...DEFAULT_ROLES[roleName] };
     addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName)));
@@ -531,6 +539,7 @@ try {
   const result = {
     files,
     registrations: [
+      profileTranslation(semanticProfile, CODEX_SURFACE),
       {
         kind: "plugin-package",
         relativePath: ".codex-plugin/plugin.json",
@@ -611,20 +620,19 @@ try {
         destination: "config.toml",
         consumers: ["codex-cli", "codex-desktop"]
       },
-      {
+      ...(semanticProfile.modelPolicies[CODEX_SURFACE] === "surface-default" ? [] : [{
         kind: "profile",
         name: "terra-max",
         relativePath: "terra-max.config.toml",
         rootEnv: "CODEX_HOME",
         destination: "terra-max.config.toml",
         consumers: ["codex-cli"]
-      },
-      {
+      }, {
         kind: "manual-step",
         surface: "codex-desktop",
         id: "terra-max-model",
         instruction: "Select gpt-5.6-terra and max reasoning in the Desktop model controls."
-      },
+      }]),
       {
         kind: "resolved-config-root",
         rootEnv: "CODEX_HOME",

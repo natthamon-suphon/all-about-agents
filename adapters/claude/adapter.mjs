@@ -15,6 +15,7 @@ import {
 } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
+import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 
 const CLAUDE_SURFACE = "claude";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
@@ -86,11 +87,7 @@ export const CLAUDE_ACTION_MAPPINGS = Object.freeze({
 
 /** Exact settings policy approved for Claude Code and Claude Desktop local Code. */
 export const CLAUDE_MODEL_POLICY = Object.freeze({
-  portable: Object.freeze({
-    model: "claude-opus-5",
-    fallbackModel: Object.freeze(["claude-sonnet-5"]),
-    env: Object.freeze({ CLAUDE_CODE_EFFORT_LEVEL: "xhigh" })
-  }),
+  portable: Object.freeze({}),
   template: Object.freeze({
     model: "claude-opus-5",
     fallbackModel: Object.freeze(["claude-sonnet-5"]),
@@ -224,12 +221,6 @@ export function resolveClaudeConfigDir({ env = process.env, homeDir = homedir(),
   return configured || (platform === "win32" ? join(homeDir, ".claude") : posix.join(homeDir, ".claude"));
 }
 
-function profileId(profile) {
-  const id = typeof profile === "string" ? profile : profile?.id;
-  if (id !== "portable" && id !== "template") throw new TypeError("profile.id must be portable or template");
-  return id;
-}
-
 function canonicalSkillIds(core) {
   const fromInventory = Array.isArray(core?.inventory?.skills) ? core.inventory.skills : [];
   const fromRecords = Array.isArray(core?.skills) ? core.skills.map((record) => record?.id ?? record?.name) : [];
@@ -338,9 +329,11 @@ function hookConfig() {
 }
 
 function settingsFor(profile) {
-  const settings = clone(CLAUDE_MODEL_POLICY[profile]);
+  const settings = profile.modelPolicies[CLAUDE_SURFACE] === "surface-default"
+    ? {}
+    : clone(CLAUDE_MODEL_POLICY.template);
   settings.permissions = {
-    defaultMode: profile === "template" ? "bypassPermissions" : "default",
+    defaultMode: profile.authority === "full" ? "bypassPermissions" : "default",
     deny: [...EMERGENCY_DENIES]
   };
   return settings;
@@ -402,14 +395,18 @@ export function renderClaude(input = {}) {
   }
   assertNativeRoleRecords(core.roles);
   assertNativeRoleSemantics(core.roles);
-  const profile = profileId(input.profile ?? "portable");
+  const semanticProfile = resolveProfile(input.profile ?? "portable", {
+    surface: CLAUDE_SURFACE,
+    modelPolicyRefs: ["surface-default", "approved-opus-sonnet"]
+  });
+  const profile = semanticProfile.id;
   const statuslineName = validStatuslineName(input.statuslineName ?? "");
   const files = [];
   const skillRecords = new Map(core.skills.map((record) => [record.id || record.name, record]));
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
 
   addFile(files, ".claude-plugin/plugin.json", renderJson(pluginManifest()));
-  addFile(files, "config/settings.json", renderJson(settingsFor(profile)));
+  addFile(files, "config/settings.json", renderJson(settingsFor(semanticProfile)));
   addFile(files, "config/statusline.json", renderJson({ schemaVersion: 1, displayName: statuslineName }));
   addFile(files, "docs/semantic-mappings.md", mappingsDocument());
   addFile(files, "hooks/hooks.json", renderJson(hookConfig()));
@@ -443,6 +440,7 @@ export function renderClaude(input = {}) {
   const result = {
     files,
     registrations: [
+      profileTranslation(semanticProfile, CLAUDE_SURFACE),
       {
         kind: "plugin-registration",
         relativePath: ".claude-plugin/plugin.json",
