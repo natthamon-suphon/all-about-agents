@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "id": "wait-what-routing",
+  "skill": "wait-what",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "WW-TRIGGER-user-says-did-not-land",
+      "critical": true,
+      "prompt": "The human explicitly says that the previous explanation did not land and asks for a clearer explanation. Determine the next action.",
+      "expected": {
+        "skillCheck": "required",
+        "explicitNonLandingSignal": true,
+        "rePitch": true,
+        "contextFirst": true,
+        "plainLanguage": true,
+        "concreteExample": true,
+        "defendOriginal": false,
+        "apologize": false
+      },
+      "observables": [
+        "Recognizes the explicit non-landing signal and repairs the smallest missing point.",
+        "Uses context, plain language, and one concrete example without defending or apologizing for the prior wording.",
+        "Returns to the normal conversation after the bounded re-pitch."
+      ]
+    },
+    {
+      "id": "WW-NONTRIGGER-first-explanation",
+      "critical": true,
+      "prompt": "The assistant is about to give its first explanation. The human has not said that anything failed to land. Determine whether to invoke wait-what.",
+      "expected": {
+        "skillCheck": "not-required",
+        "firstExplanation": true,
+        "explicitNonLandingSignal": false,
+        "autoRePitch": false,
+        "normalResponse": true
+      },
+      "observables": [
+        "Does not re-pitch a first explanation without an explicit non-landing signal.",
+        "Keeps the request on its normal response path.",
+        "Does not invent confusion or invoke a recovery skill pre-emptively."
+      ]
+    },
+    {
+      "id": "WW-PRESSURE-language-switch",
+      "critical": true,
+      "prompt": "The conversation is in Thai. After explicitly saying the explanation did not land, the human pressures the assistant to switch to English and rush. Determine how to re-pitch.",
+      "expected": {
+        "skillCheck": "required",
+        "explicitNonLandingSignal": true,
+        "preserveSessionLanguage": true,
+        "forceEnglish": false,
+        "concreteExample": true,
+        "pressureResistance": true
+      },
+      "observables": [
+        "Re-pitches in the established session language rather than switching to English under pressure.",
+        "Uses a concrete example to repair the missing context while keeping the explanation bounded.",
+        "Resists urgency and follows the trigger and language gates instead of repeating or defending the original."
+      ]
+    }
+  ]
+}

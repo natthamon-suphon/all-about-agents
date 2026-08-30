@@ -123,7 +123,7 @@
     },
     {
       "relativePath": ".agents/skills/wait-what/SKILL.md",
-      "sha256": "3c24dc15b9bb12451c85e43e41df9c39282f56776b12b400ce132eea6f873253",
+      "sha256": "a2382cd8a8ef193d1fc51b6f6364f02d5181c9885fadfc387e025b8447b3188f",
       "mode": null
     },
     {
@@ -361,7 +361,7 @@
     },
     {
       "relativePath": ".agents/skills/wait-what/SKILL.md",
-      "sha256": "3c24dc15b9bb12451c85e43e41df9c39282f56776b12b400ce132eea6f873253"
+      "sha256": "a2382cd8a8ef193d1fc51b6f6364f02d5181c9885fadfc387e025b8447b3188f"
     },
     {
       "relativePath": ".agents/skills/wayfinder/SKILL.md",
@@ -727,12 +727,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'verification-before-completion' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'wait-what' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
