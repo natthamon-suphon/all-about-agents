@@ -273,7 +273,7 @@
     },
     {
       "relativePath": "skills/writing-plans/SKILL.md",
-      "sha256": "94315187ebee855494a494c3402d4903df1c95ac17d062d6bbdbc25e80017f74"
+      "sha256": "bec50118d84f9aa29f2d80a108ee95bc083e69b71ee1bd472151080c3168831d"
     },
     {
       "relativePath": "skills/writing-skills/SKILL.md",
@@ -796,12 +796,6 @@
     {
       "code": "missing-skill-source",
       "severity": "error",
-      "message": "Canonical skill 'writing-plans' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
       "message": "Canonical skill 'writing-skills' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
@@ -866,7 +860,7 @@
     "skills/verification-before-completion/SKILL.md": "00a2e3158eaa4b966f489620fdc1c950a4f65f11f3edc55c6489f47b1177320a",
     "skills/wait-what/SKILL.md": "62c9e9fc7ecab8fc39d647078d4b67915e48d3626a5fc90587de4c7acfa4ca94",
     "skills/wayfinder/SKILL.md": "079463f3afe2f20e0f41f998e15091b2d4b5d73f7510875d051ef5c78d3d8f3b",
-    "skills/writing-plans/SKILL.md": "94315187ebee855494a494c3402d4903df1c95ac17d062d6bbdbc25e80017f74",
+    "skills/writing-plans/SKILL.md": "bec50118d84f9aa29f2d80a108ee95bc083e69b71ee1bd472151080c3168831d",
     "skills/writing-skills/SKILL.md": "3502dc256fd52467271e76f71f5b6abf9a8b47b972ec50dfdea8d3ef71b5dbe4",
     "skills/zero-downtime-migrations/SKILL.md": "61aff185e0e1718553a051a1d1f8c57431ddc8e2112b26af3539b11a4be4122d"
   }

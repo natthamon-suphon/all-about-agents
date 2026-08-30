@@ -133,7 +133,7 @@
     },
     {
       "relativePath": ".agents/skills/writing-plans/SKILL.md",
-      "sha256": "54e63d12d0991d0551ca387708f0540a5b1a4a83d654a35dc404a3c59d123df0",
+      "sha256": "a90ba724209926a9c1ea06d5fbff07e28a0545a440a98561c3340443053b7bca",
       "mode": null
     },
     {
@@ -369,7 +369,7 @@
     },
     {
       "relativePath": ".agents/skills/writing-plans/SKILL.md",
-      "sha256": "54e63d12d0991d0551ca387708f0540a5b1a4a83d654a35dc404a3c59d123df0"
+      "sha256": "a90ba724209926a9c1ea06d5fbff07e28a0545a440a98561c3340443053b7bca"
     },
     {
       "relativePath": ".agents/skills/writing-skills/SKILL.md",
@@ -727,12 +727,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'verification-before-completion' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'writing-plans' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
