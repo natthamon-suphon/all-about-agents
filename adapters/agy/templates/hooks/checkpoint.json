@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "surface": "agy",
+  "module": "checkpoint",
+  "automatic": false,
+  "nativeHookEquivalent": false,
+  "durableWorkflow": "explicit",
+  "documentation": "No native checkpoint hook equivalent is claimed; persist checkpoint metadata through the explicit durable workflow.",
+  "failureMode": "fail-open",
+  "recordedFields": ["timestamp", "workflowId", "taskId", "state", "status"]
+}

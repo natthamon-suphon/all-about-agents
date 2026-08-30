@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "activity-audit",
+  "description": "Optionally append bounded, redacted activity events without changing hook decisions.",
+  "failureMode": "fail-open",
+  "retention": {
+    "maxFiles": 5,
+    "maxBytes": 1048576
+  },
+  "recordedFields": ["timestamp", "surface", "actionId", "outcome", "sessionKeyHash"]
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "surface": "codex",
+  "module": "checkpoint",
+  "event": "PreCompact",
+  "automatic": true,
+  "nativeMatcher": ".*",
+  "commandContract": "package-root",
+  "failureMode": "fail-open",
+  "input": {
+    "format": "json-object",
+    "documentedFields": ["hook_event_name", "session_id", "transcript_path", "trigger"]
+  },
+  "recordedFields": ["timestamp", "workflowId", "taskId", "state", "status"]
+}

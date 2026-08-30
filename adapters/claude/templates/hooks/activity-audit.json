@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "surface": "claude",
+  "module": "activity-audit",
+  "event": "PostToolUse",
+  "optional": true,
+  "automatic": true,
+  "nativeMatcher": ".*",
+  "commandContract": "package-root",
+  "failureMode": "fail-open",
+  "input": {
+    "format": "json-object",
+    "documentedFields": ["hook_event_name", "tool_name", "tool_input", "tool_response", "session_id", "tool_use_id"]
+  },
+  "recordedFields": ["timestamp", "surface", "actionId", "outcome", "sessionKeyHash"]
+}

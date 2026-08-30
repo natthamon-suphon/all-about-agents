@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "surface": "agy",
+  "module": "activity-audit",
+  "event": "PostToolUse",
+  "optional": true,
+  "automatic": false,
+  "probeRequired": true,
+  "probe": {
+    "status": "not run",
+    "reason": "The installed agy CLI does not have a verified PostToolUse executable package-root contract.",
+    "manualSequence": [
+      "Record the installed agy version and platform.",
+      "Review the documented PostToolUse payload and package-root resolution.",
+      "On a disposable package, perform an explicit audit probe before proposing an executable handler."
+    ]
+  },
+  "failureMode": "fail-open",
+  "input": {
+    "format": "json-object",
+    "documentedFields": ["toolCall.name", "toolCall.args", "stepIdx"]
+  },
+  "recordedFields": ["timestamp", "surface", "actionId", "outcome", "sessionKeyHash"]
+}
