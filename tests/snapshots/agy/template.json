@@ -241,7 +241,7 @@
     },
     {
       "relativePath": "skills/systematic-debugging/SKILL.md",
-      "sha256": "f982894eb3ccfa685cd8fe6dc7cebe69e68e8893cc67b8a2ef7aceab5689c12f"
+      "sha256": "8da8b0a818ad3f7af9d5bb0466a81e24082a6aaff61dc4d8a85791a3b9f1e445"
     },
     {
       "relativePath": "skills/test-driven-development/SKILL.md",
@@ -798,7 +798,7 @@
     "skills/resolving-merge-conflicts/SKILL.md": "bf51fc1fee2bcf2806ec403014218dd3d51a3365b6b7b15066d283664dfb5759",
     "skills/session-compaction-resilience/SKILL.md": "a48ccd13c1ecb2acc8a38c00fbaa4a4b66bfb8a9eb7862332348f4c674e62233",
     "skills/subagent-driven-development/SKILL.md": "ffb4561e87299d2bc53af9d6105f9181b0961f8a678f9aa4314b588d030d5fba",
-    "skills/systematic-debugging/SKILL.md": "f982894eb3ccfa685cd8fe6dc7cebe69e68e8893cc67b8a2ef7aceab5689c12f",
+    "skills/systematic-debugging/SKILL.md": "8da8b0a818ad3f7af9d5bb0466a81e24082a6aaff61dc4d8a85791a3b9f1e445",
     "skills/test-driven-development/SKILL.md": "dbe8e2efd645d7e0d89ca99d95d98e061d4d5f7cb3938c8f5d48177c031922f2",
     "skills/threat-modeling-and-security/SKILL.md": "db052719fba8f0e27049ec9185f8b1159a40b86008c97d2e189593e6ad30879b",
     "skills/using-all-about-agents/SKILL.md": "0eb208139c1da219b398abc1b10784c243574661d51d8255e00397fee36c9772",

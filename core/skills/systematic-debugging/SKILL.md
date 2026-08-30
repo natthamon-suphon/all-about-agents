@@ -338,7 +338,7 @@ remains `not run`.
 These techniques are part of systematic debugging and available in this directory:
 
 - **`feedback-loops.md`** - Build, tighten, and minimise the one command that goes red on this bug (Phase 1)
-- **`scripts/hitl-loop.template.sh`** - Structured human-in-the-loop repro script, for when a human must click
+- **`hitl-loop.template.sh`** - Structured human-in-the-loop repro script, for when a human must click
 - **`root-cause-tracing.md`** - Trace bugs backward through call stack to find original trigger
 - **`defense-in-depth.md`** - Add validation at multiple layers after finding root cause
 - **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling

@@ -88,7 +88,7 @@
     },
     {
       "relativePath": ".agents/skills/systematic-debugging/SKILL.md",
-      "sha256": "a2cd796ba706a8c30f40b028a82d8310a3ba668d3a12143c806546ade3a2ff0d",
+      "sha256": "87d5ec389496b394c4244e3d4efe87bc6f8a43b724fafc9ba0b6ce43acdae3c0",
       "mode": null
     },
     {
@@ -333,7 +333,7 @@
     },
     {
       "relativePath": ".agents/skills/systematic-debugging/SKILL.md",
-      "sha256": "a2cd796ba706a8c30f40b028a82d8310a3ba668d3a12143c806546ade3a2ff0d"
+      "sha256": "87d5ec389496b394c4244e3d4efe87bc6f8a43b724fafc9ba0b6ce43acdae3c0"
     },
     {
       "relativePath": ".agents/skills/test-driven-development/SKILL.md",

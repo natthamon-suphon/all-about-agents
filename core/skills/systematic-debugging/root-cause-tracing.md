@@ -74,7 +74,7 @@ async function gitInit(directory: string) {
   console.error('DEBUG git init:', {
     directory,
     cwd: process.cwd(),
-    nodeEnv: process.env.NODE_ENV,
+    nodeEnvConfigured: Object.hasOwn(process.env, 'NODE_ENV'),
     stack,
   });
 
@@ -157,7 +157,9 @@ digraph principle {
 
 **In tests:** Use `console.error()` not logger - logger may be suppressed
 **Before operation:** Log before the dangerous operation, not after it fails
-**Include context:** Directory, cwd, environment variables, timestamps
+**Include context:** Directory, cwd, timestamps, and only the names or presence of
+explicitly allowlisted configuration keys. Redact every value; never dump the
+environment.
 **Capture stack:** `new Error().stack` shows complete call chain
 
 ## Real-World Impact

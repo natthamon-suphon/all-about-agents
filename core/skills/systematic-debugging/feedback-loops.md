@@ -8,7 +8,8 @@ If you have a **tight** pass/fail signal for the bug — one that goes red on *t
 
 Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give up.**
 
-Build the right feedback loop, and the bug is 90% fixed.
+The right feedback loop turns an ambiguous symptom into evidence you can test
+repeatedly and use to verify the eventual fix.
 
 ## Ways to construct one
 
@@ -23,7 +24,7 @@ Try them in roughly this order — cheapest and tightest first.
 7. **Property / fuzz loop.** If the bug is "sometimes wrong output", run 1000 random inputs and look for the failure mode.
 8. **Bisection harness.** If the bug appeared between two known states (commit, dataset, version), automate "boot at state X, check, repeat" so you can `git bisect run` it.
 9. **Differential loop.** Run the same input through old-version vs new-version (or two configs) and diff outputs.
-10. **Human-in-the-loop bash script.** Last resort. If a human must click, drive *them* with [`scripts/hitl-loop.template.sh`](scripts/hitl-loop.template.sh) so the loop is still structured. Captured output feeds back to you.
+10. **Human-in-the-loop bash script.** Last resort. If a human must click, drive *them* with [`hitl-loop.template.sh`](hitl-loop.template.sh) so the loop is still structured. Captured output feeds back to you.
 
 ## Tighten the loop
 
@@ -37,7 +38,10 @@ A 30-second flaky loop is barely better than no loop; a 2-second deterministic o
 
 ## Non-deterministic bugs
 
-The goal is not a clean repro but a **higher reproduction rate**. Loop the trigger 100×, parallelise, add stress, narrow timing windows, inject sleeps. A 50%-flake bug is debuggable; 1% is not — keep raising the rate until it's debuggable.
+The goal is not a clean repro but a **higher reproduction rate**. Loop the
+trigger, parallelise, add stress, narrow timing windows, and inject controlled
+delays. A failure that appears often enough to measure is easier to diagnose
+than a rare one; keep improving the signal without claiming certainty.
 
 For flakiness caused by test pollution rather than the code under test, use [`find-polluter.sh`](find-polluter.sh). For arbitrary timeouts masking a race, see [condition-based-waiting.md](condition-based-waiting.md).
 
@@ -48,7 +52,7 @@ Phase 1 is not done until you can name **one command** — a script path, a test
 - [ ] **Red-capable** — it drives the actual bug code path and asserts the **exact symptom your human partner described**, so it can go red on this bug and green once fixed. Not "runs without erroring" — it must be able to *catch this specific bug*.
 - [ ] **Deterministic** — same verdict every run (flaky bugs: a pinned, high reproduction rate, per above).
 - [ ] **Fast** — seconds, not minutes.
-- [ ] **Agent-runnable** — you can run it unattended; a human enters the loop only via `scripts/hitl-loop.template.sh`.
+- [ ] **Agent-runnable** — you can run it unattended; a human enters the loop only via `hitl-loop.template.sh`.
 
 If you catch yourself reading code to build a theory before this command exists, **stop — jumping straight to a hypothesis is the exact failure this skill prevents.** No red-capable command, no hypotheses.
 

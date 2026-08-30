@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
 const skillId = "systematic-debugging";
@@ -27,6 +27,20 @@ test("systematic-debugging gates fixes on safe, minimal evidence", async () => {
   assert.doesNotMatch(skill, /95%/u);
   assert.doesNotMatch(skill, /(?:printenv|env)\s*\|/iu);
   assert.doesNotMatch(skill, /echo\s+[^\n]*(?:TOKEN|SECRET|IDENTITY)/iu);
+});
+
+test("systematic-debugging references are resolvable and examples do not disclose configuration", async () => {
+  const rootCause = await readFile(new URL("../../../core/skills/systematic-debugging/root-cause-tracing.md", import.meta.url), "utf8");
+  const feedbackLoops = await readFile(new URL("../../../core/skills/systematic-debugging/feedback-loops.md", import.meta.url), "utf8");
+  const waiting = await readFile(new URL("../../../core/skills/systematic-debugging/condition-based-waiting.md", import.meta.url), "utf8");
+  const skill = await readFile(new URL("../../../core/skills/systematic-debugging/SKILL.md", import.meta.url), "utf8");
+
+  assert.doesNotMatch(rootCause, /\w+\s*:\s*process\.env(?:\.|\[)/u);
+  assert.match(rootCause, /never dump the\s+environment/iu);
+  assert.doesNotMatch(`${feedbackLoops}\n${waiting}`, /\b\d{1,3}%/u);
+  assert.doesNotMatch(`${skill}\n${feedbackLoops}`, /scripts\/hitl-loop\.template\.sh/u);
+  assert.doesNotMatch(waiting, /condition-based-waiting-example\.ts/u);
+  await access(new URL("../../../core/skills/systematic-debugging/hitl-loop.template.sh", import.meta.url));
 });
 
 test("find-polluter preserves filenames, selects a runner, and reports failures", async () => {
