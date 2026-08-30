@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://all-about-agents.invalid/schemas/plan.schema.json",
+  "title": "All About Agents install plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "surface", "root", "actions", "diagnostics"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "surface": { "enum": ["claude", "codex", "antigravity-2", "agy"] },
+    "root": { "type": "string", "minLength": 1 },
+    "actions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/action" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    }
+  },
+  "$defs": {
+    "hash": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "relativePath", "expectedHash", "contentHash", "reason"],
+      "properties": {
+        "kind": { "enum": ["create", "replace", "unchanged", "prune", "reject"] },
+        "relativePath": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\u0000).+$"
+        },
+        "expectedHash": { "$ref": "#/$defs/hash" },
+        "contentHash": { "$ref": "#/$defs/hash" },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "message", "sourcePath"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["error", "warning", "info"] },
+        "message": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
