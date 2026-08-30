@@ -23,7 +23,7 @@
     },
     {
       "relativePath": ".agents/skills/finishing-a-development-branch/SKILL.md",
-      "sha256": "aa63af768fa2c8e33d29f9993b2adaf148a58f489159897aab6867c52dc786c7",
+      "sha256": "73a214930096aefedc0bd272e6aad95d392743b4e15c5cd00c8c0ab406a39255",
       "mode": null
     },
     {
@@ -281,7 +281,7 @@
     },
     {
       "relativePath": ".agents/skills/finishing-a-development-branch/SKILL.md",
-      "sha256": "aa63af768fa2c8e33d29f9993b2adaf148a58f489159897aab6867c52dc786c7"
+      "sha256": "73a214930096aefedc0bd272e6aad95d392743b4e15c5cd00c8c0ab406a39255"
     },
     {
       "relativePath": ".agents/skills/handoff/SKILL.md",
@@ -625,12 +625,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'codebase-design' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'finishing-a-development-branch' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
