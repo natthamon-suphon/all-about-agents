@@ -58,7 +58,7 @@
     },
     {
       "relativePath": ".agents/skills/receiving-code-review/SKILL.md",
-      "sha256": "707d99346f7dafc6df4e1cc7fc128f63e738cb2d8cbc1e37efe3cf82bbde8e77",
+      "sha256": "238576f7b3c2931e194df5dd1c46b04ad04697b69f2da5dc0f96a6c542dd380d",
       "mode": null
     },
     {
@@ -309,7 +309,7 @@
     },
     {
       "relativePath": ".agents/skills/receiving-code-review/SKILL.md",
-      "sha256": "707d99346f7dafc6df4e1cc7fc128f63e738cb2d8cbc1e37efe3cf82bbde8e77"
+      "sha256": "238576f7b3c2931e194df5dd1c46b04ad04697b69f2da5dc0f96a6c542dd380d"
     },
     {
       "relativePath": ".agents/skills/requesting-code-review/SKILL.md",
@@ -643,12 +643,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'performance-profiling-and-benchmarking' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'receiving-code-review' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {

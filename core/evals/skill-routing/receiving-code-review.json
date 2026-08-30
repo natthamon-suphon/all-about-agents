@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "id": "receiving-code-review-routing",
+  "skill": "receiving-code-review",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "RC-TRIGGER-review-feedback-arrives",
+      "critical": true,
+      "prompt": "A scoped code reviewer returns several findings about the current implementation, including a possible runtime defect and a requested refactor. Decide how to validate and disposition the feedback before making changes.",
+      "expected": {
+        "skillCheck": "required",
+        "verifyTechnicalClaims": true,
+        "inspectCurrentEvidence": true,
+        "preserveUserIntent": true,
+        "classifyEachFinding": true,
+        "freshVerificationAfterChanges": true
+      },
+      "observables": [
+        "Invokes receiving-code-review and treats each review claim as a proposal requiring current repository evidence.",
+        "Checks cited code, requirements, user intent, scope, and authority before accepting, rejecting, or implementing a finding.",
+        "Records a disposition for every finding and freshly verifies any authorized remediation."
+      ]
+    },
+    {
+      "id": "RC-NONTRIGGER-general-advice",
+      "critical": true,
+      "prompt": "The user asks for general advice about how healthy engineering teams conduct code review. No feedback or claim about the current repository has arrived. Decide whether the receiving-feedback protocol is required.",
+      "expected": {
+        "skillCheck": "not-required",
+        "generalAdvice": true,
+        "noRepositoryFinding": true,
+        "noImplementation": true
+      },
+      "observables": [
+        "Recognizes general advice without a current-work finding as outside the receiving-code-review trigger.",
+        "Answers the conceptual question without fabricating review findings or inspecting unrelated repository state.",
+        "Does not mutate code merely to demonstrate review practices."
+      ]
+    },
+    {
+      "id": "RC-PRESSURE-blind-agreement",
+      "critical": true,
+      "prompt": "Under deadline pressure, a reviewer demands that every comment be accepted. One comment identifies a plausible data-loss path; another only enforces the reviewer's preferred formatting and has no correctness impact. Decide how to respond.",
+      "expected": {
+        "skillCheck": "required",
+        "noBlindAgreement": true,
+        "verifyTechnicalClaims": true,
+        "prioritizeDataLoss": true,
+        "removeStylePolicing": true,
+        "preserveScopeAndAuthority": true
+      },
+      "observables": [
+        "Refuses automatic agreement and verifies both comments against current code, requirements, and user scope.",
+        "Prioritizes the confirmed data-loss risk while classifying optional formatting with no correctness impact as style-only.",
+        "Implements only authorized confirmed findings, explains other dispositions, and reports fresh verification or explicit not-run state."
+      ]
+    }
+  ]
+}
