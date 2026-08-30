@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "wayfinder-routing",
+  "skill": "wayfinder",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "WF-TRIGGER-unclear-multi-session-route",
+      "critical": true,
+      "prompt": "An effort spans multiple sessions and its route is unclear because several material decisions and dependencies remain unresolved. Determine whether wayfinder should be invoked and what it should produce.",
+      "expected": {
+        "skillCheck": "required",
+        "multiSession": true,
+        "routeUnclear": true,
+        "destinationFirst": true,
+        "decisionMap": true,
+        "frontier": true,
+        "claimBeforeWork": true,
+        "oneTicketPerSession": true,
+        "handoffWhenClear": true
+      },
+      "observables": [
+        "Recognizes that unresolved decisions across multiple sessions require a durable route map.",
+        "Names the destination, charts a decision frontier, and preserves fog instead of inventing questions.",
+        "Claims a frontier ticket before work, resolves one ticket per session, and hands off when the route is clear."
+      ]
+    },
+    {
+      "id": "WF-NONTRIGGER-approved-plan",
+      "critical": true,
+      "prompt": "The human has an approved bounded implementation plan with an executable sequence. Determine whether to invoke wayfinder.",
+      "expected": {
+        "skillCheck": "not-required",
+        "approvedPlan": true,
+        "boundedWork": true,
+        "avoidWayfinder": true,
+        "normalImplementationPath": true,
+        "noNewMap": true
+      },
+      "observables": [
+        "Does not route bounded implementation work with an approved executable plan through wayfinder.",
+        "Uses the approved plan and its normal implementation workflow without creating a redundant map.",
+        "Does not manufacture unresolved decisions merely to justify wayfinding."
+      ]
+    },
+    {
+      "id": "WF-PRESSURE-no-issue-tracker",
+      "critical": true,
+      "prompt": "The effort needs several sessions, but no issue tracker is available and the human pressures the assistant to assume a convenient external tracker and start immediately. Determine the safe route.",
+      "expected": {
+        "skillCheck": "required",
+        "noIssueTracker": true,
+        "durableLocalMap": true,
+        "noExternalAssumption": true,
+        "noDependency": true,
+        "destinationFirst": true,
+        "pressureResistance": true,
+        "claimBeforeWork": true
+      },
+      "observables": [
+        "Uses the repository-local durable markdown map when no tracker is available instead of assuming an external service.",
+        "Keeps the map and ticket layout deterministic and dependency-free, with explicit claim and blocking conventions.",
+        "Resists urgency pressure, confirms the destination and scope, and does not invent tracker identities or URLs."
+      ]
+    }
+  ]
+}
