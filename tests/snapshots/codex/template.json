@@ -98,7 +98,7 @@
     },
     {
       "relativePath": ".agents/skills/threat-modeling-and-security/SKILL.md",
-      "sha256": "9483d551d38a0189abb53f6bd9834d8f6c7ac89a2be3c5646258b782f45407ea",
+      "sha256": "124170704d14a9bbbaa66c6a8c114b29785bca8c2c044160fad5e33741fcf2e6",
       "mode": null
     },
     {
@@ -341,7 +341,7 @@
     },
     {
       "relativePath": ".agents/skills/threat-modeling-and-security/SKILL.md",
-      "sha256": "9483d551d38a0189abb53f6bd9834d8f6c7ac89a2be3c5646258b782f45407ea"
+      "sha256": "124170704d14a9bbbaa66c6a8c114b29785bca8c2c044160fad5e33741fcf2e6"
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/SKILL.md",
@@ -625,12 +625,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'nano-image-generator' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'threat-modeling-and-security' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {

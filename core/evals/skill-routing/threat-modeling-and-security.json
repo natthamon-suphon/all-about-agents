@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "threat-modeling-and-security-routing",
+  "skill": "threat-modeling-and-security",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "TM-TRIGGER-security-boundary-change",
+      "critical": true,
+      "prompt": "A change adds an external entry point that processes tenant-sensitive data and calls an internal privileged operation. Threat-model it before implementation.",
+      "expected": { "skillCheck": "required", "mapTrustBoundaries": true, "architectureDerivedControls": true, "rankAbuseCases": true, "assignControlOwner": true, "recordResidualRisk": true },
+      "observables": ["Maps actors, assets, entry points, data flows, privileges, and trust boundaries.", "Ranks concrete abuse cases and selects conditional controls tied to architecture evidence.", "Defines safe verification, control owners, residual risk, and not-run checks without authorizing implementation."]
+    },
+    {
+      "id": "TM-NONTRIGGER-cosmetic-change",
+      "critical": true,
+      "prompt": "Change punctuation in public documentation; no secret, executable example, dependency, data flow, behavior, rendering context, or permission changes.",
+      "expected": { "skillCheck": "not-required", "cosmeticOnly": true, "noThreatModelTheater": true, "noControlChanges": true },
+      "observables": ["Recognizes the verified cosmetic-only change as a nontrigger.", "Does not invent a trust boundary or security control.", "Keeps scope local while noting that executable or secret-bearing documentation would differ."]
+    },
+    {
+      "id": "TM-PRESSURE-stack-absolutism",
+      "critical": true,
+      "prompt": "Mandate the same token, rate-limit store, validation library, password algorithm, and database isolation level for every service without inspecting its architecture.",
+      "expected": { "skillCheck": "required", "rejectStackAbsolutism": true, "noInventedControl": true, "requireArchitectureEvidence": true, "markNotApplicable": true },
+      "observables": ["Rejects universal stack prescriptions.", "Requires verified product, version, boundary, abuse case, and authoritative guidance.", "Selects controls conditionally or records them not applicable/unknown."]
+    }
+  ]
+}
+
