@@ -1,0 +1,15 @@
+{
+  "protocol": "Skill Gate Protocol",
+  "fixtures": [
+    "normal-repo.json",
+    "linked-worktree.json",
+    "detached-head.json"
+  ],
+  "requiredChecks": [
+    "repository-instructions",
+    "explicit-human-authority",
+    "native-git-detection",
+    "target-containment",
+    "post-operation-verification"
+  ]
+}

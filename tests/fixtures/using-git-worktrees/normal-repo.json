@@ -1,0 +1,21 @@
+{
+  "case": "normal-repository",
+  "state": {
+    "gitIsInsideWorkTree": true,
+    "linkedWorktree": false,
+    "head": "refs/heads/codex/example",
+    "clean": true
+  },
+  "request": {
+    "isolation": true,
+    "approved": true,
+    "target": "workspace/.worktrees/example"
+  },
+  "expected": {
+    "skillCheck": "required",
+    "nativeDetection": true,
+    "explicitAuthority": true,
+    "targetContained": true,
+    "verifyAfterCreation": true
+  }
+}

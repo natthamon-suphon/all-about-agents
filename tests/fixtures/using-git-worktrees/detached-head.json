@@ -1,0 +1,22 @@
+{
+  "case": "detached-HEAD",
+  "state": {
+    "gitIsInsideWorkTree": true,
+    "linkedWorktree": false,
+    "head": "detached",
+    "clean": true
+  },
+  "request": {
+    "isolation": true,
+    "approved": false,
+    "target": "workspace/.worktrees/example"
+  },
+  "expected": {
+    "skillCheck": "required",
+    "nativeDetection": true,
+    "detachedHead": true,
+    "requireBranchAuthority": true,
+    "noImplicitBranch": true,
+    "stopAndAsk": true
+  }
+}

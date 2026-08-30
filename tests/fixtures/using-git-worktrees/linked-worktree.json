@@ -1,0 +1,20 @@
+{
+  "case": "linked-worktree",
+  "state": {
+    "gitIsInsideWorkTree": true,
+    "linkedWorktree": true,
+    "head": "refs/heads/codex/example",
+    "clean": true
+  },
+  "request": {
+    "isolation": false,
+    "approved": false,
+    "target": null
+  },
+  "expected": {
+    "skillCheck": "not-required",
+    "alreadyIsolated": true,
+    "continueInPlace": true,
+    "noNestedWorktree": true
+  }
+}

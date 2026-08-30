@@ -113,7 +113,7 @@
     },
     {
       "relativePath": ".agents/skills/using-git-worktrees/SKILL.md",
-      "sha256": "ef0336895b84077b06b80553201f46777c301b2acbde0dd2d83b7e1ae82a56ff",
+      "sha256": "f807df36a45e5c84b3ca1bb5b65b7630779d1f9d246d6bc0d05be07c9cbab32f",
       "mode": null
     },
     {
@@ -353,7 +353,7 @@
     },
     {
       "relativePath": ".agents/skills/using-git-worktrees/SKILL.md",
-      "sha256": "ef0336895b84077b06b80553201f46777c301b2acbde0dd2d83b7e1ae82a56ff"
+      "sha256": "f807df36a45e5c84b3ca1bb5b65b7630779d1f9d246d6bc0d05be07c9cbab32f"
     },
     {
       "relativePath": ".agents/skills/verification-before-completion/SKILL.md",
@@ -697,12 +697,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'threat-modeling-and-security' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'using-git-worktrees' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
