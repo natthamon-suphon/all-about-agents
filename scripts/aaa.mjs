@@ -36,6 +36,7 @@ const HELP_TEXT = [
 const ACTIONS = new Set(["install", "doctor", "validate", "diff", "eval"]);
 const REPOSITORY_VERSION_FALLBACK = "1.0.0";
 const CONTENT_ACTIONS = new Set(["create", "replace", "unchanged"]);
+const DEFAULT_FILE_MODE = 0o600;
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function hasValidFoundation(cwd) {
@@ -337,7 +338,11 @@ async function installOrDiff(options, output, errorOutput, cwd) {
         }
         const desired = CONTENT_ACTIONS.has(action.kind) ? safeDiffText(entry.contents.get(action.relativePath)) : "";
         const diff = unifiedDiff(action.relativePath, before, desired);
-        changes.push({ surface: entry.surface, relativePath: action.relativePath, kind: action.kind, diff });
+        const oldMode = Number.isInteger(action.expectedMode) ? action.expectedMode : null;
+        const newMode = CONTENT_ACTIONS.has(action.kind) && (Number.isInteger(action.mode) || oldMode !== null)
+          ? action.mode ?? DEFAULT_FILE_MODE
+          : null;
+        changes.push({ surface: entry.surface, relativePath: action.relativePath, kind: action.kind, oldMode, newMode, diff });
       }
     }
     const failed = entries.some(({ plan }) => planHasFailure(plan));

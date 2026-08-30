@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile, writeFile, rm } from "node:fs/promises";
+import { access, chmod, readFile, writeFile, rm } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
@@ -180,6 +180,31 @@ test("diff never exposes bytes from a replaced existing file", async () => {
     assert.equal(binary.code, 0);
     assert.doesNotMatch(binary.stdout, /private-key|opaque-session|AWS_SECRET|Basic/iu);
     assert.match(binary.stdout, /sha256=[0-9a-f]{64}|bytes=\d+/u);
+  });
+});
+
+test("diff reports a mode-only executable repair without exposing file content", async (t) => {
+  if (process.platform === "win32") {
+    t.skip("POSIX executable bits are not meaningful on Windows");
+    return;
+  }
+  await withTempRoot(async (root) => {
+    const applied = await capture(["install", "--surface", "claude", "--destination-root", root, "--apply", "--format", "json"]);
+    assert.equal(applied.code, 0);
+    const target = resolve(root, "hooks", "bootstrap.mjs");
+    await chmod(target, 0o644);
+    const json = await capture(["diff", "--surface", "claude", "--destination-root", root, "--format", "json"]);
+    assert.equal(json.code, 0);
+    const report = jsonOutput(json);
+    const change = report.changes.find((entry) => entry.relativePath === "hooks/bootstrap.mjs");
+    assert.deepEqual({ oldMode: change.oldMode, newMode: change.newMode }, { oldMode: 0o644, newMode: 0o755 });
+    assert.equal(change.diff, "");
+    assert.doesNotMatch(JSON.stringify(change), /export function|readBoundedStdin|secret|token/iu);
+
+    const text = await capture(["diff", "--surface", "claude", "--destination-root", root]);
+    assert.equal(text.code, 0);
+    assert.match(text.stdout, /old mode 100644\nnew mode 100755/u);
+    assert.doesNotMatch(text.stdout, /export function|readBoundedStdin|secret|token/iu);
   });
 });
 

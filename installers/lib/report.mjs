@@ -80,9 +80,30 @@ export function formatPlanText(plan) {
   return `${lines.join("\n")}\n`;
 }
 
+function modeText(value) {
+  return Number.isInteger(value) && value >= 0 && value <= 0o777
+    ? `100${value.toString(8).padStart(3, "0")}`
+    : "";
+}
+
+function modeDiffText(entry) {
+  const oldMode = modeText(entry?.oldMode);
+  const newMode = modeText(entry?.newMode);
+  if (oldMode === newMode) return "";
+  return [oldMode ? `old mode ${oldMode}` : "", newMode ? `new mode ${newMode}` : ""].filter(Boolean).join("\n");
+}
+
+function renderDiffEntry(entry) {
+  const mode = modeDiffText(entry);
+  const diff = typeof entry?.diff === "string" ? entry.diff : "";
+  const modeHeader = mode ? `diff --git a/${entry.relativePath} b/${entry.relativePath}` : "";
+  return [modeHeader, mode, diff].filter(Boolean).join("\n");
+}
+
 /** Render already redacted unified-diff records in deterministic order. */
 export function formatDiffText(records) {
   const ordered = [...records].sort((left, right) => String(left.surface).localeCompare(String(right.surface)) || String(left.relativePath).localeCompare(String(right.relativePath)));
-  if (ordered.length === 0) return "No changes.\n";
-  return `${ordered.map((entry) => entry.diff).join("\n")}\n`;
+  const rendered = ordered.map(renderDiffEntry).filter(Boolean);
+  if (rendered.length === 0) return "No changes.\n";
+  return `${rendered.join("\n")}\n`;
 }
