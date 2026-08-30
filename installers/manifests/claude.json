@@ -22,6 +22,7 @@
     "hooks": "hooks/hooks.json",
     "hookScripts": "hooks/{name}.mjs",
     "statusline": "statusline/statusline.mjs",
+    "statuslineTracker": "statusline/track-tool.mjs",
     "settingsOverlay": "config/settings.json",
     "statuslineConfig": "config/statusline.json"
   },
@@ -92,6 +93,7 @@
     "hooks/hooks.json",
     "hooks/{name}.mjs",
     "statusline/statusline.mjs",
+    "statusline/track-tool.mjs",
     "config/settings.json",
     "config/statusline.json",
     "docs/semantic-mappings.md"
@@ -107,6 +109,13 @@
     "minimumVersion": "22.12.0",
     "onMissing": "reject",
     "requiredBy": ["hooks/*.mjs", "statusline/statusline.mjs"]
+  },
+  "statuslinePrerequisites": {
+    "executable": "node",
+    "check": ["node", "--version"],
+    "minimumVersion": "22.12.0",
+    "onMissing": "reject",
+    "requiredBy": ["statusline/statusline.mjs", "statusline/track-tool.mjs"]
   },
   "rootInstructionContext": "not emitted; plugin-root CLAUDE.md is not a plugin context"
 }

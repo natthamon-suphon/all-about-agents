@@ -24,6 +24,8 @@ const EMERGENCY_GUARD_SOURCE = readFileSync(new URL("../../core/hooks/emergency-
 const EMERGENCY_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.json", import.meta.url), "utf8");
 const EMERGENCY_POLICY_SOURCE = readFileSync(new URL("../../installers/lib/emergency-policy.mjs", import.meta.url), "utf8");
 const AUDIT_LOG_SOURCE = readFileSync(new URL("../../installers/lib/audit-log.mjs", import.meta.url), "utf8");
+const STATUSLINE_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.mjs", import.meta.url), "utf8");
+const STATUSLINE_TRACK_TOOL_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/track-tool.mjs", import.meta.url), "utf8");
 
 /** Static installer preflight for the Node.js entrypoint used by every hook. */
 export const CLAUDE_PREREQUISITES = Object.freeze({
@@ -32,6 +34,15 @@ export const CLAUDE_PREREQUISITES = Object.freeze({
   minimumVersion: claudeBootstrapTemplate.runtime.minimumVersion,
   onMissing: "reject",
   requiredBy: Object.freeze(["hooks/*.mjs", "statusline/statusline.mjs"])
+});
+
+/** The statusline's optional PostToolUse tracker shares the same Node runtime. */
+export const CLAUDE_STATUSLINE_PREREQUISITES = Object.freeze({
+  executable: "node",
+  check: Object.freeze(["node", "--version"]),
+  minimumVersion: claudeBootstrapTemplate.runtime.minimumVersion,
+  onMissing: "reject",
+  requiredBy: Object.freeze(["statusline/statusline.mjs", "statusline/track-tool.mjs"])
 });
 
 const READ_ONLY_NATIVE_TOOLS = Object.freeze(["Agent", "Bash", "Edit", "Write"]);
@@ -177,30 +188,6 @@ try {
 `
 });
 
-const STATUSLINE_SOURCE_TEXT = `#!/usr/bin/env node
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-
-const CONTROL = /[\\u0000-\\u001f\\u007f]|\\u001b\\[[0-?]*[ -/]*[@-~]/gu;
-export function sanitizeTerminalText(value) {
-  if (typeof value !== "string") return "";
-  return value.replace(CONTROL, "").replace(/[\\r\\n]/gu, " ").trim();
-}
-export function clampPercent(value) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return 0;
-  return Math.max(0, Math.min(100, Math.round(number)));
-}
-export async function readStatuslineConfig(root) {
-  try {
-    const parsed = JSON.parse(await readFile(join(root, "all-about-agents", "statusline.json"), "utf8"));
-    return { displayName: typeof parsed.displayName === "string" ? sanitizeTerminalText(parsed.displayName) : "" };
-  } catch {
-    return { displayName: "" };
-  }
-}
-`;
-
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -334,10 +321,16 @@ function hookConfig() {
     ],
     timeout: 10
   };
+  const statuslineTrackerCommand = {
+    type: "command",
+    command: "node",
+    args: [`${"${CLAUDE_PLUGIN_ROOT}"}/statusline/track-tool.mjs`],
+    timeout: 10
+  };
   return { hooks: {
     [claudeBootstrapTemplate.event]: [{ matcher: claudeBootstrapTemplate.nativeMatcher, hooks: [bootstrapCommand] }],
     PreToolUse: [{ matcher: claudeEmergencyTemplate.nativeMatcher, hooks: [emergencyCommand] }],
-    [claudeActivityTemplate.event]: [{ matcher: claudeActivityTemplate.nativeMatcher, hooks: [command("activity-audit.mjs")] }],
+    [claudeActivityTemplate.event]: [{ matcher: claudeActivityTemplate.nativeMatcher, hooks: [command("activity-audit.mjs"), statuslineTrackerCommand] }],
     [claudeCheckpointTemplate.event]: [{ matcher: claudeCheckpointTemplate.nativeMatcher, hooks: [command("pre-compact.mjs")] }]
   } };
 }
@@ -425,6 +418,7 @@ export function renderClaude(input = {}) {
   addFile(files, "hooks/audit-log.mjs", AUDIT_LOG_SOURCE, 0o755);
   for (const [fileName, source] of Object.entries(HOOK_SOURCES)) addFile(files, `hooks/${fileName}`, source, 0o755);
   addFile(files, "statusline/statusline.mjs", STATUSLINE_SOURCE_TEXT, 0o755);
+  addFile(files, "statusline/track-tool.mjs", STATUSLINE_TRACK_TOOL_SOURCE_TEXT, 0o755);
 
   const missingSkills = [];
   for (const skill of canonicalSkillIds(core)) {
@@ -453,6 +447,11 @@ export function renderClaude(input = {}) {
       {
         kind: "runtime-prerequisite",
         ...CLAUDE_PREREQUISITES,
+        platforms: ["win32", "darwin", "linux"]
+      },
+      {
+        kind: "statusline-runtime-prerequisite",
+        ...CLAUDE_STATUSLINE_PREREQUISITES,
         platforms: ["win32", "darwin", "linux"]
       },
       {
@@ -542,3 +541,4 @@ export const CLAUDE_CAPABILITY_RECORD = Object.freeze({
 });
 export const sanitizeStatuslineName = validStatuslineName;
 export const STATUSLINE_SOURCE = STATUSLINE_SOURCE_TEXT;
+export const STATUSLINE_TRACK_TOOL_SOURCE = STATUSLINE_TRACK_TOOL_SOURCE_TEXT;

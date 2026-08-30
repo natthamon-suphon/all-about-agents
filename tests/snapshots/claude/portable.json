@@ -67,9 +67,10 @@
     "skills/writing-plans/SKILL.md",
     "skills/writing-skills/SKILL.md",
     "skills/zero-downtime-migrations/SKILL.md",
-    "statusline/statusline.mjs"
+    "statusline/statusline.mjs",
+    "statusline/track-tool.mjs"
   ],
-  "fileCount": 68,
+  "fileCount": 69,
   "settings": {
     "env": {
       "CLAUDE_CODE_EFFORT_LEVEL": "xhigh"
@@ -92,7 +93,7 @@
     ".claude-plugin/plugin.json": "{\n  \"author\": {\n    \"name\": \"All About Agents\"\n  },\n  \"description\": \"Portable all-about-agents skills, agents, commands, hooks, and rules for Claude Code.\",\n  \"hooks\": \"./hooks/hooks.json\",\n  \"name\": \"all-about-agents\",\n  \"version\": \"1.0.0\"\n}\n",
     "agents/investigator.md": "---\nname: investigator\ndescription: \"Performs read-only forensic investigation and ranks falsifiable root-cause hypotheses.\"\nmodel: inherit\ntools:\n  - Glob\n  - Grep\n  - Read\ndisallowedTools:\n  - Agent\n  - Bash\n  - Edit\n  - Write\n---\n\n# Investigator\n\n## Mission\n\nExplain an internal failure before anyone changes code. Read the complete error, stack, input, and environment evidence; reproduce the behavior when possible; then trace the bad value backward to its origin.\n\n## Boundaries\n\nThis is a forensic role, not an implementation role. Do not edit files, apply a workaround, or turn an untested suspicion into a fix. Do not substitute external research for local reproduction when the failure is inside the repository.\n\n## Working method\n\nRecord observations first, compare a failing path with a known-working path, and rank three or fewer falsifiable hypotheses. For each hypothesis state the prediction, the check that would distinguish it, and the exact source location involved.\n\n## Evidence contract\n\nReport the reproduction command or explain why reproduction was unavailable, include the full evidence chain, label inference explicitly, and end with a handoff that an implementer can test without guessing. Route architecture questions to the architect and fresh black-box checking to the verifier.\n\n\nNative capability diagnostic: Role investigator capability evaluation is unavailable on claude: native mapping Bash is suppressed by the read-only policy. Safe read-only mapping retained: Read. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.\n",
     "config/settings.json": "{\n  \"env\": {\n    \"CLAUDE_CODE_EFFORT_LEVEL\": \"xhigh\"\n  },\n  \"fallbackModel\": [\n    \"claude-sonnet-5\"\n  ],\n  \"model\": \"claude-opus-5\",\n  \"permissions\": {\n    \"defaultMode\": \"default\",\n    \"deny\": [\n      \"Bash(rm -rf /)\",\n      \"Bash(rm -rf ~)\",\n      \"Bash(git push --force*)\",\n      \"Bash(git reset --hard*)\"\n    ]\n  }\n}\n",
-    "hooks/hooks.json": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/activity-audit.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreCompact\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/emergency-guard.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--policy-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/emergency-guard.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--skill-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md\",\n              \"--config-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \"startup\"\n      }\n    ]\n  }\n}\n"
+    "hooks/hooks.json": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/activity-audit.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          },\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/statusline/track-tool.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreCompact\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/emergency-guard.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--policy-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/emergency-guard.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--skill-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md\",\n              \"--config-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \"startup\"\n      }\n    ]\n  }\n}\n"
   },
   "ownershipHashes": {
     ".claude-plugin/plugin.json": "7454344a5884c768fbe2d497de34d93916e1d33eae8f20dc9b63005bfb9f02b8",
@@ -112,7 +113,7 @@
     "commands/review.md": "383bed013fb7fde594337ceba71e2235c71f91beb34e6a676d17d35a78264f71",
     "commands/verify.md": "58888d5b565b5bf18dad9aaa0874bbcb2ed9d8fa3e5e0478665dc4eb4572ae9a",
     "config/settings.json": "3a41c532d1f9ebd99e3158eced87c5c4d24c79af53e4fd08eaca4ad31dbf5e20",
-    "config/statusline.json": "93d4c71fbddf648936df1a555d1919fe9bff5a1e1d278b0dd0acf4fabf6d61ea",
+    "config/statusline.json": "e77f383fd66263e1c44e3ee5f61a680440a81858b5a46c2a1d10031beed70264",
     "docs/semantic-mappings.md": "a3641a47578c6e6610f248833a72738de90e58d44ddc305427f960dcd26403b5",
     "hooks/activity-audit.json": "1f8177e9d48b3e46067736fb4d734a056bb9c0663e7434c14fefca02d341345a",
     "hooks/activity-audit.mjs": "0d44689392237b5337bdc4f37067578061d004b87d767264b2d0b9fb19a78a7b",
@@ -123,7 +124,7 @@
     "hooks/emergency-guard.json": "f3a4bb8ac32be47d3f9204a114a854dfaeb0d88701f1386f598d9ccd2b24d2fd",
     "hooks/emergency-guard.mjs": "dee395573ba036fe4effdb2b5e90681a69691438c041f39cc97e2b692013b605",
     "hooks/emergency-policy.mjs": "32846b7e4b0d975baf07616b6a61bf5b92fc3e861e34f828714384fd01641ad8",
-    "hooks/hooks.json": "58e38a98edf8a094ab8c2317869a2b11fa680fa0701e0cdd2daa60b7afb63945",
+    "hooks/hooks.json": "5559142caa803aed3f5bb7e0556ca3741430c5c66eca35c9e2cfa4b62a9d9160",
     "hooks/pre-compact.mjs": "bcd3d0793b7211e5bfbc9db807d6f6b8e1669c88f339051eb4b661e08f74a47e",
     "rules/authority-and-scope.md": "e954e78589912467fcc0f1e273cd7f7028efb014152ec22e9cdd6e99c821764f",
     "rules/cross-platform-execution.md": "b0db23bbbee452ae698d68171bde816bbdc360464d7e8d3105b46eaefa1d8c62",
@@ -162,7 +163,8 @@
     "skills/writing-plans/SKILL.md": "54e63d12d0991d0551ca387708f0540a5b1a4a83d654a35dc404a3c59d123df0",
     "skills/writing-skills/SKILL.md": "a35dd207262684d595fcb0a30f34ff74e3cda775e379e738f2a987f9e27496bc",
     "skills/zero-downtime-migrations/SKILL.md": "43df891910b69fcf506f5a12a04b3806d0768afbf1d3a92cec277d70ea9ac95b",
-    "statusline/statusline.mjs": "540b25e8ccad384d078c346a22b44c5ac8406df5346bfeaad6b1037143cf50a6"
+    "statusline/statusline.mjs": "66f16d222df9a602346df5ec7eb6d433b0211227dd6d08acca64ad0416ae53a2",
+    "statusline/track-tool.mjs": "eb7d93911eae9a76bb79170388b7d29b6a4dae42a13c342656bbb6c7f75f78bf"
   },
   "registration": {
     "kind": "resolved-config-root",

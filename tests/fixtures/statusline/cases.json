@@ -1,0 +1,22 @@
+{
+  "config": {
+    "missing": null,
+    "malformed": "{not-json",
+    "empty": {"displayName": ""},
+    "thai": {"displayName": "ทีมงาน"},
+    "unicode": {"displayName": "é · 東京"},
+    "spaces": {"displayName": "  spaced name  "},
+    "quotes": {"displayName": "\"quoted\""},
+    "backslashes": {"displayName": "C:\\\\agent"},
+    "64-code-points": {"displayName": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    "65-code-points": {"displayName": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    "ansi-control-newline": {"displayName": "safe\u001b[31m\nunsafe\u0000"}
+  },
+  "fields": {
+    "maliciousRepo": "C:\\repo\\evil\nname",
+    "maliciousBranch": "feature/\u001b[31munsafe\nbranch",
+    "maliciousModel": "model\r\u001b[2J",
+    "traversalSession": "../traversal\\session"
+  },
+  "percentages": [-20, 0, 42.6, 100, 140, "not-a-number"]
+}
