@@ -57,11 +57,13 @@ test("readStatuslineConfig is JSON-only, bounded, and fail-open", async () => {
     const configDir = join(root, "all-about-agents");
     await mkdir(configDir, { recursive: true });
     const configPath = join(configDir, "statusline.json");
-    await writeFile(configPath, JSON.stringify({ displayName: " ทีม / \"Claude\" " }), "utf8");
+    await writeFile(configPath, JSON.stringify({ schemaVersion: 1, displayName: " ทีม / \"Claude\" " }), "utf8");
     assert.deepEqual(await readStatuslineConfig(root), { displayName: "ทีม / \"Claude\"" });
     await writeFile(configPath, "{not-json", "utf8");
     assert.deepEqual(await readStatuslineConfig(root), { displayName: "" });
     await writeFile(configPath, JSON.stringify({ displayName: "a".repeat(10_000) }), "utf8");
+    assert.deepEqual(await readStatuslineConfig(root), { displayName: "" });
+    await writeFile(configPath, JSON.stringify({ schemaVersion: 999, displayName: "unsupported" }), "utf8");
     assert.deepEqual(await readStatuslineConfig(root), { displayName: "" });
   });
 });
@@ -116,6 +118,8 @@ test("renderer returns empty-name output and only invalid stdin JSON fails", asy
   assert.equal(valid.stdout.trimEnd().split("\n").length, 4);
   const invalid = spawnSync(process.execPath, [modulePath], { input: "not-json", encoding: "utf8" });
   assert.notEqual(invalid.status, 0);
+  const oversized = spawnSync(process.execPath, [modulePath], { input: JSON.stringify({ padding: "x".repeat(70_000) }), encoding: "utf8" });
+  assert.notEqual(oversized.status, 0);
 });
 
 test("track-tool fails open, bounds values, and never writes unsafe session or tool text", async () => {
@@ -175,5 +179,23 @@ test("generated statusline package imports and renders both owned modules", asyn
     const output = await statusline.renderStatusline({}, { configRoot: root, logRoot: join(root, "logs") });
     assert.equal(output.split("\n").length, 4);
     await tracker.trackToolEvent({ session_id: "generated-session", tool_name: "Agent", tool_input: { subagent_type: "reviewer" } }, { logDir: join(root, "logs") });
+  });
+});
+
+test("oversized tracker stdin fails open without writing", async () => {
+  await withTempRoot(async (root) => {
+    const modulePath = resolve(process.cwd(), "adapters/claude/templates/statusline/track-tool.mjs");
+    const oversized = JSON.stringify({
+      session_id: "oversized-session",
+      tool_name: "Agent",
+      tool_input: { subagent_type: "reviewer", padding: "x".repeat(70_000) }
+    });
+    const result = spawnSync(process.execPath, [modulePath], {
+      input: oversized,
+      encoding: "utf8",
+      env: { ...process.env, TMP: root, TEMP: root, TMPDIR: root }
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(await readdir(root), []);
   });
 });

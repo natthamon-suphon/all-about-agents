@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
-import { safeStatuslineLogKey, sanitizeTerminalText } from "./statusline.mjs";
+import { collectBoundedStdin, safeStatuslineLogKey, sanitizeTerminalText } from "./statusline.mjs";
 
 const MAX_LOG_BYTES = 8_192;
 const MAX_VALUE_CODE_POINTS = 256;
@@ -62,10 +62,10 @@ export async function trackToolEvent(payload, options = {}) {
 }
 
 async function main() {
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
   try {
-    await trackToolEvent(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+    const input = await collectBoundedStdin();
+    if (input === null) return;
+    await trackToolEvent(JSON.parse(input));
   } catch {
     // Invalid hook input is intentionally fail-open.
   }

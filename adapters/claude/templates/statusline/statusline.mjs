@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const MAX_CONFIG_BYTES = 8_192;
 const MAX_LOG_BYTES = 8_192;
+const MAX_STDIN_BYTES = 64 * 1024;
 const MAX_DISPLAY_CODE_POINTS = 64;
 const MAX_FIELD_CODE_POINTS = 256;
 const ANSI_ESCAPE = /\u001b(?:\][\s\S]*?(?:\u0007|\u001b\\)|\[[0-?]*[ -/]*[@-~]|[()][0-2A-Z]|[@-_])/gu;
@@ -81,6 +82,23 @@ function isPlainObject(value) {
   return prototype === Object.prototype || prototype === null;
 }
 
+/** Collect hook input without retaining more than the renderer's input bound. */
+export async function collectBoundedStdin(maxBytes = MAX_STDIN_BYTES) {
+  const chunks = [];
+  let totalBytes = 0;
+  try {
+    for await (const chunk of process.stdin) {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      totalBytes += buffer.byteLength;
+      if (totalBytes > maxBytes) return null;
+      chunks.push(buffer);
+    }
+    return Buffer.concat(chunks, totalBytes).toString("utf8");
+  } catch {
+    return null;
+  }
+}
+
 /** Read only the generated JSON config; missing, malformed, and oversized files are empty. */
 export function readStatuslineConfig(root) {
   if (typeof root !== "string" || root.trim().length === 0) return { displayName: "" };
@@ -88,7 +106,7 @@ export function readStatuslineConfig(root) {
   if (text === null) return { displayName: "" };
   try {
     const parsed = JSON.parse(text);
-    if (!isPlainObject(parsed) || typeof parsed.displayName !== "string") return { displayName: "" };
+    if (!isPlainObject(parsed) || parsed.schemaVersion !== 1 || typeof parsed.displayName !== "string") return { displayName: "" };
     const displayName = sanitizeTerminalText(parsed.displayName);
     return [...displayName].length <= MAX_DISPLAY_CODE_POINTS ? { displayName } : { displayName: "" };
   } catch {
@@ -194,11 +212,10 @@ export async function renderStatusline(data = {}, options = {}) {
 }
 
 async function main() {
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
-  const input = Buffer.concat(chunks).toString("utf8");
+  const input = await collectBoundedStdin();
   let payload;
   try {
+    if (input === null) throw new Error("stdin exceeds the configured bound");
     payload = JSON.parse(input);
   } catch {
     process.stderr.write("invalid statusline JSON\n");

@@ -164,8 +164,8 @@
     "skills/writing-plans/SKILL.md": "54e63d12d0991d0551ca387708f0540a5b1a4a83d654a35dc404a3c59d123df0",
     "skills/writing-skills/SKILL.md": "a35dd207262684d595fcb0a30f34ff74e3cda775e379e738f2a987f9e27496bc",
     "skills/zero-downtime-migrations/SKILL.md": "43df891910b69fcf506f5a12a04b3806d0768afbf1d3a92cec277d70ea9ac95b",
-    "statusline/statusline.mjs": "66f16d222df9a602346df5ec7eb6d433b0211227dd6d08acca64ad0416ae53a2",
-    "statusline/track-tool.mjs": "eb7d93911eae9a76bb79170388b7d29b6a4dae42a13c342656bbb6c7f75f78bf"
+    "statusline/statusline.mjs": "d2ac67b034c0f959169f0c3eb266ef49b094397fd58ce8a9178e2fd8e15b7659",
+    "statusline/track-tool.mjs": "056ee9d570efeed2e1b9c3f4937d52e733cca7ba3b25db4464b5181d1fe07b4c"
   },
   "registration": {
     "kind": "resolved-config-root",
