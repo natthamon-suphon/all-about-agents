@@ -93,6 +93,19 @@ test("no-root rendering passes the resolved environment root to the adapter", as
   });
 });
 
+test("relative destination roots resolve from the repository working directory", async () => {
+  const relativePath = `tests/.tmp/t048-relative-${randomUUID()}`;
+  const expectedRoot = resolve(process.cwd(), relativePath);
+  try {
+    const result = await capture(["install", "--surface", "claude", "--destination-root", relativePath, "--format", "json"]);
+    assert.equal(result.code, 0);
+    const report = jsonOutput(result);
+    assert.equal(report.plans[0].root, expectedRoot);
+  } finally {
+    await rm(expectedRoot, { recursive: true, force: true });
+  }
+});
+
 test("CLI action matrix emits normalized JSON and stable exit codes in disposable roots", async () => {
   await withTempRoot(async (root) => {
     const input = resolve(root, "input.jsonl");

@@ -165,6 +165,14 @@ function envForRoot(surface, root = null) {
   return env;
 }
 
+function normalizeParsedOptions(options, cwd) {
+  if (options.destinationRoot === null) return options;
+  const destinationRoot = isAbsolute(options.destinationRoot)
+    ? options.destinationRoot
+    : resolve(cwd, options.destinationRoot);
+  return Object.freeze({ ...options, destinationRoot });
+}
+
 function surfaceRoots(options) {
   return options.surfaces.map((surface) => ({
     surface,
@@ -405,7 +413,7 @@ function doctorStatus(checks) {
 
 async function doctor(args, output, errorOutput, cwd) {
   let options;
-  try { options = parseArgs(["doctor", ...args]); } catch (error) { return emitError(error, wantsJson(args) ? "json" : "text", output, errorOutput, 2); }
+  try { options = normalizeParsedOptions(parseArgs(["doctor", ...args]), cwd); } catch (error) { return emitError(error, wantsJson(args) ? "json" : "text", output, errorOutput, 2); }
   if (!hasValidFoundation(cwd)) return emitError(new Error("Foundation validation failed: package metadata is missing or invalid"), options.format, output, errorOutput, 1);
   const runtimes = { node: process.versions.node };
   const checks = [];
@@ -488,10 +496,10 @@ export async function main(args, output = process.stdout, errorOutput = process.
   if (action === "validate") return validate(rest, output, errorOutput, cwd);
   let options;
   try {
-    options = parseArgs([action, ...rest]);
+    options = normalizeParsedOptions(parseArgs([action, ...rest]), cwd);
     if (action === "install" && interactive && options.surfaces.includes("claude") && !hasOption(rest, "--statusline-name")) {
       const statuslineName = await prompt("Statusline display name");
-      options = parseArgs([action, ...rest, "--statusline-name", statuslineName]);
+      options = normalizeParsedOptions(parseArgs([action, ...rest, "--statusline-name", statuslineName]), cwd);
     }
   } catch (error) { return emitError(error, wantsJson(rest) ? "json" : "text", output, errorOutput, 2); }
   if (action === "doctor") return doctor(rest, output, errorOutput, cwd);
