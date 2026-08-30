@@ -113,7 +113,7 @@
     "commands/review.md": "383bed013fb7fde594337ceba71e2235c71f91beb34e6a676d17d35a78264f71",
     "commands/verify.md": "58888d5b565b5bf18dad9aaa0874bbcb2ed9d8fa3e5e0478665dc4eb4572ae9a",
     "config/settings.json": "3a41c532d1f9ebd99e3158eced87c5c4d24c79af53e4fd08eaca4ad31dbf5e20",
-    "config/statusline.json": "e77f383fd66263e1c44e3ee5f61a680440a81858b5a46c2a1d10031beed70264",
+    "config/statusline.json": "93d4c71fbddf648936df1a555d1919fe9bff5a1e1d278b0dd0acf4fabf6d61ea",
     "docs/semantic-mappings.md": "a3641a47578c6e6610f248833a72738de90e58d44ddc305427f960dcd26403b5",
     "hooks/activity-audit.json": "1f8177e9d48b3e46067736fb4d734a056bb9c0663e7434c14fefca02d341345a",
     "hooks/activity-audit.mjs": "0d44689392237b5337bdc4f37067578061d004b87d767264b2d0b9fb19a78a7b",
