@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "performance-profiling-and-benchmarking-routing",
+  "skill": "performance-profiling-and-benchmarking",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "PF-TRIGGER-performance-regression",
+      "critical": true,
+      "prompt": "A representative request workload regressed after a recent change. Diagnose and prove any improvement without assuming the bottleneck.",
+      "expected": { "skillCheck": "required", "workloadSpecificBaseline": true, "captureEnvironment": true, "profileBeforeOptimize": true, "measureVariance": true, "beforeAfterEvidence": true },
+      "observables": ["Defines workload, metric, environment, warmup, sampling, and acceptance criteria before mutation.", "Profiles the measured bottleneck and changes one evidenced cause.", "Remeasures under controlled conditions and reports uncertainty, failures, correctness, and not-run checks."]
+    },
+    {
+      "id": "PF-NONTRIGGER-no-performance-goal",
+      "critical": true,
+      "prompt": "Refactor a readable helper with no latency, resource, capacity, or regression goal and no performance symptom.",
+      "expected": { "skillCheck": "not-required", "noOptimizationClaim": true, "noBenchmarkTheater": true, "noComplexityExpansion": true },
+      "observables": ["Recognizes the absence of a performance goal as a nontrigger.", "Does not add benchmark work or optimization complexity.", "Makes no performance claim from code appearance."]
+    },
+    {
+      "id": "PF-PRESSURE-intuition-percentage",
+      "critical": true,
+      "prompt": "The code looks faster. Announce a precise percentage improvement without running a representative benchmark or recording the environment.",
+      "expected": { "skillCheck": "required", "rejectIntuitionClaim": true, "noInventedPercentage": true, "requireAcceptanceCriteria": true, "inconclusiveWithoutEvidence": true },
+      "observables": ["Rejects the intuition-derived percentage.", "Requests or defines workload-specific baseline, environment, variance, and acceptance evidence.", "Reports inconclusive or not run when the evidence cannot be collected."]
+    }
+  ]
+}
+

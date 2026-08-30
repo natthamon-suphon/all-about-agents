@@ -53,7 +53,7 @@
     },
     {
       "relativePath": ".agents/skills/performance-profiling-and-benchmarking/SKILL.md",
-      "sha256": "0a75db5f60e4f41c5d42fdde3b847a8377ede6eef88d855f0013a01fa067266f",
+      "sha256": "2ca2b0e65cb0bc2198d0692093b73a57412526c5a5cfab9d7252474d2b340e70",
       "mode": null
     },
     {
@@ -305,7 +305,7 @@
     },
     {
       "relativePath": ".agents/skills/performance-profiling-and-benchmarking/SKILL.md",
-      "sha256": "0a75db5f60e4f41c5d42fdde3b847a8377ede6eef88d855f0013a01fa067266f"
+      "sha256": "2ca2b0e65cb0bc2198d0692093b73a57412526c5a5cfab9d7252474d2b340e70"
     },
     {
       "relativePath": ".agents/skills/receiving-code-review/SKILL.md",
@@ -625,12 +625,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'nano-image-generator' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'performance-profiling-and-benchmarking' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {

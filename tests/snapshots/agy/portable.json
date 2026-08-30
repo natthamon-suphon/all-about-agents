@@ -213,7 +213,7 @@
     },
     {
       "relativePath": "skills/performance-profiling-and-benchmarking/SKILL.md",
-      "sha256": "983b6c7f28cc4300c830ffe4a882a6e498707f789890046e4257cdc1cbc51fe9"
+      "sha256": "6affddc1d37bdb5bc129a3cf600d31d07cdcb6b677de1ed2b89391100bb06156"
     },
     {
       "relativePath": "skills/receiving-code-review/SKILL.md",
@@ -694,12 +694,6 @@
     {
       "code": "missing-skill-source",
       "severity": "error",
-      "message": "Canonical skill 'performance-profiling-and-benchmarking' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
       "message": "Canonical skill 'threat-modeling-and-security' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
@@ -755,7 +749,7 @@
     "skills/interviewing/SKILL.md": "6f59914fb0c8ff442af69aa91eafa3c17f9fb71c380d8c6e1c3130290503592f",
     "skills/loop-me/SKILL.md": "c3b069cf009e9e07c0b9b4caada708ac72a285eb00292bb6ac198fa8287bd809",
     "skills/nano-image-generator/SKILL.md": "3b2d9356cafdcf6aec161b1701664e303b139f0ecfdbbef0ca5bd8b460b7dda4",
-    "skills/performance-profiling-and-benchmarking/SKILL.md": "983b6c7f28cc4300c830ffe4a882a6e498707f789890046e4257cdc1cbc51fe9",
+    "skills/performance-profiling-and-benchmarking/SKILL.md": "6affddc1d37bdb5bc129a3cf600d31d07cdcb6b677de1ed2b89391100bb06156",
     "skills/receiving-code-review/SKILL.md": "aad362cd38aa27bc469ce1ed6e157a6080310e4eaa2518958aa44338b739d673",
     "skills/requesting-code-review/SKILL.md": "9ea824be6431e46598def41e35cd1e75a40d5257399c33b247b58d7732810a5b",
     "skills/research/SKILL.md": "a12c2c9b2df8a8c972325a33e03e0c62db8dc440aa85553882321b8fb1239071",
