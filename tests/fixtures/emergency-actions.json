@@ -366,5 +366,40 @@
     ,{ "id": "git-update-ref-delete-long", "action": { "command": "git update-ref --delete refs/heads/main" }, "expected": { "decision": "deny", "ruleId": "git-history-rewrite" } }
     ,{ "id": "structured-git-root-array-force", "action": { "command": "git status", "gitOperation": [{ "command": "clean", "force": true }] }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
     ,{ "id": "structured-git-command-array-force", "action": { "command": "git status", "gitOperation": { "command": ["git", "clean"], "force": true } }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "dispatcher-find-xargs-rm", "action": { "command": "find / -print0 | xargs -0 rm" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "dispatcher-find-xargs-python-c", "action": { "command": "find /tmp -print0 | xargs -0 python -c 'import os; os.remove(\"/tmp/item\")'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "dispatcher-find-xargs-node-e", "action": { "command": "find /tmp -print0 | xargs -0 node -e 'require(\"child_process\").exec(\"rm -rf /\")'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "dispatcher-find-xargs-ruby-e", "action": { "command": "find /tmp -print0 | xargs -0 ruby -e 'system(\"rm -rf /\")'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "nested-source-shell-block", "action": { "command": "sh -c 'if true; then source /tmp/deploy.sh; fi'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "nested-absolute-shell-block", "action": { "command": "sh -c 'if true; then /tmp/deploy.sh; fi'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "nested-powershell-script-block", "action": { "command": "pwsh -Command '& { Remove-Item -Recurse C:/tmp/project }'" }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "nested-python-run-module", "action": { "command": "python -c 'runpy.run_module(\"deploy\")'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "nested-node-import-module", "action": { "command": "node -e 'import(\"./deploy.mjs\")'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "nested-ruby-require-relative", "action": { "command": "ruby -e 'require_relative \"./deploy\"'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "nested-perl-do-module", "action": { "command": "perl -e 'do \"./deploy.pl\"'" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "harness-codex-exe-option", "action": { "command": "codex.exe $OPTION" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "harness-claude-exe-option", "action": { "command": "claude.exe --approval-policy=$OPTION" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "harness-agy-exe-option", "action": { "command": "agy.exe $OPTION" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "harness-start-process-option", "action": { "command": "Start-Process -FilePath $PROGRAM" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "harness-control-flow-option", "action": { "command": "if true; then codex --approval-policy $OPTION" }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
+    ,{ "id": "detached-disposable-dynamic-target", "action": { "capability": "filesystem-delete", "command": "rm -rf $TARGET", "paths": ["/tmp/aaa-disposable/generated-fixture"], "verifiedDisposableRoot": { "resolvedPath": "/tmp/aaa-disposable", "resolved": true, "allTargetsContained": true, "designation": "disposable", "targets": ["/tmp/aaa-disposable/generated-fixture"] } }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "detached-disposable-no-operand", "action": { "capability": "filesystem-delete", "command": "rm -rf", "paths": ["/tmp/aaa-disposable/generated-fixture"], "verifiedDisposableRoot": { "resolvedPath": "/tmp/aaa-disposable", "resolved": true, "allTargetsContained": true, "designation": "disposable", "targets": ["/tmp/aaa-disposable/generated-fixture"] } }, "expected": { "decision": "deny", "ruleId": "filesystem-root-erasure" } }
+    ,{ "id": "raw-dynamic-redirection", "action": { "command": "printf x > $DEVICE" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-create-text-dynamic-device", "action": { "command": "[IO.File]::CreateText($DEVICE)" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-append-text-dynamic-device", "action": { "command": "[IO.File]::AppendText($DEVICE)" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-splatted-set-content", "action": { "command": "Set-Content @writer" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "raw-splatted-remove-item", "action": { "command": "Remove-Item @remover" }, "expected": { "decision": "deny", "ruleId": "raw-disk-destruction" } }
+    ,{ "id": "git-update-ref-move", "action": { "command": "git update-ref refs/heads/main refs/heads/feature" }, "expected": { "decision": "deny", "ruleId": "git-history-rewrite" } }
+    ,{ "id": "git-config-clean-before-clean", "action": { "command": "git config clean.requireForce false; git clean" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "git-remote-delete-short", "action": { "command": "git remote -d origin" }, "expected": { "decision": "deny", "ruleId": "git-history-rewrite" } }
+    ,{ "id": "git-destructive-alias", "action": { "command": "git config alias.wipe 'clean -fdx'; git wipe" }, "expected": { "decision": "deny", "ruleId": "git-discard-uncommitted" } }
+    ,{ "id": "git-checkout-create-safe", "action": { "command": "git checkout -b feature" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "git-switch-create-safe", "action": { "command": "git switch -c feature" }, "expected": { "decision": "allow", "ruleId": null } }
+    ,{ "id": "env-sudo-null", "action": { "command": "sudo env --null" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "env-command-null", "action": { "command": "command env --null" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "env-nice-null", "action": { "command": "nice env --null" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "env-sudo-no-command", "action": { "command": "sudo env" }, "expected": { "decision": "deny", "ruleId": "secret-output-or-transmission" } }
+    ,{ "id": "structured-nested-command-array-force", "action": { "command": "git status", "gitOperation": { "metadata": { "command": ["git", "push", "origin", "main"], "force": true } } }, "expected": { "decision": "deny", "ruleId": "git-force-push" } }
+    ,{ "id": "structured-force-malformed", "action": { "command": "git status", "gitOperation": { "operation": "push", "args": ["origin", "main"], "force": "yes" } }, "expected": { "decision": "deny", "ruleId": "guardrail-bypass" } }
   ]
 }

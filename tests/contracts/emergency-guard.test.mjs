@@ -311,6 +311,24 @@ test("emergency parser fails closed on boundedness violations and preserves dot-
   assert.equal(malformed, "{}");
 });
 
+test("emergency parser fails closed for malformed root and command structures", () => {
+  const rootArray = classifyEmergencyAction(["git", "push", "origin", "main", "--force"]);
+  assert.deepEqual({ decision: rootArray.decision, ruleId: rootArray.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+  const commandArray = classifyEmergencyAction({ command: ["git", "push", "origin", "main", "--force"] });
+  assert.deepEqual({ decision: commandArray.decision, ruleId: commandArray.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+  const malformedForce = classifyEmergencyAction({ command: "git status", gitOperation: { operation: "push", args: ["origin", "main"], force: "yes" } });
+  assert.deepEqual({ decision: malformedForce.decision, ruleId: malformedForce.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+});
+
+test("emergency parser fails closed on explicit token and separator bounds", () => {
+  const tokenOverflow = Array.from({ length: 2_049 }, () => "echo").join(" ");
+  const separatorOverflow = Array.from({ length: 257 }, () => "true").join(";");
+  const tokenResult = classifyEmergencyAction({ command: tokenOverflow });
+  const separatorResult = classifyEmergencyAction({ command: separatorOverflow });
+  assert.deepEqual({ decision: tokenResult.decision, ruleId: tokenResult.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+  assert.deepEqual({ decision: separatorResult.decision, ruleId: separatorResult.ruleId }, { decision: "deny", ruleId: "guardrail-bypass" });
+});
+
 function fileMap(result) {
   return new Map(result.files.map((file) => [file.relativePath, new TextDecoder().decode(file.content)]));
 }

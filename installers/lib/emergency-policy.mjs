@@ -24,6 +24,7 @@ const ABSOLUTE_PATH = /^(?:[A-Za-z]:[\\/]|[\\/]{1,2})/u;
 const SECRET_PATH = /(?:^|[\\/])(?:\.env(?!\.example(?:$|[\\/]))|\.npmrc|credentials?(?:\.json)?|token|secret|id_(?:rsa|dsa|ecdsa|ed25519)|private[_-]?key|\.ssh(?:[\\/]|$)|\.aws[\\/]credentials(?:$|[\\/]))/iu;
 const MAX_SOURCE_LENGTH = 32_768;
 const MAX_TOKEN_COUNT = 2_048;
+const MAX_SEPARATOR_COUNT = 256;
 const MAX_VARIANT_COUNT = 256;
 const MAX_STRUCTURED_DEPTH = 6;
 const MAX_STRUCTURED_NODES = 512;
@@ -325,7 +326,7 @@ function sourceShapeExceeded(value) {
       continue;
     }
     if (character === ";" || character === "&" || character === "|" || character === "\n" || character === "\r") separatorCount += 1;
-    if (separatorCount > MAX_VARIANT_COUNT) return true;
+    if (separatorCount >= MAX_SEPARATOR_COUNT) return true;
     if (/\s/u.test(character) || ";&|<>".includes(character)) {
       if (tokenStarted) {
         tokenCount += 1;
@@ -401,8 +402,26 @@ function structuredBoundsExceeded(value, depth = 0, state = { nodes: 0 }, seen =
   return Object.entries(value).some(([key, child]) => key !== "policy" && structuredBoundsExceeded(child, depth + 1, state, seen));
 }
 
+function structuredShapeInvalid(value, depth = 0, seen = new WeakSet()) {
+  if (value === undefined || value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number") return false;
+  if (Array.isArray(value)) return value.some((child) => structuredShapeInvalid(child, depth + 1, seen));
+  if (!isPlainObject(value) || depth > MAX_STRUCTURED_DEPTH) return true;
+  if (seen.has(value)) return true;
+  seen.add(value);
+  return Object.entries(value).some(([key, child]) => {
+    if (key === "force" && typeof child !== "boolean") return true;
+    if (key === "args" && !Array.isArray(child)) return true;
+    if (key === "command" && typeof child !== "string" && !Array.isArray(child)) return true;
+    return structuredShapeInvalid(child, depth + 1, seen);
+  });
+}
+
 function parserBoundsExceeded(input) {
-  if (!isPlainObject(input)) return false;
+  if (!isPlainObject(input)) return true;
+  if (Object.hasOwn(input, "command") && typeof input.command !== "string") return true;
+  if (Object.hasOwn(input, "capability") && typeof input.capability !== "string") return true;
+  if (Object.hasOwn(input, "paths") && !Array.isArray(input.paths)) return true;
+  if (structuredShapeInvalid(input.gitOperation) || structuredShapeInvalid(input.secretOperation)) return true;
   if (structuredBoundsExceeded(input)) return true;
   return sourceShapeExceeded(input.command) || sourceShapeExceeded(input.capability) || wrapperScanExceeded(input.command);
 }
@@ -458,6 +477,23 @@ function dispatcherPayloads(value) {
     }
   }
   return payloads;
+}
+
+function dispatcherRemovesFindTargets(value) {
+  const segments = commandSegments(value);
+  return segments.some((segment, index) => {
+    const source = lexicalWords(segment);
+    const findIndex = source.findIndex((word) => tokenName(word) === "find");
+    if (findIndex < 0) return false;
+    const sourceOperand = source.slice(findIndex + 1).find((word) => !word.startsWith("-") && word !== "!");
+    if (!sourceOperand || !(sourceOperand === "." || sourceOperand === ".." || sourceOperand.startsWith("~") || isAbsolute(sourceOperand))) return false;
+    const downstream = segments.slice(index + 1).find((candidate) => lexicalWords(candidate).some((word) => tokenName(word) === "xargs"));
+    if (!downstream) return false;
+    return dispatcherPayloads(downstream).some((payload) => {
+      const words = lexicalWords(payload);
+      return ["rm", "rmdir", "rd", "del", "erase", "remove-item", "ri", "clear-item", "srm"].includes(commandName(words[0] || ""));
+    });
+  });
 }
 
 function commandVariants(value) {
@@ -539,6 +575,11 @@ function launchWords(words) {
 }
 
 function hasOpaqueScriptPayload(value) {
+  const interpreterExecutionOption = (option) => {
+    const candidate = normalized(option);
+    return ["-c", "-e", "--eval", "--command", "-command"].includes(candidate)
+      || /^-(?:c|e)[^\s]/u.test(candidate);
+  };
   for (const segment of commandSegments(value)) {
     const words = lexicalWords(segment);
     if (words.length === 0) continue;
@@ -554,6 +595,7 @@ function hasOpaqueScriptPayload(value) {
     if (isScriptPathToken(words[0]) || hasDynamicToken(words[0]) && first === "&") return true;
     if (runnerNames.has(first) && second && !second.startsWith("-") && isScriptPathToken(second)) return true;
     if (isScriptRunnerName(launchedFirst)) {
+      if (isNonShellRunnerName(launchedFirst) && interpreterExecutionOption(launched[1] || "")) return true;
       if (isOpaqueShellInputOption(launched[1] || "")) return true;
       const candidate = launched[1] || "";
       const windowsInterpreterOption = ["cmd", "cmd.exe", "powershell", "powershell.exe", "pwsh", "pwsh.exe"].includes(launchedFirst) && candidate.startsWith("/");
@@ -562,7 +604,7 @@ function hasOpaqueScriptPayload(value) {
         && candidate && !candidate.startsWith("-") && (hasDynamicToken(candidate) || isScriptPathToken(candidate))) return true;
     }
     if (["python", "python3", "node", "ruby", "perl", "pwsh", "powershell"].includes(first)
-      && /(?:\b(?:exec|eval|system|spawn|popen|open|require|child[_-]?process|start-process|invoke-command|invoke-expression|subprocess|shutil|fileutils)\b|fs[.]rm(?:sync)?\b|process[.]env|os[.]environ)/iu.test(words.slice(1).join(" "))) return true;
+      && /(?:\b(?:exec|eval|system|spawn|popen|open|require|require_relative|runpy[.]run_(?:module|path)|import\s*\(|do\s+["']|child[_-]?process|start-process|invoke-command|invoke-expression|subprocess|shutil|fileutils)\b|fs[.]rm(?:sync)?\b|process[.]env|os[.]environ)/iu.test(words.slice(1).join(" "))) return true;
     if (["invoke-command", "start-job"].includes(first) && /\bscriptblock\b/iu.test(words.slice(1).join(" "))) return true;
     if ((isNonShellRunnerName(launchedFirst) || ["pwsh", "powershell"].includes(launchedFirst))
       && /(?:\b(?:exec|eval|system|spawn|popen|open|require|child[_-]?process|start-process|invoke-command|invoke-expression|subprocess|shutil|fileutils)\b|fs[.]rm(?:sync)?\b|process[.]env|os[.]environ|deno[.]env|bun[.]env)/iu.test(launched.slice(1).join(" "))) return true;
@@ -587,9 +629,11 @@ function hasOpaqueScriptPayload(value) {
     if (first === "xargs") {
       const args = words.slice(1);
       if (args.some(isScriptPathToken) || args.some(hasDynamicToken)) return true;
-      if (args.some((word, index) => isScriptRunnerName(word) && (isOpaqueShellInputOption(args[index + 1] || "") || isScriptPathToken(args[index + 1] || "") || hasDynamicToken(args[index + 1] || "")))) return true;
+      if (args.some((word, index) => isScriptRunnerName(word) && (interpreterExecutionOption(args[index + 1] || "") || isOpaqueShellInputOption(args[index + 1] || "") || isScriptPathToken(args[index + 1] || "") || hasDynamicToken(args[index + 1] || "")))) return true;
       if (args.some((word, index) => tokenName(word) === "env" && isOpaqueShellInputOption(args[index + 1] || ""))) return true;
     }
+    if (words.some((word) => ["source", ".", "eval", "invoke-expression", "iex"].includes(tokenName(word)))) return true;
+    if (words.some((word, index) => index > 0 && isScriptPathToken(word) && ["then", "do", "else", "call", "start"].includes(tokenName(words[index - 1] || "")))) return true;
   }
   return false;
 }
@@ -716,7 +760,8 @@ function gitInvocation(command) {
     if (takesValue) index += 1;
   }
   const subcommand = tokenName(tokens[index] || "");
-  return subcommand ? { subcommand, args: tokens.slice(index + 1).map(normalized) } : null;
+  const rawArgs = tokens.slice(index + 1);
+  return subcommand ? { subcommand, args: rawArgs.map(normalized), rawArgs } : null;
 }
 
 function structuredGitRecords(value) {
@@ -727,7 +772,8 @@ function structuredGitRecords(value) {
       label: normalized(value),
       command: value,
       subcommand: invocation?.subcommand || "",
-      args: invocation ? invocation.args : commandTokens(value)
+      args: invocation ? invocation.args : commandTokens(value),
+      rawArgs: invocation?.rawArgs || []
     });
     return records;
   }
@@ -761,7 +807,8 @@ function structuredGitRecords(value) {
       label: normalized(`${key} ${command}`),
       command,
       subcommand: parsed?.subcommand || normalized(command),
-      args: node.force === true ? [...args, "--force"] : args
+      args: node.force === true ? [...args, "--force"] : args,
+      rawArgs: parsed?.rawArgs || []
     });
     for (const [childKey, child] of Object.entries(node)) {
       if (isPlainObject(child) || Array.isArray(child)) visit(child, childKey, depth + 1);
@@ -932,7 +979,7 @@ function isDesignatedNarrowRoot(rootValue, root) {
   return true;
 }
 
-function verifiedDisposableTargets(rootValue, pathEntries) {
+function verifiedDisposableTargets(rootValue, pathEntries, command) {
   if (!isPlainObject(rootValue)) return false;
   const root = text(rootValue.resolvedPath) || text(rootValue.path);
   const resolved = rootValue.resolved === true || rootValue.status === "resolved";
@@ -940,6 +987,9 @@ function verifiedDisposableTargets(rootValue, pathEntries) {
     || rootValue.containsAll === true
     || rootValue.targetsContained === true;
   if (isUnsafeNativeNamespace(root) || hasDynamicPathSyntax(root) || pathEntries.some((entry) => isUnsafeNativeNamespace(entry.path) || hasDynamicPathSyntax(entry.path))) return false;
+  const commandPaths = extractCandidatePaths(command);
+  if (commandPaths.length === 0 || commandPaths.some(hasDynamicPathSyntax)) return false;
+  if (!commandPaths.every((candidate) => pathEntries.some((entry) => cleanPath(entry.path) === cleanPath(candidate)))) return false;
   if (!resolved || !attestation || !isAbsolute(root) || pathEntries.length === 0 || !isDesignatedNarrowRoot(rootValue, root)) return false;
   if (/(?:^|\/)\.\.(?:\/|$)/u.test(cleanPath(root))) return false;
   const declaredTargets = Array.isArray(rootValue.targets) ? rootValue.targets.map((entry) => cleanPath(typeof entry === "string" ? entry : entry?.resolvedPath || entry?.path)).filter(Boolean) : null;
@@ -989,6 +1039,7 @@ function recursiveErase(command, capability) {
     const findIndex = tokens.findIndex((token) => tokenName(token) === "find");
     return findIndex >= 0 && tokens.slice(findIndex + 1).some((token) => normalized(token) === "-delete");
   });
+  const dispatcherDelete = dispatcherRemovesFindTargets(command);
   const enumeratePipeline = commandSegments(command).some((segment, index, segments) => {
     if (index >= segments.length - 1) return false;
     const source = lexicalWords(segment);
@@ -997,7 +1048,7 @@ function recursiveErase(command, capability) {
     const remover = ["remove-item", "ri", "clear-item", "srm", "rm", "del", "erase"].includes(commandName(target[0] || ""));
     return enumerator && source.some(isRecursiveFlag) && remover;
   });
-  return recursiveCommand || findDelete || enumeratePipeline || /(?:recursive|erase|wipe|delete[-_ ]all|filesystem[-_ ]root)/u.test(capabilityText) || /(?:^|\s)filesystem[-_ ]root(?:\s|$)/u.test(commandText);
+  return recursiveCommand || findDelete || dispatcherDelete || enumeratePipeline || /(?:recursive|erase|wipe|delete[-_ ]all|filesystem[-_ ]root)/u.test(capabilityText) || /(?:^|\s)filesystem[-_ ]root(?:\s|$)/u.test(commandText);
 }
 
 function hasRawDiskDestruction(command, capability, operation) {
@@ -1011,10 +1062,12 @@ function hasRawDiskDestruction(command, capability, operation) {
   };
   const isUnsafeSegment = (segment) => {
     const value = normalized(segment).trim();
-    const rawDeviceOperation = rawDevicePath.test(value) && /(?:>{1,2}|\b(?:set-content|add-content|clear-content|set-item|out-file|copy-item|move-item|rename-item|remove-item|format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]disk|remove[-_ ]partition|remove-volume|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]copy|file[.]create|file[.]append|appendalltext|appendallbytes|openwrite|truncate|cryptsetup|pvremove|nvme|cp|mv)\b|\bfile\]::(?:open|openwrite|copy|create|writebyte|appendalltext|writealltext)\b)/u.test(value);
-    const rawWriteHelper = /(?:\b(?:set-content|add-content|clear-content|set-item|out-file|copy-item|move-item|rename-item|remove-item|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]openwrite|file[.]copy|file[.]create|file[.]append|appendall(?:text|bytes)|openwrite|truncate|cryptsetup|pvremove|nvme|dd|cp|mv|tee(?:-object)?)\b|\bfile\]::(?:open|openwrite|copy|create|writebyte|appendalltext|writealltext)\b)/u;
-    const dynamicRawOperation = (hasDynamicToken(value) || /\bget-variable\b/u.test(value)) && rawWriteHelper.test(value);
-    return formatCommand(value) || rawDeviceOperation || dynamicRawOperation || destructiveUtility.test(value);
+    const rawDeviceOperation = rawDevicePath.test(value) && /(?:>{1,2}|\b(?:set-content|add-content|clear-content|set-item|out-file|copy-item|move-item|rename-item|remove-item|format|fdisk|diskpart|mkfs|dd|wipefs|shred|sgdisk|parted|sfdisk|cfdisk|partprobe|clear[-_ ]disk|remove[-_ ]disk|remove[-_ ]partition|remove-volume|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]copy|file[.]create|file[.]append|appendalltext|appendallbytes|createtext|appendtext|openwrite|truncate|cryptsetup|pvremove|nvme|cp|mv)\b|\bfile\]::(?:open|openwrite|copy|create|createtext|appendtext|writebyte|appendalltext|writealltext)\b)/u.test(value);
+    const rawWriteHelper = /(?:\b(?:set-content|add-content|clear-content|set-item|out-file|copy-item|move-item|rename-item|remove-item|writeall(?:text|bytes|lines)|writebyte|filestream|file[.]open|file[.]openwrite|file[.]copy|file[.]create|file[.]append|createtext|appendtext|appendall(?:text|bytes)|openwrite|truncate|cryptsetup|pvremove|nvme|dd|cp|mv|tee(?:-object)?)\b|\bfile\]::(?:open|openwrite|copy|create|createtext|appendtext|writebyte|appendalltext|writealltext)\b)/u;
+    const dynamicRawToken = hasDynamicToken(value) || /(?:^|\s)@[A-Za-z_][A-Za-z0-9_]*/u.test(value) || /\bget-variable\b/u.test(value);
+    const dynamicRawOperation = dynamicRawToken && rawWriteHelper.test(value);
+    const dynamicRawRedirection = /(?:>{1,2}|<)\s*[$%!`@({]/u.test(value);
+    return formatCommand(value) || rawDeviceOperation || dynamicRawOperation || dynamicRawRedirection || destructiveUtility.test(value);
   };
   if (commandVariants(command).some(isUnsafeSegment)) return true;
   return isUnsafeSegment(`${normalized(capability)} ${operationText(operation)}`);
@@ -1066,9 +1119,10 @@ function hasHistoryRewrite(command, operation) {
     return ["rebase", "filter-branch", "filter-repo", "replace"].includes(invocation?.subcommand)
       || invocation?.subcommand === "reflog" && invocation.args[0] === "expire"
       || invocation?.subcommand === "commit" && invocation.args.includes("--amend")
-      || invocation?.subcommand === "push" && (invocation.args.includes("--delete") || invocation.args.some((argument) => argument.startsWith(":")))
+      || invocation?.subcommand === "push" && (invocation.args.includes("--delete") || invocation.args.includes("-d") || invocation.args.some((argument) => argument.startsWith(":")))
+      || invocation?.subcommand === "remote" && invocation.args.includes("-d")
       || invocation?.subcommand === "branch" && invocation.args.some((argument) => ["-d", "-D", "--delete"].includes(argument) || ["-f", "--force"].includes(argument))
-      || invocation?.subcommand === "update-ref" && invocation.args.some((argument) => ["-d", "--delete", "--stdin"].includes(argument))
+      || invocation?.subcommand === "update-ref" && (invocation.args.some((argument) => ["-d", "--delete", "--stdin"].includes(argument)) || invocation.args.filter((argument) => !argument.startsWith("-")).length >= 2)
       || dynamicSubcommand
       || dynamicHistoryFlag;
   });
@@ -1080,9 +1134,10 @@ function hasHistoryRewrite(command, operation) {
     return /(?:^|\s)(?:rebase|filter-branch|filter-repo|replace)(?:\s|$)/u.test(label)
       || subcommand === "reflog" && args.includes("expire")
       || subcommand === "commit" && args.includes("--amend")
-      || subcommand === "push" && (args.includes("--delete") || args.some((argument) => argument.startsWith(":")))
+      || subcommand === "push" && (args.includes("--delete") || args.includes("-d") || args.some((argument) => argument.startsWith(":")))
+      || subcommand === "remote" && args.includes("-d")
       || subcommand === "branch" && args.some((argument) => ["-d", "-D", "--delete"].includes(argument) || ["-f", "--force"].includes(argument))
-      || subcommand === "update-ref" && args.some((argument) => ["-d", "--delete", "--stdin"].includes(argument))
+      || subcommand === "update-ref" && (args.some((argument) => ["-d", "--delete", "--stdin"].includes(argument)) || args.filter((argument) => !argument.startsWith("-")).length >= 2)
       || /(?:^|\s)git(?:\s|$)/u.test(label) && /[\$%{}!`^\\(]/u.test(record.subcommand || "")
       || /(?:^|\s)(?:rebase|commit|reflog)(?:\s|$)/u.test(label) && args.some((argument) => /[\$%{}!`^\\(]/u.test(argument));
   })
@@ -1096,6 +1151,7 @@ function hasDiscard(command, operation) {
     || /^(?:readme|license|copying|changelog|dockerfile|makefile)$/iu.test(argument);
   const branchArgument = (argument) => /^(?:main|master|develop(?:ment)?|branch|feature(?:[-/][a-z0-9._-]+)?|release(?:[-/][a-z0-9._-]+)?|hotfix(?:[-/][a-z0-9._-]+)?|staging|stage|trunk|default|head(?:[~^][0-9]*)?)$/iu.test(argument);
   const checkoutPathArgument = (argument) => !branchArgument(argument) && (pathArgument(argument) || /^[^-'"]+$/u.test(argument));
+  const destructiveAlias = /\balias\.[a-z0-9_.-]+\s+[^;|&]*(?:\bclean\b[^;|&]*-[^\s;|&]*f|\breset\b[^;|&]*--hard|\b(?:restore|checkout)\b[^;|&]*\.|\bstash\b[^;|&]*(?:clear|drop))/u.test(all);
   const discard = commandVariants(command).some((variant) => {
     const invocation = gitInvocation(variant);
     const nonOptions = invocation?.args.filter((argument) => !argument.startsWith("-")) || [];
@@ -1104,12 +1160,13 @@ function hasDiscard(command, operation) {
     return invocation?.subcommand === "clean" && invocation.args.some(forceFlag)
       || invocation?.subcommand === "clean" && invocation.args.some((argument) => argument === "." || argument === "..")
       || invocation?.subcommand === "clean" && /clean[.]requireforce\s*[=:]\s*false/u.test(normalized(variant))
-      || ["checkout", "restore"].includes(invocation?.subcommand) && invocation.args.some((argument) => argument === "--" || forceFlag(argument) || argument === "-b" || argument === "--branch" || argument === "--discard-changes" || argument === "." || argument === ".." || argument.startsWith("--pathspec-from-file"))
+      || invocation?.subcommand === "checkout" && (invocation.args.some((argument) => argument === "--" || forceFlag(argument) || argument === "--discard-changes" || argument === "." || argument === ".." || argument.startsWith("--pathspec-from-file")) || invocation.rawArgs?.some((argument) => argument === "-B"))
+      || invocation?.subcommand === "restore" && invocation.args.some((argument) => argument === "--" || forceFlag(argument) || argument === "--discard-changes" || argument === "." || argument === ".." || argument.startsWith("--pathspec-from-file"))
       || invocation?.subcommand === "restore" && (invocation.args.some((argument) => argument === "--staged" || argument === "--worktree" || argument.startsWith("--source")) || invocation.args.some((argument) => !argument.startsWith("-")))
       || invocation?.subcommand === "checkout" && (nonOptions.length > 1 || nonOptions.some(checkoutPathArgument) || invocation.args.some((argument) => argument.startsWith("--pathspec-from-file")))
       || invocation?.subcommand === "checkout-index" && invocation.args.some(forceFlag)
       || invocation?.subcommand === "read-tree" && invocation.args.includes("-u") && (invocation.args.includes("-m") || invocation.args.includes("--reset"))
-      || invocation?.subcommand === "switch" && invocation.args.some((argument) => forceFlag(argument) || argument === "-c" || argument === "--create" || argument === "--discard-changes")
+      || invocation?.subcommand === "switch" && (invocation.args.some((argument) => forceFlag(argument) || argument === "--discard-changes") || invocation.rawArgs?.some((argument) => argument === "-C"))
       || invocation?.subcommand === "reset" && invocation.args.includes("--hard")
       || invocation?.subcommand === "stash" && ["drop", "clear"].includes(invocation.args[0])
       || dynamicDiscardArgument;
@@ -1122,18 +1179,20 @@ function hasDiscard(command, operation) {
     const nonOptions = args.filter((argument) => !argument.startsWith("-"));
     const dynamicDiscardArgument = ["clean", "stash", "restore", "checkout", "checkout-index", "read-tree", "switch", "reset"].includes(subcommand)
       && args.some(hasDynamicToken);
-    return subcommand === "checkout" && (nonOptions.length > 1 || nonOptions.some(checkoutPathArgument) || args.some((argument) => argument.startsWith("--pathspec-from-file") || argument === "-b" || argument === "--branch"))
+    return subcommand === "checkout" && (nonOptions.length > 1 || nonOptions.some(checkoutPathArgument) || args.some((argument) => argument.startsWith("--pathspec-from-file")) || record.rawArgs?.some((argument) => argument === "-B"))
       || subcommand === "restore" && (nonOptions.length > 1 || nonOptions.some(pathArgument) || args.some((argument) => argument.startsWith("--pathspec-from-file") || argument === "--staged" || argument === "--worktree" || argument.startsWith("--source")))
       || subcommand === "checkout-index" && args.some(forceFlag)
       || subcommand === "read-tree" && args.includes("-u") && (args.includes("-m") || args.includes("--reset"))
-      || subcommand === "switch" && args.some((argument) => forceFlag(argument) || argument === "-c" || argument === "--create" || argument === "--discard-changes")
+      || subcommand === "switch" && (args.some((argument) => forceFlag(argument) || argument === "--discard-changes") || record.rawArgs?.some((argument) => argument === "-C"))
       || subcommand === "clean" && (args.some(forceFlag) || args.includes(".") || args.includes(".."))
       || subcommand === "clean" && /clean[.]requireforce\s*[=:]\s*false/u.test(label)
       || subcommand === "reset" && args.includes("--hard")
       || subcommand === "stash" && args.some((argument) => ["drop", "clear"].includes(argument))
       || dynamicDiscardArgument;
   });
-  return discard || structuredDiscard
+  const cleanConfiguredWithoutForce = /clean[.]requireforce\s*(?:=|:|\s)\s*false/u.test(all)
+    && commandVariants(command).some((variant) => gitInvocation(variant)?.subcommand === "clean");
+  return discard || structuredDiscard || cleanConfiguredWithoutForce || destructiveAlias
     || /\b(?:discard[-_ ]uncommitted|drop[-_ ]changes|delete[-_ ]uncommitted)\b/u.test(all);
 }
 
@@ -1163,10 +1222,14 @@ function hasSecretOutput(command, capability, operation, pathEntries) {
   const environmentDump = commandVariants(command).some((segment) => {
     const tokens = commandTokens(segment);
     const commandInfo = commandAfterWrappers(tokens);
+    const envIndex = tokens.findIndex((token) => tokenName(token) === "env");
+    const envArgs = envIndex >= 0 ? tokens.slice(envIndex + 1) : [];
+    const wrappedEnvNoCommand = envIndex >= 0 && envArgs.every((argument) => isAssignmentToken(argument) || normalized(argument).startsWith("-"));
     const cmdSet = tokenName(tokens[0] || "") === "cmd"
       && tokens.some((token, index) => tokenName(token) === "set" && tokens.slice(index + 1).every((argument) => !argument.includes("=")));
-    const directNullEnv = tokenName(tokens[0] || "") === "env" && tokens.slice(1).some((token) => ["-0", "--null"].includes(normalized(token)));
+    const directNullEnv = envIndex >= 0 && envArgs.some((token) => ["-0", "--null"].includes(normalized(token)));
     return directNullEnv
+      || wrappedEnvNoCommand
       || ["printenv", "env", "declare", "typeset"].includes(commandInfo.name)
       || commandInfo.name === "export" && (commandInfo.args.length === 0 || commandInfo.args.includes("-p"))
       || commandInfo.name === "set" && (commandInfo.args.length === 0 || commandInfo.args.every((argument) => !argument.includes("=")))
@@ -1195,7 +1258,11 @@ function hasGuardrailBypass(command, capability, operation) {
   const dynamicHarnessArgument = commandSegments(command).some((segment) => {
     const words = lexicalWords(segment);
     const { words: launched } = launchWords(words);
-    return ["codex", "agy", "claude"].includes(tokenName(launched[0] || "")) && launched.slice(1).some(hasDynamicToken);
+    return ["codex", "codex.exe", "agy", "agy.exe", "claude", "claude.exe"].includes(tokenName(launched[0] || "")) && launched.slice(1).some(hasDynamicToken);
+  });
+  const dynamicProcessLaunch = commandSegments(command).some((segment) => {
+    const words = lexicalWords(segment);
+    return ["start-process", "invoke-command"].includes(tokenName(words[0] || "")) && words.slice(1).some(hasDynamicToken);
   });
   const dynamicGuardrailValue = /--(?:approval[-_ ]?policy|sandbox|bypass(?:[-_ ]?permissions)?)(?:\s*(?:=|:)\s*|\s+)([^\s;|]+)/gu;
   for (const match of scan.matchAll(dynamicGuardrailValue)) {
@@ -1204,6 +1271,7 @@ function hasGuardrailBypass(command, capability, operation) {
   return hasDynamicShellPayload(command)
     || dynamicOptionName
     || dynamicHarnessArgument
+    || dynamicProcessLaunch
     || /(?:dangerously-skip-permissions|dangerously-bypass|bypass[-_ ]?permissions|full[-_ ]?access|disable[-_ ]?(?:safety|guard|hook|deny)|skip[-_ ]?(?:safety|guard|hook|verification)|hooks?\s+(?:off|disable)|permissions?\s+(?:off|disable)|--no-verify\b|(?:approval[-_ ]policy|sandbox)\s*(?:=|:|\s+)\s*(?:never|danger-full-access)\b|--no-sandbox\b)/u.test(scan)
     || /--(?:approval[-_ ]?policy|sandbox|bypass(?:[-_ ]?permissions)?)(?:\s*(?:=|:)\s*|\s+)[`$%!^\\({]/u.test(scan)
     || /--bypass(?:[-_ ]?permissions)?(?:[-_ ]+)[`$%!^\\({]/u.test(scan)
@@ -1233,7 +1301,7 @@ export function classifyEmergencyAction(input = {}) {
   const checks = {
     "filesystem-root-erasure": () => {
       if (!recursiveErase(command, capability)) return false;
-      return !verifiedDisposableTargets(verifiedDisposableRoot, pathEntries);
+      return !verifiedDisposableTargets(verifiedDisposableRoot, pathEntries, command);
     },
     "raw-disk-destruction": () => hasRawDiskDestruction(command, capability, gitOperation),
     "git-force-push": () => hasForcePush(command, gitOperation),
