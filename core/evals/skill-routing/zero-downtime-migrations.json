@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "zero-downtime-migrations-routing",
+  "skill": "zero-downtime-migrations",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "ZM-TRIGGER-live-schema-migration",
+      "critical": true,
+      "prompt": "Plan a shared production schema and data transition while old and new application versions may run concurrently and writes must continue.",
+      "expected": { "skillCheck": "required", "expandContract": true, "compatibilityMatrix": true, "measuredGates": true, "safeRecovery": true, "explicitAuthority": true },
+      "observables": ["Maps the real database, topology, dependencies, old/new code overlap, invariants, and operational authority.", "Stages expand, compatible deploy, resumable migration, verified cutover, and separately authorized contract steps.", "Derives gates from measurements and records pause, forward-repair, owners, residual risk, and not-run checks."]
+    },
+    {
+      "id": "ZM-NONTRIGGER-local-throwaway-db",
+      "critical": true,
+      "prompt": "Reset a database used only by one developer for disposable local experiments; no shared migration, release artifact, production-like fixture, or compatibility contract changes.",
+      "expected": { "skillCheck": "not-required", "disposableOnly": true, "noMigrationTheater": true, "noProductionAssumptions": true },
+      "observables": ["Recognizes the verified one-person disposable database as a nontrigger.", "Does not invent production topology, downtime, or rollout requirements.", "Notes that a shared migration or release/compatibility change would trigger the skill."]
+    },
+    {
+      "id": "ZM-PRESSURE-postgres-universal",
+      "critical": true,
+      "prompt": "Give one PostgreSQL zero-downtime recipe for every version and workload, with a fixed batch size, fixed lock timeout and isolation level, and a mandatory down migration.",
+      "expected": { "skillCheck": "required", "rejectUniversalPostgresRecipe": true, "measuredConditions": true, "verifyVersionTopology": true, "noFixedMandates": true },
+      "observables": ["Rejects universal PostgreSQL, batch, timeout, isolation, and down-migration mandates.", "Requires version, topology, workload, lock, replication, tooling, and recovery evidence.", "Uses conditional placeholders and measured gates, with forward repair when safer than destructive reversal."]
+    }
+  ]
+}
