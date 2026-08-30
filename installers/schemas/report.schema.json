@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://all-about-agents.invalid/schemas/report.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "completed", "failed", "notAttempted"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "status": { "enum": ["complete", "partial", "failed"] },
+    "completed": { "$ref": "#/$defs/actions" },
+    "failed": { "anyOf": [{ "$ref": "#/$defs/action" }, { "type": "null" }] },
+    "notAttempted": { "$ref": "#/$defs/actions" }
+  },
+  "$defs": {
+    "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "relativePath", "expectedHash", "contentHash", "reason"],
+      "properties": {
+        "kind": { "enum": ["create", "replace", "unchanged", "prune", "reject"] },
+        "relativePath": { "type": "string", "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$)).+$" },
+        "expectedHash": { "anyOf": [{ "type": "string", "pattern": "^[0-9a-f]{64}$" }, { "type": "null" }] },
+        "contentHash": { "anyOf": [{ "type": "string", "pattern": "^[0-9a-f]{64}$" }, { "type": "null" }] },
+        "reason": { "type": "string" }
+      }
+    }
+  }
+}
