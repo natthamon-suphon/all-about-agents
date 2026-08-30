@@ -83,7 +83,7 @@
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/SKILL.md",
-      "sha256": "369c828c2e606d9381d2c2ad0364857c6bce864102352617856998e16008c5b9",
+      "sha256": "9379df5722fe0bd9876663809766d7d9c329fac4860b269517b5d191dc19c681",
       "mode": null
     },
     {
@@ -329,7 +329,7 @@
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/SKILL.md",
-      "sha256": "369c828c2e606d9381d2c2ad0364857c6bce864102352617856998e16008c5b9"
+      "sha256": "9379df5722fe0bd9876663809766d7d9c329fac4860b269517b5d191dc19c681"
     },
     {
       "relativePath": ".agents/skills/systematic-debugging/SKILL.md",
@@ -685,12 +685,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'session-compaction-resilience' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'subagent-driven-development' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {

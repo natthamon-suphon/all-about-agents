@@ -1,0 +1,14 @@
+{
+  "case": "approved-independent-plan",
+  "input": {
+    "planStatus": "explicitly-approved",
+    "taskCount": 2,
+    "tasksIndependent": true,
+    "writerScopes": ["src/alpha/**", "src/beta/**"]
+  },
+  "expected": {
+    "skillCheck": "required",
+    "dispatch": true,
+    "overlappingWriters": false
+  }
+}

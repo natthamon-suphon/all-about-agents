@@ -1,0 +1,15 @@
+{
+  "safeArgv": [
+    ["git", ["diff", "--", "src/$(touch injected).js"]],
+    ["node", ["scripts/verify.mjs", "--path", "reports/a;b"]]
+  ],
+  "unsafeShellStrings": [
+    "git diff -- src/$(touch injected).js",
+    "node scripts/verify.mjs --path reports/a;b",
+    "git status && git diff"
+  ],
+  "expected": {
+    "argvOnly": true,
+    "rejectShellInterpolation": true
+  }
+}

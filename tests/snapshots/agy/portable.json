@@ -237,7 +237,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/SKILL.md",
-      "sha256": "1d918428fc59f573f4a3204d35ba5a2e0d20aaa37d55cadb81682c8b3e099eb4"
+      "sha256": "ffb4561e87299d2bc53af9d6105f9181b0961f8a678f9aa4314b588d030d5fba"
     },
     {
       "relativePath": "skills/systematic-debugging/SKILL.md",
@@ -754,12 +754,6 @@
     {
       "code": "missing-skill-source",
       "severity": "error",
-      "message": "Canonical skill 'subagent-driven-development' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
       "message": "Canonical skill 'systematic-debugging' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
@@ -845,7 +839,7 @@
     "skills/research/SKILL.md": "a12c2c9b2df8a8c972325a33e03e0c62db8dc440aa85553882321b8fb1239071",
     "skills/resolving-merge-conflicts/SKILL.md": "bf51fc1fee2bcf2806ec403014218dd3d51a3365b6b7b15066d283664dfb5759",
     "skills/session-compaction-resilience/SKILL.md": "dd7eb3567e33d63106a956ead208bb219ebb96d52b82d30309e8208f31c5d484",
-    "skills/subagent-driven-development/SKILL.md": "1d918428fc59f573f4a3204d35ba5a2e0d20aaa37d55cadb81682c8b3e099eb4",
+    "skills/subagent-driven-development/SKILL.md": "ffb4561e87299d2bc53af9d6105f9181b0961f8a678f9aa4314b588d030d5fba",
     "skills/systematic-debugging/SKILL.md": "81f4d05661f785a7cbb70b182249f3f97e8fbd3aa68f40e0cbaf0fcde8ebe5d8",
     "skills/test-driven-development/SKILL.md": "feaeeaf94fd12e19fa64ea596b7d49e5c9ff9ddb730fd17fd677c9103cc17fa9",
     "skills/threat-modeling-and-security/SKILL.md": "db052719fba8f0e27049ec9185f8b1159a40b86008c97d2e189593e6ad30879b",
