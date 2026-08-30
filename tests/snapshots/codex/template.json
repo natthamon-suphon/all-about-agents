@@ -63,7 +63,7 @@
     },
     {
       "relativePath": ".agents/skills/requesting-code-review/SKILL.md",
-      "sha256": "70b1598da549bef2c8d06e2747563121c01a30e0c3748c04048b9f62fe60bc0a",
+      "sha256": "ccbb732b3bff366e16fc21c74975abae597521992052e04f30311620d692c4d0",
       "mode": null
     },
     {
@@ -313,7 +313,7 @@
     },
     {
       "relativePath": ".agents/skills/requesting-code-review/SKILL.md",
-      "sha256": "70b1598da549bef2c8d06e2747563121c01a30e0c3748c04048b9f62fe60bc0a"
+      "sha256": "ccbb732b3bff366e16fc21c74975abae597521992052e04f30311620d692c4d0"
     },
     {
       "relativePath": ".agents/skills/research/SKILL.md",
@@ -649,12 +649,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'receiving-code-review' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'requesting-code-review' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
