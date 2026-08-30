@@ -213,9 +213,14 @@ function addFile(files, relativePath, content, mode = null, contentKind = "gener
 }
 
 function validateDesktopContent(files, opaqueCompanionPaths = new Set()) {
-  const decoder = new TextDecoder();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
   for (const file of files) {
-    const content = decoder.decode(file.content);
+    let content;
+    try {
+      content = decoder.decode(file.content);
+    } catch {
+      throw new TypeError(`Antigravity Desktop render rejected non-UTF-8 body in ${file.relativePath}`);
+    }
     if (opaqueCompanionPaths.has(file.relativePath)) continue;
     for (const forbidden of FORBIDDEN_DESKTOP_CONTENT) {
       if (forbidden.pattern.test(content)) {
