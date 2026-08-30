@@ -139,7 +139,7 @@ export function parseArgs(argv, options = {}) {
     fail("inapplicable-statusline-name", "inapplicable --statusline-name: it applies only to the Claude surface");
   }
   if (statuslineName === null) {
-    if (options.interactive === true) {
+    if (options.interactive === true && surfaces.includes("claude")) {
       if (typeof options.prompt !== "function") fail("interactive-prompt-required", "Interactive statusline input requires an injected prompt callback");
       statuslineName = validateStatuslineName(options.prompt("Statusline display name"));
     } else {

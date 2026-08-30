@@ -1,6 +1,7 @@
 import { lstatSync, readFileSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { hashBytes, SHA256_HEX } from "./hash.mjs";
+import { assertSafeDestinationRoot } from "./roots.mjs";
 
 const SURFACES = new Set(["claude", "codex", "antigravity-2", "agy"]);
 const ACTION_KINDS = new Set(["create", "replace", "unchanged", "prune", "reject"]);
@@ -109,6 +110,13 @@ export function buildPlan({ payload, destinationRoot, previousState = null } = {
   const surface = surfaceFor(payload);
   const files = payloadFiles(payload);
   const diagnostics = Array.isArray(payload.diagnostics) ? payload.diagnostics.map((entry) => ({ ...entry })) : [];
+  let rootSafetyError = null;
+  try {
+    assertSafeDestinationRoot(root);
+  } catch (error) {
+    rootSafetyError = error;
+    diagnostics.push(issue("unsafe-destination-root", "error", `destination root rejected: ${error.message}`, null));
+  }
   const ownership = new Map();
   if (Array.isArray(payload.ownership)) {
     for (const entry of payload.ownership) {
@@ -126,6 +134,10 @@ export function buildPlan({ payload, destinationRoot, previousState = null } = {
     const relativePath = file.relativePath;
     desired.add(relativePath);
     const contentHash = hashBytes(file.content);
+    if (rootSafetyError) {
+      actions.push(action("reject", relativePath, null, contentHash, `destination root is unsafe: ${rootSafetyError.code || "unknown error"}`));
+      continue;
+    }
     const declaredHash = ownership.get(relativePath);
     const target = resolve(root, ...relativePath.split("/"));
     const contained = relative(root, target);
@@ -170,6 +182,10 @@ export function buildPlan({ payload, destinationRoot, previousState = null } = {
   if (priorOwnership) {
     for (const [relativePath, expectedHash] of [...priorOwnership.entries()].sort(([left], [right]) => compare(left, right))) {
       if (desired.has(relativePath)) continue;
+      if (rootSafetyError) {
+        actions.push(action("reject", relativePath, expectedHash, null, `destination root is unsafe: ${rootSafetyError.code || "unknown error"}`));
+        continue;
+      }
       const target = resolve(root, ...relativePath.split("/"));
       const targetStatus = targetKind(root, target);
       if (["unsafe-root", "invalid-root", "symlink", "unreadable", "parent-not-directory"].includes(targetStatus.kind)) {

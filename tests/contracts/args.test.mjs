@@ -94,3 +94,12 @@ test("omitted statusline input is non-blocking by default and can be explicitly 
   assert.equal(prompts, 1);
   assert.throws(() => parseArgs(["--surface", "claude"], { interactive: true }), /prompt callback/u);
 });
+
+test("interactive omitted statusline prompts only when Claude is selected", () => {
+  let prompts = 0;
+  const prompt = () => { prompts += 1; return "claude-user"; };
+  assert.equal(parseArgs(["--surface", "codex"], { interactive: true, prompt }).statuslineName, "");
+  assert.equal(prompts, 0);
+  assert.equal(parseArgs(["--surface", "all"], { interactive: true, prompt }).statuslineName, "claude-user");
+  assert.equal(prompts, 1);
+});

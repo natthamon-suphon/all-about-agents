@@ -100,3 +100,17 @@ test("buildPlan disables pruning for malformed prior state and is deterministic"
     assert.equal(validateSchema({ schema: planSchema, value: first, sourcePath: "plan.json" }).valid, true);
   });
 });
+
+test("buildPlan fails closed when a nonexistent root crosses a symlink ancestor", async () => {
+  await withTempRoot(async (root) => {
+    const outside = join(root, "outside");
+    const alias = join(root, "alias");
+    await mkdir(outside);
+    try { await symlink(outside, alias, process.platform === "win32" ? "junction" : "dir"); } catch { return; }
+    const destinationRoot = join(alias, "missing-root");
+    const plan = buildPlan({ payload: payloadFor([{ relativePath: "x.txt", content: bytes("x"), mode: null }]), destinationRoot, previousState: null });
+    const action = plan.actions.find((entry) => entry.relativePath === "x.txt");
+    assert.equal(action.kind, "reject");
+    assert.match(action.reason, /symlink|junction|unsafe|ancestor/u);
+  });
+});

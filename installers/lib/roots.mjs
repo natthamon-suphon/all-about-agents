@@ -1,4 +1,4 @@
-import { lstatSync } from "node:fs";
+import { lstatSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { posix, win32 } from "node:path";
 
@@ -43,6 +43,51 @@ function rawTraversal(value, pathModule) {
   return value.split(separator).some((segment) => segment === "..");
 }
 
+function canonicalPath(value, pathModule) {
+  const normalized = pathModule.normalize(value);
+  return pathModule === win32 ? normalized.toLowerCase() : normalized;
+}
+
+function sameFileIdentity(left, right) {
+  return left.dev === right.dev && left.ino === right.ino;
+}
+
+function inspectExistingEntry(current, pathModule) {
+  let metadata;
+  try {
+    metadata = lstatSync(current);
+  } catch (error) {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR" || error?.code === "UNKNOWN") return false;
+    fail("unreadable-root", `unable to inspect destination root ancestor: ${error.message}`);
+  }
+  if (metadata.isSymbolicLink()) fail("unsafe-root", "destination root may not cross a symlink or junction ancestor");
+  if (!metadata.isDirectory()) fail("invalid-root", "destination root ancestors must be directories");
+  // Tests may exercise foreign-platform path semantics on the host platform.
+  // Do not apply host-native canonicalization to those synthetic paths.
+  const nativePlatformMatches = (pathModule === win32 && process.platform === "win32") || (pathModule !== win32 && process.platform !== "win32");
+  if (!nativePlatformMatches) return true;
+  // On Windows, a directory reparse point can redirect without being reported
+  // as a symbolic link. Resolving every existing component and comparing it
+  // with the lexical path rejects that class of redirection conservatively.
+  try {
+    const resolved = realpathSync.native(current);
+    if (canonicalPath(resolved, pathModule) !== canonicalPath(current, pathModule)) {
+      // Windows may expose an ordinary directory through an 8.3 short-name
+      // alias. Permit that spelling only when the native file identity is
+      // unchanged; a junction or other redirect has a different identity and
+      // therefore remains fail-closed even when it is reported as a directory.
+      if (pathModule !== win32 || !sameFileIdentity(lstatSync(current), lstatSync(resolved))) {
+        fail("unsafe-root", "destination root may not cross a redirecting reparse point");
+      }
+    }
+  } catch (error) {
+    if (error instanceof RootResolutionError) throw error;
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR" || error?.code === "UNKNOWN") return false;
+    fail("unreadable-root", `unable to canonicalize destination root ancestor: ${error.message}`);
+  }
+  return true;
+}
+
 function candidatePath(value, homeDir, pathModule) {
   if (typeof value !== "string" || value.trim() === "" || value.includes("\0")) fail("invalid-root", "destination root must be a non-empty path");
   const trimmed = value.trim();
@@ -62,27 +107,21 @@ function inspectExistingAncestors(root, pathModule) {
   const segments = relativePath === "" ? [] : relativePath.split(pathModule.sep).filter(Boolean);
   for (const segment of segments) {
     current = pathModule.join(current, segment);
-    try {
-      const metadata = lstatSync(current);
-      if (metadata.isSymbolicLink()) fail("unsafe-root", "destination root may not cross a symlink or junction ancestor");
-      if (!metadata.isDirectory()) fail("invalid-root", "destination root ancestors must be directories");
-    } catch (error) {
-      if (error instanceof RootResolutionError) throw error;
-      // Once a component is absent, every descendant is absent too. Keep the
-      // unresolved suffix intact; the plan/apply layer will create it safely.
-      if (error?.code === "ENOENT" || error?.code === "ENOTDIR" || error?.code === "UNKNOWN") return;
-      fail("unreadable-root", `unable to inspect destination root ancestor: ${error.message}`);
-    }
+    // Once a component is absent, every descendant is absent too. Keep the
+    // unresolved suffix intact; the plan/apply layer will create it safely.
+    if (!inspectExistingEntry(current, pathModule)) return;
   }
 
-  try {
-    const metadata = lstatSync(root);
-    if (metadata.isSymbolicLink()) fail("unsafe-root", "destination root may not be a symlink or junction");
-    if (!metadata.isDirectory()) fail("invalid-root", "destination root must be a directory");
-  } catch (error) {
-    if (error instanceof RootResolutionError) throw error;
-    if (error?.code !== "ENOENT" && error?.code !== "ENOTDIR" && error?.code !== "UNKNOWN") fail("unreadable-root", `unable to inspect destination root: ${error.message}`);
-  }
+  inspectExistingEntry(root, pathModule);
+}
+
+/** Validate an already-resolved root without creating or mutating it. */
+export function assertSafeDestinationRoot(root, { platform = process.platform } = {}) {
+  const pathModule = moduleFor(platform);
+  if (typeof root !== "string" || !pathModule.isAbsolute(root) || root.includes("\0")) fail("invalid-root", "destination root must be an absolute path");
+  const normalized = pathModule.normalize(root);
+  inspectExistingAncestors(normalized, pathModule);
+  return normalized;
 }
 
 /**
@@ -111,4 +150,4 @@ export function resolveDestinationRoot({ surface, override = null, env = process
   return root;
 }
 
-export { isContained };
+export { isContained, inspectExistingAncestors };
