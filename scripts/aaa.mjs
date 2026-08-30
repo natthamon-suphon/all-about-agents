@@ -470,9 +470,9 @@ export { renderPlans };
 
 export async function main(args, output = process.stdout, errorOutput = process.stderr, runtime = {}) {
   const invocationCwd = process.cwd();
-  const cwd = REPOSITORY_ROOT;
   const argv = Array.isArray(args) ? args : [];
   const runtimeOptions = runtime && typeof runtime === "object" ? runtime : {};
+  const cwd = typeof runtimeOptions.repositoryRoot === "string" ? resolve(runtimeOptions.repositoryRoot) : REPOSITORY_ROOT;
   const interactive = runtimeOptions.interactive === undefined
     ? output === process.stdout && process.stdin.isTTY === true && process.stdout.isTTY === true
     : runtimeOptions.interactive === true;

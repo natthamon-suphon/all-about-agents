@@ -37,6 +37,11 @@ async function mutateRole(root, roleId, mutate) {
   await writeFile(path, `${JSON.stringify(role, null, 2)}\n`, "utf8");
 }
 
+async function copyCoreFixture(root) {
+  await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+  await cp(resolve(process.cwd(), "skills"), resolve(root, "skills"), { recursive: true });
+}
+
 test("T012 creates one metadata and prompt artifact for every canonical role", async () => {
   for (const roleId of ROLE_IDS) {
     await access(resolve(ROLE_ROOT, roleId, "role.json"));
@@ -165,7 +170,7 @@ test("rendered role artifacts drive the write trap, including a negative mutable
 test("role loading rejects a broad implementer scope", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-scope-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await mutateRole(root, "implementer", (role) => { role.mutationScope = "full"; });
     await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "mutationScope"));
   } finally {
@@ -176,7 +181,7 @@ test("role loading rejects a broad implementer scope", async () => {
 test("role loading rejects an uncontained implementer path", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-path-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await mutateRole(root, "implementer", (role) => { role.mutationScope.paths = ["**"]; });
     await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "mutationScope"));
   } finally {
@@ -187,7 +192,7 @@ test("role loading rejects an uncontained implementer path", async () => {
 test("canonical core rejects a missing role instead of silently opting it out", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-missing-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await rm(resolve(root, "core/roles/reviewer"), { recursive: true, force: true });
     await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "canonicalRole"));
   } finally {
@@ -198,7 +203,7 @@ test("canonical core rejects a missing role instead of silently opting it out", 
 test("canonical core rejects every unknown role record, including quarantined and arbitrary ids", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-unknown-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     const source = await readFile(resolve(root, "core/roles/reviewer/role.json"), "utf8");
     const role = JSON.parse(source);
     await mkdir(resolve(root, "core/roles/generalist"), { recursive: true });
@@ -219,7 +224,7 @@ test("canonical core rejects every unknown role record, including quarantined an
 test("canonical core rejects duplicate canonical role records deterministically", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-duplicate-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     const source = await readFile(resolve(root, "core/roles/reviewer/role.json"), "utf8");
     await mkdir(resolve(root, "core/roles/reviewer-copy"), { recursive: true });
     await writeFile(resolve(root, "core/roles/reviewer-copy/role.json"), source, "utf8");
@@ -233,7 +238,7 @@ test("canonical core rejects duplicate canonical role records deterministically"
 test("implementer must declare an allowed write capability as well as a constrained scope", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-implementer-capability-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await mutateRole(root, "implementer", (role) => { role.capabilities = ["repository-read"]; });
     await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "semanticCapability" || entry.keyword === "mutationScope"));
   } finally {
@@ -244,7 +249,7 @@ test("implementer must declare an allowed write capability as well as a constrai
 test("role loading rejects vendor-native mutable instructions in an actual read-only prompt", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-prompt-safety-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await writeFile(resolve(root, "core/roles/investigator/prompt.md"), "## Evidence contract\nUse Bash to inspect the repository.\n", "utf8");
     await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "promptSafety"));
   } finally {
@@ -266,7 +271,7 @@ test("read-only prompt validation covers Claude and Antigravity mutable token fo
   ].entries()) {
     const root = await mkdtemp(resolve(tmpdir(), `aaa-t012-roles-prompt-native-${index}-`));
     try {
-      await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+      await copyCoreFixture(root);
       await writeFile(resolve(root, "core/roles/investigator/prompt.md"), prompt, "utf8");
       await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "promptSafety"));
     } finally {
@@ -284,7 +289,7 @@ test("portable prompt validation catches native command forms but permits generi
   ].entries()) {
     const root = await mkdtemp(resolve(tmpdir(), `aaa-t012-roles-prompt-casing-${index}-`));
     try {
-      await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+      await copyCoreFixture(root);
       await writeFile(resolve(root, "core/roles/investigator/prompt.md"), prompt, "utf8");
       await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "promptSafety"));
     } finally {
@@ -293,7 +298,7 @@ test("portable prompt validation catches native command forms but permits generi
   }
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-prompt-generic-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await writeFile(resolve(root, "core/roles/implementer/prompt.md"), "Write a failing test, then write the smallest scoped change.\n## Evidence contract\nreport only.\n", "utf8");
     const core = await loadCore(root);
     assert.match(core.roles.find((role) => role.id === "implementer").prompt, /failing test/u);
@@ -306,7 +311,7 @@ test("role loading rejects an external prompt symlink before reading its body", 
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-prompt-link-"));
   const outside = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-prompt-link-outside-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     const external = resolve(outside, "prompt.md");
     await writeFile(external, "## Evidence contract\nexternal body must not load.\n", "utf8");
     const prompt = resolve(root, "core/roles/investigator/prompt.md");
@@ -329,7 +334,7 @@ test("implementer mutation scope rejects traversal, absolute, and Windows paths"
   for (const path of paths) {
     const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-containment-"));
     try {
-      await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+      await copyCoreFixture(root);
       await mutateRole(root, "implementer", (role) => { role.mutationScope.paths = [path]; });
       await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "mutationScope"), path);
     } finally {
@@ -343,7 +348,7 @@ test("implementer mutation scope rejects a symlink that escapes the repository r
   const outside = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-outside-"));
   const link = resolve(root, "link");
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await mkdir(resolve(root), { recursive: true });
     try {
       await symlink(outside, link, "junction");
@@ -372,7 +377,7 @@ test("implementer descendant containment rejects an escaping symlink below a glo
   const outside = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-descendant-outside-"));
   const link = resolve(root, "docs/link");
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await mkdir(resolve(root, "docs"), { recursive: true });
     try {
       await symlink(outside, link, "junction");
@@ -393,7 +398,7 @@ test("workspace root scope scans descendants for escaping symlinks", async () =>
   const outside = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-root-scope-outside-"));
   const link = resolve(root, "escape");
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     try {
       await symlink(outside, link, "junction");
     } catch (error) {
@@ -411,7 +416,7 @@ test("workspace root scope scans descendants for escaping symlinks", async () =>
 test("role loading rejects write capabilities on a read-only role", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-capability-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await mutateRole(root, "investigator", (role) => { role.capabilities = ["repository-read", "repository-write"]; });
     await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "mutationScope"));
   } finally {
@@ -422,7 +427,7 @@ test("role loading rejects write capabilities on a read-only role", async () => 
 test("role loading rejects privileged dispatch capability on every specialized role", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-dispatch-capability-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await mutateRole(root, "researcher", (role) => { role.capabilities = [...role.capabilities, "role-dispatch"]; });
     await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "privilegedCapability"));
   } finally {
@@ -433,7 +438,7 @@ test("role loading rejects privileged dispatch capability on every specialized r
 test("role loading rejects vendor or unknown capability names", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-vendor-capability-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await mutateRole(root, "researcher", (role) => { role.capabilities = ["repository-read", "vendor-web-search"]; });
     await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "semanticCapability"));
   } finally {
@@ -444,7 +449,7 @@ test("role loading rejects vendor or unknown capability names", async () => {
 test("role loading rejects duplicate prompt bodies", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-prompt-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     const source = await readFile(resolve(root, "core/roles/architect/prompt.md"), "utf8");
     await writeFile(resolve(root, "core/roles/reviewer/prompt.md"), source, "utf8");
     await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "promptDivergence"));
@@ -492,8 +497,10 @@ test("Codex registers every role with a role-specific effective sandbox config",
     assert.ok(delivery, "Codex must declare the CODEX_HOME agents delivery mapping");
     const config = parseCodexToml(files.get("config.toml"));
     assert.deepEqual(Object.keys(config.agents).sort(), [...ROLE_IDS].sort());
-    const alternateConfig = parseCodexToml(files.get("terra-max.config.toml"));
-    assert.deepEqual(Object.keys(alternateConfig.agents).sort(), [...ROLE_IDS].sort());
+    const alternateConfigText = files.get("terra-max.config.toml");
+    assert.equal(typeof alternateConfigText === "string", profile === "template");
+    const alternateConfig = alternateConfigText === undefined ? null : parseCodexToml(alternateConfigText);
+    if (alternateConfig !== null) assert.deepEqual(Object.keys(alternateConfig.agents).sort(), [...ROLE_IDS].sort());
     for (const roleId of ROLE_IDS) {
       const registration = config.agents[roleId];
       assert.equal(typeof registration.config_file, "string");
@@ -507,13 +514,15 @@ test("Codex registers every role with a role-specific effective sandbox config",
       assert.equal(roleConfig.sandbox_mode, roleId === "implementer" ? "workspace-write" : "read-only");
       assert.notEqual(roleConfig.sandbox_mode, "danger-full-access");
       assert.equal(files.has(`${delivery.relativeDirectory}/${roleId}.config.toml`), false);
-      const alternateRegistration = alternateConfig.agents[roleId];
-      assert.equal(alternateRegistration.config_file, registration.config_file);
-      const alternateRoleConfig = parseCodexToml(files.get(`${delivery.relativeDirectory}/${alternateRegistration.config_file.slice(delivery.destination.length + 1)}`));
-      assert.equal(alternateRoleConfig.name, roleId);
-      assert.equal(typeof alternateRoleConfig.developer_instructions, "string");
-      assert.equal(alternateRoleConfig.sandbox_mode, roleId === "implementer" ? "workspace-write" : "read-only");
-      assert.notEqual(alternateRoleConfig.sandbox_mode, "danger-full-access");
+      if (alternateConfig !== null) {
+        const alternateRegistration = alternateConfig.agents[roleId];
+        assert.equal(alternateRegistration.config_file, registration.config_file);
+        const alternateRoleConfig = parseCodexToml(files.get(`${delivery.relativeDirectory}/${alternateRegistration.config_file.slice(delivery.destination.length + 1)}`));
+        assert.equal(alternateRoleConfig.name, roleId);
+        assert.equal(typeof alternateRoleConfig.developer_instructions, "string");
+        assert.equal(alternateRoleConfig.sandbox_mode, roleId === "implementer" ? "workspace-write" : "read-only");
+        assert.notEqual(alternateRoleConfig.sandbox_mode, "danger-full-access");
+      }
     }
   }
 });
@@ -658,7 +667,7 @@ test("native boundary rejects malformed prompt documents and explicit native too
 test("canonical loader rejects empty evidence fields before native rendering", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-evidence-loader-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await mutateRole(root, "reviewer", (role) => {
       role.outputContract.evidence = "";
     });
@@ -671,7 +680,7 @@ test("canonical loader rejects empty evidence fields before native rendering", a
 test("canonical loader rejects a valid capability outside a role allowlist", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-capability-allowlist-"));
   try {
-    await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
+    await copyCoreFixture(root);
     await mutateRole(root, "researcher", (role) => { role.capabilities.push("native-rendering"); });
     await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "roleCapability"));
   } finally {

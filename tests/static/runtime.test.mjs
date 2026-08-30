@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
+import { main } from "../../scripts/aaa.mjs";
+
 const requiredOutputs = [
   ".gitignore",
   "package.json",
@@ -148,13 +150,11 @@ test("CLI returns exit code 1 when repository validation fails", async () => {
   const root = await mkdtemp(join(tmpdir(), "aaa-invalid-root-"));
   try {
     for (const action of ["validate", "doctor"]) {
-      const result = spawnSync(
-        process.execPath,
-        [resolve(process.cwd(), "scripts/aaa.mjs"), action],
-        { cwd: root, encoding: "utf8" }
-      );
-      assert.equal(result.status, 1, `${action} should report failure`);
-      assert.match(result.stderr, /Foundation validation failed/);
+      let stdout = "";
+      let stderr = "";
+      const status = await main([action], { write: (value) => { stdout += value; } }, { write: (value) => { stderr += value; } }, { repositoryRoot: root });
+      assert.equal(status, 1, `${action} should report failure`);
+      assert.match(stderr, /Foundation validation failed/);
     }
   } finally {
     await rm(root, { force: true, recursive: true });

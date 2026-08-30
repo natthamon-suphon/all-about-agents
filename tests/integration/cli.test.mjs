@@ -68,7 +68,7 @@ test("interactive install prompts once for the omitted Claude statusline name", 
     assert.equal(result.code, 0);
     assert.equal(promptCount, 1);
     assert.deepEqual(labels, ["Statusline display name"]);
-    const statusline = JSON.parse(await readFile(resolve(root, "config", "statusline.json"), "utf8"));
+    const statusline = JSON.parse(await readFile(resolve(root, "all-about-agents", "statusline.json"), "utf8"));
     assert.equal(statusline.displayName, "T048 interactive");
   });
 });
@@ -147,7 +147,7 @@ test("diff redacts quoted JSON secret fields from disposable managed files", asy
   await withTempRoot(async (root) => {
     const applied = await capture(["install", "--surface", "claude", "--destination-root", root, "--apply", "--format", "json"]);
     assert.equal(applied.code, 0);
-    await writeFile(resolve(root, "config", "settings.json"), '{"token":"should-not-appear"}\n', "utf8");
+    await writeFile(resolve(root, "settings.json"), '{"token":"should-not-appear"}\n', "utf8");
     const result = await capture(["diff", "--surface", "claude", "--destination-root", root, "--format", "json"]);
     assert.equal(result.code, 0);
     assert.doesNotMatch(result.stdout, /should-not-appear/u);
