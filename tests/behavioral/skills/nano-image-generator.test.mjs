@@ -53,7 +53,7 @@ assert request.get_header("X-goog-api-key") == "top-secret"
 assert "top-secret" not in request.full_url and "?key=" not in request.full_url
 assert "top-secret" not in m.safe_http_message(403, "top-secret sensitive body")
 `;
-  const result = spawnSync("python", ["-c", probe], { encoding: "utf8" });
+  const result = spawnSync("python", ["-B", "-c", probe], { encoding: "utf8" });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 });
 
