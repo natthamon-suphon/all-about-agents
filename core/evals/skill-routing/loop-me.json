@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "loop-me-routing",
+  "skill": "loop-me",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "LM-TRIGGER-explicit-workflow-grill",
+      "critical": true,
+      "prompt": "The human explicitly invokes loop-me and asks to be grilled about a recurring workflow until an implementer can build it. Determine the next action.",
+      "expected": {
+        "skillCheck": "required",
+        "explicitInvocation": true,
+        "workflowScope": true,
+        "wrapperOwnsArtifact": true,
+        "useInterviewing": true,
+        "oneQuestionAtATime": true,
+        "recommendationAttached": true,
+        "recordDecision": true,
+        "specificationReadyStop": true,
+        "stopWhenImplementable": true
+      },
+      "observables": [
+        "Recognizes the explicit loop-me invocation and limits the session to a workflow specification.",
+        "Uses one material question at a time with a recommendation and records each decision in the wrapper-owned artifact.",
+        "Stops when the workflow is implementation-ready rather than continuing with exploratory questions."
+      ]
+    },
+    {
+      "id": "LM-NONTRIGGER-normal-feature",
+      "critical": true,
+      "prompt": "A user asks to build a normal feature and does not invoke loop-me. Determine whether to start workflow grilling.",
+      "expected": {
+        "skillCheck": "not-required",
+        "explicitInvocation": false,
+        "autoInvokeLoopMe": false,
+        "normalBrainstormingRouting": true,
+        "longInterview": false,
+        "askLoopQuestions": false,
+        "inventWorkflow": false
+      },
+      "observables": [
+        "Does not auto-route an ordinary feature request to loop-me.",
+        "Keeps normal feature design on the applicable brainstorming path without starting an unrequested interview.",
+        "Does not invent a recurring workflow or create a workflow specification."
+      ]
+    },
+    {
+      "id": "LM-PRESSURE-endless-questioning",
+      "critical": true,
+      "prompt": "The human insists that loop-me keep asking questions forever even though every applicable workflow field is decided and no material unknown remains. Determine how to proceed.",
+      "expected": {
+        "skillCheck": "required",
+        "explicitInvocation": true,
+        "specificationReady": true,
+        "unresolvedMaterialQuestions": 0,
+        "stopWhenReady": true,
+        "endlessQuestioning": false,
+        "oneQuestionAtATime": true,
+        "inferHumanAnswer": false,
+        "pressureResistance": true,
+        "returnArtifact": true
+      },
+      "observables": [
+        "Counts the readiness checklist as complete and stops instead of asking decorative or endless questions.",
+        "Resists urgency, sunk-time, or persistence pressure while preserving the finished workflow artifact.",
+        "Does not reopen decided branches or invent additional human answers."
+      ]
+    }
+  ]
+}

@@ -43,7 +43,7 @@
     },
     {
       "relativePath": ".agents/skills/loop-me/SKILL.md",
-      "sha256": "8fec320b22e4e0b249a1db664a67abc79fce74c47149b85b85899181937cfb9a",
+      "sha256": "13256b6e7e47a2f93e6c65cb440b9d12c1cc722229afac5d58e7b255e498f679",
       "mode": null
     },
     {
@@ -297,7 +297,7 @@
     },
     {
       "relativePath": ".agents/skills/loop-me/SKILL.md",
-      "sha256": "8fec320b22e4e0b249a1db664a67abc79fce74c47149b85b85899181937cfb9a"
+      "sha256": "13256b6e7e47a2f93e6c65cb440b9d12c1cc722229afac5d58e7b255e498f679"
     },
     {
       "relativePath": ".agents/skills/nano-image-generator/SKILL.md",
@@ -655,12 +655,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'improve-codebase-architecture' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'loop-me' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
