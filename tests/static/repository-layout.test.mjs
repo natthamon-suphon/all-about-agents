@@ -4,23 +4,25 @@ import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 
-const legacyTopLevelDirectories = [
-  ".claude-plugin",
+const activeTopLevelDirectories = [
   ".idea",
-  "agents",
-  "configs",
+  "adapters",
+  "core",
   "docs",
-  "hooks",
+  "installers",
+  "profiles",
+  "quarantine",
   "scripts",
-  "setup",
-  "skills",
-  "statusline"
+  "tests"
 ];
 
-test("new test directories coexist with every legacy top-level directory", async () => {
-  for (const relativePath of [...legacyTopLevelDirectories, "tests", "tests/helpers", "tests/static"]) {
+test("canonical directories replace active legacy top-level sources", async () => {
+  for (const relativePath of [...activeTopLevelDirectories, "tests/helpers", "tests/static", "quarantine/legacy"]) {
     const details = await stat(resolve(process.cwd(), relativePath));
     assert.ok(details.isDirectory(), `${relativePath} must remain a directory`);
+  }
+  for (const relativePath of ["agents", "configs", "hooks", "setup", "skills", "statusline", ".claude-plugin"]) {
+    await assert.rejects(stat(resolve(process.cwd(), relativePath)), (error) => error?.code === "ENOENT");
   }
 });
 

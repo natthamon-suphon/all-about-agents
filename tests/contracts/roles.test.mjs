@@ -39,7 +39,6 @@ async function mutateRole(root, roleId, mutate) {
 
 async function copyCoreFixture(root) {
   await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
-  await cp(resolve(process.cwd(), "skills"), resolve(root, "skills"), { recursive: true });
 }
 
 test("T012 creates one metadata and prompt artifact for every canonical role", async () => {

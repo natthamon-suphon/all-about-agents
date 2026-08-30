@@ -237,14 +237,14 @@
       "mode": null
     },
     {
+      "relativePath": ".agents/skills/systematic-debugging/hitl-loop.template.sh",
+      "sha256": "18ae07e1cc49b32c71767e241a6e8de4be74ef21d5e3b7e39034d9c7335f2d80",
+      "mode": 493
+    },
+    {
       "relativePath": ".agents/skills/systematic-debugging/root-cause-tracing.md",
       "sha256": "d2944b36766e51ccecb9f9e891d3b1c56f3122bcd575675c800100bed7be1da7",
       "mode": null
-    },
-    {
-      "relativePath": ".agents/skills/systematic-debugging/scripts/hitl-loop.template.sh",
-      "sha256": "18ae07e1cc49b32c71767e241a6e8de4be74ef21d5e3b7e39034d9c7335f2d80",
-      "mode": 493
     },
     {
       "relativePath": ".agents/skills/systematic-debugging/test-academic.md",
@@ -697,12 +697,12 @@
       "sha256": "67e952c46a9f5d15570242425bc2a9895e793ca95c72f9e830040453155f866d"
     },
     {
-      "relativePath": ".agents/skills/systematic-debugging/root-cause-tracing.md",
-      "sha256": "d2944b36766e51ccecb9f9e891d3b1c56f3122bcd575675c800100bed7be1da7"
+      "relativePath": ".agents/skills/systematic-debugging/hitl-loop.template.sh",
+      "sha256": "18ae07e1cc49b32c71767e241a6e8de4be74ef21d5e3b7e39034d9c7335f2d80"
     },
     {
-      "relativePath": ".agents/skills/systematic-debugging/scripts/hitl-loop.template.sh",
-      "sha256": "18ae07e1cc49b32c71767e241a6e8de4be74ef21d5e3b7e39034d9c7335f2d80"
+      "relativePath": ".agents/skills/systematic-debugging/root-cause-tracing.md",
+      "sha256": "d2944b36766e51ccecb9f9e891d3b1c56f3122bcd575675c800100bed7be1da7"
     },
     {
       "relativePath": ".agents/skills/systematic-debugging/test-academic.md",

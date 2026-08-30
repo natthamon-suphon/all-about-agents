@@ -1,12 +1,14 @@
 # Every text file in this repo is LF, in the repository AND in the working tree.
 # The catch-all below is load-bearing: this plugin ships extension-less shell
-# scripts (hooks/session-start, skills/subagent-driven-development/scripts/*)
+# scripts (core/skills/subagent-driven-development/scripts/* and quarantined
+# legacy hook launchers)
 # that none of the globs cover, and bash cannot parse them with CRLF endings.
 * text=auto eol=lf
 
 # Ensure shell scripts always have LF line endings
 *.sh text eol=lf
-hooks/session-start text eol=lf
+core/skills/subagent-driven-development/scripts/* text eol=lf
+quarantine/legacy/hooks/session-start text eol=lf
 
 # Ensure the polyglot wrapper keeps LF (it's parsed by both cmd and bash)
 *.cmd text eol=lf

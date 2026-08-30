@@ -191,8 +191,18 @@ test("Claude settings registration documents one shared CLI/Desktop config root"
   });
 });
 
-test("Claude plugin registration resolves through the checked-in development marketplace", () => {
-  const registration = resultFor().registrations.find((entry) => entry.kind === "plugin-registration");
+test("Claude package renders a self-contained development marketplace and two-step registration", () => {
+  const result = resultFor();
+  const files = fileMap(result);
+  const plugin = JSON.parse(files.get(".claude-plugin/plugin.json"));
+  const marketplace = JSON.parse(files.get(".claude-plugin/marketplace.json"));
+  assert.equal(marketplace.name, "all-about-agents-dev");
+  assert.equal(marketplace.plugins.length, 1);
+  assert.equal(marketplace.plugins[0].name, plugin.name);
+  assert.equal(marketplace.plugins[0].source, "./");
+  assert.equal(marketplace.plugins[0].version, plugin.version);
+  const registration = result.registrations.find((entry) => entry.kind === "plugin-registration");
+  assert.deepEqual(registration.marketplaceCommand, ["claude", "plugin", "marketplace", "add", "."]);
   assert.deepEqual(registration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]);
   assert.equal(registration.command.join(" "), "claude plugin install all-about-agents@all-about-agents-dev");
 });
@@ -280,7 +290,9 @@ test("Claude ownership manifest documents roots, mappings, and native validation
   assert.deepEqual([...manifest.readOnlyRoles.roles].sort(), ["architect", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]);
   assert.deepEqual(manifest.actions["aaa:design"], "commands/design.md");
   assert.deepEqual(manifest.nativeValidation.command, ["claude", "plugin", "validate", ".", "--strict"]);
+  assert.deepEqual(manifest.pluginRegistration.marketplaceCommand, ["claude", "plugin", "marketplace", "add", "."]);
   assert.deepEqual(manifest.pluginRegistration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]);
+  assert.ok(manifest.ownedPaths.includes(".claude-plugin/marketplace.json"));
   assert.deepEqual(manifest.preflight, CLAUDE_PREREQUISITES);
   assert.deepEqual(manifest.profiles.portable.settings.permissions, {
     defaultMode: "default",
@@ -306,7 +318,7 @@ test("Claude render is deterministic and matches the checked-in portable snapsho
   assert.deepEqual(snapshot.paths, first.files.map((file) => file.relativePath));
   assert.equal(snapshot.fileCount, first.files.length);
   assert.deepEqual(snapshot.settings, JSON.parse(fileMap(first).get("config/settings.json")));
-  assert.deepEqual(snapshot.content, Object.fromEntries([".claude-plugin/plugin.json", "agents/investigator.md", "config/settings.json", "hooks/hooks.json"].map((path) => [path, fileMap(first).get(path)])));
+  assert.deepEqual(snapshot.content, Object.fromEntries([".claude-plugin/marketplace.json", ".claude-plugin/plugin.json", "agents/investigator.md", "config/settings.json", "hooks/hooks.json"].map((path) => [path, fileMap(first).get(path)])));
   assert.deepEqual(snapshot.ownershipHashes, Object.fromEntries(first.ownership.map((entry) => [entry.relativePath, entry.sha256])));
   assert.deepEqual(snapshot.registration, first.registrations.find((entry) => entry.kind === "resolved-config-root"));
 });
@@ -317,7 +329,7 @@ test("template Claude snapshot keeps the approved model and permission shape", a
   const snapshot = JSON.parse(await readFile(resolve(process.cwd(), "tests/snapshots/claude/template.json"), "utf8"));
   assert.deepEqual(snapshot.settings, JSON.parse(files.get("config/settings.json")));
   assert.deepEqual(snapshot.paths, result.files.map((file) => file.relativePath));
-  assert.deepEqual(snapshot.content, Object.fromEntries([".claude-plugin/plugin.json", "agents/investigator.md", "config/settings.json", "hooks/hooks.json"].map((path) => [path, files.get(path)])));
+  assert.deepEqual(snapshot.content, Object.fromEntries([".claude-plugin/marketplace.json", ".claude-plugin/plugin.json", "agents/investigator.md", "config/settings.json", "hooks/hooks.json"].map((path) => [path, files.get(path)])));
   assert.deepEqual(snapshot.ownershipHashes, Object.fromEntries(result.ownership.map((entry) => [entry.relativePath, entry.sha256])));
   assert.deepEqual(snapshot.registration, result.registrations.find((entry) => entry.kind === "resolved-config-root"));
 });

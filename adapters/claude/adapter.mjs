@@ -349,6 +349,23 @@ function pluginManifest() {
   };
 }
 
+function marketplaceManifest(plugin) {
+  return {
+    name: "all-about-agents-dev",
+    description: "Generated local development marketplace for the All About Agents package.",
+    owner: { name: "All About Agents" },
+    plugins: [
+      {
+        name: plugin.name,
+        source: "./",
+        description: plugin.description,
+        version: plugin.version,
+        author: plugin.author
+      }
+    ]
+  };
+}
+
 function mappingsDocument() {
   const lines = [
     "# Claude adapter semantic mappings",
@@ -405,7 +422,9 @@ export function renderClaude(input = {}) {
   const skillRecords = new Map(core.skills.map((record) => [record.id || record.name, record]));
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
 
-  addFile(files, ".claude-plugin/plugin.json", renderJson(pluginManifest()));
+  const plugin = pluginManifest();
+  addFile(files, ".claude-plugin/plugin.json", renderJson(plugin));
+  addFile(files, ".claude-plugin/marketplace.json", renderJson(marketplaceManifest(plugin)));
   addFile(files, "config/settings.json", renderJson(settingsFor(semanticProfile)));
   addFile(files, "config/statusline.json", renderJson({ schemaVersion: 1, displayName: statuslineName }));
   addFile(files, "docs/semantic-mappings.md", mappingsDocument());
@@ -446,6 +465,7 @@ export function renderClaude(input = {}) {
         relativePath: ".claude-plugin/plugin.json",
         scope: "user",
         marketplace: "all-about-agents-dev",
+        marketplaceCommand: ["claude", "plugin", "marketplace", "add", "."],
         command: ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]
       },
       {

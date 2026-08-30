@@ -42,12 +42,7 @@ function relativeCompanion(owner, canonicalPath) {
 
 async function canonicalCompanionText(canonicalPath) {
   const corePath = resolve(process.cwd(), "core", ...canonicalPath.split("/"));
-  try {
-    return normalized(await readFile(corePath, "utf8"));
-  } catch (error) {
-    if (error?.code !== "ENOENT") throw error;
-    return normalized(await readFile(resolve(process.cwd(), ...canonicalPath.split("/")), "utf8"));
-  }
+  return normalized(await readFile(corePath, "utf8"));
 }
 
 function manifestProjection(core, result, prefix) {
@@ -173,5 +168,24 @@ test("loader rejects missing, escaping, and duplicate companion destinations", a
     await assert.rejects(loadCore(invalidUtf8Root), (error) => error.errors?.some((item) => item.keyword === "companionRead" && /UTF-8/iu.test(item.message)));
   } finally {
     await rm(invalidUtf8Root, { recursive: true, force: true });
+  }
+});
+
+test("loader never falls back from canonical core companions to quarantined legacy sources", async () => {
+  const root = await fixtureInventory({
+    name: "alpha",
+    source: "skills/alpha/SKILL.md",
+    assets: ["skills/alpha/legacy-only.md"],
+    scripts: []
+  });
+  try {
+    await mkdir(resolve(root, "skills/alpha"), { recursive: true });
+    await writeFile(resolve(root, "skills/alpha/legacy-only.md"), "legacy fallback must remain inactive\n", "utf8");
+    await assert.rejects(
+      loadCore(root),
+      (error) => error.errors?.some((item) => item.keyword === "companionRead" && /legacy-only\.md/u.test(item.sourcePath))
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });

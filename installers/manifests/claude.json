@@ -7,6 +7,7 @@
   "pluginManifest": ".claude-plugin/plugin.json",
   "pluginRegistration": {
     "marketplace": "all-about-agents-dev",
+    "marketplaceCommand": ["claude", "plugin", "marketplace", "add", "."],
     "command": ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]
   },
   "configRoot": {
@@ -87,6 +88,7 @@
   },
   "ownedPaths": [
     ".claude-plugin/plugin.json",
+    ".claude-plugin/marketplace.json",
     "skills/{skill}/SKILL.md",
     "agents/{role}.md",
     "commands/{command}.md",

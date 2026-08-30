@@ -640,8 +640,7 @@ async function attachSkillCompanions(root, coreRoot, inventory, entries, errors)
         }
         destinations.add(relativePath);
         const coreCandidate = resolve(coreRoot, ...canonicalPath.split("/"));
-        const legacyCandidate = resolve(root, ...canonicalPath.split("/"));
-        const path = await pathExists(coreCandidate) ? coreCandidate : legacyCandidate;
+        const path = coreCandidate;
         const sourcePath = toPortablePath(root, path);
         try {
           const metadata = await lstat(path);
@@ -649,7 +648,7 @@ async function attachSkillCompanions(root, coreRoot, inventory, entries, errors)
             errors.push(errorRecord(sourcePath, "", "companionContainment", "companion must be a regular, non-symlink file"));
             continue;
           }
-          const selectedRoot = path === coreCandidate ? coreRoot : root;
+          const selectedRoot = coreRoot;
           const [pathRealpath, selectedRootRealpath, ownerRealpath] = await Promise.all([
             realpath(path),
             realpath(selectedRoot),

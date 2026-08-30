@@ -26,41 +26,41 @@ const requiredOutputs = [
 ];
 
 const expectedBaselineFiles = new Map([
-  ["skills/test-driven-development/writing-good-tests.md", { kind: "asset", status: "stable" }],
-  ["skills/zero-downtime-migrations/postgres-expand-contract-examples.md", { kind: "asset", status: "stable" }],
-  ["agents/codebase-architect.json", { kind: "config", status: "manual" }],
-  ["agents/codebase-architect.md", { kind: "source", status: "manual" }],
-  ["agents/deep-investigator.json", { kind: "config", status: "manual" }],
-  ["agents/deep-investigator.md", { kind: "source", status: "manual" }],
-  ["agents/generalist.json", { kind: "config", status: "manual" }],
-  ["agents/generalist.md", { kind: "source", status: "manual" }],
-  ["agents/implementer.json", { kind: "config", status: "manual" }],
-  ["agents/implementer.md", { kind: "source", status: "manual" }],
-  ["agents/security-auditor.json", { kind: "config", status: "manual" }],
-  ["agents/security-auditor.md", { kind: "source", status: "manual" }],
-  ["agents/task-reviewer.json", { kind: "config", status: "manual" }],
-  ["agents/task-reviewer.md", { kind: "source", status: "manual" }],
-  ["hooks/hooks.json", { kind: "config", status: "stable" }],
-  ["hooks/antigravity-hooks.json", { kind: "config", status: "stable" }],
-  ["hooks/antigravity-session-start.js", { kind: "script", status: "stable" }],
-  ["hooks/antigravity-track-tool.js", { kind: "script", status: "stable" }],
-  ["hooks/session-start", { kind: "metadata", status: "stable" }],
-  ["hooks/run-hook.cmd", { kind: "script", status: "stable" }],
-  ["configs/CLAUDE.local.md", { kind: "source", status: "manual" }],
-  ["configs/GEMINI.local.md", { kind: "source", status: "manual" }],
-  ["configs/settings.local.json", { kind: "config", status: "manual" }],
-  [".claude-plugin/plugin.json", { kind: "config", status: "stable" }],
-  [".claude-plugin/marketplace.json", { kind: "config", status: "stable" }],
-  ["statusline/statusline.js", { kind: "script", status: "manual" }],
-  ["statusline/track-tool.js", { kind: "script", status: "manual" }],
-  ["setup/setup-antigravity.ps1", { kind: "script", status: "manual" }],
-  ["setup/setup-antigravity.sh", { kind: "script", status: "manual" }],
-  ["setup/setup-guide-antigravity.md", { kind: "source", status: "manual" }]
+  ["core/skills/test-driven-development/writing-good-tests.md", { kind: "asset", status: "stable" }],
+  ["core/skills/zero-downtime-migrations/postgres-expand-contract-examples.md", { kind: "asset", status: "stable" }],
+  ["quarantine/legacy/agents/codebase-architect.json", { kind: "config", status: "quarantined" }],
+  ["quarantine/legacy/agents/codebase-architect.md", { kind: "source", status: "quarantined" }],
+  ["quarantine/legacy/agents/deep-investigator.json", { kind: "config", status: "quarantined" }],
+  ["quarantine/legacy/agents/deep-investigator.md", { kind: "source", status: "quarantined" }],
+  ["quarantine/legacy/agents/generalist.json", { kind: "config", status: "quarantined" }],
+  ["quarantine/legacy/agents/generalist.md", { kind: "source", status: "quarantined" }],
+  ["quarantine/legacy/agents/implementer.json", { kind: "config", status: "quarantined" }],
+  ["quarantine/legacy/agents/implementer.md", { kind: "source", status: "quarantined" }],
+  ["quarantine/legacy/agents/security-auditor.json", { kind: "config", status: "quarantined" }],
+  ["quarantine/legacy/agents/security-auditor.md", { kind: "source", status: "quarantined" }],
+  ["quarantine/legacy/agents/task-reviewer.json", { kind: "config", status: "quarantined" }],
+  ["quarantine/legacy/agents/task-reviewer.md", { kind: "source", status: "quarantined" }],
+  ["quarantine/legacy/hooks/hooks.json", { kind: "config", status: "quarantined" }],
+  ["quarantine/legacy/hooks/antigravity-hooks.json", { kind: "config", status: "quarantined" }],
+  ["quarantine/legacy/hooks/antigravity-session-start.js", { kind: "script", status: "quarantined" }],
+  ["quarantine/legacy/hooks/antigravity-track-tool.js", { kind: "script", status: "quarantined" }],
+  ["quarantine/legacy/hooks/session-start", { kind: "metadata", status: "quarantined" }],
+  ["quarantine/legacy/hooks/run-hook.cmd", { kind: "script", status: "quarantined" }],
+  ["quarantine/legacy/configs/CLAUDE.local.md", { kind: "source", status: "quarantined" }],
+  ["quarantine/legacy/configs/GEMINI.local.md", { kind: "source", status: "quarantined" }],
+  ["quarantine/legacy/configs/settings.local.json", { kind: "config", status: "quarantined" }],
+  ["quarantine/legacy/.claude-plugin/plugin.json", { kind: "config", status: "quarantined" }],
+  ["quarantine/legacy/.claude-plugin/marketplace.json", { kind: "config", status: "quarantined" }],
+  ["quarantine/legacy/statusline/statusline.js", { kind: "script", status: "quarantined" }],
+  ["quarantine/legacy/statusline/track-tool.js", { kind: "script", status: "quarantined" }],
+  ["quarantine/legacy/setup/setup-antigravity.ps1", { kind: "script", status: "quarantined" }],
+  ["quarantine/legacy/setup/setup-antigravity.sh", { kind: "script", status: "quarantined" }],
+  ["quarantine/legacy/setup/setup-guide-antigravity.md", { kind: "source", status: "quarantined" }]
 ]);
 
 const expectedBaselinePaths = `
-.claude-plugin/marketplace.json
-.claude-plugin/plugin.json
+quarantine/legacy/.claude-plugin/marketplace.json
+quarantine/legacy/.claude-plugin/plugin.json
 .gitattributes
 .gitignore
 .idea/.gitignore
@@ -72,114 +72,114 @@ const expectedBaselinePaths = `
 AGENTS.md
 CLAUDE.md
 LICENSE
-agents/README.md
-agents/codebase-architect.json
-agents/codebase-architect.md
-agents/deep-investigator.json
-agents/deep-investigator.md
-agents/generalist.json
-agents/generalist.md
-agents/implementer.json
-agents/implementer.md
-agents/security-auditor.json
-agents/security-auditor.md
-agents/task-reviewer.json
-agents/task-reviewer.md
-configs/CLAUDE.local.md
-configs/GEMINI.local.md
-configs/settings.local.json
-docs/antigravity.md
-hooks/antigravity-hooks.json
-hooks/antigravity-session-start.js
-hooks/antigravity-track-tool.js
-hooks/hooks.json
-hooks/run-hook.cmd
-hooks/session-start
+quarantine/legacy/agents/README.md
+quarantine/legacy/agents/codebase-architect.json
+quarantine/legacy/agents/codebase-architect.md
+quarantine/legacy/agents/deep-investigator.json
+quarantine/legacy/agents/deep-investigator.md
+quarantine/legacy/agents/generalist.json
+quarantine/legacy/agents/generalist.md
+quarantine/legacy/agents/implementer.json
+quarantine/legacy/agents/implementer.md
+quarantine/legacy/agents/security-auditor.json
+quarantine/legacy/agents/security-auditor.md
+quarantine/legacy/agents/task-reviewer.json
+quarantine/legacy/agents/task-reviewer.md
+quarantine/legacy/configs/CLAUDE.local.md
+quarantine/legacy/configs/GEMINI.local.md
+quarantine/legacy/configs/settings.local.json
+quarantine/legacy/docs/antigravity.md
+quarantine/legacy/hooks/antigravity-hooks.json
+quarantine/legacy/hooks/antigravity-session-start.js
+quarantine/legacy/hooks/antigravity-track-tool.js
+quarantine/legacy/hooks/hooks.json
+quarantine/legacy/hooks/run-hook.cmd
+quarantine/legacy/hooks/session-start
 package.json
 scripts/aaa.mjs
 scripts/lint-shell.sh
-setup/setup-antigravity.ps1
-setup/setup-antigravity.sh
-setup/setup-guide-antigravity.md
-skills/brainstorming/SKILL.md
-skills/brainstorming/scripts/frame-template.html
-skills/brainstorming/scripts/helper.js
-skills/brainstorming/scripts/server.cjs
-skills/brainstorming/scripts/start-server.sh
-skills/brainstorming/scripts/stop-server.sh
-skills/brainstorming/spec-document-reviewer-prompt.md
-skills/brainstorming/visual-companion.md
-skills/codebase-design/DEEPENING.md
-skills/codebase-design/DESIGN-IT-TWICE.md
-skills/codebase-design/SKILL.md
-skills/dispatching-parallel-agents/SKILL.md
-skills/executing-plans/SKILL.md
-skills/finishing-a-development-branch/SKILL.md
-skills/handoff/SKILL.md
-skills/improve-codebase-architecture/HTML-REPORT.md
-skills/improve-codebase-architecture/SKILL.md
-skills/interviewing/SKILL.md
-skills/loop-me/SKILL.md
-skills/nano-image-generator/SKILL.md
-skills/nano-image-generator/scripts/generate_image.py
-skills/performance-profiling-and-benchmarking/SKILL.md
-skills/performance-profiling-and-benchmarking/profiling-recipes.md
-skills/receiving-code-review/SKILL.md
-skills/requesting-code-review/SKILL.md
-skills/requesting-code-review/code-reviewer.md
-skills/research/SKILL.md
-skills/resolving-merge-conflicts/SKILL.md
-skills/session-compaction-resilience/SKILL.md
-skills/session-compaction-resilience/snapshot-template.md
-skills/subagent-driven-development/SKILL.md
-skills/subagent-driven-development/implementer-prompt.md
-skills/subagent-driven-development/re-review-prompt.md
-skills/subagent-driven-development/scripts/review-package
-skills/subagent-driven-development/scripts/review-package.js
-skills/subagent-driven-development/scripts/sdd-workspace
-skills/subagent-driven-development/scripts/sdd-workspace.js
-skills/subagent-driven-development/scripts/task-brief
-skills/subagent-driven-development/scripts/task-brief.js
-skills/subagent-driven-development/task-reviewer-prompt.md
-skills/systematic-debugging/CREATION-LOG.md
-skills/systematic-debugging/SKILL.md
-skills/systematic-debugging/condition-based-waiting-example.ts
-skills/systematic-debugging/condition-based-waiting.md
-skills/systematic-debugging/defense-in-depth.md
-skills/systematic-debugging/feedback-loops.md
-skills/systematic-debugging/find-polluter.sh
-skills/systematic-debugging/root-cause-tracing.md
-skills/systematic-debugging/scripts/hitl-loop.template.sh
-skills/systematic-debugging/test-academic.md
-skills/systematic-debugging/test-pressure-1.md
-skills/systematic-debugging/test-pressure-2.md
-skills/systematic-debugging/test-pressure-3.md
-skills/test-driven-development/SKILL.md
-skills/test-driven-development/writing-good-tests.md
-skills/threat-modeling-and-security/SKILL.md
-skills/threat-modeling-and-security/stride-checklist.md
-skills/using-all-about-agents/SKILL.md
-skills/using-all-about-agents/references/antigravity-tools.md
-skills/using-all-about-agents/references/codex-tools.md
-skills/using-all-about-agents/references/gemini-tools.md
-skills/using-all-about-agents/references/pi-tools.md
-skills/using-git-worktrees/SKILL.md
-skills/verification-before-completion/SKILL.md
-skills/wait-what/SKILL.md
-skills/wayfinder/SKILL.md
-skills/writing-plans/SKILL.md
-skills/writing-plans/plan-document-reviewer-prompt.md
-skills/writing-skills/SKILL.md
-skills/writing-skills/anthropic-best-practices.md
-skills/writing-skills/examples/CLAUDE_MD_TESTING.md
-skills/writing-skills/graphviz-conventions.dot
-skills/writing-skills/persuasion-principles.md
-skills/writing-skills/render-graphs.js
-skills/writing-skills/testing-skills-with-subagents.md
-skills/zero-downtime-migrations/SKILL.md
-skills/zero-downtime-migrations/postgres-expand-contract-examples.md
-statusline/statusline.js
-statusline/track-tool.js
+quarantine/legacy/setup/setup-antigravity.ps1
+quarantine/legacy/setup/setup-antigravity.sh
+quarantine/legacy/setup/setup-guide-antigravity.md
+core/skills/brainstorming/SKILL.md
+core/skills/brainstorming/scripts/frame-template.html
+core/skills/brainstorming/scripts/helper.js
+core/skills/brainstorming/scripts/server.cjs
+core/skills/brainstorming/scripts/start-server.sh
+core/skills/brainstorming/scripts/stop-server.sh
+core/skills/brainstorming/spec-document-reviewer-prompt.md
+core/skills/brainstorming/visual-companion.md
+core/skills/codebase-design/DEEPENING.md
+core/skills/codebase-design/DESIGN-IT-TWICE.md
+core/skills/codebase-design/SKILL.md
+core/skills/dispatching-parallel-agents/SKILL.md
+core/skills/executing-plans/SKILL.md
+core/skills/finishing-a-development-branch/SKILL.md
+core/skills/handoff/SKILL.md
+core/skills/improve-codebase-architecture/HTML-REPORT.md
+core/skills/improve-codebase-architecture/SKILL.md
+core/skills/interviewing/SKILL.md
+core/skills/loop-me/SKILL.md
+core/skills/nano-image-generator/SKILL.md
+core/skills/nano-image-generator/scripts/generate_image.py
+core/skills/performance-profiling-and-benchmarking/SKILL.md
+core/skills/performance-profiling-and-benchmarking/profiling-recipes.md
+core/skills/receiving-code-review/SKILL.md
+core/skills/requesting-code-review/SKILL.md
+core/skills/requesting-code-review/code-reviewer.md
+core/skills/research/SKILL.md
+core/skills/resolving-merge-conflicts/SKILL.md
+core/skills/session-compaction-resilience/SKILL.md
+core/skills/session-compaction-resilience/snapshot-template.md
+core/skills/subagent-driven-development/SKILL.md
+core/skills/subagent-driven-development/implementer-prompt.md
+core/skills/subagent-driven-development/re-review-prompt.md
+core/skills/subagent-driven-development/scripts/review-package
+core/skills/subagent-driven-development/scripts/review-package.js
+core/skills/subagent-driven-development/scripts/sdd-workspace
+core/skills/subagent-driven-development/scripts/sdd-workspace.js
+core/skills/subagent-driven-development/scripts/task-brief
+core/skills/subagent-driven-development/scripts/task-brief.js
+core/skills/subagent-driven-development/task-reviewer-prompt.md
+core/skills/systematic-debugging/CREATION-LOG.md
+core/skills/systematic-debugging/SKILL.md
+core/skills/systematic-debugging/condition-based-waiting-example.ts
+core/skills/systematic-debugging/condition-based-waiting.md
+core/skills/systematic-debugging/defense-in-depth.md
+core/skills/systematic-debugging/feedback-loops.md
+core/skills/systematic-debugging/find-polluter.sh
+core/skills/systematic-debugging/root-cause-tracing.md
+core/skills/systematic-debugging/hitl-loop.template.sh
+core/skills/systematic-debugging/test-academic.md
+core/skills/systematic-debugging/test-pressure-1.md
+core/skills/systematic-debugging/test-pressure-2.md
+core/skills/systematic-debugging/test-pressure-3.md
+core/skills/test-driven-development/SKILL.md
+core/skills/test-driven-development/writing-good-tests.md
+core/skills/threat-modeling-and-security/SKILL.md
+core/skills/threat-modeling-and-security/stride-checklist.md
+core/skills/using-all-about-agents/SKILL.md
+core/skills/using-all-about-agents/references/antigravity-tools.md
+core/skills/using-all-about-agents/references/codex-tools.md
+core/skills/using-all-about-agents/references/gemini-tools.md
+core/skills/using-all-about-agents/references/pi-tools.md
+core/skills/using-git-worktrees/SKILL.md
+core/skills/verification-before-completion/SKILL.md
+core/skills/wait-what/SKILL.md
+core/skills/wayfinder/SKILL.md
+core/skills/writing-plans/SKILL.md
+core/skills/writing-plans/plan-document-reviewer-prompt.md
+core/skills/writing-skills/SKILL.md
+core/skills/writing-skills/anthropic-best-practices.md
+core/skills/writing-skills/examples/CLAUDE_MD_TESTING.md
+core/skills/writing-skills/graphviz-conventions.dot
+core/skills/writing-skills/persuasion-principles.md
+core/skills/writing-skills/render-graphs.js
+core/skills/writing-skills/testing-skills-with-subagents.md
+core/skills/zero-downtime-migrations/SKILL.md
+core/skills/zero-downtime-migrations/postgres-expand-contract-examples.md
+quarantine/legacy/statusline/statusline.js
+quarantine/legacy/statusline/track-tool.js
 tests/helpers/temp-root.mjs
 tests/static/repository-layout.test.mjs
 tests/static/runtime.test.mjs
@@ -235,12 +235,12 @@ test("inventory validates against its strict schema and accounts for existing so
   assert.equal(result.valid, true, JSON.stringify(result.errors));
   const paths = new Set(inventory.sourceFiles.map((entry) => entry.path));
   for (const entry of inventory.skillSources) {
-    assert.ok(paths.has(entry.source), `skill source missing from inventory: ${entry.source}`);
-    for (const asset of [...entry.assets, ...entry.scripts]) assert.ok(paths.has(asset), `skill asset missing from inventory: ${asset}`);
+    assert.ok(paths.has(`core/${entry.source}`), `canonical skill source missing from inventory: ${entry.source}`);
+    for (const asset of [...entry.assets, ...entry.scripts]) assert.ok(paths.has(`core/${asset}`), `canonical skill companion missing from inventory: ${asset}`);
   }
 });
 
-test("inventory preserves the immutable baseline path and category contract", async () => {
+test("inventory preserves the reconciled canonical and quarantine path contract", async () => {
   const inventory = JSON.parse(await readFile(resolve(process.cwd(), "core/inventory.json"), "utf8"));
   function assertBaselinePaths(value) {
     assert.deepEqual(value.sourceFiles.map((entry) => entry.path), expectedBaselinePaths);
@@ -267,25 +267,25 @@ test("inventory preserves the immutable baseline path and category contract", as
     "task-reviewer"
   ]);
   assert.deepEqual(inventory.hooks.map((hook) => hook.path), [
-    "hooks/hooks.json",
-    "hooks/antigravity-hooks.json",
-    "hooks/antigravity-session-start.js",
-    "hooks/antigravity-track-tool.js",
-    "hooks/session-start",
-    "hooks/run-hook.cmd"
+    "quarantine/legacy/hooks/hooks.json",
+    "quarantine/legacy/hooks/antigravity-hooks.json",
+    "quarantine/legacy/hooks/antigravity-session-start.js",
+    "quarantine/legacy/hooks/antigravity-track-tool.js",
+    "quarantine/legacy/hooks/session-start",
+    "quarantine/legacy/hooks/run-hook.cmd"
   ]);
   assert.deepEqual(inventory.configs.map((config) => config.path), [
-    ".claude-plugin/plugin.json",
-    ".claude-plugin/marketplace.json",
-    "configs/CLAUDE.local.md",
-    "configs/GEMINI.local.md",
-    "configs/settings.local.json"
+    "quarantine/legacy/.claude-plugin/plugin.json",
+    "quarantine/legacy/.claude-plugin/marketplace.json",
+    "quarantine/legacy/configs/CLAUDE.local.md",
+    "quarantine/legacy/configs/GEMINI.local.md",
+    "quarantine/legacy/configs/settings.local.json"
   ]);
-  assert.deepEqual(inventory.statusline.map((entry) => entry.path), ["statusline/statusline.js", "statusline/track-tool.js"]);
+  assert.deepEqual(inventory.statusline.map((entry) => entry.path), ["quarantine/legacy/statusline/statusline.js", "quarantine/legacy/statusline/track-tool.js"]);
   assert.deepEqual(inventory.setupScripts.map((entry) => entry.path), [
-    "setup/setup-antigravity.ps1",
-    "setup/setup-antigravity.sh",
-    "setup/setup-guide-antigravity.md"
+    "quarantine/legacy/setup/setup-antigravity.ps1",
+    "quarantine/legacy/setup/setup-antigravity.sh",
+    "quarantine/legacy/setup/setup-guide-antigravity.md"
   ]);
 });
 
