@@ -51,7 +51,7 @@ function isLoopbackHost(host) {
 
 function assertBindPolicy() {
   if (!isLoopbackHost(HOST) && !ALLOW_REMOTE) {
-    throw new Error('non-loopback companion binding requires BRAINSTORM_ALLOW_REMOTE=1');
+    throw new Error('non-loopback companion binding requires explicit --allow-remote');
   }
 }
 
