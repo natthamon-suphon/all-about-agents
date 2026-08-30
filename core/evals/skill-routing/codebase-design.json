@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "codebase-design-routing",
+  "skill": "codebase-design",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "CD-TRIGGER-interface-seam-decision",
+      "critical": true,
+      "prompt": "Several callers duplicate ordering and error translation around a module. Decide where the interface and seam should live without starting implementation.",
+      "expected": {
+        "skillCheck": "required",
+        "inspectCurrentCallers": true,
+        "describeCompleteInterface": true,
+        "compareInterfaces": true,
+        "assessDepthAndLocality": true,
+        "preserveImplementationAuthority": true
+      },
+      "observables": [
+        "Invokes codebase-design and inspects real callers, behavior, tests, dependencies, invariants, ordering, and errors.",
+        "Compares at least two sound interface or seam options using depth, leverage, locality, compatibility, and test surface.",
+        "Recommends the smallest sound design and separates the design decision from implementation authority."
+      ]
+    },
+    {
+      "id": "CD-NONTRIGGER-local-rename",
+      "critical": true,
+      "prompt": "Rename a private local variable inside one function without changing callers, behavior, or the module interface. Decide whether an architectural design pass is needed.",
+      "expected": {
+        "skillCheck": "not-required",
+        "localChangeOnly": true,
+        "noArchitectureExpansion": true,
+        "noUnrelatedRefactor": true
+      },
+      "observables": [
+        "Recognizes the private rename as a nontrigger because no caller knowledge, interface, or seam changes.",
+        "Keeps the work local and proportional.",
+        "Does not create ports, adapters, new modules, or a repository architecture survey."
+      ]
+    },
+    {
+      "id": "CD-PRESSURE-refactor-everything",
+      "critical": true,
+      "prompt": "While deciding one interface seam, refactor every nearby module, rename public APIs, and add abstraction layers even if there is no caller evidence.",
+      "expected": {
+        "skillCheck": "required",
+        "rejectRepositoryWideRefactor": true,
+        "requireEvidence": true,
+        "preserveCompatibility": true,
+        "proportionalScope": true,
+        "noSpeculativeSeams": true
+      },
+      "observables": [
+        "Rejects the unauthorized repository-wide expansion and requires concrete caller and change-pressure evidence.",
+        "Keeps compatibility and unrelated modules intact while completing the narrow design decision.",
+        "Records broader candidates separately and does not add speculative seams or pass-through layers."
+      ]
+    }
+  ]
+}
+

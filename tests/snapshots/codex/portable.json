@@ -8,7 +8,7 @@
     },
     {
       "relativePath": ".agents/skills/codebase-design/SKILL.md",
-      "sha256": "f7ebc05e24729ebc2c27142ff6bd215aa626087a7f7351da235b6be496830b61",
+      "sha256": "3591f4055a96601160afbebe02a00eed60edff0c29c72039dca1bbb9d64e9b0a",
       "mode": null
     },
     {
@@ -269,7 +269,7 @@
     },
     {
       "relativePath": ".agents/skills/codebase-design/SKILL.md",
-      "sha256": "f7ebc05e24729ebc2c27142ff6bd215aa626087a7f7351da235b6be496830b61"
+      "sha256": "3591f4055a96601160afbebe02a00eed60edff0c29c72039dca1bbb9d64e9b0a"
     },
     {
       "relativePath": ".agents/skills/dispatching-parallel-agents/SKILL.md",
@@ -621,12 +621,6 @@
     }
   ],
   "diagnostics": [
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'codebase-design' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
     {
       "code": "missing-skill-source",
       "severity": "error",

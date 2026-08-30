@@ -177,7 +177,7 @@
     },
     {
       "relativePath": "skills/codebase-design/SKILL.md",
-      "sha256": "eac82dd9b4e8b6861ad141681883d3b3b9aea67dd079bcdb7b53ea03a887a28c"
+      "sha256": "d0664b1cea11f0f95b0e8ad58a907db27c803baaa7d65b96b9bd7c13800daef5"
     },
     {
       "relativePath": "skills/dispatching-parallel-agents/SKILL.md",
@@ -688,12 +688,6 @@
     {
       "code": "missing-skill-source",
       "severity": "error",
-      "message": "Canonical skill 'codebase-design' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
       "message": "Canonical skill 'improve-codebase-architecture' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
@@ -758,7 +752,7 @@
     "rules/settings-overlay.md": "de99fa53e61ce5ff61fcda7508be26528c4e6b0306a8a16902fe540b3d11859c",
     "settings.overlay.json": "06bf4fb3b908181c32d36dc5fe0613dcf58a4bb70709ad0004c4291bc8ba3964",
     "skills/brainstorming/SKILL.md": "7b6e6e3c208e1dc59424aa84bdd21ae9bcc592d3e3c6041fc78082711e034e73",
-    "skills/codebase-design/SKILL.md": "eac82dd9b4e8b6861ad141681883d3b3b9aea67dd079bcdb7b53ea03a887a28c",
+    "skills/codebase-design/SKILL.md": "d0664b1cea11f0f95b0e8ad58a907db27c803baaa7d65b96b9bd7c13800daef5",
     "skills/dispatching-parallel-agents/SKILL.md": "031ee59a980e94926fd42c96a3fa20dbb3ff97253e164e79e4f1b4111d7671fd",
     "skills/executing-plans/SKILL.md": "0883448d2231aa6e46a639e7404e79f6bb5b0442ad82449f92352156c55ff28a",
     "skills/finishing-a-development-branch/SKILL.md": "bd40f7600d2bc38c5c101bc290c257b2dc1d1efc5e679171fab25f2e0ec95c84",
