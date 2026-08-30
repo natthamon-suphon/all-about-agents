@@ -28,7 +28,7 @@
     },
     {
       "relativePath": ".agents/skills/handoff/SKILL.md",
-      "sha256": "9733bb184cb88b692e7657f70ef4b640167c78e68c5e877c2ee642066703ac05",
+      "sha256": "a163242734b0fd42f45b2ae45ffea151dffd994b2227ac9bc2beb90edc348b30",
       "mode": null
     },
     {
@@ -285,7 +285,7 @@
     },
     {
       "relativePath": ".agents/skills/handoff/SKILL.md",
-      "sha256": "9733bb184cb88b692e7657f70ef4b640167c78e68c5e877c2ee642066703ac05"
+      "sha256": "a163242734b0fd42f45b2ae45ffea151dffd994b2227ac9bc2beb90edc348b30"
     },
     {
       "relativePath": ".agents/skills/improve-codebase-architecture/SKILL.md",
@@ -631,12 +631,6 @@
       "code": "missing-skill-source",
       "severity": "error",
       "message": "Canonical skill 'finishing-a-development-branch' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
-      "sourcePath": "core/inventory.json"
-    },
-    {
-      "code": "missing-skill-source",
-      "severity": "error",
-      "message": "Canonical skill 'handoff' has no source record; owner: cycle-05-skill-remediation (T017-T043). Package is deferred until the source is supplied.",
       "sourcePath": "core/inventory.json"
     },
     {
