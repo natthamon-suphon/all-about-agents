@@ -50,7 +50,7 @@ test("buildPlan prunes only previously owned unchanged files and preserves unkno
   await withTempRoot(async (root) => {
     await writeFile(join(root, "stale.txt"), "owned");
     await writeFile(join(root, "neighbor.txt"), "keep");
-    const previousState = { schemaVersion: 1, ownedPaths: [{ relativePath: "stale.txt", sha256: hashBytes(bytes("owned")) }] };
+    const previousState = { schemaVersion: 1, repositoryVersion: "repo-1", profile: "portable", surfaces: ["claude"], ownedPaths: [{ relativePath: "stale.txt", sha256: hashBytes(bytes("owned")) }] };
     const plan = buildPlan({ payload: payloadFor([{ relativePath: "current.txt", content: bytes("current"), mode: null }]), destinationRoot: root, previousState });
     assert.equal(plan.actions.find((entry) => entry.relativePath === "stale.txt").kind, "prune");
     assert.equal(plan.actions.some((entry) => entry.relativePath === "neighbor.txt"), false);
@@ -92,12 +92,43 @@ test("buildPlan disables pruning for malformed prior state and is deterministic"
   await withTempRoot(async (root) => {
     await writeFile(join(root, "stale.txt"), "owned");
     const payload = payloadFor([{ relativePath: "b.txt", content: bytes("b"), mode: null }, { relativePath: "a.txt", content: bytes("a"), mode: null }]);
-    const first = buildPlan({ payload, destinationRoot: root, previousState: { schemaVersion: 9, ownedPaths: [] } });
-    const second = buildPlan({ payload: { ...payload, files: [...payload.files].reverse() }, destinationRoot: root, previousState: { schemaVersion: 9, ownedPaths: [] } });
+    const first = buildPlan({ payload, destinationRoot: root, previousState: { schemaVersion: 9, repositoryVersion: "repo-1", profile: "portable", surfaces: ["claude"], ownedPaths: [] } });
+    const second = buildPlan({ payload: { ...payload, files: [...payload.files].reverse() }, destinationRoot: root, previousState: { schemaVersion: 9, repositoryVersion: "repo-1", profile: "portable", surfaces: ["claude"], ownedPaths: [] } });
     assert.deepEqual(first, second);
     assert.ok(first.diagnostics.some((entry) => entry.code === "invalid-previous-state"));
     assert.equal(first.actions.some((entry) => entry.relativePath === "stale.txt"), false);
     assert.equal(validateSchema({ schema: planSchema, value: first, sourcePath: "plan.json" }).valid, true);
+  });
+});
+
+test("buildPlan disables pruning for missing or extra strict-state fields and legacy ownership", async () => {
+  await withTempRoot(async (root) => {
+    await writeFile(join(root, "stale.txt"), "owned");
+    const owned = { relativePath: "stale.txt", sha256: hashBytes(bytes("owned")) };
+    const malformedStates = [
+      { schemaVersion: 1, profile: "portable", surfaces: ["claude"], ownedPaths: [owned] },
+      { schemaVersion: 1, repositoryVersion: "repo-1", surfaces: ["claude"], ownedPaths: [owned] },
+      { schemaVersion: 1, repositoryVersion: "repo-1", profile: "portable", ownedPaths: [owned] },
+      { schemaVersion: 1, repositoryVersion: "repo-1", profile: "portable", surfaces: ["claude"], ownedPaths: [owned], diagnostics: [] },
+      { schemaVersion: 1, repositoryVersion: "repo-1", profile: "portable", surfaces: ["claude"], ownership: [owned] }
+    ];
+    for (const previousState of malformedStates) {
+      const plan = buildPlan({ payload: payloadFor([]), destinationRoot: root, previousState });
+      assert.equal(plan.actions.some((action) => action.kind === "prune"), false);
+      assert.ok(plan.diagnostics.some((diagnostic) => diagnostic.code === "invalid-previous-state"));
+    }
+  });
+});
+
+test("buildPlan prunes only when strict managed state includes the selected surface", async () => {
+  await withTempRoot(async (root) => {
+    await writeFile(join(root, "stale.txt"), "owned");
+    const state = { schemaVersion: 1, repositoryVersion: "repo-1", profile: "portable", surfaces: ["claude"], ownedPaths: [{ relativePath: "stale.txt", sha256: hashBytes(bytes("owned")) }] };
+    const included = buildPlan({ payload: payloadFor([]), destinationRoot: root, previousState: state });
+    assert.equal(included.actions.find((action) => action.relativePath === "stale.txt").kind, "prune");
+    const excluded = buildPlan({ payload: { ...payloadFor([]), registrations: [{ kind: "profile-translation", surface: "codex" }] }, destinationRoot: root, previousState: state });
+    assert.equal(excluded.actions.some((action) => action.kind === "prune"), false);
+    assert.ok(excluded.diagnostics.some((diagnostic) => diagnostic.code === "invalid-previous-state"));
   });
 });
 

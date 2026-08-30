@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { access, mkdir, readFile, rename, symlink, writeFile } from "node:fs/promises";
+import { basename, join, resolve } from "node:path";
 import test from "node:test";
 
 import { withTempRoot } from "../helpers/temp-root.mjs";
@@ -106,6 +106,25 @@ test("applyPlan replaces only the exact planned bytes and refuses a stale destin
   });
 });
 
+test("applyPlan completes unchanged content without mutating that destination", async () => {
+  await withTempRoot(async (root) => {
+    await writeFile(join(root, "same.txt"), "same");
+    const plan = planFor(root, [["same.txt", "same"]]);
+    const calls = [];
+    const fileSystem = fsFor([["same.txt", "same"]], {
+      mkdir: async (path, options) => { calls.push(["mkdir", path]); return mkdir(path, options); },
+      writeFile: async (path, ...args) => { calls.push(["writeFile", path]); return writeFile(path, ...args); },
+      rename: async (from, to) => { calls.push(["rename", from, to]); return rename(from, to); },
+      unlink: async (path) => { calls.push(["unlink", path]); return (await import("node:fs/promises")).unlink(path); }
+    });
+    const result = await applyPlan({ plan, fileSystem });
+    assert.equal(result.status, "complete");
+    assert.equal(result.completed.find((action) => action.relativePath === "same.txt").kind, "unchanged");
+    assert.deepEqual(JSON.parse(await readFile(join(root, STATE_RELATIVE_PATH), "utf8")).ownedPaths, [{ relativePath: "same.txt", sha256: hashBytes(bytes("same")) }]);
+    assert.equal(calls.some((call) => call.slice(1).some((value) => String(value).endsWith("same.txt"))), false);
+  });
+});
+
 test("applyPlan stops at the first runtime failure and reports exact partial state", async () => {
   await withTempRoot(async (root) => {
     const plan = planFor(root, [["a.txt", "a"], ["b.txt", "b"], ["c.txt", "c"]]);
@@ -190,6 +209,96 @@ test("applyPlan verifies the final managed-state hash", async () => {
     assert.equal(result.failed.relativePath, STATE_RELATIVE_PATH);
     assert.match(result.failed.reason, /hash|apply failed/u);
     assert.equal(await readFile(join(root, "a.txt"), "utf8"), "a");
+  });
+});
+
+test("applyPlan fails closed when a parent becomes a symlink between preflight and content mutation", async () => {
+  await withTempRoot(async (root) => {
+    const nested = join(root, "nested");
+    const outside = join(root, "outside");
+    await mkdir(nested);
+    await mkdir(outside);
+    let linkAvailable = true;
+    let escapedWriteCalls = 0;
+    const fileSystem = fsFor([["nested/escape.txt", "must stay inside"]], {
+      mkdir: async (path, options) => {
+        await mkdir(path, options);
+        if (path === nested) {
+          await rename(nested, join(root, "nested-original"));
+          try { await symlink(outside, nested, process.platform === "win32" ? "junction" : "dir"); } catch { linkAvailable = false; }
+        }
+      },
+      writeFile: async (path, ...args) => {
+        escapedWriteCalls += 1;
+        return writeFile(join(outside, basename(path)), ...args);
+      }
+    });
+    if (!linkAvailable) return;
+    const result = await applyPlan({ plan: planFor(root, [["nested/escape.txt", "must stay inside"]]), fileSystem });
+    assert.equal(result.status, "failed");
+    assert.equal(escapedWriteCalls, 0);
+    assert.equal(await access(join(outside, "escape.txt")).then(() => true, () => false), false);
+    assert.equal(await access(join(root, STATE_RELATIVE_PATH)).then(() => true, () => false), false);
+  });
+});
+
+test("applyPlan fails closed when an owned parent becomes a symlink before prune", async () => {
+  await withTempRoot(async (root) => {
+    const ownedDirectory = join(root, "owned");
+    const outside = join(root, "outside");
+    await mkdir(ownedDirectory);
+    await mkdir(outside);
+    await writeFile(join(ownedDirectory, "stale.txt"), "owned");
+    await writeFile(join(outside, "stale.txt"), "outside");
+    let linkAvailable = true;
+    let swapped = false;
+    const state = { schemaVersion: 1, repositoryVersion: "repo-1", profile: "portable", surfaces: ["claude"], ownedPaths: [{ relativePath: "owned/stale.txt", sha256: hashBytes(bytes("owned")) }] };
+    const fileSystem = fsFor([], {
+      readFile: async (path) => {
+        const value = await readFile(path);
+        if (!swapped && path === join(ownedDirectory, "stale.txt")) {
+          swapped = true;
+          await rename(ownedDirectory, join(root, "owned-original"));
+          try { await symlink(outside, ownedDirectory, process.platform === "win32" ? "junction" : "dir"); } catch { linkAvailable = false; }
+        }
+        return value;
+      }
+    });
+    if (!linkAvailable) return;
+    const result = await applyPlan({ plan: planFor(root, [], state), fileSystem });
+    assert.equal(result.status, "failed");
+    assert.equal(await readFile(join(outside, "stale.txt"), "utf8"), "outside");
+    assert.equal(await access(join(root, STATE_RELATIVE_PATH)).then(() => true, () => false), false);
+  });
+});
+
+test("applyPlan fails closed when the managed-state parent becomes a symlink", async () => {
+  await withTempRoot(async (root) => {
+    const stateDirectory = join(root, ".all-about-agents");
+    const outside = join(root, "outside");
+    await mkdir(stateDirectory);
+    await mkdir(outside);
+    let linkAvailable = true;
+    let escapedWriteCalls = 0;
+    const fileSystem = fsFor([], {
+      mkdir: async (path, options) => {
+        await mkdir(path, options);
+        if (path === stateDirectory) {
+          await rename(stateDirectory, join(root, "state-original"));
+          try { await symlink(outside, stateDirectory, process.platform === "win32" ? "junction" : "dir"); } catch { linkAvailable = false; }
+        }
+      },
+      writeFile: async (path, ...args) => {
+        escapedWriteCalls += 1;
+        return writeFile(join(outside, basename(path)), ...args);
+      }
+    });
+    if (!linkAvailable) return;
+    const plan = planFor(root, []);
+    const result = await applyPlan({ plan, fileSystem });
+    assert.equal(result.status, "failed");
+    assert.equal(escapedWriteCalls, 0);
+    assert.equal(await access(join(outside, "state.json")).then(() => true, () => false), false);
   });
 });
 

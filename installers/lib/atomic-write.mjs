@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, basename, resolve } from "node:path";
 
 import { hashBytes } from "./hash.mjs";
+import { assertSafeDestinationRoot } from "./roots.mjs";
 
 function bytes(value) {
   if (!(value instanceof Uint8Array)) throw new TypeError("atomic write content must be a Uint8Array");
@@ -23,8 +24,10 @@ function atomicError(code, message, cause = null) {
 async function removeTemp(path, remove) {
   try {
     await remove(path);
+    return null;
   } catch (error) {
-    if (error?.code !== "ENOENT") return;
+    if (error?.code === "ENOENT") return null;
+    return error;
   }
 }
 
@@ -53,21 +56,32 @@ export async function atomicReplaceFile({ destination, content, expectedHash, fi
   const directory = dirname(destinationPath);
   const temporaryPath = resolve(directory, `.${basename(destinationPath)}.aaa-${randomUUID()}.tmp`);
 
+  const verifyDirectory = () => assertSafeDestinationRoot(directory);
+  verifyDirectory();
   await makeDirectory(directory, { recursive: true });
+  verifyDirectory();
   let temporaryCreated = false;
   try {
+    verifyDirectory();
     await write(temporaryPath, value, { flag: "wx", mode: 0o600 });
     temporaryCreated = true;
+    verifyDirectory();
     await replace(temporaryPath, destinationPath);
+    verifyDirectory();
     temporaryCreated = false;
   } catch (error) {
-    if (temporaryCreated) await removeTemp(temporaryPath, remove);
+    if (temporaryCreated) {
+      const cleanupError = await removeTemp(temporaryPath, remove);
+      if (cleanupError) throw new AggregateError([error, cleanupError], "atomic replacement and temporary cleanup failed", { cause: error });
+    }
     throw error;
   }
 
   let finalBytes;
   try {
+    verifyDirectory();
     finalBytes = await read(destinationPath);
+    verifyDirectory();
   } catch (error) {
     throw atomicError("final-read-failed", `unable to verify atomically replaced file: ${error.message}`, error);
   }

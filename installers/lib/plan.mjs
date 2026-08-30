@@ -2,6 +2,7 @@ import { lstatSync, readFileSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { hashBytes, SHA256_HEX } from "./hash.mjs";
 import { assertSafeDestinationRoot } from "./roots.mjs";
+import { parseManagedState } from "./state.mjs";
 
 const SURFACES = new Set(["claude", "codex", "antigravity-2", "agy"]);
 const ACTION_KINDS = new Set(["create", "replace", "unchanged", "prune", "reject"]);
@@ -37,23 +38,19 @@ function surfaceFor(payload) {
   throw new TypeError("payload must identify a supported surface through surface or profile-translation registration");
 }
 
-function stateOwnership(previousState, diagnostics) {
+function stateOwnership(previousState, surface, diagnostics) {
   if (previousState === null || previousState === undefined) return null;
-  if (!object(previousState) || previousState.schemaVersion !== 1) {
+  const parsed = parseManagedState(previousState);
+  if (!parsed) {
     diagnostics.push(issue("invalid-previous-state", "warning", "Previous managed state is missing or malformed; pruning is disabled."));
     return null;
   }
-  const declared = previousState.ownedPaths ?? previousState.ownership;
-  if (!Array.isArray(declared)) {
-    diagnostics.push(issue("invalid-previous-state", "warning", "Previous managed state has no valid owned paths; pruning is disabled."));
+  if (!parsed.surfaces.includes(surface)) {
+    diagnostics.push(issue("invalid-previous-state", "warning", "Previous managed state does not include the selected surface; pruning is disabled."));
     return null;
   }
   const entries = new Map();
-  for (const entry of declared) {
-    if (!object(entry) || !safeRelativePath(entry.relativePath) || typeof entry.sha256 !== "string" || !SHA256_HEX.test(entry.sha256) || entries.has(entry.relativePath)) {
-      diagnostics.push(issue("invalid-previous-state", "warning", "Previous managed state contains an invalid owned path or hash; pruning is disabled."));
-      return null;
-    }
+  for (const entry of parsed.ownedPaths) {
     entries.set(entry.relativePath, entry.sha256);
   }
   return entries;
@@ -178,7 +175,7 @@ export function buildPlan({ payload, destinationRoot, previousState = null } = {
     actions.push(action(expectedHash === contentHash ? "unchanged" : "replace", relativePath, expectedHash, contentHash, expectedHash === contentHash ? "destination bytes already match" : "destination bytes differ"));
   }
 
-  const priorOwnership = stateOwnership(previousState, diagnostics);
+  const priorOwnership = stateOwnership(previousState, surface, diagnostics);
   if (priorOwnership) {
     for (const [relativePath, expectedHash] of [...priorOwnership.entries()].sort(([left], [right]) => compare(left, right))) {
       if (desired.has(relativePath)) continue;

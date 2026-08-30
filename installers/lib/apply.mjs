@@ -11,6 +11,7 @@ const SURFACES = new Set(["claude", "codex", "antigravity-2", "agy"]);
 const PROFILES = new Set(["portable", "template"]);
 const ACTION_KINDS = new Set(["create", "replace", "unchanged", "prune", "reject"]);
 const CONTENT_KINDS = new Set(["create", "replace", "unchanged"]);
+const WRITE_KINDS = new Set(["create", "replace"]);
 
 function object(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -154,12 +155,13 @@ async function validatePreconditions({ plan, actions, contents, fileSystem }) {
 async function applyAction({ plan, action, contents, fileSystem }) {
   const target = safeTarget(plan.root, action.relativePath);
   assertSafeDestinationRoot(dirname(target));
-  if (CONTENT_KINDS.has(action.kind)) {
+  if (WRITE_KINDS.has(action.kind)) {
     const value = contents(action.relativePath);
     await atomicReplaceFile({ destination: target, content: value, expectedHash: action.contentHash, fileSystem });
   } else if (action.kind === "prune") {
     const remove = operation(fileSystem, "unlink", unlink);
     await remove(target);
+    assertSafeDestinationRoot(dirname(target));
     const observed = await inspectTarget(target, fileSystem);
     if (observed.kind !== "missing") throw new Error("pruned destination still exists");
   } else if (action.kind === "reject") {
