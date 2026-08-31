@@ -240,13 +240,18 @@ are never waived.
 
 ## Current environment limitation
 
-At the time this method is authored, no native Claude Code, Codex CLI/Desktop,
-Antigravity Desktop, or agy product sessions are available. There is no macOS
-host and no external model transport available for these checks. Therefore
-Gate 2 native acceptance and Gate 3 fresh-session behavioral evaluation are
-`NOT_RUN_UNAVAILABLE`. This status cannot support a native, behavioral,
-routing, model, hook, or persistence release claim. It is not evidence that
-those checks pass.
+Current Windows evidence is partial. Claude Code 2.1.248 strict validation,
+disposable registration/install, and enabled-plugin discovery passed; Codex CLI
+0.151.0-alpha.7.2 loaded the isolated Sol base config strictly and parsed the
+Terra profile; agy 1.1.22 completed bounded CLI/model checks; and Antigravity
+Desktop 2.11.0 discovered the disposable project package. The isolated Claude
+and Codex roots contained no credentials, and no macOS host was available.
+Therefore authenticated Claude/Codex execution, hook and permission behavior,
+persistence, Codex Desktop, Antigravity IDE, macOS, and all unexecuted Gate 2
+checks and Gate 3 fresh-session evaluation remain `NOT_RUN_UNAVAILABLE` or
+`NOT_RUN` as recorded in the manual checklist. Partial evidence cannot support
+a broader behavioral, routing, model-fallback, hook, or persistence release
+claim and is not evidence that unrun checks pass.
 
 ## Later execution procedure
 

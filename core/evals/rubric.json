@@ -42,7 +42,7 @@
     "threshold-miss"
   ],
   "qualification": {
-    "gate-2-native": { "status": "NOT_RUN_UNAVAILABLE", "reason": "Native product sessions and a macOS host are unavailable in this repository-only qualification environment." },
-    "gate-3-external-sessions": { "status": "NOT_RUN_UNAVAILABLE", "reason": "No truthful external fresh-session model transport is available." }
+    "gate-2-native": { "status": "NOT_RUN_UNAVAILABLE", "reason": "Partial Windows native evidence is retained, but authenticated Claude/Codex execution, remaining behavioral checks, Codex Desktop, Antigravity IDE, and macOS are unavailable or not run." },
+    "gate-3-external-sessions": { "status": "NOT_RUN_UNAVAILABLE", "reason": "No complete cross-surface fresh-session behavioral evaluation is retained; authenticated Claude/Codex sessions and required platform coverage remain unavailable." }
   }
 }

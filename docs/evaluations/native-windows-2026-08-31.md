@@ -2,16 +2,49 @@
 
 This record separates observations from unrun checks. It contains no account
 identifier, conversation identifier, prompt body, credential, or live settings
-content. All repository installs used
-`tests/.tmp/native-retest-20260831/` as a disposable destination.
+content. The agy/Antigravity observations used
+`tests/.tmp/native-retest-20260831/`; the Codex and fresh agy checks used
+`tests/.tmp/native-acceptance-20260831-b/`; and the corrected Claude install
+used `tests/.tmp/native-acceptance-20260831-c/`. All were disposable roots.
 
 ## Environment
 
 | Product | Observed version | Platform | Scope |
 | --- | --- | --- | --- |
+| Claude Code | 2.1.248 | Windows (`win32`) | Strict validation, disposable marketplace/install, and enabled-plugin discovery |
+| Codex CLI | 0.151.0-alpha.7.2 | Windows (`win32`) | Isolated strict config load, Sol base model, and Terra profile parse |
 | agy CLI | 1.1.22 | Windows (`win32`) | CLI discovery, headless run, agent selection, and plugin validation |
 | Antigravity Desktop | 2.11.0 | Windows (`win32`) | Project plugin discovery and Customizations UI |
 | Antigravity IDE | 2.5.5 | Windows | Installed but not tested |
+
+## Claude Code observations
+
+- The first disposable install exposed a native loader defect: the standard
+  `hooks/hooks.json` file was discovered automatically and also referenced by
+  `.claude-plugin/plugin.json`, producing a duplicate-hooks error that strict
+  validation did not report.
+- The adapter was corrected to keep the standard hook file while removing only
+  the redundant manifest field. The emergency guard and all lifecycle hook
+  registrations remain rendered.
+- A newly rendered package passed `claude plugin validate --strict`, local
+  marketplace registration, and plugin installation. `plugin list --json`
+  reported `all-about-agents@all-about-agents-dev` version 1.0.0 enabled with no
+  hook-load error.
+- Authenticated model, skill, agent, command, and hook execution were not run:
+  the disposable `CLAUDE_CONFIG_DIR` intentionally had no credentials, and no
+  live credentials were copied.
+
+## Codex CLI observations
+
+- With `CODEX_HOME` set to the disposable rendered package, `codex
+  --strict-config doctor --json` reported `config.load: ok`, model
+  `gpt-5.6-sol`, approval policy `Never`, and an unrestricted filesystem
+  sandbox.
+- `codex --profile terra-max mcp list` parsed the Terra/max overlay and exited
+  successfully.
+- The isolated doctor remained overall `fail` because no credentials were
+  present and the non-interactive runner used `TERM=dumb`; authenticated model
+  invocation and Desktop behavior were not run.
 
 ## agy observations
 
@@ -53,6 +86,9 @@ documentation recommends a consolidated plugin `rules/AGENTS.md`.
 ## Antigravity Desktop observations after the rule fix
 
 - The updated package was applied only to the same disposable project root.
+- A later fresh Desktop launch re-opened the same project settings and again
+  reported 41 skills (13 global plus 28 plugin), two rules, and seven custom
+  agents; the conversation model selector still displayed Flash High.
 - Project Customizations listed `Rules 2`: the generated **All About Agents
   Desktop rules** entry and the ancestor repository rule.
 - Project Customizations continued to list 41 skills, including 28 from

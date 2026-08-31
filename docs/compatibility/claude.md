@@ -2,23 +2,28 @@
 
 This page describes the repository package and installer contract for Claude
 Code. A rendered package is repository/installer evidence; it is not evidence
-that a Claude product session discovered or executed it. Native acceptance is
-currently `NOT_RUN_UNAVAILABLE` under the [evaluation method](../evaluations/method.md).
+that a Claude product session executed its components. Windows Claude Code
+2.1.248 now has partial native acceptance for strict validation, disposable
+marketplace registration, plugin installation, and enabled-plugin discovery;
+authenticated session behavior remains `NOT_RUN_UNAVAILABLE` under the
+[evaluation method](../evaluations/method.md).
 
 ## Support summary
 
 | Capability | Current status | Contract |
 | --- | --- | --- |
-| Skills, agents, rules, commands, hooks | Automatic package render; native discovery manual until observed | The plugin package contains the declared files and registration metadata. |
-| User plugin registration | Manual operator action | From the generated package root, run `claude plugin marketplace add .`, then `claude plugin install all-about-agents@all-about-agents-dev`. |
+| Skills, agents, rules, commands, hooks | Automatic package render; plugin-level native discovery observed, component execution not run | The plugin package contains the declared files. Claude conventionally discovers `hooks/hooks.json`; the manifest does not register that standard path a second time. |
+| User plugin registration | Manual operator action; observed in a disposable Windows `CLAUDE_CONFIG_DIR` | From the generated package root, run `claude plugin marketplace add .`, then `claude plugin install all-about-agents@all-about-agents-dev`. |
 | Statusline | Unsupported as a native contract | Installer-managed statusline files may be emitted, but the adapter records the native statusline configuration shape as unknown. |
-| Native validation | Manual; observed on Windows with Claude Code 2.1.248 | `claude plugin validate . --strict`; T051 passed against the generated package and warnings are failures. |
-| Product/session behavior | `NOT_RUN_UNAVAILABLE` | No native Claude Code session was available for Gate 2 or Gate 3. |
+| Native validation | Manual; observed on Windows with Claude Code 2.1.248 | `claude plugin validate . --strict` passed, then `plugin list --json` reported the installed plugin enabled without a hook-load error. |
+| Product/session behavior | `NOT_RUN_UNAVAILABLE` | The isolated config intentionally contained no credentials, so authenticated model, component invocation, hook execution, fallback, and Gate 3 behavior were not run. |
 
 The package uses plugin-root-relative `skills/`, `agents/`, `commands/`,
-`rules/`, and `hooks/` paths. Claude’s native component discovery and hook
-execution still require a real product session; filesystem presence alone does
-not upgrade any row above to a native pass.
+`rules/`, and `hooks/` paths. A fresh disposable installation proved that
+Claude's loader accepts and enables the plugin without duplicate hook
+registration. Individual component discovery and hook execution still require
+an authenticated product session; enabled-plugin presence alone does not
+upgrade those behaviors to a native pass.
 
 ## Profiles, models, and permissions
 
@@ -64,10 +69,12 @@ and remains unknown until observed.
 
 ## Verification limits
 
-Node `22.12.0` is the declared preflight minimum. This page does not claim a
-specific installed runtime, plugin discovery, hook invocation, model routing,
-fallback event, statusline rendering, or persistence result. Those require
-Gate 2 evidence and, for behavior, fresh Gate 3 sessions.
+Node `22.12.0` is the declared preflight minimum. This page claims only the
+observed Windows validation, registration, installation, and enabled-plugin
+discovery above. It does not claim hook invocation, skill/agent execution,
+model routing, fallback events, Fable access, statusline rendering, or
+persistence. Those require authenticated Gate 2 evidence and, for behavior,
+fresh Gate 3 sessions.
 
 Use the supported [Windows](../setup/windows.md) or [macOS](../setup/macos.md)
 setup guide with a disposable root. The [known limitations](../limitations/known-limitations.md)

@@ -130,6 +130,9 @@ test("release rubric has strict weights, status values, and exact release thresh
   ]);
   assert.equal(rubric.qualification["gate-2-native"].status, "NOT_RUN_UNAVAILABLE");
   assert.equal(rubric.qualification["gate-3-external-sessions"].status, "NOT_RUN_UNAVAILABLE");
+  assert.match(rubric.qualification["gate-2-native"].reason, /Partial Windows native evidence/u);
+  assert.match(rubric.qualification["gate-3-external-sessions"].reason, /No complete cross-surface fresh-session behavioral evaluation/u);
+  assert.doesNotMatch(JSON.stringify(rubric.qualification), /Native product sessions and a macOS host are unavailable|No truthful external fresh-session model transport is available/u);
 });
 
 test("deterministic Gate 0/1 report proves portable seams without native claims", async () => {
@@ -267,8 +270,8 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
     ],
     surfaces: surfaceEvidence,
     notRun: [
-      { id: "gate-2-native", status: "NOT_RUN_UNAVAILABLE", evidence: "Native product sessions and a macOS host were unavailable; follow tests/integration/manual-desktop-checklist.json." },
-      { id: "gate-3-external-sessions", status: "NOT_RUN_UNAVAILABLE", evidence: "No truthful external fresh-session model transport is available; follow docs/evaluations/method.md." },
+      { id: "gate-2-native", status: "NOT_RUN_UNAVAILABLE", evidence: "Partial Windows native checks passed; remaining authenticated, behavioral, Desktop/IDE, and macOS checks are unavailable or not run; follow tests/integration/manual-desktop-checklist.json." },
+      { id: "gate-3-external-sessions", status: "NOT_RUN_UNAVAILABLE", evidence: "No complete cross-surface fresh-session behavioral evaluation is retained; follow docs/evaluations/method.md." },
       { id: "posix-launcher", status: "NOT_RUN_UNAVAILABLE", evidence: "A native macOS/POSIX qualification host was unavailable." }
     ]
   };

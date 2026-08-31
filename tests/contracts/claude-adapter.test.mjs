@@ -109,6 +109,15 @@ test("portable Claude render contains every native component and all canonical s
   assert.equal(files.has("AGENTS.md"), false);
 });
 
+test("Claude plugin relies on conventional hook discovery without duplicate manifest registration", () => {
+  const files = fileMap(resultFor());
+  const manifest = JSON.parse(files.get(".claude-plugin/plugin.json"));
+  assert.equal(Object.hasOwn(manifest, "hooks"), false);
+  assert.ok(files.has("hooks/hooks.json"));
+  const hooks = JSON.parse(files.get("hooks/hooks.json")).hooks;
+  assert.ok(hooks.PreToolUse?.[0]?.hooks?.length > 0);
+});
+
 test("template Claude render emits full-access settings without unsupported effortLevel", () => {
   const files = fileMap(resultFor("template"));
   const settings = JSON.parse(files.get("config/settings.json"));

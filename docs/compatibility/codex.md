@@ -1,8 +1,11 @@
 # Codex CLI and Desktop compatibility
 
 This page covers the deterministic Codex package and installer contract. It
-does not turn a package tree into a native Codex claim. Native acceptance is
-`NOT_RUN_UNAVAILABLE`; see the [evaluation method](../evaluations/method.md).
+does not turn a package tree into a native Codex claim. Windows Codex CLI
+0.151.0-alpha.7.2 now has partial native evidence for isolated strict config
+loading and Terra profile parsing; authenticated CLI behavior and Desktop
+acceptance remain `NOT_RUN_UNAVAILABLE`. See the
+[evaluation method](../evaluations/method.md).
 
 ## Support summary
 
@@ -13,8 +16,8 @@ does not turn a package tree into a native Codex claim. Native acceptance is
 | Claude-style command files | Unsupported | Reusable behavior is delivered as skills; Codex command-plugin mapping is not declared. |
 | Hooks | Automatic package render; native execution requires Gate 2 | Lifecycle handlers are declared, but no product run was observed. |
 | Statusline and schedules | Unsupported/unknown native contract | No Codex-native statusline or repository schedule is emitted. |
-| Native validation | Manual, when Codex is installed | `codex doctor --json --no-color`. |
-| Product/session behavior | `NOT_RUN_UNAVAILABLE` | No native Codex CLI/Desktop session was available for Gate 2 or Gate 3. |
+| Native validation | Partial; observed on Windows Codex CLI 0.151.0-alpha.7.2 | With an isolated `CODEX_HOME`, strict Doctor reported `config.load: ok` for the Sol/max base config; `--profile terra-max mcp list` parsed the alternate profile. |
+| Product/session behavior | `NOT_RUN_UNAVAILABLE` | The isolated home intentionally had no credentials and the runner was non-interactive, so model/agent/hook execution and Desktop Gate 2/3 were not run. |
 
 ## Profiles, models, and permissions
 
@@ -60,11 +63,14 @@ discovery, role registration, hook behavior, and Desktop profile selection.
 
 ## Verification limits
 
-No native `codex doctor` output, model selection, fallback event, Desktop
-registration, hook invocation, or persistence observation is retained. The
-package also has no native statusline contract, and the narrower implementer
-task path is not enforced by Codex’s workspace controls alone; the outer
-installer/approval boundary remains authoritative.
+The retained native Doctor evidence proves only that the generated base config
+loads strictly with `gpt-5.6-sol`, max reasoning, approval policy `never`, and
+the unrestricted filesystem sandbox. The Terra overlay parsed through a native
+profile-aware command, but no authenticated model call was made. No fallback
+event, role execution, Desktop registration, hook invocation, or persistence
+observation is claimed. The package also has no native statusline contract, and
+the narrower implementer task path is not enforced by Codex's workspace
+controls alone; the outer installer/approval boundary remains authoritative.
 
 See the [evaluation method](../evaluations/method.md) for Gate 2/Gate 3
 requirements and [known limitations](../limitations/known-limitations.md) for

@@ -346,8 +346,7 @@ function pluginManifest() {
     name: "all-about-agents",
     version: "1.0.0",
     description: "Portable all-about-agents skills, agents, commands, hooks, and rules for Claude Code.",
-    author: { name: "All About Agents" },
-    hooks: "./hooks/hooks.json"
+    author: { name: "All About Agents" }
   };
 }
 

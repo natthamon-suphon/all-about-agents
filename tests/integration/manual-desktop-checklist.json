@@ -7,8 +7,24 @@
   "products": [
     {
       "id": "claude",
-      "version": { "status": "unknown", "value": null, "evidence": "not run: no Claude Code session was opened" },
-      "evidence": { "status": "not run", "artifacts": [], "notes": "No native clean-profile discovery evidence recorded." },
+      "version": { "status": "pass", "value": "2.1.248", "evidence": "claude --version returned 2.1.248 on Windows." },
+      "evidence": {
+        "status": "partial",
+        "artifacts": ["docs/evaluations/native-windows-2026-08-31.md"],
+        "notes": "Strict validation, disposable marketplace registration, plugin installation, and enabled-plugin discovery passed after the duplicate standard-hook registration was removed. Authenticated component and hook execution were not run."
+      },
+      "checks": [
+        { "id": "version", "status": "pass" },
+        { "id": "strict-validation", "status": "pass" },
+        { "id": "marketplace-registration", "status": "pass" },
+        { "id": "plugin-install", "status": "pass" },
+        { "id": "plugin-enabled-discovery", "status": "pass" },
+        { "id": "skill-agent-command-discovery", "status": "not run" },
+        { "id": "hook-execution", "status": "not run" },
+        { "id": "authenticated-model", "status": "not run" },
+        { "id": "fallback-and-fable", "status": "not run" },
+        { "id": "statusline-and-persistence", "status": "not run" }
+      ],
       "procedure": [
         "Create an empty disposable root and run: node scripts/aaa.mjs install --surface claude --destination-root <DISPOSABLE_ROOT>/claude --apply --format json.",
         "From an unrelated working directory, start Claude Code with that disposable configuration root and record the exact `claude --version` output.",
@@ -18,8 +34,23 @@
     },
     {
       "id": "codex",
-      "version": { "status": "unknown", "value": null, "evidence": "not run: no Codex CLI/Desktop session was opened" },
-      "evidence": { "status": "not run", "artifacts": [], "notes": "No native clean-profile discovery evidence recorded." },
+      "version": { "status": "pass", "value": "0.151.0-alpha.7.2", "evidence": "codex --version returned 0.151.0-alpha.7.2 on Windows." },
+      "evidence": {
+        "status": "partial",
+        "artifacts": ["docs/evaluations/native-windows-2026-08-31.md"],
+        "notes": "The isolated Sol/max base config loaded under strict Doctor and the Terra/max profile parsed through a profile-aware native command. Doctor remained overall fail because credentials and an interactive terminal were unavailable."
+      },
+      "checks": [
+        { "id": "version", "status": "pass" },
+        { "id": "strict-config-load", "status": "pass" },
+        { "id": "sol-base-config", "status": "pass" },
+        { "id": "terra-profile-parse", "status": "pass" },
+        { "id": "authenticated-model", "status": "not run" },
+        { "id": "skill-agent-discovery", "status": "not run" },
+        { "id": "hook-and-emergency-guard", "status": "not run" },
+        { "id": "desktop-registration", "status": "not run" },
+        { "id": "persistence", "status": "not run" }
+      ],
       "procedure": [
         "Create an empty disposable root and run: node scripts/aaa.mjs install --surface codex --destination-root <DISPOSABLE_ROOT>/codex --apply --format json.",
         "From an unrelated working directory, start Codex with that disposable CODEX_HOME and record the exact `codex --version` output.",
