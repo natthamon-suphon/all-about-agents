@@ -68,15 +68,15 @@ export const ANTIGRAVITY_ACTION_MAPPINGS = Object.freeze(Object.fromEntries(
 /** Desktop has a display-name selector, not a public model key or settings file. */
 export const ANTIGRAVITY_MODEL_POLICY = Object.freeze({
   desktop: Object.freeze({
-    displayName: "Gemini 3.7 Flash Medium",
+    displayName: "Gemini 3.7 Flash High",
     selection: "manual conversation selector",
     persistence: "conversation-local",
-    status: "verified"
-  }),
-  requestedDesktopFlashHigh: Object.freeze({
-    claim: "Gemini 3.7 Flash High",
-    status: "unsupported",
-    source: "research-antigravity-2.md"
+    status: "verified",
+    evidence: Object.freeze({
+      productVersion: "2.11.0",
+      platform: "win32",
+      observedAt: "2026-08-31"
+    })
   })
 });
 
@@ -88,8 +88,8 @@ const EMERGENCY_DENIES = Object.freeze([
 ]);
 
 export const ANTIGRAVITY_PERMISSION_POLICY = Object.freeze({
-  controlled: Object.freeze({ preset: "Default", manualOnly: true, deny: EMERGENCY_DENIES }),
-  full: Object.freeze({ preset: "Unrestricted", manualOnly: true, deny: EMERGENCY_DENIES })
+  controlled: Object.freeze({ preset: "Default", accessIntent: "controlled", turboMode: false, manualOnly: true, deny: EMERGENCY_DENIES }),
+  full: Object.freeze({ preset: "Custom", accessIntent: "full", turboMode: false, manualOnly: true, deny: EMERGENCY_DENIES })
 });
 
 const DEFAULT_ROLES = Object.freeze({
@@ -160,6 +160,22 @@ function renderRule(rule) {
   if (Array.isArray(rule.requirements) && rule.requirements.length > 0) lines.push("## Requirements", "", ...rule.requirements.map((item) => `- ${item}`), "");
   if (Array.isArray(rule.invariants) && rule.invariants.length > 0) lines.push("## Invariants", "", ...rule.invariants.map((item) => `- ${item}`), "");
   return ensureText(lines.join("\n"));
+}
+
+function consolidatedRules(profile, rules) {
+  const sections = [
+    capabilityGuidance(),
+    modelRule(profile),
+    permissionRule(),
+    ...[...rules]
+      .sort((left, right) => compareCodePoints(String(left.id), String(right.id)))
+      .map((rule) => renderRule(rule))
+  ].map((section) => section.replace(/^#/gmu, "##").trimEnd());
+  return ensureText([
+    "# All About Agents Desktop rules",
+    "",
+    ...sections.flatMap((section, index) => index === 0 ? [section, ""] : ["---", "", section, ""])
+  ].join("\n"));
 }
 
 function renderAgent(name, role) {
@@ -245,9 +261,9 @@ function capabilityGuidance() {
     "",
     "This package targets the Antigravity 2.0 Desktop plugin contract.",
     "Workspace discovery uses `.agents/plugins/<plugin>/`; global discovery uses `~/.gemini/config/plugins/<plugin>/`.",
-    "Skills use `skills/<skill>/SKILL.md`; rules use `rules/<rule>.md`.",
+    "Skills use `skills/<skill>/SKILL.md`; plugin rules use the consolidated `rules/AGENTS.md` entrypoint.",
     "The Desktop Plugins page omits `agents/`; the Desktop Subagents page separately documents `agents/<role>.md`.",
-    "Plugin-agent packaging is ambiguous and not guaranteed by the Plugins layout; verify agent discovery manually before relying on it.",
+    "Native Windows Desktop 2.11.0 discovery verified all seven packaged agents; other product versions and platforms still require verification.",
     "The published Desktop tools are the exact names used in agent frontmatter and semantic mappings.",
     "Read-only capability diagnostics identify suppressed command or mutation semantics; record them as unavailable or not run and do not infer a substitute.",
     "The implementer's Desktop write controls are workspace-wide; its declared task paths remain an outer approval boundary.",
@@ -269,15 +285,9 @@ function modelRule(profile) {
   return ensureText([
     "# Desktop model selection",
     "",
-    "Manual step (verified): open the Desktop model selector and choose `Gemini 3.7 Flash Medium`.",
-    "The public Desktop contract documents this choice as sticky between user messages in one conversation.",
-    "",
-    "Unsupported diagnostic:",
-    "- surface: antigravity-2-desktop",
-    "- claim: Gemini 3.7 Flash High",
-    "- status: unsupported",
-    "- source: research-antigravity-2.md",
-    "- manual_step: use the currently offered Desktop selector value above; do not enter a model key or persist it outside the conversation.",
+    "Manual step (verified on Windows Desktop 2.11.0): open the model selector and choose `Gemini 3.7 Flash High`.",
+    "`High` is part of the observed display name; no separate Desktop effort control was observed or emitted.",
+    "Conversation-local selection is the documented persistence boundary. No settings key, cross-session persistence, or automatic fallback is claimed.",
     ""
   ].join("\n"));
 }
@@ -286,8 +296,10 @@ function permissionRule() {
   return ensureText([
     "# Desktop permission and emergency controls",
     "",
-    "Use the documented Desktop Project security preset in the UI. The portable profile uses `Default`; the template profile requests the manual `Unrestricted` preset.",
-    "Full machine and Unrestricted are UI controls, not serialized package settings.",
+    "Use the Desktop Project security controls in the UI. The portable profile uses `Default`.",
+    "For the template profile, select `Custom`, grant broad/full working access, and retain every emergency Deny rule below.",
+    "`Turbo mode` is not selected because the Windows 2.11.0 UI describes it as disabling safety barriers, which conflicts with the emergency-deny invariant.",
+    "These are manual UI controls, not serialized package settings. Do not infer a settings key or auto-apply the preset.",
     "",
     "Keep explicit Deny rules because precedence is Deny > Ask > Allow:",
     "- `command(rm -rf)`",
@@ -350,6 +362,7 @@ export function renderAntigravity(input = {}) {
     modelPolicyRefs: ["surface-default", "approved-desktop-flash"]
   });
   const profile = semanticProfile.id;
+  const permissionPolicy = ANTIGRAVITY_PERMISSION_POLICY[semanticProfile.authority];
   const modelSelected = semanticProfile.modelPolicies[SURFACE] !== "surface-default";
   if (typeof input.statuslineName !== "string") throw new TypeError("statuslineName must be a string");
   const files = [];
@@ -361,12 +374,7 @@ export function renderAntigravity(input = {}) {
   addFile(files, `${PLUGIN_ROOT}/hooks/activity-audit.json`, renderJson(antigravityActivityTemplate));
   addFile(files, `${PLUGIN_ROOT}/hooks/checkpoint.json`, renderJson(antigravityCheckpointTemplate));
   addFile(files, `${PLUGIN_ROOT}/hooks/emergency-guard.json`, renderJson(antigravityEmergencyTemplate));
-  addFile(files, `${PLUGIN_ROOT}/rules/adapter-capability-guidance.md`, capabilityGuidance());
-  addFile(files, `${PLUGIN_ROOT}/rules/model-selection.md`, modelRule(semanticProfile));
-  addFile(files, `${PLUGIN_ROOT}/rules/permission-safety.md`, permissionRule());
-  for (const rule of [...input.core.rules].sort((left, right) => String(left.id).localeCompare(String(right.id)))) {
-    addFile(files, `${PLUGIN_ROOT}/rules/${rule.id}.md`, renderRule(rule));
-  }
+  addFile(files, `${PLUGIN_ROOT}/rules/AGENTS.md`, consolidatedRules(semanticProfile, input.core.rules));
   const opaqueCompanionPaths = new Set();
   for (const skill of skillIds(input.core)) {
     addFile(files, `${PLUGIN_ROOT}/skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill)));
@@ -394,12 +402,6 @@ export function renderAntigravity(input = {}) {
       sourcePath: "core/inventory.json"
     });
   }
-  if (modelSelected) diagnostics.push({
-    code: "desktop-model-high-unsupported",
-    severity: "warning",
-    message: "Desktop Gemini 3.7 Flash High is not a documented selector value; use the manual Gemini 3.7 Flash Medium step.",
-    sourcePath: "research-antigravity-2.md"
-  });
   diagnostics.push({
     code: "desktop-emergency-guard-probe-required",
     severity: "warning",
@@ -430,23 +432,19 @@ export function renderAntigravity(input = {}) {
         model: ANTIGRAVITY_MODEL_POLICY.desktop.displayName,
         status: ANTIGRAVITY_MODEL_POLICY.desktop.status,
         persistence: ANTIGRAVITY_MODEL_POLICY.desktop.persistence,
-        applyVia: "Desktop model selector"
-      }, {
-        kind: "unsupported-diagnostic",
-        surface: DESKTOP_SURFACE,
-        claim: ANTIGRAVITY_MODEL_POLICY.requestedDesktopFlashHigh.claim,
-        status: ANTIGRAVITY_MODEL_POLICY.requestedDesktopFlashHigh.status,
-        source: ANTIGRAVITY_MODEL_POLICY.requestedDesktopFlashHigh.source,
-        manual_step: "Open the Desktop model selector and choose the currently offered Gemini 3.7 Flash Medium; do not enter a model key or persist the choice outside the conversation."
+        applyVia: "Desktop model selector",
+        evidence: { ...ANTIGRAVITY_MODEL_POLICY.desktop.evidence }
       }] : []),
       {
         kind: "permission-ui",
         surface: DESKTOP_SURFACE,
         profile,
-        preset: ANTIGRAVITY_PERMISSION_POLICY[semanticProfile.authority].preset,
+        preset: permissionPolicy.preset,
+        accessIntent: permissionPolicy.accessIntent,
+        turboMode: permissionPolicy.turboMode,
         manualOnly: true,
         precedence: "Deny > Ask > Allow",
-        deny: [...ANTIGRAVITY_PERMISSION_POLICY[semanticProfile.authority].deny]
+        deny: [...permissionPolicy.deny]
       },
       {
         kind: "hook-contract",

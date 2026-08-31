@@ -61,27 +61,30 @@ test("Antigravity 2 clean-profile apply materializes the complete disposable pac
     assert.equal(core.commands.length, 8);
     for (const skill of core.inventory.skills) await access(resolve(destination, pluginRoot, "skills", skill, "SKILL.md"));
     for (const role of roles) await access(resolve(destination, pluginRoot, "agents", `${role}.md`));
-    for (const rule of core.rules) await access(resolve(destination, pluginRoot, "rules", `${rule.id}.md`));
     for (const path of [
       `${pluginRoot}/plugin.json`, `${pluginRoot}/hooks.json`,
       `${pluginRoot}/hooks/activity-audit.json`, `${pluginRoot}/hooks/checkpoint.json`,
-      `${pluginRoot}/hooks/emergency-guard.json`, `${pluginRoot}/rules/model-selection.md`,
-      `${pluginRoot}/rules/permission-safety.md`
+      `${pluginRoot}/hooks/emergency-guard.json`, `${pluginRoot}/rules/AGENTS.md`
     ]) await access(resolve(destination, path));
+    const generatedRules = (await filesUnder(resolve(destination, pluginRoot, "rules"))).filter((path) => path.endsWith(".md"));
+    assert.deepEqual(generatedRules, ["AGENTS.md"]);
 
     const rendered = renderAntigravity({ core, profile: { id: "template" }, statuslineName: "", platform: process.platform });
     const model = rendered.registrations.find((entry) => entry.kind === "manual-model-selection");
     assert.deepEqual(model, {
       kind: "manual-model-selection",
       surface: "antigravity-2-desktop",
-      model: "Gemini 3.7 Flash Medium",
+      model: "Gemini 3.7 Flash High",
       status: "verified",
       persistence: "conversation-local",
-      applyVia: "Desktop model selector"
+      applyVia: "Desktop model selector",
+      evidence: { productVersion: "2.11.0", platform: "win32", observedAt: "2026-08-31" }
     });
-    assert.equal(rendered.registrations.find((entry) => entry.kind === "unsupported-diagnostic").status, "unsupported");
+    assert.equal(rendered.registrations.some((entry) => entry.kind === "unsupported-diagnostic"), false);
     const permission = rendered.registrations.find((entry) => entry.kind === "permission-ui");
-    assert.equal(permission.preset, "Unrestricted");
+    assert.equal(permission.preset, "Custom");
+    assert.equal(permission.accessIntent, "full");
+    assert.equal(permission.turboMode, false);
     assert.equal(permission.manualOnly, true);
     assert.ok(permission.deny.includes("command(rm -rf)"));
     assert.ok(permission.deny.includes("command(sudo)"));

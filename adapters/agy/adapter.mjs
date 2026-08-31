@@ -514,12 +514,27 @@ export function buildHeadlessArgs({ prompt = "<prompt>", model = AGY_MODEL_POLIC
 
 function nativeAcceptance(platform) {
   return {
-    status: "not run",
+    status: "partial",
     product: "agy CLI",
-    productVersion: "unknown",
-    executablePath: "unknown",
+    productVersion: "1.1.22",
+    executablePath: "%LOCALAPPDATA%/agy/bin/agy.exe",
     platform,
-    reason: "Native acceptance was not run for this repository render; no native executable was invoked.",
+    checkedAt: "2026-08-31",
+    reason: "Native Windows evidence is recorded per check; installation, runtime skill discovery, hooks, settings merge, and persistence remain not run.",
+    checks: [
+      { id: "version", status: "pass", evidence: "agy --version returned 1.1.22." },
+      { id: "model-discovery", status: "pass", evidence: "agy models listed gemini-3.7-flash-high." },
+      { id: "effort-help", status: "pass", evidence: "agy --help documented --effort high." },
+      { id: "headless-model", status: "pass", evidence: "Headless Flash High with high effort and dangerously-skip-permissions completed successfully." },
+      { id: "plugin-validation", status: "pass", evidence: "agy plugin validate accepted both rendered packages and reported 28 skills, 7 agents, and 1 hook." },
+      { id: "agent-selection", status: "pass", evidence: "agy accepted --agent architect in the disposable workspace." },
+      { id: "agent-list", status: "inconclusive", evidence: "agy agents exited successfully but printed no agent rows." },
+      { id: "plugin-install", status: "not run", evidence: "No live plugin installation was performed." },
+      { id: "skill-runtime-discovery", status: "not run", evidence: "Validator enumeration does not prove runtime skill invocation." },
+      { id: "hook-execution", status: "not run", evidence: "The package hook contract remains disabled and inert." },
+      { id: "settings-merge", status: "not run", evidence: "No live settings file was written or merged." },
+      { id: "model-persistence", status: "not run", evidence: "Cross-session persistence was not exercised." }
+    ],
     manualSequence: ["agy --help", "agy models", "agy agents", "agy plugin list"],
     disposablePackageInstall: "agy plugin install PACKAGE_DIRECTORY",
     manualOnly: true
@@ -585,16 +600,16 @@ export function renderAgy(input = {}) {
 
   const diagnostics = [
     {
-      code: "agy-native-not-run",
+      code: "agy-native-partial",
       severity: "warning",
-      message: "Native acceptance was not run for this repository render and must be performed manually; no native executable was invoked.",
-      sourcePath: "research-agy-2.md"
+      message: "Native agy 1.1.22 model, headless, agent-selection, and package-validation checks passed on Windows; untested native behavior remains not run.",
+      sourcePath: "tests/integration/manual-desktop-checklist.json"
     },
     {
-      code: "agy-runtime-unknown",
+      code: "agy-runtime-partial",
       severity: "warning",
-      message: "The agy runtime version, executable path, entitlement, and active package/settings roots are unknown; discover them manually before applying artifacts.",
-      sourcePath: "research-agy-2.md"
+      message: "The agy runtime version and executable path are known, but entitlement, active package/settings roots, and merge behavior remain unknown; discover them before applying artifacts.",
+      sourcePath: "tests/integration/manual-desktop-checklist.json"
     },
     {
       code: "agy-bootstrap-probe-required",

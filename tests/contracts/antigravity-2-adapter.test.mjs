@@ -106,9 +106,20 @@ test("portable Desktop render contains documented plugin components and every ca
   const files = fileMap(result);
   assert.ok(files.has(".agents/plugins/all-about-agents/plugin.json"));
   assert.ok(files.has(".agents/plugins/all-about-agents/hooks.json"));
-  assert.ok(files.has(".agents/plugins/all-about-agents/rules/authority-and-scope.md"));
-  assert.ok(files.has(".agents/plugins/all-about-agents/rules/model-selection.md"));
-  assert.ok(files.has(".agents/plugins/all-about-agents/rules/permission-safety.md"));
+  const rulesPath = ".agents/plugins/all-about-agents/rules/AGENTS.md";
+  assert.ok(files.has(rulesPath));
+  assert.deepEqual(
+    [...files.keys()].filter((path) => path.startsWith(".agents/plugins/all-about-agents/rules/")),
+    [rulesPath],
+    "Desktop plugin rules must have one native AGENTS.md entrypoint"
+  );
+  const rules = files.get(rulesPath);
+  let previousRuleOffset = -1;
+  for (const rule of [...core.rules].sort((left, right) => String(left.id) < String(right.id) ? -1 : String(left.id) > String(right.id) ? 1 : 0)) {
+    const offset = rules.indexOf(`## ${rule.title || rule.id}`);
+    assert.ok(offset > previousRuleOffset, `missing or unordered canonical rule ${rule.id}`);
+    previousRuleOffset = offset;
+  }
   for (const role of ["researcher", "investigator", "architect", "implementer", "verifier", "reviewer", "security-reviewer"]) {
     assert.ok(files.has(`.agents/plugins/all-about-agents/agents/${role}.md`), `missing native agent ${role}`);
   }
@@ -157,61 +168,65 @@ test("read-only Desktop agents cannot execute commands", () => {
   assert.match(implementer, /^commandExecutionPolicy: sandbox$/mu);
 });
 
-test("plugin-agent packaging exposes the documented documentation split", async () => {
+test("plugin-agent packaging records the documentation split and verified Windows discovery", async () => {
   const files = fileMap(resultFor());
-  const guidance = files.get(".agents/plugins/all-about-agents/rules/adapter-capability-guidance.md");
+  const guidance = files.get(".agents/plugins/all-about-agents/rules/AGENTS.md");
   const readme = await readFile(resolve(process.cwd(), "adapters/antigravity-2/templates/README.md"), "utf8");
   const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/antigravity-2.json"), "utf8"));
   for (const content of [guidance, readme]) {
     assert.match(content, /Plugins page[\s\S]*omits[\s\S]*agents\//iu);
     assert.match(content, /Subagents page[\s\S]*separately documents[\s\S]*agents\//iu);
-    assert.match(content, /ambiguous|not guaranteed|conditional/iu);
+    assert.match(content, /Windows[\s\S]*2\.11\.0[\s\S]*(?:seven|7)[\s\S]*(?:agents|roles)/iu);
   }
-  assert.equal(manifest.components.agents.status, "ambiguous");
+  assert.equal(manifest.components.agents.status, "verified");
+  assert.equal(manifest.components.agents.verifiedOn, "Windows Desktop 2.11.0");
   assert.match(manifest.components.agents.documentation, /Plugins page.*omits.*agents\//iu);
 });
 
-test("Desktop model output is a manual Medium selection with an explicit unsupported High diagnostic", () => {
+test("Desktop model output selects the natively observed Flash High display name without inventing effort settings", () => {
   const result = resultFor("template");
   const model = result.registrations.find((entry) => entry.kind === "manual-model-selection");
   assert.deepEqual(model, {
     kind: "manual-model-selection",
     surface: "antigravity-2-desktop",
-    model: "Gemini 3.7 Flash Medium",
+    model: "Gemini 3.7 Flash High",
     status: "verified",
     persistence: "conversation-local",
-    applyVia: "Desktop model selector"
+    applyVia: "Desktop model selector",
+    evidence: {
+      productVersion: "2.11.0",
+      platform: "win32",
+      observedAt: "2026-08-31"
+    }
   });
-  const unsupported = result.registrations.find((entry) => entry.kind === "unsupported-diagnostic" && entry.claim === "Gemini 3.7 Flash High");
-  assert.deepEqual(unsupported, {
-    kind: "unsupported-diagnostic",
-    surface: "antigravity-2-desktop",
-    claim: "Gemini 3.7 Flash High",
-    status: "unsupported",
-    source: "research-antigravity-2.md",
-    manual_step: "Open the Desktop model selector and choose the currently offered Gemini 3.7 Flash Medium; do not enter a model key or persist the choice outside the conversation."
-  });
-  const modelRule = fileMap(result).get(".agents/plugins/all-about-agents/rules/model-selection.md");
-  assert.match(modelRule, /Gemini 3\.7 Flash Medium/u);
+  assert.equal(result.registrations.some((entry) => entry.kind === "unsupported-diagnostic"), false);
+  assert.equal(result.diagnostics.some((entry) => entry.code === "desktop-model-high-unsupported"), false);
+  const modelRule = fileMap(result).get(".agents/plugins/all-about-agents/rules/AGENTS.md");
   assert.match(modelRule, /Gemini 3\.7 Flash High/u);
+  assert.match(modelRule, /no separate Desktop effort control was observed/iu);
+  assert.doesNotMatch(modelRule, /Gemini 3\.7 Flash Medium/u);
   assert.doesNotMatch(modelRule, /gemini-3\.7-flash-high/u);
   assert.doesNotMatch(JSON.stringify(result), /modelKey|persistenceKey|settings\.json|--effort|--model/iu);
 });
 
-test("Desktop full-access profile is a manual Unrestricted UI preset with documented emergency denies", () => {
+test("Desktop full-access profile uses Custom instead of Turbo so emergency denies remain explicit", () => {
   const portable = resultFor("portable");
   const template = resultFor("template");
   const portablePermission = portable.registrations.find((entry) => entry.kind === "permission-ui");
   const templatePermission = template.registrations.find((entry) => entry.kind === "permission-ui");
   assert.equal(portablePermission.preset, "Default");
-  assert.equal(templatePermission.preset, "Unrestricted");
+  assert.equal(templatePermission.preset, "Custom");
+  assert.equal(templatePermission.accessIntent, "full");
+  assert.equal(templatePermission.turboMode, false);
   assert.equal(templatePermission.manualOnly, true);
   assert.ok(templatePermission.deny.includes("command(rm -rf)"));
   assert.ok(templatePermission.deny.includes("command(sudo)"));
-  const rule = fileMap(template).get(".agents/plugins/all-about-agents/rules/permission-safety.md");
+  const rule = fileMap(template).get(".agents/plugins/all-about-agents/rules/AGENTS.md");
   assert.match(rule, /Deny > Ask > Allow/u);
   assert.match(rule, /decision: deny/u);
-  assert.match(rule, /Full machine|Unrestricted/u);
+  assert.match(rule, /Custom/u);
+  assert.match(rule, /Turbo mode.*not selected/iu);
+  assert.doesNotMatch(rule, /Unrestricted/u);
 });
 
 test("Desktop hooks remain probe-required without an automatic command", () => {
@@ -271,9 +286,12 @@ test("Desktop manifest documents workspace/global discovery and no serialized se
   assert.equal(manifest.pluginManifest, ".agents/plugins/all-about-agents/plugin.json");
   assert.equal(manifest.discovery.workspace, ".agents/plugins/<plugin>/");
   assert.equal(manifest.discovery.global, "~/.gemini/config/plugins/<plugin>/");
+  assert.equal(manifest.components.rules, ".agents/plugins/<plugin>/rules/AGENTS.md");
   assert.equal(manifest.components.hooks, ".agents/plugins/<plugin>/hooks.json");
   assert.equal(manifest.components.agents.path, ".agents/plugins/<plugin>/agents/{role}.md");
-  assert.equal(manifest.nativeValidation.status, "not run");
+  assert.equal(manifest.nativeValidation.status, "partial");
+  assert.equal(manifest.nativeValidation.productVersion, "2.11.0");
+  assert.equal(manifest.nativeValidation.platform, "win32");
   assert.equal(Object.hasOwn(manifest, "settings"), false);
   assert.equal(JSON.stringify(manifest).includes("gemini-3.7-flash-high"), false);
   assert.equal(JSON.stringify(manifest).includes("--effort"), false);
@@ -281,14 +299,23 @@ test("Desktop manifest documents workspace/global discovery and no serialized se
   assert.deepEqual(plugin, { name: "all-about-agents" });
 });
 
-test("native acceptance remains unknown with a precise manual Desktop checklist", async () => {
+test("native acceptance records Windows observations per check and leaves untested behavior open", async () => {
   const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/antigravity-2.json"), "utf8"));
   const acceptance = manifest.nativeValidation;
-  assert.equal(acceptance.status, "not run");
+  assert.equal(acceptance.status, "partial");
   assert.equal(acceptance.product, "Antigravity 2.0 Desktop");
-  assert.equal(acceptance.productVersion, "unknown");
-  assert.equal(acceptance.platform, "unknown");
-  assert.match(acceptance.reason, /real.*Desktop session/iu);
+  assert.equal(acceptance.productVersion, "2.11.0");
+  assert.equal(acceptance.platform, "win32");
+  assert.equal(acceptance.checkedAt, "2026-08-31");
+  assert.match(acceptance.reason, /partial|per[ -]check/iu);
+  assert.ok(Array.isArray(acceptance.checks));
+  const checks = new Map(acceptance.checks.map((check) => [check.id, check]));
+  for (const passed of ["launch-and-discovery", "skill-discovery", "agent-discovery", "model-policy", "rule-discovery"]) {
+    assert.equal(checks.get(passed)?.status, "pass", passed);
+  }
+  for (const notRun of ["agent-tool-safety", "permission-deny", "hooks-contract", "cross-session-persistence"]) {
+    assert.equal(checks.get(notRun)?.status, "not run", notRun);
+  }
   assert.ok(Array.isArray(acceptance.manualAcceptanceChecklist));
   for (const check of acceptance.manualAcceptanceChecklist) {
     assert.match(check.id, /^[a-z0-9-]+$/u);
@@ -300,33 +327,33 @@ test("native acceptance remains unknown with a precise manual Desktop checklist"
     assert.ok(ids.has(required), required);
   }
   const readme = await readFile(resolve(process.cwd(), "adapters/antigravity-2/templates/README.md"), "utf8");
-  assert.match(readme, /Native acceptance \(not run\)/iu);
-  assert.match(readme, /product version:\s*`unknown`/iu);
-  assert.match(readme, /platform:\s*`unknown`/iu);
+  assert.match(readme, /Native acceptance \(partial\)/iu);
+  assert.match(readme, /product version:\s*`2\.11\.0`/iu);
+  assert.match(readme, /platform:\s*`win32`/iu);
   for (const required of ids) assert.match(readme, new RegExp(required, "u"));
 });
 
-test("Desktop capability evidence records the current Medium/manual policy and unsupported Flash tier", async () => {
+test("Desktop capability evidence records the observed High selector and no separate effort control", async () => {
   const evidence = JSON.parse(await readFile(resolve(process.cwd(), "adapters/antigravity-2/capabilities.json"), "utf8"));
-  assert.equal(evidence.checkedAt, "2026-08-29");
-  assert.equal(evidence.productVersion, "unknown");
+  assert.equal(evidence.checkedAt, "2026-08-31");
+  assert.equal(evidence.productVersion, "2.11.0");
   const model = evidence.capabilities.find((entry) => entry.feature === "model.desktop");
   assert.ok(model);
-  assert.equal(model.source, "research-antigravity-2.md");
+  assert.equal(model.source, "tests/integration/manual-desktop-checklist.json");
   assert.equal(model.support, "manual");
   assert.deepEqual(model.value, {
-    displayName: "Gemini 3.7 Flash Medium",
+    displayName: "Gemini 3.7 Flash High",
     selection: "manual",
     persistence: "conversation-local",
     applyVia: "Desktop model selector"
   });
   const effort = evidence.capabilities.find((entry) => entry.feature === "effort.desktop");
   assert.ok(effort);
-  assert.equal(effort.source, "research-antigravity-2.md");
+  assert.equal(effort.source, "tests/integration/manual-desktop-checklist.json");
   assert.equal(effort.support, "unsupported");
   assert.equal(effort.stability, "unsupported");
   assert.equal(effort.value, null);
-  assert.match(effort.notes, /Gemini 3\.7 Flash High.*unsupported/u);
+  assert.match(effort.notes, /no separate.*effort/iu);
   assert.equal(Object.hasOwn(model.value, "thinkingLevel"), false);
   assert.equal(Object.hasOwn(effort.value || {}, "effort"), false);
   const persistence = evidence.capabilities.find((entry) => entry.feature === "desktop.model-persistence");
@@ -337,13 +364,12 @@ test("Desktop capability evidence records the current Medium/manual policy and u
   assert.deepEqual(persistence.value, { nativeConfigKey: null, persistence: "unknown" });
   const desktopPolicy = evidence.capabilities.filter((entry) => entry.feature.endsWith(".desktop") || entry.feature === "desktop.model-persistence");
   for (const entry of desktopPolicy) {
-    assert.notEqual(entry.value, "High");
     assert.notEqual(entry.value?.thinkingLevel, "High");
     assert.notEqual(entry.value?.effort, "High");
   }
   const currentPolicy = JSON.stringify(desktopPolicy);
   assert.doesNotMatch(currentPolicy, /gemini-3\.7-flash-high/iu);
-  assert.doesNotMatch(currentPolicy, /["']high["']/u);
+  assert.doesNotMatch(currentPolicy, /"(?:effort|thinkingLevel)":"high"/iu);
 });
 
 test("Antigravity adapter satisfies the shared action contract and rejects incomplete mappings", () => {
@@ -382,11 +408,9 @@ test("Desktop render is deterministic and matches both checked-in snapshots", as
       `${profile} snapshot must pin every generated file hash`
     );
     const bodyExpectations = new Map([
-      [".agents/plugins/all-about-agents/rules/adapter-capability-guidance.md", /Plugins page[\s\S]*omits[\s\S]*agents\//iu],
-      [".agents/plugins/all-about-agents/rules/model-selection.md", profile === "template"
-        ? /Gemini 3\.7 Flash Medium[\s\S]*Gemini 3\.7 Flash High[\s\S]*unsupported/iu
-        : /keeps the current Desktop model[\s\S]*No model key/iu],
-      [".agents/plugins/all-about-agents/rules/permission-safety.md", /Deny > Ask > Allow/iu],
+      [".agents/plugins/all-about-agents/rules/AGENTS.md", profile === "template"
+        ? /Gemini 3\.7 Flash High[\s\S]*Custom[\s\S]*Deny > Ask > Allow/iu
+        : /keeps the current Desktop model[\s\S]*No model key[\s\S]*Deny > Ask > Allow/iu],
       [".agents/plugins/all-about-agents/agents/architect.md", /commandExecutionPolicy: off/iu]
     ]);
     for (const [path, expected] of bodyExpectations) {

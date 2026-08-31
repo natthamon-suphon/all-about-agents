@@ -15,9 +15,10 @@ const requiredOutputs = [
   "docs/setup/macos.md",
   "docs/compatibility/claude.md",
   "docs/compatibility/codex.md",
-  "docs/compatibility/antigravity-2.md",
-  "docs/compatibility/agy.md",
-  "docs/limitations/known-limitations.md",
+"docs/compatibility/antigravity-2.md",
+"docs/compatibility/agy.md",
+"docs/evaluations/native-windows-2026-08-31.md",
+"docs/limitations/known-limitations.md",
   "quarantine/README.md",
   "tests/static/documentation.test.mjs"
 ];

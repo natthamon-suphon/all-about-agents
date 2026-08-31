@@ -5,20 +5,19 @@ documented Desktop Plugins layout under `.agents/plugins/` contains
 `plugin.json`, `skills/`, `rules/`, and `hooks.json`.
 
 The Desktop Plugins page omits `agents/`; the Desktop Subagents page
-separately documents `agents/<role>.md`. Plugin-agent packaging is therefore
-ambiguous and not guaranteed by the Plugins layout. This fixture retains
-`agents/` only because the T010 role-template contract requires it; verify
-agent discovery manually before relying on it.
+separately documents `agents/<role>.md`. A native Windows Desktop 2.11.0
+project session nevertheless discovered all seven packaged agents. Reverify
+that behavior on other versions and platforms.
 
 Model selection and permission presets remain manual Desktop UI steps. The
 adapter does not emit application settings, install a plugin automatically, or
-execute a hook command. Desktop launch and acceptance are recorded as `not run`
-until a real Desktop session is available.
+execute a hook command. Native evidence is recorded per check; partial
+discovery does not qualify untested hook, permission, or role behavior.
 
-## Native acceptance (not run)
+## Native acceptance (partial)
 
-Product version: `unknown`
-Platform: `unknown`
+Product version: `2.11.0`
+Platform: `win32`
 
 Run this checklist manually in a disposable Antigravity 2.0 Desktop project;
 the expected observations are evidence to record, not claims made by this
@@ -27,15 +26,18 @@ fixture:
 1. `launch-and-discovery` — Launch Desktop and open a project containing
    `.agents/plugins/all-about-agents/plugin.json`; confirm discovery without
    automatic installation or a generated settings file.
-2. `skill-and-rule-discovery` — Inspect the plugin; confirm skills, rules,
-   `hooks.json`, and `plugin.json` load, and review the ambiguous `agents/`
-   documentation split.
+2. `skill-and-rule-discovery` — Inspect the plugin; confirm 28 skills, the
+   consolidated `rules/AGENTS.md`, `hooks.json`, `plugin.json`, and seven agents
+   load. Skills, the consolidated rule, and all seven agents passed in a
+   disposable Windows Desktop 2.11.0 project.
 3. `agent-tool-safety` — Invoke every role and inspect tools; read-only roles
    must not expose `run_command`, while implementer retains its documented
    command workflow.
-4. `model-policy` — Select `Gemini 3.7 Flash Medium`, send a second message,
-   and confirm conversation-local stickiness; confirm Flash High is not offered.
-5. `permission-deny` — Review the UI preset and manually exercise each
+4. `model-policy` — Select `Gemini 3.7 Flash High`, send a second message,
+   and confirm conversation-local stickiness; do not infer a separate effort
+   setting or cross-session persistence.
+5. `permission-deny` — Select `Custom`, grant only the approved broad access,
+   keep `Turbo mode` off, and manually exercise each
    emergency Deny rule; confirm `Deny > Ask > Allow` blocks matching requests.
 6. `hooks-contract` — Inspect `hooks.json`; only with explicit approval,
    verify hook decisions using a disposable handler; confirm this package stays

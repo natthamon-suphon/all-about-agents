@@ -1,7 +1,8 @@
 {
   "schemaVersion": 1,
   "task": "T049 clean-profile native acceptance",
-  "status": "not run",
+  "status": "partial",
+  "checkedAt": "2026-08-31",
   "scope": "Manual product checks only; this record contains no fabricated pass results.",
   "products": [
     {
@@ -28,8 +29,23 @@
     },
     {
       "id": "antigravity-2",
-      "version": { "status": "unknown", "value": null, "evidence": "not run: no Antigravity Desktop session was opened" },
-      "evidence": { "status": "not run", "artifacts": [], "notes": "No native clean-profile discovery evidence recorded; Desktop discovery is manual." },
+      "version": { "status": "pass", "value": "2.11.0", "evidence": "Observed in the Windows Desktop About UI." },
+      "evidence": {
+        "status": "partial",
+        "artifacts": ["docs/evaluations/native-windows-2026-08-31.md"],
+        "notes": "Workspace plugin, 28 skills, consolidated rules/AGENTS.md, seven agents, Flash High, and preset names were observed in the disposable Windows Desktop project."
+      },
+      "checks": [
+        { "id": "launch-and-discovery", "status": "pass" },
+        { "id": "skill-discovery", "status": "pass" },
+        { "id": "agent-discovery", "status": "pass" },
+        { "id": "model-policy", "status": "pass" },
+        { "id": "rule-discovery", "status": "pass" },
+        { "id": "agent-tool-safety", "status": "not run" },
+        { "id": "permission-deny", "status": "not run" },
+        { "id": "hooks-contract", "status": "not run" },
+        { "id": "cross-session-persistence", "status": "not run" }
+      ],
       "procedure": [
         "Run: node scripts/aaa.mjs install --surface antigravity-2 --destination-root <DISPOSABLE_ROOT>/antigravity-2 --apply --format json.",
         "Open Antigravity Desktop's documented plugin/extension discovery UI, add only the generated disposable package, and record the exact application version from its About screen.",
@@ -39,8 +55,26 @@
     },
     {
       "id": "agy",
-      "version": { "status": "unknown", "value": null, "evidence": "not run: no agy CLI session was opened" },
-      "evidence": { "status": "not run", "artifacts": [], "notes": "No native clean-profile discovery evidence recorded; no automatic persistent root is assumed." },
+      "version": { "status": "pass", "value": "1.1.22", "evidence": "agy --version returned 1.1.22 on Windows." },
+      "evidence": {
+        "status": "partial",
+        "artifacts": ["docs/evaluations/native-windows-2026-08-31.md"],
+        "notes": "Model, effort/help, headless execution, plugin validation, and agent selection passed. No live plugin install or settings write occurred."
+      },
+      "checks": [
+        { "id": "version", "status": "pass" },
+        { "id": "model-discovery", "status": "pass" },
+        { "id": "effort-help", "status": "pass" },
+        { "id": "headless-model", "status": "pass" },
+        { "id": "plugin-validation", "status": "pass" },
+        { "id": "agent-selection", "status": "pass" },
+        { "id": "agent-list", "status": "inconclusive" },
+        { "id": "plugin-install", "status": "not run" },
+        { "id": "skill-runtime-discovery", "status": "not run" },
+        { "id": "hook-execution", "status": "not run" },
+        { "id": "settings-merge", "status": "not run" },
+        { "id": "model-persistence", "status": "not run" }
+      ],
       "procedure": [
         "Run: node scripts/aaa.mjs install --surface agy --destination-root <DISPOSABLE_ROOT>/agy --apply --format json.",
         "Record the exact `agy --version` output and the documented plugin installation/discovery command used by the installed agy CLI.",

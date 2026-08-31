@@ -98,7 +98,9 @@ test("agy clean-profile apply materializes the complete disposable package", asy
     assert.equal(emergency.automatic, false);
     assert.equal(emergency.status, "not run");
     const acceptance = rendered.registrations.find((entry) => entry.kind === "native-acceptance");
-    assert.equal(acceptance.status, "not run");
+    assert.equal(acceptance.status, "partial");
+    assert.equal(acceptance.productVersion, "1.1.22");
+    assert.equal(acceptance.checks.find((check) => check.id === "plugin-validation").status, "pass");
     assert.equal(acceptance.manualOnly, true);
     assert.ok(rendered.diagnostics.filter((entry) => entry.code === "agy-action-unknown").length >= core.commands.length);
 

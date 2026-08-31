@@ -164,8 +164,8 @@ test("template renders approved native model contracts and Fable only where supp
   assert.match(files(outputs.codex).get("config.toml"), /model = "gpt-5\.6-sol"[\s\S]*model_reasoning_effort = "max"/u);
   assert.match(files(outputs.codex).get("terra-max.config.toml"), /model = "gpt-5\.6-terra"[\s\S]*model_reasoning_effort = "max"/u);
   const desktopModel = outputs["antigravity-2"].registrations.find((entry) => entry.kind === "manual-model-selection");
-  assert.equal(desktopModel.model, "Gemini 3.7 Flash Medium");
-  assert.ok(outputs["antigravity-2"].diagnostics.some((entry) => entry.code === "desktop-model-high-unsupported"));
+  assert.equal(desktopModel.model, "Gemini 3.7 Flash High");
+  assert.equal(outputs["antigravity-2"].diagnostics.some((entry) => entry.code === "desktop-model-high-unsupported"), false);
   const agyModel = outputs.agy.registrations.find((entry) => entry.kind === "model-selection");
   assert.equal(agyModel.model, "gemini-3.7-flash-high");
   assert.equal(agyModel.effort, "high");
@@ -181,7 +181,9 @@ test("template full access never removes emergency denies", () => {
   assert.match(codexConfig, /approval_policy = "never"/u);
   assert.ok(outputs.codex.registrations.some((entry) => entry.kind === "emergency-guard" && entry.enabled === true));
   const desktopPermission = outputs["antigravity-2"].registrations.find((entry) => entry.kind === "permission-ui");
-  assert.equal(desktopPermission.preset, "Unrestricted");
+  assert.equal(desktopPermission.preset, "Custom");
+  assert.equal(desktopPermission.accessIntent, "full");
+  assert.equal(desktopPermission.turboMode, false);
   assert.ok(desktopPermission.deny.includes("command(rm -rf)"));
   const agy = JSON.parse(files(outputs.agy).get("settings.overlay.json"));
   assert.equal(agy.toolPermission, "always-proceed");

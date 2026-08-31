@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "surface": "antigravity-2",
   "product": "Antigravity 2.0 Desktop",
-  "productVersion": "unknown",
+  "productVersion": "2.11.0",
   "package": "all-about-agents",
   "pluginManifest": ".agents/plugins/all-about-agents/plugin.json",
   "discovery": {
@@ -12,12 +12,13 @@
   "components": {
     "pluginManifest": ".agents/plugins/<plugin>/plugin.json",
     "skills": ".agents/plugins/<plugin>/skills/{skill}/SKILL.md",
-    "rules": ".agents/plugins/<plugin>/rules/{rule}.md",
+    "rules": ".agents/plugins/<plugin>/rules/AGENTS.md",
     "agents": {
       "path": ".agents/plugins/<plugin>/agents/{role}.md",
-      "status": "ambiguous",
-      "documentation": "The Desktop Plugins page omits agents/; the Desktop Subagents page separately documents plugins/<plugin>/agents/.",
-      "manualVerification": "Verify agent discovery in a real Desktop session before relying on this optional package directory."
+      "status": "verified",
+      "verifiedOn": "Windows Desktop 2.11.0",
+      "documentation": "The Desktop Plugins page omits agents/; the Desktop Subagents page separately documents plugins/<plugin>/agents/. Windows Desktop 2.11.0 nevertheless discovered all seven packaged agents.",
+      "manualVerification": "Reverify agent discovery on other product versions and platforms before relying on this package directory there."
     },
     "hooks": ".agents/plugins/<plugin>/hooks.json"
   },
@@ -37,7 +38,9 @@
       ]
     },
     "template": {
-      "securityPreset": "Unrestricted",
+      "securityPreset": "Custom",
+      "accessIntent": "full",
+      "turboMode": false,
       "permissionControl": "manual Desktop UI",
       "emergencyDeny": [
         "command(rm -rf)",
@@ -49,13 +52,11 @@
   },
   "modelPolicy": {
     "desktop": {
-      "displayName": "Gemini 3.7 Flash Medium",
+      "displayName": "Gemini 3.7 Flash High",
       "selection": "manual conversation selector",
-      "persistence": "conversation-local"
-    },
-    "requestedDesktopFlashHigh": {
-      "status": "unsupported",
-      "source": "research-antigravity-2.md"
+      "persistence": "conversation-local",
+      "verifiedOn": "Windows Desktop 2.11.0",
+      "separateEffortControl": "unsupported"
     }
   },
   "semanticCapabilities": {
@@ -137,16 +138,28 @@
   "ownedPaths": [
     ".agents/plugins/<plugin>/plugin.json",
     ".agents/plugins/<plugin>/skills/{skill}/SKILL.md",
-    ".agents/plugins/<plugin>/rules/{rule}.md",
+    ".agents/plugins/<plugin>/rules/AGENTS.md",
     ".agents/plugins/<plugin>/agents/{role}.md",
     ".agents/plugins/<plugin>/hooks.json"
   ],
   "nativeValidation": {
-    "status": "not run",
+    "status": "partial",
     "product": "Antigravity 2.0 Desktop",
-    "productVersion": "unknown",
-    "platform": "unknown",
-    "reason": "Desktop launch and UI acceptance require a real Antigravity 2.0 Desktop session.",
+    "productVersion": "2.11.0",
+    "platform": "win32",
+    "checkedAt": "2026-08-31",
+    "reason": "Native Windows evidence is recorded per check; untested behavior remains not run.",
+    "checks": [
+      { "id": "launch-and-discovery", "status": "pass", "evidence": "Disposable project antigravity-2 was registered and loaded after Desktop restart." },
+      { "id": "skill-discovery", "status": "pass", "evidence": "Project Customizations listed 28 Plugin: all-about-agents skills." },
+      { "id": "agent-discovery", "status": "pass", "evidence": "The agent selector listed all seven packaged roles." },
+      { "id": "model-policy", "status": "pass", "evidence": "The conversation selector displayed Gemini 3.7 Flash High." },
+      { "id": "rule-discovery", "status": "pass", "evidence": "After applying the consolidated package to the disposable project, Project Customizations listed the generated All About Agents Desktop rules entry alongside the ancestor repository rule." },
+      { "id": "agent-tool-safety", "status": "not run", "evidence": "Roles were discovered but not invoked to inspect enforced tool access." },
+      { "id": "permission-deny", "status": "not run", "evidence": "Preset names were inspected; emergency deny enforcement was not exercised." },
+      { "id": "hooks-contract", "status": "not run", "evidence": "The package remains disabled and inert; no native handler was executed." },
+      { "id": "cross-session-persistence", "status": "not run", "evidence": "Cross-session model and plugin persistence were not qualified." }
+    ],
     "manualAcceptanceChecklist": [
       {
         "id": "launch-and-discovery",
@@ -155,8 +168,8 @@
       },
       {
         "id": "skill-and-rule-discovery",
-        "command": "Desktop: inspect the discovered plugin and verify all skills, rules, hooks.json, and plugin.json are visible.",
-        "expected": "Documented plugin components are loaded; the agent layout caveat is shown for agents/."
+        "command": "Desktop: inspect the discovered plugin and verify all skills, consolidated rules/AGENTS.md, hooks.json, plugin.json, and seven agents are visible.",
+        "expected": "The consolidated plugin rule, 28 skills, and seven agents are discoverable; hooks remain present but inert."
       },
       {
         "id": "agent-tool-safety",
@@ -165,12 +178,12 @@
       },
       {
         "id": "model-policy",
-        "command": "Desktop: open the conversation model selector, choose Gemini 3.7 Flash Medium, and start a second user message.",
-        "expected": "Medium is selectable and remains sticky only within that conversation; Gemini 3.7 Flash High is not offered and no cross-session persistence is claimed."
+        "command": "Desktop: open the conversation model selector, choose Gemini 3.7 Flash High, and start a second user message.",
+        "expected": "Flash High is selectable; High is a display-name tier, no separate effort control or cross-session persistence is claimed."
       },
       {
         "id": "permission-deny",
-        "command": "Desktop: review the project security preset and manually exercise the documented Deny rules for command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).",
+        "command": "Desktop: select Custom, grant the approved broad access, and manually exercise the documented Deny rules for command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh). Do not select Turbo mode.",
         "expected": "Deny > Ask > Allow is shown and each emergency rule blocks the matching request."
       },
       {

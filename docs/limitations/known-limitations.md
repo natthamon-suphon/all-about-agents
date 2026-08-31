@@ -11,12 +11,12 @@ Neither status is a pass.
 Gate 0 source/contract checks and Gate 1 repository-package/installer checks
 may establish deterministic rendering, validation, containment, redaction,
 and disposable-root behavior. They do not establish native discovery or
-behavior. At the current qualification point there is no native Claude Code,
-Codex CLI/Desktop, Antigravity Desktop, or agy session; no macOS host; and no
-external model transport. Therefore affected Gate 2 and Gate 3 checks are
-`NOT_RUN_UNAVAILABLE`. No native model, routing, hook, permission, persistence,
-or behavioral release claim may be inferred from package files or renderer
-output.
+behavior by themselves. Windows Antigravity Desktop 2.11.0 and agy 1.1.22 now
+have partial native evidence; Claude Code, Codex CLI/Desktop, Antigravity IDE,
+macOS, external model transport, and all unexercised Gate 2/Gate 3 behaviors
+remain unavailable or not run. No broader routing, hook, permission,
+persistence, or behavioral release claim may be inferred from the partial
+checks.
 
 ## Surface-specific limitations
 
@@ -24,8 +24,8 @@ output.
 | --- | --- | --- | --- |
 | [Claude Code](../compatibility/claude.md) | Plugin-relative skills, agents, rules, commands, hooks, settings overlays, and statusline candidate files render deterministically. | `CLAUDE_CONFIG_DIR`/`~/.claude` discovery, plugin install, hook execution, model/fallback event, Fable access, and statusline persistence require native observation. | Native statusline configuration key is unknown; Fable is experimental/access-controlled; native Gate 2/3 are `NOT_RUN_UNAVAILABLE`. |
 | [Codex](../compatibility/codex.md) | `AGENTS.md`, skills, role TOMLs, Sol/ Terra profile files, and plugin metadata render deterministically. | `CODEX_HOME`/`~/.codex` discovery, CLI/Desktop registration, hooks, emergency guard execution, and Desktop Terra picker require observation. | Automatic model fallback and Claude-style command plugins are unsupported; native statusline/schedules are not declared; Gate 2/3 are `NOT_RUN_UNAVAILABLE`. |
-| [Antigravity 2.0 Desktop](../compatibility/antigravity-2.md) | Workspace/global plugin package paths, skills, rules, and retained role files render; emergency-deny policy is explicit. | Plugin/agent registration, role discovery, hooks, Unrestricted permission UI, Flash Medium selection, and conversation-local behavior are manual. | Flash High and Desktop effort are unsupported; command/statusline/settings keys and cross-session persistence are unknown; Gate 2/3 are `NOT_RUN_UNAVAILABLE`. |
-| [agy](../compatibility/agy.md) | Portable plugin package and sparse settings overlay render below an explicit root. | `agy --help`, `models`, `agents`, `plugin list`, exact install, active roots, settings merge, and hook behavior require operator discovery. | Automatic install/profile writes, automatic model fallback, native statusline, and native command mapping are not established; skills shape and model persistence key are unknown; Gate 2/3 are `NOT_RUN_UNAVAILABLE`. |
+| [Antigravity 2.0 Desktop](../compatibility/antigravity-2.md) | Workspace plugin, 28 skills, consolidated rule, seven agents, Flash High selector, and current preset names were observed on Windows 2.11.0. | Role tools, Custom deny enforcement, hooks, persistence, IDE, and other platforms remain manual. | Separate Desktop effort, automatic model fallback, command/statusline/settings keys are unsupported or unknown; Gate 3 and unrun Gate 2 checks are not qualified. |
+| [agy](../compatibility/agy.md) | agy 1.1.22 version/model/effort/headless/plugin validation and agent selection passed on Windows. | `agy agents` was inconclusive; exact install, runtime skill discovery, active roots, settings merge, hooks, and persistence remain manual. | Automatic install/profile writes, automatic model fallback, native statusline, and native command mapping are not established; Gate 3 and unrun Gate 2 checks are not qualified. |
 
 ## Safety and setup constraints
 
@@ -46,7 +46,7 @@ output.
 
 ## Required next evidence
 
-When the products and hosts become available, use the manual acceptance
+For the remaining products, hosts, and unrun checks, use the manual acceptance
 checklist at `tests/integration/manual-desktop-checklist.json`, then run the
 fresh-session Gate 3 procedure in the [evaluation method](../evaluations/method.md).
 Capture exact runtime/version and discovery-root evidence, model/effort and

@@ -282,18 +282,23 @@ test("all canonical action mappings are explicit manual-unknown diagnostics", as
   assert.throws(() => adapter.renderSurface({ core, profile: { id: "portable" }, statuslineName: "" }), (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "unsupported-native-mapping"));
 });
 
-test("native acceptance is not run and records exact later manual sequence", async () => {
+test("native acceptance records verified agy 1.1.22 checks without promoting untested behavior", async () => {
   const acceptance = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/agy.json"), "utf8")).nativeValidation;
-  assert.equal(acceptance.status, "not run");
-  assert.equal(acceptance.productVersion, "unknown");
-  assert.equal(acceptance.executablePath, "unknown");
-  assert.equal(acceptance.platform, "unknown");
-  assert.equal(acceptance.reason, "Native acceptance was not run for this repository render; no native executable was invoked.");
-  assert.doesNotMatch(acceptance.reason, /not on PATH|absent.*PATH/iu);
+  assert.equal(acceptance.status, "partial");
+  assert.equal(acceptance.productVersion, "1.1.22");
+  assert.equal(acceptance.executablePath, "%LOCALAPPDATA%/agy/bin/agy.exe");
+  assert.equal(acceptance.platform, "win32");
+  assert.equal(acceptance.checkedAt, "2026-08-31");
+  const checks = new Map(acceptance.checks.map((check) => [check.id, check.status]));
+  for (const passed of ["version", "model-discovery", "effort-help", "headless-model", "plugin-validation", "agent-selection"]) assert.equal(checks.get(passed), "pass", passed);
+  for (const notRun of ["plugin-install", "skill-runtime-discovery", "hook-execution", "settings-merge", "model-persistence"]) assert.equal(checks.get(notRun), "not run", notRun);
+  assert.equal(checks.get("agent-list"), "inconclusive");
   assert.deepEqual(acceptance.manualSequence, ["agy --help", "agy models", "agy agents", "agy plugin list"]);
   assert.equal(acceptance.disposablePackageInstall, "agy plugin install PACKAGE_DIRECTORY");
   const rendered = resultFor().registrations.find((entry) => entry.kind === "native-acceptance");
-  assert.equal(rendered.status, "not run");
+  assert.equal(rendered.status, "partial");
+  assert.equal(rendered.productVersion, "1.1.22");
+  assert.equal(rendered.checks.find((check) => check.id === "plugin-validation").status, "pass");
   assert.equal(rendered.platform, "win32");
 });
 
