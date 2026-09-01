@@ -6,6 +6,12 @@ from product-session evidence. A generated file, adapter result, or passing
 unit test is evidence for the former only; it is not evidence that a native
 product discovered or executed the artifact.
 
+For a short operational checklist on another machine or tool, use the
+[cross-tool quality guide](../maintenance/cross-tool-quality.md).
+For the separate native mutation and lifecycle record, use
+[native registration](../maintenance/native-registration.md) and
+[native verification](../maintenance/native-verification.md).
+
 ## Status vocabulary and the no-fabrication rule
 
 Every check and sample has exactly one status: `PASS`, `FAIL`, `NOT_RUN`,
@@ -13,6 +19,16 @@ Every check and sample has exactly one status: `PASS`, `FAIL`, `NOT_RUN`,
 check was intentionally not attempted. `NOT_RUN_UNAVAILABLE` means a required
 runtime, product, host, session type, or transport was unavailable. Neither is
 a pass.
+
+Native lifecycle terms are ordered and exact:
+
+```text
+rendered -> validated -> registered -> trusted -> active -> runtime verified
+```
+
+Use the terms as separate evidence fields. A validator or package listing does
+not promote a later state. A missing product or host is
+`NOT_RUN_UNAVAILABLE`, not `PASS`.
 
 The exact no-fabrication rule is:
 
@@ -58,7 +74,7 @@ working directory; a real user configuration root is never an apply target.
 | --- | --- | --- |
 | Node, PowerShell, and POSIX entry points preserve argument vectors, JSON shape, and exit codes at their supported host | Must pass | Normalized contract results for help, invalid arguments, dry-run, apply, doctor, validate, diff, and eval discovery |
 | A clean explicit root receives the complete surface package with no guessed native root | Must pass | Apply report, file inventory, surface-specific paths, and no out-of-root writes |
-| Preflight is all-surface atomic, default apply is no-overwrite-safe, writes are atomic, and reruns are idempotent | Must pass | Before/after tree and hashes, rejected-conflict case, and second-run `unchanged` plan |
+| Preflight is all-surface atomic; installer-owned regular files are replaced only after precondition checks; each write is atomic; unknown neighboring files are preserved; and reruns are idempotent | Must pass | Before/after tree and hashes, accepted replacement, rejected-precondition case, preserved unknown neighbors, and second-run `unchanged` plan |
 | Diff is stable, non-mutating, and redacts secrets and binary content | Must pass | Two equivalent diff reports, unchanged root hash, and redaction scan |
 | Evaluation discovery, retained JSONL/result evidence, and manual acceptance records are schema-valid and redacted | Must pass | Output directory inventory, schema/diagnostic report, and evidence redaction result |
 
@@ -83,6 +99,61 @@ discovery root, and the product behavior—not merely the package tree.
 If a product, host, entitlement, or required transport is unavailable, the
 affected checks are `NOT_RUN_UNAVAILABLE`. Do not score availability as a
 pass, and do not turn Gate 0/1 evidence into a native release claim.
+
+### Disposable native integration harness
+
+Run the T07 harness from the repository root:
+
+```text
+node --test tests/integration/native-registration.test.mjs
+```
+
+The harness creates fresh OS temporary roots for its checks. It renders both
+`portable` and `template` packages for every CLI surface. It checks the
+following:
+
+- Claude Code strict validation and statusline fixture checks for both
+  profiles, then isolated marketplace install and exact enabled-plugin
+  discovery for the template package.
+- Codex marketplace add, plugin add, exact installed/enabled JSON discovery,
+  and hook files inside the discovered installed package. All Codex state is
+  under a disposable `CODEX_HOME`. Hook trust remains `NOT_RUN`.
+- `agy` validation for both profiles with exact native counts of 28 skills,
+  7 agents, and 1 hook. The Windows statusline command ran with fixture stdin
+  for both profiles. The POSIX launcher rendered; macOS runtime was not run.
+  The isolated model list must contain the exact `gemini-3.7-flash-high` slug.
+- Antigravity Desktop remains manual-only. The harness never automates its UI,
+  trust, permissions, or emergency Deny rules.
+
+Native product commands use explicit executable arguments and `shell: false`.
+The child environment starts from a small allowlist. Home, config, cache, and
+temporary paths point inside the test root. Ambient credential variables do
+not cross this boundary. Statusline launchers need stdin, so the harness uses
+a shell-free process boundary with bounded input, output, and timeout. It
+prints only the version, exit code, stable count, and sanitized status. It
+does not retain full product output, environment data, credentials, or
+account data.
+
+The Codex disposable package is initialized as a local Git repository because
+the documented native `plugin add` operation clones its marketplace source.
+This Git repository exists only inside the temporary test root. Before
+cleanup, the test checks the canonical root, every path, and every symlink
+target. It removes roots after success and after an intentional failure. It
+never installs an `agy` plugin, writes `agy` settings, authenticates a model,
+or reads a real product root. The real-root metadata comparison is therefore
+explicitly `NOT_RUN`, not a guessed pass.
+
+The final Windows T07 command exited `0`: 37 tests, 35 passed, 0 failed, and
+2 were skipped as `NOT_RUN`. The observed CLI versions were Claude Code
+`2.1.251`, Codex CLI `0.151.0-alpha.7.2`, and `agy` `1.1.22`. The two skipped
+checks were Desktop UI/manual controls and live-root metadata comparison.
+
+Use the checklist at
+`tests/integration/manual-desktop-checklist.json` to record exact product
+versions and separate `PASS`, `NOT_RUN`, and `NOT_RUN_UNAVAILABLE` results.
+A green disposable check proves only the observed disposable operation. It
+does not prove trust, active hooks, an interactive session, persistence, or an
+authenticated model request.
 
 ### Gate 3 — fresh-session behavioral evaluation
 
@@ -240,12 +311,16 @@ are never waived.
 
 ## Current environment limitation
 
-Current Windows evidence is partial. Claude Code 2.1.248 strict validation,
-disposable registration/install, and enabled-plugin discovery passed; Codex CLI
-0.151.0-alpha.7.2 loaded the isolated Sol base config strictly and parsed the
-Terra profile; agy 1.1.22 completed bounded CLI/model checks; and Antigravity
-Desktop 2.11.0 discovered the disposable project package. The isolated Claude
-and Codex roots contained no credentials, and no macOS host was available.
+Current Windows evidence is partial. Earlier T049 evidence used Claude Code
+2.1.248. The final T07 harness used Claude Code 2.1.251 and passed strict
+validation, disposable registration/install, exact enabled-plugin discovery,
+and both statusline profiles. Codex CLI 0.151.0-alpha.7.2 passed disposable
+marketplace registration, plugin install, exact installed discovery, and
+installed hook-file checks. `agy` 1.1.22 passed both native package validators,
+both statusline profiles, and isolated model discovery. Earlier manual evidence
+also recorded that Antigravity Desktop 2.11.0 discovered the disposable project
+package. The isolated CLI roots contained no credentials, and no macOS host was
+available.
 Therefore authenticated Claude/Codex execution, hook and permission behavior,
 persistence, Codex Desktop, Antigravity IDE, macOS, and all unexecuted Gate 2
 checks and Gate 3 fresh-session evaluation remain `NOT_RUN_UNAVAILABLE` or

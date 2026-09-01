@@ -1,81 +1,128 @@
 # Claude Code compatibility
 
-This page describes the repository package and installer contract for Claude
-Code. A rendered package is repository/installer evidence; it is not evidence
-that a Claude product session executed its components. Windows Claude Code
-2.1.248 now has partial native acceptance for strict validation, disposable
-marketplace registration, plugin installation, and enabled-plugin discovery;
-authenticated session behavior remains `NOT_RUN_UNAVAILABLE` under the
-[evaluation method](../evaluations/method.md).
+This page describes the Claude package and its native boundary. The observed
+runtime is Claude Code `2.1.251` on Windows. The T07 disposable checks passed
+strict validation, local marketplace registration, plugin discovery, and both
+statusline profiles. Authenticated session behavior is still
+`NOT_RUN_UNAVAILABLE`.
 
-## Support summary
+## Lifecycle and support
 
-| Capability | Current status | Contract |
+Use these states in order:
+
+```text
+rendered -> validated -> registered -> trusted -> active -> runtime verified
+```
+
+`rendered` and `validated` are repository or package results. `registered`
+needs product discovery. Claude has no separate native trust step for the
+statusline or emergency policy, so `trusted` is `NOT_RUN_UNAVAILABLE`. `active`
+and `runtime verified` need a fresh product session. Do not promote one state
+from another state.
+
+| Capability | Current evidence | Boundary |
 | --- | --- | --- |
-| Skills, agents, rules, commands, hooks | Automatic package render; plugin-level native discovery observed, component execution not run | The plugin package contains the declared files. Claude conventionally discovers `hooks/hooks.json`; the manifest does not register that standard path a second time. |
-| User plugin registration | Manual operator action; observed in a disposable Windows `CLAUDE_CONFIG_DIR` | From the generated package root, run `claude plugin marketplace add .`, then `claude plugin install all-about-agents@all-about-agents-dev`. |
-| Statusline | Unsupported as a native contract | Installer-managed statusline files may be emitted, but the adapter records the native statusline configuration shape as unknown. |
-| Native validation | Manual; observed on Windows with Claude Code 2.1.248 | `claude plugin validate . --strict` passed, then `plugin list --json` reported the installed plugin enabled without a hook-load error. |
-| Product/session behavior | `NOT_RUN_UNAVAILABLE` | The isolated config intentionally contained no credentials, so authenticated model, component invocation, hook execution, fallback, and Gate 3 behavior were not run. |
+| Skills, agents, rules, commands, and hooks | Package rendered; plugin discovery passed in a disposable Windows root | Component execution and hook execution are not claimed. |
+| Plugin registration | Disposable marketplace add, plugin install, and enabled-plugin discovery passed | Run the native registration steps for a new package. |
+| Statusline and display name | Native `statusLine` settings and platform launchers render; both disposable profiles produced the expected text | An installed live session and persistence are not claimed. |
+| Strict validation | `claude plugin validate "<PACKAGE_ROOT>" --strict` passed in the disposable check | A validator proves package shape, not model or hook behavior. |
+| Product session | `NOT_RUN_UNAVAILABLE` | No authenticated model session was run. |
 
-The package uses plugin-root-relative `skills/`, `agents/`, `commands/`,
-`rules/`, and `hooks/` paths. A fresh disposable installation proved that
-Claude's loader accepts and enables the plugin without duplicate hook
-registration. Individual component discovery and hook execution still require
-an authenticated product session; enabled-plugin presence alone does not
-upgrade those behaviors to a native pass.
+Plugin registration is manual, not automatic. The generated statusline accepts
+native JSON on stdin and writes only one statusline text result. The install
+command asks for a display name when it is interactive. Use
+`--statusline-name "<YOUR_NAME>"` in a script. The name is trimmed, limited to
+64 Unicode code points, and rejects control and ANSI characters.
 
-## Profiles, models, and permissions
+Some native behavior remains unsupported until a product session is observed.
 
-The `portable` profile is controlled and uses Claude’s surface default. The
-`template` profile is the approved full-access profile:
+## Models, permissions, and hooks
 
-- primary model: `claude-opus-5`;
-- effort: `CLAUDE_CODE_EFFORT_LEVEL=max`;
-- qualifying server-failure fallback: `claude-sonnet-5`, with the same profile
-  max-effort setting;
-- advisor: `claude-fable-5` where the experimental capability and user access
-  or consent are available;
-- permission mode: `bypassPermissions`.
+The `portable` profile uses Claude's surface default with controlled
+permissions. The `template` profile uses:
 
-Full access never removes the emergency denies. The portable and template
-permission overlays retain denies for `rm -rf /`, `rm -rf ~`, force-push, and
-hard-reset operations. Secret handling, containment, and read-only role checks
-remain separate release controls. The read-only roles (researcher,
-investigator, architect, verifier, reviewer, and security-reviewer) disallow
-`Agent`, `Bash`, `Edit`, and `Write` in their declared contract.
+- model `claude-opus-5`;
+- `CLAUDE_CODE_EFFORT_LEVEL=max`;
+- server-failure fallback `claude-sonnet-5` at max effort;
+- advisor `claude-fable-5` when the account and product permit it;
+- permission mode `bypassPermissions`.
 
-The fallback is a qualifying server-failure path, not permission or policy
-fallback. Fable is not claimed when access or consent is unavailable.
+Fable access depends on account, organization, plan, provider, consent, and
+Claude Code version. The package does not claim Fable access from a rendered
+file. Sonnet is a qualifying server-failure fallback. No permission or policy
+fallback is claimed.
 
-## Roots, registration, and manual boundaries
+Full access does not remove the emergency denies. The profiles keep denies for
+`rm -rf /`, `rm -rf ~`, force-push, and hard-reset operations. The
+`disableAllHooks` setting disables hooks globally. It does not prove that an
+emergency deny is active, and it does not replace the narrow deny policy.
 
-Claude CLI and local Claude Desktop share the configured root:
+## Registration and reload
 
-- `CLAUDE_CONFIG_DIR` when explicitly supplied;
-- otherwise `~/.claude`.
+Claude uses `CLAUDE_CONFIG_DIR` when it is set. Otherwise it uses `~/.claude`.
+The repository installer needs an explicit disposable destination root.
 
-The repository CLI may render and apply only below an explicit, authorized
-disposable destination root. It does not guess a live root. A user who wants
-native registration must add the generated package as a local marketplace,
-perform the plugin install command above, and run Claude’s strict validation.
-`CLAUDE_CONFIG_DIR` is the product discovery
-root, not a permission to mutate a live configuration during qualification.
+Warning: native registration can change the selected Claude product root.
+Use the dry-run first and use `--apply` only with exact authority.
 
-The installer emits candidate settings and statusline overlays under the
-package contract. The capability record does not establish a native statusline
-configuration key or persistence behavior, so statusline acceptance is manual
-and remains unknown until observed.
+PowerShell:
 
-## Verification limits
+```powershell
+New-Item -ItemType Directory -Force -LiteralPath "<PRODUCT_ROOT>" | Out-Null
+$env:CLAUDE_CONFIG_DIR = "<PRODUCT_ROOT>"
+node scripts/aaa.mjs register --surface claude --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
+```
 
-Node `22.12.0` is the declared preflight minimum. This page claims only the
-observed Windows validation, registration, installation, and enabled-plugin
-discovery above. It does not claim hook invocation, skill/agent execution,
-model routing, fallback events, Fable access, statusline rendering, or
-persistence. Those require authenticated Gate 2 evidence and, for behavior,
-fresh Gate 3 sessions.
+POSIX shell on macOS or Linux:
 
-Use the supported [Windows](../setup/windows.md) or [macOS](../setup/macos.md)
-setup guide with a disposable root. The [known limitations](../limitations/known-limitations.md)
-track unsupported and unavailable items across surfaces.
+```sh
+mkdir -p "<PRODUCT_ROOT>"
+export CLAUDE_CONFIG_DIR="<PRODUCT_ROOT>"
+node scripts/aaa.mjs register --surface claude --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
+```
+
+Run the same command with `--apply` only after exact authority.
+
+During apply, the installer first overwrites `settings.json`,
+`all-about-agents/statusline.json`, and the four files under `statusline/` in
+`CLAUDE_CONFIG_DIR`: `statusline.mjs`, `track-tool.mjs`, `statusline.ps1`, and
+`statusline.sh`. In the rendered source `settings.json`, it rebases only
+`statusLine.command` to this exact config root and keeps the other rendered
+fields. The existing target `settings.json` is replaced without a backup;
+target-only settings are not preserved. Native marketplace and plugin
+registration run after those files are present. The package managed state,
+surface, profile, and owned hashes must match before any write.
+
+The fixed native commands are:
+
+```text
+claude plugin marketplace add "<PACKAGE_ROOT>" --scope user
+claude plugin install all-about-agents@all-about-agents-dev --scope user
+claude plugin list --json
+claude plugin validate "<PACKAGE_ROOT>" --strict
+```
+
+Run `claude plugin list --json` after registration. Restart Claude Code or
+reload the plugin. Then record each lifecycle state separately. Claude has no
+separate native hook trust step. A package list does not prove an active
+session or runtime behavior.
+
+## Full access and emergency evidence
+
+The template policy asks for broad access so an operator can work across the
+repository. The emergency deny rules remain part of the generated policy. A
+static check proves that the rules are rendered. It does not prove native
+blocking. Record native deny behavior only after a disposable product session.
+
+## Limits
+
+The disposable Windows evidence does not cover authenticated model calls,
+skill or agent invocation, hook execution, fallback events, Fable access,
+statusline persistence, macOS execution, or Desktop behavior. Those checks are
+`NOT_RUN` or `NOT_RUN_UNAVAILABLE` in the [evaluation method](../evaluations/method.md).
+
+Use [native registration](../maintenance/native-registration.md),
+[native verification](../maintenance/native-verification.md), and the
+[cross-tool quality guide](../maintenance/cross-tool-quality.md). Use the
+[Windows](../setup/windows.md) or [macOS](../setup/macos.md) guide for the
+next check. See [known limitations](../limitations/known-limitations.md).

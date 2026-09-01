@@ -65,6 +65,116 @@ test("applyPlan validates every rendered byte before its first destination write
   });
 });
 
+test("operation preflight prepares all selected surfaces or returns no prepared writes", async () => {
+  const { preflightOperation } = await import("../../installers/lib/apply.mjs");
+  assert.equal(typeof preflightOperation, "function");
+  await withTempRoot(async (root) => {
+    const claudeRoot = join(root, "claude");
+    const codexRoot = join(root, "codex");
+    const claudePlan = planFor(claudeRoot, [["a.txt", "a"]]);
+    const codexPlan = { ...planFor(codexRoot, [["b.txt", "b"]]), surface: "codex" };
+    let writes = 0;
+    const entries = [
+      { surface: "claude", plan: claudePlan, fileSystem: fsFor([["a.txt", "a"]]) },
+      { surface: "codex", plan: codexPlan, fileSystem: { ...fsFor([], { writeFile: async (...args) => { writes += 1; return writeFile(...args); } }), surfaces: ["codex"] } }
+    ];
+    const result = await preflightOperation({ entries });
+    assert.equal(result.valid, false);
+    assert.deepEqual(result.prepared, []);
+    assert.equal(result.errors.length, 1);
+    assert.equal(result.errors[0].surface, "codex");
+    assert.equal(writes, 0);
+    assert.equal(await access(join(claudeRoot, "a.txt")).then(() => true, () => false), false);
+    assert.equal(await access(join(codexRoot, "b.txt")).then(() => true, () => false), false);
+  });
+});
+
+test("prepared surfaces keep exact bytes private and recheck live paths during apply", async () => {
+  const { applyPreparedSurface, preflightOperation } = await import("../../installers/lib/apply.mjs");
+  await withTempRoot(async (root) => {
+    const plan = planFor(root, [["a.txt", "original"]]);
+    const contents = new Map([["a.txt", bytes("original")]]);
+    const operation = await preflightOperation({
+      entries: [{ surface: "claude", plan, fileSystem: fsFor([], { contents }) }]
+    });
+    assert.equal(operation.valid, true);
+    assert.equal(operation.prepared.length, 1);
+    assert.equal(Object.isFrozen(operation.prepared[0]), true);
+    contents.set("a.txt", bytes("changed-after-preflight"));
+    const result = await applyPreparedSurface(operation.prepared[0]);
+    assert.equal(result.status, "complete");
+    assert.equal(await readFile(join(root, "a.txt"), "utf8"), "original");
+  });
+});
+
+test("operation preflight rejects duplicate roots before returning apply capability", async () => {
+  const { preflightOperation } = await import("../../installers/lib/apply.mjs");
+  await withTempRoot(async (root) => {
+    const first = planFor(root, [["a.txt", "a"]]);
+    const second = { ...planFor(root, [["b.txt", "b"]]), surface: "codex" };
+    const result = await preflightOperation({ entries: [
+      { surface: "claude", plan: first, fileSystem: fsFor([["a.txt", "a"]]) },
+      { surface: "codex", plan: second, fileSystem: { ...fsFor([["b.txt", "b"]]), surfaces: ["codex"] } }
+    ] });
+    assert.equal(result.valid, false);
+    assert.deepEqual(result.prepared, []);
+    assert.equal(result.errors[0].code, "duplicate-destination-root");
+  });
+});
+
+test("operation preflight includes the managed-state file precondition", async () => {
+  const { preflightOperation } = await import("../../installers/lib/apply.mjs");
+  const { serializeManagedState } = await import("../../installers/lib/state.mjs");
+  await withTempRoot(async (root) => {
+    const previousState = buildManagedState({
+      repositoryVersion: "repo-old",
+      profile: "portable",
+      surfaces: ["claude"],
+      ownedPaths: []
+    });
+    const changedState = buildManagedState({
+      repositoryVersion: "repo-other",
+      profile: "portable",
+      surfaces: ["claude"],
+      ownedPaths: []
+    });
+    await mkdir(join(root, ".all-about-agents"));
+    await writeFile(join(root, STATE_RELATIVE_PATH), serializeManagedState(changedState));
+    const plan = planFor(root, [["a.txt", "a"]], previousState);
+    const result = await preflightOperation({ entries: [{
+      surface: "claude",
+      plan,
+      fileSystem: fsFor([["a.txt", "a"]], { previousState })
+    }] });
+    assert.equal(result.valid, false);
+    assert.deepEqual(result.prepared, []);
+    assert.equal(result.errors[0].relativePath, STATE_RELATIVE_PATH);
+    assert.match(result.errors[0].message, /state changed/u);
+    assert.equal(await access(join(root, "a.txt")).then(() => true, () => false), false);
+  });
+});
+
+test("prepared apply reports an honest partial result after a post-preflight I/O error", async () => {
+  const { applyPreparedSurface, preflightOperation } = await import("../../installers/lib/apply.mjs");
+  await withTempRoot(async (root) => {
+    const plan = planFor(root, [["a.txt", "a"], ["b.txt", "b"]]);
+    const fileSystem = fsFor([["a.txt", "a"], ["b.txt", "b"]], {
+      rename: async (from, to) => {
+        if (to.endsWith(`${join("", "b.txt")}`)) throw Object.assign(new Error("locked after preflight"), { code: "EPERM" });
+        return rename(from, to);
+      }
+    });
+    const operation = await preflightOperation({ entries: [{ surface: "claude", plan, fileSystem }] });
+    assert.equal(operation.valid, true);
+    const result = await applyPreparedSurface(operation.prepared[0]);
+    assert.equal(result.status, "partial");
+    assert.deepEqual(result.completed.map((action) => action.relativePath), ["a.txt"]);
+    assert.equal(result.failed.relativePath, "b.txt");
+    assert.equal(await readFile(join(root, "a.txt"), "utf8"), "a");
+    assert.equal(await access(join(root, "b.txt")).then(() => true, () => false), false);
+  });
+});
+
 test("applyPlan preserves an explicit executable mode and repairs same-content mode drift", async (t) => {
   await withTempRoot(async (root) => {
     const script = "#!/bin/sh\nprintf 'mode-ok\\n'\n";

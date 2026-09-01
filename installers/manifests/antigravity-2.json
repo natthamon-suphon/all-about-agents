@@ -81,56 +81,56 @@
     "aaa:design": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-antigravity-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
       "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:design only after verifying the Desktop UI; no native action mapping is claimed."
     },
     "aaa:build": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-antigravity-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
       "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:build only after verifying the Desktop UI; no native action mapping is claimed."
     },
     "aaa:fix": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-antigravity-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
       "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:fix only after verifying the Desktop UI; no native action mapping is claimed."
     },
     "aaa:review": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-antigravity-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
       "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:review only after verifying the Desktop UI; no native action mapping is claimed."
     },
     "aaa:audit": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-antigravity-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
       "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:audit only after verifying the Desktop UI; no native action mapping is claimed."
     },
     "aaa:improve-skill": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-antigravity-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
       "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:improve-skill only after verifying the Desktop UI; no native action mapping is claimed."
     },
     "aaa:resume": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-antigravity-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
       "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:resume only after verifying the Desktop UI; no native action mapping is claimed."
     },
     "aaa:verify": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-antigravity-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented Desktop prompt or workflow mapping is published for this canonical action.",
       "manualStep": "Use a manually authored Desktop prompt or workflow for aaa:verify only after verifying the Desktop UI; no native action mapping is claimed."
     }

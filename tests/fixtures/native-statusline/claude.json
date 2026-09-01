@@ -1,0 +1,15 @@
+{
+  "workspace": { "project_dir": "C:\\T07 Native Workspace" },
+  "worktree": { "branch": "feature/t07" },
+  "model": { "display_name": "claude-opus-5" },
+  "rate_limits": {
+    "five_hour": { "used_percentage": 42.6 },
+    "seven_day": { "used_percentage": 18 }
+  },
+  "context_window": {
+    "total_input_tokens": 1234,
+    "total_output_tokens": 5678
+  },
+  "cost": { "total_duration_ms": 61000 },
+  "session_id": "t07-native-fixture"
+}

@@ -4,7 +4,42 @@ import { join, posix, win32 } from "node:path";
 import test from "node:test";
 
 import { withTempRoot } from "../helpers/temp-root.mjs";
-import { RootResolutionError, resolveDestinationRoot } from "../../installers/lib/roots.mjs";
+import { assertSafeDestinationRoot, RootResolutionError, resolveDestinationRoot } from "../../installers/lib/roots.mjs";
+
+test("destination safety rejects filesystem, account-container, and home roots", () => {
+  const cases = [
+    { platform: "darwin", homeDir: "/Users/alice", allowedProductRoots: ["/Users/alice/.claude"], roots: ["/", "/Users", "/Users/alice", "/Users/alice/"] },
+    { platform: "win32", homeDir: "C:\\Users\\alice", allowedProductRoots: ["C:\\Users\\alice\\.claude"], roots: ["C:\\", "C:\\Users", "c:/users/ALICE", "C:\\Users\\alice\\"] }
+  ];
+  for (const entry of cases) {
+    for (const root of entry.roots) {
+      assert.throws(
+        () => assertSafeDestinationRoot(root, entry),
+        (error) => error instanceof RootResolutionError && error.code === "broad-root",
+        `${entry.platform}:${root}`
+      );
+    }
+  }
+});
+
+test("destination safety accepts only roots contained by an explicit product or disposable root", () => {
+  const cases = [
+    { platform: "darwin", homeDir: "/Users/alice", root: "/Users/alice/.claude", allowedProductRoots: ["/Users/alice/.claude"] },
+    { platform: "darwin", homeDir: "/Users/alice", root: "/Users/alice/.codex/plugins/aaa", allowedProductRoots: ["/Users/alice/.codex"] },
+    { platform: "darwin", homeDir: "/Users/alice", root: "/private/tmp/aaa-test/output", allowedProductRoots: ["/private/tmp/aaa-test"] },
+    { platform: "win32", homeDir: "C:\\Users\\alice", root: "c:\\users\\ALICE\\.claude\\plugins\\aaa", allowedProductRoots: ["C:\\Users\\alice\\.claude"] },
+    { platform: "win32", homeDir: "C:\\Users\\alice", root: "C:\\Temp\\aaa-test", allowedProductRoots: ["c:\\temp\\AAA-TEST"] }
+  ];
+  for (const entry of cases) assert.doesNotThrow(() => assertSafeDestinationRoot(entry.root, entry));
+  assert.throws(
+    () => assertSafeDestinationRoot("/Users/alice/.claude", { platform: "darwin", homeDir: "/Users/alice" }),
+    (error) => error instanceof RootResolutionError && error.code === "allowed-roots-required"
+  );
+  assert.throws(
+    () => assertSafeDestinationRoot("/Users/alice/.codex", { platform: "darwin", homeDir: "/Users/alice", allowedProductRoots: ["/Users/alice/.claude"] }),
+    (error) => error instanceof RootResolutionError && error.code === "root-outside-allowed"
+  );
+});
 
 test("resolveDestinationRoot honors documented Claude and Codex environment overrides", () => {
   assert.equal(resolveDestinationRoot({ surface: "claude", override: null, env: { CLAUDE_CONFIG_DIR: "C:\\Users\\Test\\配置" }, platform: "win32", homeDir: "C:\\Users\\Test" }), "C:\\Users\\Test\\配置");

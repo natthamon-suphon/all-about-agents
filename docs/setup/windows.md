@@ -2,8 +2,10 @@
 
 This procedure renders the repository package into a disposable directory. It
 does not launch Claude, Codex, Antigravity 2.0, or agy, change a live product
-configuration, or prove native discovery. Use a new root for every qualification
-run.
+configuration, or prove native discovery. Use a new root for every run.
+
+If this checkout came from another machine, follow [sync and update](../maintenance/sync-and-update.md)
+first. A pull does not install or update any coding tool.
 
 ## Prerequisites
 
@@ -43,8 +45,8 @@ $ClaudeRoot = Join-Path $env:TEMP "all-about-agents-claude"
 New-Item -ItemType Directory -Path $ClaudeRoot -Force | Out-Null
 
 pwsh -NoProfile -File .\installers\install.ps1 doctor --surface claude --destination-root $ClaudeRoot --format json
-pwsh -NoProfile -File .\installers\install.ps1 install --surface claude --profile portable --destination-root $ClaudeRoot --statusline-name "AAA" --dry-run --format json
-pwsh -NoProfile -File .\installers\install.ps1 install --surface claude --profile portable --destination-root $ClaudeRoot --statusline-name "AAA" --apply --format json
+pwsh -NoProfile -File .\installers\install.ps1 install --surface claude --profile portable --destination-root $ClaudeRoot --statusline-name "<YOUR_NAME>" --dry-run --format json
+pwsh -NoProfile -File .\installers\install.ps1 install --surface claude --profile portable --destination-root $ClaudeRoot --statusline-name "<YOUR_NAME>" --apply --format json
 ```
 
 Inspect the dry-run JSON before the explicit `--apply`. A successful dry-run
@@ -52,8 +54,9 @@ does not write files. Apply preflights the selected surface before the first
 write, uses atomic file replacement, and returns a non-zero exit code when the
 plan is rejected or incomplete.
 
-`--statusline-name` is Claude-only. In an interactive install that includes
-Claude, omitting it prompts for the name; the non-interactive default is empty.
+`--statusline-name` applies to Claude and `agy`. In an interactive install that
+includes either surface, omitting it prompts for the name; the non-interactive
+default is empty.
 The name is trimmed, limited to 64 Unicode code points, and cannot contain
 control or ANSI characters.
 
@@ -77,17 +80,17 @@ pwsh -NoProfile -File .\installers\install.ps1 install --surface agy --destinati
 pwsh -NoProfile -File .\installers\install.ps1 install --surface agy --destination-root $AgyRoot --apply
 ```
 
-Antigravity 2.0 and agy require explicit roots because the repository does not
-guess a persistent native root. Their manifests keep native installation and
-hook execution manual.
+Antigravity 2.0 and `agy` have documented native discovery roots. These commands
+still require explicit disposable roots. They do not write live native roots,
+register a native plugin, or enable hooks automatically.
 
 To render all four packages in one disposable tree, use one more explicit root:
 
 ```powershell
 $AllRoot = Join-Path $env:TEMP "all-about-agents-all"
 New-Item -ItemType Directory -Path $AllRoot -Force | Out-Null
-pwsh -NoProfile -File .\installers\install.ps1 install --surface all --destination-root $AllRoot --statusline-name "AAA" --dry-run
-pwsh -NoProfile -File .\installers\install.ps1 install --surface all --destination-root $AllRoot --statusline-name "AAA" --apply
+pwsh -NoProfile -File .\installers\install.ps1 install --surface all --destination-root $AllRoot --statusline-name "<YOUR_NAME>" --dry-run
+pwsh -NoProfile -File .\installers\install.ps1 install --surface all --destination-root $AllRoot --statusline-name "<YOUR_NAME>" --apply
 ```
 
 The all-surface tree is namespaced by surface (`claude/`, `codex/`,
@@ -103,4 +106,7 @@ performed by these commands.
 
 See the [repository overview](../../README.md), [surface manifests](../../installers/manifests/claude.json),
 [Antigravity 2.0 compatibility notes](../compatibility/antigravity-2.md), and the
-[evaluation method and current limitations](../evaluations/method.md).
+[evaluation method and current limitations](../evaluations/method.md). After an
+approved install, follow [native registration](../maintenance/native-registration.md),
+[native verification](../maintenance/native-verification.md), and
+[cross-tool quality](../maintenance/cross-tool-quality.md).

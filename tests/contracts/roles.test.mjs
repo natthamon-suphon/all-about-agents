@@ -9,7 +9,7 @@ import { loadCore, resolveWorkspaceScopePath, VENDOR_NATIVE_TOOL_NAMES } from ".
 import { CLAUDE_SEMANTIC_MAPPINGS, renderClaude } from "../../adapters/claude/adapter.mjs";
 import { parseCodexToml, renderCodex } from "../../adapters/codex/adapter.mjs";
 import { ANTIGRAVITY_SEMANTIC_MAPPINGS, renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
-import { renderAgy } from "../../adapters/agy/adapter.mjs";
+import { AGY_SEMANTIC_MAPPINGS, renderAgy } from "../../adapters/agy/adapter.mjs";
 import { CANONICAL_ROLE_CAPABILITIES } from "../../core/roles/contract.mjs";
 
 const ROLE_IDS = [
@@ -27,7 +27,7 @@ const EMITTED_NATIVE_TOOL_VOCABULARY = Object.freeze({
   claude: new Set(Object.values(CLAUDE_SEMANTIC_MAPPINGS).flat()),
   codex: new Set(["read-only", "workspace-write", "danger-full-access"]),
   "antigravity-2": new Set(Object.values(ANTIGRAVITY_SEMANTIC_MAPPINGS).flat()),
-  agy: new Set()
+  agy: new Set(Object.values(AGY_SEMANTIC_MAPPINGS).flat())
 });
 
 async function mutateRole(root, roleId, mutate) {
@@ -151,11 +151,10 @@ test("rendered role artifacts drive the write trap, including a negative mutable
     }
     const implementerArtifact = files.get(roleFilePath(surface, "implementer"));
     const parsedImplementer = parseNativeArtifact(surface, implementerArtifact);
-    if (surface === "agy") assert.doesNotThrow(() => executeNativeArtifact(surface, implementerArtifact, writeTrap), `${surface}/implementer remains fail-closed without a documented write tool`);
-    else assert.throws(() => executeNativeArtifact(surface, implementerArtifact, writeTrap), /write-trapped/u, `${surface}/implementer`);
+    assert.throws(() => executeNativeArtifact(surface, implementerArtifact, writeTrap), /write-trapped/u, `${surface}/implementer`);
     assert.ok(parsedImplementer.tools.every((tool) => EMITTED_NATIVE_TOOL_VOCABULARY[surface].has(tool)), `${surface}/implementer emitted an undeclared native tool`);
   }
-  assert.equal(writeTrap.calls.length, renders.length - 1, "only documented implementer write artifacts should reach the write seam");
+  assert.equal(writeTrap.calls.length, renders.length, "every documented implementer write artifact should reach the write seam");
   assert.ok(await access(writeTrap.calls[0].target).then(() => true).catch(() => false), "artifact executor must attempt a real temporary filesystem write");
   const negativeTrap = { calls: [], writeFile(path, operation) { this.calls.push({ path, operation }); throw new Error("write-trapped"); }, invokeSubagent(path, operation) { this.calls.push({ path, operation }); throw new Error("dispatch-trapped"); } };
   assert.throws(() => executeNativeArtifact("claude", "---\ntools:\n  - Write\n---\n", negativeTrap), /write-trapped/u);
@@ -773,7 +772,16 @@ test("native adapters report every suppressed or undocumented role capability", 
     assert.ok(diagnostics.some((entry) => /Role verifier capability evaluation is unavailable/iu.test(entry.message)), `${surface} verifier evaluation omission must be explicit`);
     assert.ok(diagnostics.every((entry) => /manual|fail-closed/iu.test(entry.message)), `${surface} diagnostics need manual/fail-closed guidance`);
     assert.ok(diagnostics.every((entry) => /^core\/roles\/[a-z0-9-]+\/role\.json$/u.test(entry.sourcePath)), `${surface} diagnostics need an owning role source`);
-    if (surface === "agy") assert.ok(diagnostics.some((entry) => /Role implementer capability repository-write is unavailable/iu.test(entry.message)), "agy must not silently omit implementer capabilities");
+    if (surface === "agy") {
+      const implementer = core.roles.find((role) => role.id === "implementer");
+      const artifact = parseNativeArtifact(surface, textFiles(result).get(roleFilePath(surface, "implementer")));
+      for (const capability of implementer.capabilities) {
+        const mappedTools = AGY_SEMANTIC_MAPPINGS[capability] ?? [];
+        assert.ok(mappedTools.length > 0, `agy implementer capability ${capability} needs a documented mapping or diagnostic`);
+        assert.ok(mappedTools.some((tool) => artifact.tools.includes(tool)), `agy implementer capability ${capability} is silently omitted`);
+      }
+      assert.equal(diagnostics.some((entry) => /Role implementer capability repository-write is unavailable/iu.test(entry.message)), false, "agy must not call a documented write mapping unavailable");
+    }
     const verifierPath = surface === "claude"
       ? "agents/verifier.md"
       : surface === "antigravity-2"

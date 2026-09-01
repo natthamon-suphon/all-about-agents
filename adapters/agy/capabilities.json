@@ -8,7 +8,7 @@
       "feature": "model.cli",
       "support": "supported",
       "stability": "stable",
-      "source": "tests/integration/manual-desktop-checklist.json",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "checkedAt": "2026-08-31",
       "productVersion": "1.1.22",
       "value": "gemini-3.7-flash-high",
@@ -18,7 +18,7 @@
       "feature": "effort.cli",
       "support": "supported",
       "stability": "stable",
-      "source": "tests/integration/manual-desktop-checklist.json",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "checkedAt": "2026-08-31",
       "productVersion": "1.1.22",
       "value": "high",
@@ -28,7 +28,7 @@
       "feature": "agents.discovery",
       "support": "supported",
       "stability": "stable",
-      "source": "research-antigravity.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "checkedAt": "2026-08-31",
       "productVersion": "1.1.22",
       "value": {
@@ -43,7 +43,7 @@
       "feature": "hooks.lifecycle",
       "support": "supported",
       "stability": "stable",
-      "source": "research-antigravity.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "checkedAt": "2026-08-31",
       "productVersion": "1.1.22",
       "value": {
@@ -56,13 +56,13 @@
         ],
         "handler": "command"
       },
-      "notes": "CLI uses Antigravity plugin hooks; do not substitute Gemini CLI event names."
+      "notes": "Events and JSON input/output are documented for CLI and Desktop. Process failure behavior and portable command-root resolution are not documented, so generated hooks stay disabled."
     },
     {
       "feature": "rules.instructions",
       "support": "supported",
       "stability": "stable",
-      "source": "research-antigravity.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "checkedAt": "2026-08-31",
       "productVersion": "1.1.22",
       "value": {
@@ -74,17 +74,15 @@
     },
     {
       "feature": "skills.discovery",
-      "support": "unknown",
-      "stability": "unknown",
-      "source": "research-antigravity.md",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "checkedAt": "2026-08-31",
       "productVersion": "1.1.22",
       "value": {
-        "documentedShapes": [
-          "flat Markdown under .agents/skills/",
-          "folder SKILL.md"
-        ],
-        "global": "~/.gemini/antigravity-cli/skills/"
+        "plugin": "skills/<skill>/SKILL.md",
+        "workspace": ".agents/skills/<skill>.md",
+        "global": "~/.gemini/antigravity-cli/skills/<skill>.md"
       },
       "notes": "agy plugin validate accepted the folder-SKILL.md package and enumerated 28 skills, but a runtime skill invocation was not performed."
     },
@@ -92,7 +90,7 @@
       "feature": "commands.plugin",
       "support": "supported",
       "stability": "stable",
-      "source": "tests/integration/manual-desktop-checklist.json",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "checkedAt": "2026-08-31",
       "productVersion": "1.1.22",
       "value": {
@@ -108,19 +106,24 @@
     },
     {
       "feature": "statusline.native",
-      "support": "unknown",
-      "stability": "unknown",
-      "source": "research-antigravity.md",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "checkedAt": "2026-08-31",
       "productVersion": "1.1.22",
-      "value": null,
-      "notes": "The approved records do not establish a native agy statusline contract."
+      "value": {
+        "settingsPath": "~/.gemini/antigravity-cli/settings.json",
+        "type": "command",
+        "input": "JSON via stdin",
+        "output": "one statusline text result via stdout"
+      },
+      "notes": "The official CLI statusline contract is documented; repository runtime rendering remains separately unconfirmed."
     },
     {
       "feature": "install.plugin",
       "support": "supported",
       "stability": "stable",
-      "source": "research-antigravity.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "checkedAt": "2026-08-31",
       "productVersion": "1.1.22",
       "value": {
@@ -133,7 +136,7 @@
       "feature": "model.persistence-json",
       "support": "unknown",
       "stability": "unknown",
-      "source": "research-model-policy-antigravity.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "checkedAt": "2026-08-31",
       "productVersion": "1.1.22",
       "value": {

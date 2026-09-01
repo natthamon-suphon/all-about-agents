@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://all-about-agents.local/schemas/quality-report.schema.json",
+  "title": "All About Agents Quality Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "timestamp",
+    "startedAt",
+    "finishedAt",
+    "mode",
+    "skill",
+    "repository",
+    "runtime",
+    "checks",
+    "status",
+    "nextAction"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "timestamp": { "type": "string", "minLength": 20 },
+    "startedAt": { "type": "string", "minLength": 20 },
+    "finishedAt": { "type": "string", "minLength": 20 },
+    "mode": { "enum": ["quick", "full", "skill"] },
+    "skill": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "commit"],
+      "properties": {
+        "branch": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "nodeVersion"],
+      "properties": {
+        "platform": { "enum": ["win32", "darwin", "linux"] },
+        "nodeVersion": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+" }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "required", "command", "evidence", "durationMs"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "status": { "enum": ["PASS", "FAIL", "NOT_RUN", "NOT_RUN_UNAVAILABLE"] },
+          "required": { "type": "boolean" },
+          "command": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "evidence": { "type": "string", "minLength": 1 },
+          "durationMs": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "status": { "enum": ["PASS", "FAIL"] },
+    "nextAction": { "type": "string", "minLength": 1 }
+  }
+}

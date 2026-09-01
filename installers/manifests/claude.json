@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "surface": "claude",
   "product": "Claude Code",
-  "productVersion": "2.1.248",
+  "productVersion": "2.1.251",
   "package": "all-about-agents",
   "pluginManifest": ".claude-plugin/plugin.json",
   "pluginRegistration": {
@@ -24,6 +24,8 @@
     "hookScripts": "hooks/{name}.mjs",
     "statusline": "statusline/statusline.mjs",
     "statuslineTracker": "statusline/track-tool.mjs",
+    "statuslineWindowsLauncher": "statusline/statusline.ps1",
+    "statuslinePosixLauncher": "statusline/statusline.sh",
     "settingsOverlay": "config/settings.json",
     "statuslineConfig": "config/statusline.json"
   },
@@ -51,7 +53,9 @@
           "deny": ["Bash(rm -rf /)", "Bash(rm -rf ~)", "Bash(git push --force*)", "Bash(git reset --hard*)"]
         }
       },
-      "experimental": ["advisorModel"]
+      "availability": {
+        "advisorModel": "Fable access depends on account, organization, plan, provider, consent, and Claude Code version."
+      }
     }
   },
   "semanticCapabilities": {
@@ -97,6 +101,8 @@
     "hooks/{name}.mjs",
     "statusline/statusline.mjs",
     "statusline/track-tool.mjs",
+    "statusline/statusline.ps1",
+    "statusline/statusline.sh",
     "config/settings.json",
     "config/statusline.json",
     "docs/semantic-mappings.md"
@@ -120,5 +126,9 @@
     "onMissing": "reject",
     "requiredBy": ["statusline/statusline.mjs", "statusline/track-tool.mjs"]
   },
-  "rootInstructionContext": "not emitted; plugin-root CLAUDE.md is not a plugin context"
+  "rootInstructionContext": "not emitted; plugin-root CLAUDE.md is not a plugin context",
+  "capabilityEvidence": {
+    "productContracts": "docs/evaluations/research-claude-code.md",
+    "modelPolicy": "docs/evaluations/research-model-policy-claude.md"
+  }
 }

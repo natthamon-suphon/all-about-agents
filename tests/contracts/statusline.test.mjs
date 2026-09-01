@@ -102,7 +102,7 @@ test("renderStatusline always emits deterministic four-line fail-open output", a
     assert.equal(first.split("\n").length, 4);
     assert.doesNotMatch(first.replace(/\r?\n/gu, ""), /[\u0000-\u001f\u007f-\u009f\u001b]/u);
     assert.match(first, /0%/u);
-    assert.doesNotMatch(first, /Natthamon Suphon/u);
+    assert.doesNotMatch(first, /Hardcoded User Name/u);
   });
 });
 
@@ -110,7 +110,7 @@ test("renderer returns empty-name output and only invalid stdin JSON fails", asy
   await withTempRoot(async (root) => {
     const output = await renderStatusline({}, { configRoot: root, logRoot: join(root, "logs") });
     assert.equal(output.split("\n").length, 4);
-    assert.doesNotMatch(output, /Natthamon Suphon/u);
+    assert.doesNotMatch(output, /Hardcoded User Name/u);
   });
   const modulePath = resolve(process.cwd(), "adapters/claude/templates/statusline/statusline.mjs");
   const valid = spawnSync(process.execPath, [modulePath], { input: "{}", encoding: "utf8" });
@@ -161,8 +161,28 @@ test("Claude production render owns both statusline modules and wires the tracke
   const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/claude.json"), "utf8"));
   assert.equal(manifest.components.statusline, "statusline/statusline.mjs");
   assert.equal(manifest.components.statuslineTracker, "statusline/track-tool.mjs");
+  assert.equal(manifest.components.statuslineWindowsLauncher, "statusline/statusline.ps1");
+  assert.equal(manifest.components.statuslinePosixLauncher, "statusline/statusline.sh");
   assert.deepEqual(manifest.statuslinePrerequisites.requiredBy, ["statusline/statusline.mjs", "statusline/track-tool.mjs"]);
   assert.ok(manifest.ownedPaths.includes("statusline/track-tool.mjs"));
+});
+
+test("Claude production render owns cross-platform statusline launchers", async () => {
+  const core = await loadCore(process.cwd());
+  const result = renderClaude({
+    core,
+    profile: "portable",
+    statuslineName: "ทีม Claude",
+    platform: "win32",
+    env: { CLAUDE_CONFIG_DIR: "C:/disposable/Claude Config" },
+    homeDir: "C:/Users/tester"
+  });
+  const files = new Map(result.files.map((file) => [file.relativePath, new TextDecoder().decode(file.content)]));
+  assert.ok(files.has("statusline/statusline.ps1"));
+  assert.ok(files.has("statusline/statusline.sh"));
+  assert.match(files.get("statusline/statusline.ps1"), /statusline[.]mjs/u);
+  assert.match(files.get("statusline/statusline.sh"), /exec node/u);
+  assert.equal(JSON.parse(files.get("config/statusline.json")).displayName, "ทีม Claude");
 });
 
 test("generated statusline package imports and renders both owned modules", async () => {

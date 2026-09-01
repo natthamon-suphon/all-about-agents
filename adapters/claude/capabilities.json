@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
   "surface": "claude",
-  "checkedAt": "2026-08-28",
-  "productVersion": "2.1.248",
+  "checkedAt": "2026-08-31",
+  "productVersion": "2.1.251",
   "capabilities": [
     {
       "feature": "model.primary",
       "support": "supported",
       "stability": "stable",
-      "source": "research-model-policy-claude.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "2.1.248",
+      "source": "docs/evaluations/research-model-policy-claude.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
       "value": "claude-opus-5",
       "notes": "Documented pinned Claude model ID."
     },
@@ -18,31 +18,31 @@
       "feature": "model.fallback",
       "support": "supported",
       "stability": "stable",
-      "source": "research-model-policy-claude.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "2.1.248",
+      "source": "docs/evaluations/research-model-policy-claude.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
       "value": [
         "claude-sonnet-5"
       ],
-      "notes": "Documented fallback chain, tried for qualifying server failures."
+      "notes": "Documented fallback chain for qualifying server failures; provider and access limits still apply."
     },
     {
       "feature": "model.advisor",
       "support": "supported",
-      "stability": "experimental",
-      "source": "research-model-policy-claude.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "2.1.248",
+      "stability": "stable",
+      "source": "docs/evaluations/research-model-policy-claude.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
       "value": "claude-fable-5",
-      "notes": "Documented experimental Fable advisor; access and consent may be required."
+      "notes": "Documented Fable advisor; account, organization, plan, provider, consent, and product-version access limits may apply."
     },
     {
       "feature": "effort.max",
       "support": "supported",
       "stability": "stable",
-      "source": "research-model-policy-claude.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "2.1.248",
+      "source": "docs/evaluations/research-model-policy-claude.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
       "value": {
         "environment": "CLAUDE_CODE_EFFORT_LEVEL",
         "value": "max"
@@ -53,9 +53,9 @@
       "feature": "agents.discovery",
       "support": "supported",
       "stability": "stable",
-      "source": "research-claude-code.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "2.1.248",
+      "source": "docs/evaluations/research-claude-code.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
       "value": {
         "global": "~/.claude/agents/",
         "project": ".claude/agents/",
@@ -68,9 +68,9 @@
       "feature": "hooks.lifecycle",
       "support": "supported",
       "stability": "stable",
-      "source": "research-claude-code.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "2.1.248",
+      "source": "docs/evaluations/research-claude-code.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
       "value": {
         "events": [
           "SessionStart",
@@ -96,9 +96,9 @@
       "feature": "rules.instructions",
       "support": "supported",
       "stability": "stable",
-      "source": "research-claude-code.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "2.1.248",
+      "source": "docs/evaluations/research-claude-code.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
       "value": {
         "global": "~/.claude/CLAUDE.md",
         "rules": "~/.claude/rules/*.md",
@@ -110,9 +110,9 @@
       "feature": "skills.discovery",
       "support": "supported",
       "stability": "stable",
-      "source": "research-claude-code.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "2.1.248",
+      "source": "docs/evaluations/research-claude-code.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
       "value": {
         "global": "~/.claude/skills/<skill-name>/SKILL.md",
         "plugin": "skills/<skill-name>/SKILL.md"
@@ -123,29 +123,34 @@
       "feature": "commands.legacy",
       "support": "supported",
       "stability": "manual",
-      "source": "research-claude-code.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "2.1.248",
+      "source": "docs/evaluations/research-claude-code.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
       "value": ".claude/commands/*.md",
       "notes": "Legacy commands still work; new reusable behavior should use skills."
     },
     {
       "feature": "statusline.native",
-      "support": "unknown",
-      "stability": "unknown",
-      "source": "research-claude-code.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "2.1.248",
-      "value": null,
-      "notes": "The approved Claude records do not establish a native statusline configuration contract."
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-claude-code.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
+      "value": {
+        "settingsPath": "~/.claude/settings.json",
+        "type": "command",
+        "input": "JSON via stdin",
+        "output": "statusline text via stdout"
+      },
+      "notes": "Claude Code documents the native statusLine command contract; repository runtime rendering remains separately unconfirmed."
     },
     {
       "feature": "install.user-plugin",
       "support": "supported",
       "stability": "stable",
-      "source": "research-claude-code.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "2.1.248",
+      "source": "docs/evaluations/research-claude-code.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
       "value": {
         "scope": "user",
         "command": "claude plugin install <plugin>@<marketplace>"

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, chmod, readFile, writeFile, rm } from "node:fs/promises";
+import { access, chmod, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
@@ -7,6 +7,7 @@ import test from "node:test";
 
 import { withTempRoot } from "../helpers/temp-root.mjs";
 import { main, renderPlans } from "../../scripts/aaa.mjs";
+import { preflightOperation } from "../../installers/lib/apply.mjs";
 
 const requiredOutputs = [
   "installers/install.ps1",
@@ -39,6 +40,48 @@ test("doctor returns the exact independent check contract", async () => {
     assert.deepEqual(Object.keys(check).sort(), ["evidence", "id", "status", "surface"]);
     assert.ok(["pass", "fail", "not run"].includes(check.status));
   }
+});
+
+test("register CLI fails closed without managed state and rejects all surfaces", async () => {
+  await withTempRoot(async (root) => {
+    await mkdir(resolve(root, ".codex-plugin"), { recursive: true });
+    await mkdir(resolve(root, ".agents", "plugins"), { recursive: true });
+    await writeFile(resolve(root, ".codex-plugin", "plugin.json"), "{}\n", "utf8");
+    await writeFile(resolve(root, ".agents", "plugins", "marketplace.json"), "{}\n", "utf8");
+    const productRoot = resolve(root, "codex-home");
+    await mkdir(productRoot, { recursive: true });
+    const dry = await capture(["register", "--surface", "codex", "--package-root", root, "--format", "json"], { productRoot });
+    assert.equal(dry.code, 1);
+    const report = jsonOutput(dry);
+    assert.equal(report.error.code, "package-state-missing");
+    const all = await capture(["register", "--surface", "all", "--package-root", root, "--format", "json"]);
+    assert.equal(all.code, 2);
+    assert.equal(jsonOutput(all).error.code, "invalid-registration-surface");
+  });
+});
+
+test("register binds real single-surface and namespaced multi-surface packages to managed state", async () => {
+  await withTempRoot(async (root) => {
+    const singlePackage = resolve(root, "single-claude");
+    const singleInstall = await capture(["install", "--surface", "claude", "--profile", "template", "--statusline-name", "State binding", "--destination-root", singlePackage, "--apply", "--format", "json"]);
+    assert.equal(singleInstall.code, 0, singleInstall.stderr);
+    const productRoot = resolve(root, "product");
+    await mkdir(productRoot, { recursive: true });
+    const singleRegister = await capture(["register", "--surface", "claude", "--profile", "template", "--package-root", singlePackage, "--format", "json"], { productRoot });
+    assert.equal(singleRegister.code, 0, singleRegister.stderr);
+    assert.equal(jsonOutput(singleRegister).mode, "dry-run");
+    assert.equal(jsonOutput(singleRegister).status, "dry-run");
+
+    const aggregateRoot = resolve(root, "aggregate");
+    const aggregateInstall = await capture(["install", "--surface", "all", "--profile", "template", "--statusline-name", "State binding", "--destination-root", aggregateRoot, "--apply", "--format", "json"]);
+    assert.equal(aggregateInstall.code, 0, aggregateInstall.stderr);
+    for (const surface of ["claude", "codex", "agy", "antigravity-2"]) {
+      const runtime = surface === "antigravity-2" ? { productRoot: null } : { productRoot };
+      const result = await capture(["register", "--surface", surface, "--profile", "template", "--package-root", resolve(aggregateRoot, surface), "--format", "json"], runtime);
+      assert.equal(result.code, 0, `${surface}: ${result.stderr}`);
+      assert.equal(jsonOutput(result).status, "dry-run");
+    }
+  });
 });
 
 async function capture(args, runtime) {
@@ -135,12 +178,103 @@ test("CLI action matrix emits normalized JSON and stable exit codes in disposabl
   });
 });
 
+test("validate all reports both profiles and all public adapter surfaces", async () => {
+  const result = await capture(["validate", "--scope", "all", "--format", "json"]);
+  assert.equal(result.code, 0, result.stderr);
+  const report = jsonOutput(result);
+  assert.deepEqual(report.profiles, ["portable", "template"]);
+  assert.deepEqual(report.surfaces, ["claude", "codex", "antigravity-2", "agy"]);
+  assert.equal(report.status, "pass");
+});
+
 test("all-surface automatic discovery fails closed before mutation", async () => {
   const result = await capture(["install", "--surface", "all", "--apply", "--format", "json"]);
   assert.equal(result.code, 1);
   const report = jsonOutput(result);
   assert.equal(report.status, "fail");
   assert.match(report.error.message, /manual|root|discovery/iu);
+});
+
+test("two-surface production plans preflight completely before any write", async () => {
+  await withTempRoot(async (root) => {
+    const previousClaude = process.env.CLAUDE_CONFIG_DIR;
+    const previousCodex = process.env.CODEX_HOME;
+    process.env.CLAUDE_CONFIG_DIR = resolve(root, "claude");
+    process.env.CODEX_HOME = resolve(root, "codex");
+    try {
+      const entries = await renderPlans({
+        action: "install",
+        mode: "apply",
+        profile: "portable",
+        surfaces: ["claude", "codex"],
+        destinationRoot: null,
+        statuslineName: "",
+        format: "json"
+      }, process.cwd());
+      assert.equal(entries.length, 2);
+      const invalid = entries[1].plan.actions.find((action) => ["create", "replace", "unchanged"].includes(action.kind));
+      assert.ok(invalid);
+      entries[1].contents.delete(invalid.relativePath);
+      let writes = 0;
+      const fileSystemByRoot = new Map(entries.map((entry) => [entry.root, {
+        contents: entry.contents,
+        repositoryVersion: "integration-test",
+        profile: "portable",
+        surfaces: entry.selectedSurfaces,
+        previousState: entry.previousState,
+        writeFile: async (...args) => { writes += 1; return writeFile(...args); }
+      }]));
+      const result = await preflightOperation({ entries, fileSystemByRoot });
+      assert.equal(result.valid, false);
+      assert.deepEqual(result.prepared, []);
+      assert.equal(result.errors[0].surface, "codex");
+      assert.equal(writes, 0);
+      assert.equal(await access(resolve(root, "claude")).then(() => true, () => false), false);
+      assert.equal(await access(resolve(root, "codex")).then(() => true, () => false), false);
+    } finally {
+      if (previousClaude === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+      else process.env.CLAUDE_CONFIG_DIR = previousClaude;
+      if (previousCodex === undefined) delete process.env.CODEX_HOME;
+      else process.env.CODEX_HOME = previousCodex;
+    }
+  });
+});
+
+test("all-surface atomic preflight attributes a late namespaced failure without writing", async () => {
+  await withTempRoot(async (root) => {
+    const entries = await renderPlans({
+      action: "install",
+      mode: "apply",
+      profile: "portable",
+      surfaces: ["claude", "codex", "antigravity-2", "agy"],
+      destinationRoot: root,
+      statuslineName: "preflight",
+      format: "json"
+    }, process.cwd());
+    assert.equal(entries.length, 1, "an explicit shared root must use one atomic namespaced plan");
+    const [entry] = entries;
+    const invalid = [...entry.plan.actions].reverse().find((action) => action.relativePath.startsWith("agy/") && ["create", "replace", "unchanged"].includes(action.kind));
+    assert.ok(invalid);
+    entry.contents.delete(invalid.relativePath);
+    let writes = 0;
+    const fileSystemByRoot = new Map([[entry.root, {
+      contents: entry.contents,
+      repositoryVersion: "integration-test",
+      profile: "portable",
+      surfaces: entry.selectedSurfaces,
+      previousState: entry.previousState,
+      writeFile: async (...args) => { writes += 1; return writeFile(...args); }
+    }]]);
+    const result = await preflightOperation({ entries, fileSystemByRoot });
+    assert.equal(result.valid, false);
+    assert.deepEqual(result.prepared, []);
+    assert.equal(result.errors[0].surface, "agy");
+    assert.equal(result.errors[0].relativePath, invalid.relativePath);
+    assert.equal(writes, 0);
+    for (const surface of entry.selectedSurfaces) {
+      assert.equal(await access(resolve(root, surface)).then(() => true, () => false), false, `${surface} must remain unwritten`);
+    }
+  });
 });
 
 test("diff redacts quoted JSON secret fields from disposable managed files", async () => {

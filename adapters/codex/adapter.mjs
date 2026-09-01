@@ -9,6 +9,7 @@ import codexActivityTemplate from "./templates/hooks/activity-audit.json" with {
 import codexCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
 import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
 import { AdapterContractError, renderSurface as validateSurface, validateCommandRecords, validateRenderResult } from "../shared/adapter-contract.mjs";
+import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, hasScopedMutation, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
@@ -199,11 +200,87 @@ function renderRole(name, role) {
 
 function pluginManifest() {
   return {
+    author: {
+      name: "All About Agents Maintainers"
+    },
     name: "all-about-agents",
     version: "1.0.0",
     description: "Portable all-about-agents skills for Codex CLI and Desktop.",
-    skills: "./.agents/skills"
+    skills: "./skills/",
+    interface: {
+      displayName: "All About Agents",
+      shortDescription: "Agent skills and workflow guidance",
+      longDescription: "Portable all-about-agents skills and workflow guidance for coding agents.",
+      developerName: "All About Agents Maintainers",
+      category: "Developer Tools",
+      capabilities: ["Read", "Write"],
+      defaultPrompt: [
+        "Use the all-about-agents workflow.",
+        "Guide this change with TDD and verification."
+      ]
+    }
   };
+}
+
+function marketplaceManifest() {
+  return {
+    name: "all-about-agents-dev",
+    interface: {
+      displayName: "All About Agents Dev"
+    },
+    plugins: [{
+      name: "all-about-agents",
+      source: {
+        source: "url",
+        url: "./"
+      },
+      policy: {
+        installation: "AVAILABLE",
+        authentication: "ON_INSTALL"
+      },
+      category: "Developer Tools"
+    }]
+  };
+}
+
+function nativeHookRecord(feature, sourcePath, phaseOverrides = {}, manualSteps = null) {
+  return createNativeIntegrationRecord({
+    surface: CODEX_SURFACE,
+    feature,
+    sourcePath,
+    phases: {
+      rendered: {
+        status: "pass",
+        evidence: `Rendered the Codex ${feature} contract from ${sourcePath}.`
+      },
+      validated: {
+        status: "pass",
+        evidence: `Adapter validation accepted the Codex ${feature} contract.`
+      },
+      registered: {
+        status: "not-run",
+        evidence: "Native Codex marketplace and plugin registration was not run during rendering."
+      },
+      trusted: {
+        status: "not-run",
+        evidence: "Codex hook trust was not checked; review and trust this plugin hook in /hooks."
+      },
+      active: {
+        status: "not-run",
+        evidence: "Codex active hook state was not checked during rendering."
+      },
+      runtimeVerified: {
+        status: "not-run",
+        evidence: "Codex hook runtime was not verified in a native session."
+      },
+      ...phaseOverrides
+    },
+    manualSteps: manualSteps ?? [
+      "Register the rendered package through the Codex marketplace and plugin commands.",
+      "Open /hooks and review and trust the current plugin hook definition.",
+      "Start a fresh Codex session before checking active hook behavior."
+    ]
+  });
 }
 
 function targetRuntimeOf(input) {
@@ -263,6 +340,65 @@ function desktopEmergencyContract() {
   return contract;
 }
 
+function nativeEmergencyRecord(targetRuntime, profile) {
+  const desktop = targetRuntime === "desktop";
+  const permissionStep = profile.authority === "full"
+    ? "Keep danger-full-access and approvals never bounded by the emergency deny policy."
+    : "Keep the portable permission profile and do not claim full access.";
+  const exactDenyStep = "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).";
+  return createNativeIntegrationRecord({
+    surface: CODEX_SURFACE,
+    feature: "emergency-protection",
+    phases: {
+      rendered: {
+        status: "pass",
+        evidence: `Rendered the Codex ${desktop ? "Desktop" : "CLI"} emergency policy with ${profile.authority === "full" ? "danger-full-access and approvals never" : "the portable permission profile"}.`
+      },
+      validated: {
+        status: "not-run",
+        evidence: "The rendered deny policy is recorded only; native package validation was not run for this emergency protection record."
+      },
+      registered: {
+        status: "not-run",
+        evidence: desktop
+          ? "Codex Desktop plugin discovery and emergency-control registration were not run; Desktop remains manual/probe-only."
+          : "Codex plugin discovery and registration were not run during rendering."
+      },
+      trusted: {
+        status: "not-run",
+        evidence: desktop
+          ? "Codex Desktop hook trust was not observed; perform the documented disposable deny-output probe first."
+          : "Codex CLI hook trust was not checked; review and trust the plugin hook in /hooks before relying on it."
+      },
+      active: {
+        status: "not-run",
+        evidence: desktop
+          ? "Codex Desktop emergency protection is not active by claim; no Desktop-specific evidence was collected."
+          : "Codex active emergency hook state was not checked in a fresh CLI session."
+      },
+      runtimeVerified: {
+        status: "not-run",
+        evidence: desktop
+          ? "Codex Desktop emergency deny output was not executed; no runtime handler is emitted for Desktop."
+          : "Codex CLI emergency hook execution was not run in a native session."
+      }
+    },
+    sourcePath: "adapters/codex/adapter.mjs",
+    manualSteps: desktop ? [
+      "Record the installed Codex Desktop version and platform.",
+      permissionStep,
+      exactDenyStep,
+      "On a disposable package, perform the explicit deny-output probe before proposing or trusting a Desktop hook; this render emits no Desktop emergency runtime."
+    ] : [
+      "Register the rendered package through the Codex marketplace and plugin commands.",
+      "Open /hooks and review and trust the emergency hook before relying on its deny output.",
+      permissionStep,
+      exactDenyStep,
+      "Start a fresh Codex CLI session before checking active hook behavior."
+    ]
+  });
+}
+
 function desktopInstructions(profile) {
   const modelLines = profile.modelPolicies[CODEX_SURFACE] === "surface-default"
     ? ["The portable profile keeps the current Codex model and reasoning controls unchanged."]
@@ -277,7 +413,7 @@ function desktopInstructions(profile) {
     "# Codex Desktop manual setup",
     "",
     ...modelLines,
-    "The emergency PreToolUse guard is automatic only for the explicit Codex CLI target; Desktop output remains probe-required and contains no copied emergency runtime.",
+    "The emergency PreToolUse guard is rendered only for the explicit Codex CLI target; registration, trust, active state, and runtime evidence remain manual, while Desktop output stays probe-required and contains no copied emergency runtime.",
     ""
   ].join("\n"));
 }
@@ -405,11 +541,12 @@ function capabilityGuidance(profile) {
     "",
     "- `CODEX_HOME` selects the shared Codex CLI/Desktop configuration root; the fallback is the user's `.codex` directory.",
     "- `AGENTS.md` is rendered as a regular instruction file for the canonical rules and action-to-workflow mappings.",
-    "- Skills are packaged under `.agents/skills/<skill>/SKILL.md`; missing canonical sources remain marked `DEFERRED`.",
+    "- Skills are packaged under `skills/<skill>/SKILL.md` for plugin discovery and mirrored under `.agents/skills/<skill>/SKILL.md` for direct/global installation; missing canonical sources remain marked `DEFERRED`.",
     "- Custom roles are standalone custom-agent TOML files under `.codex/agents/<role>.toml`.",
     "- Each canonical `[agents.<role>]` registration points `config_file` at the delivered `agents/<role>.toml` role layer. That standalone file contains `developer_instructions` and top-level `sandbox_mode` (`read-only` for read-only roles and `workspace-write` only for the implementer). Relative `config_file` paths resolve from the declaring `config.toml`.",
     "- This role-layer pattern follows the official Codex Configuration Reference (https://developers.openai.com/codex/config-reference/); the published docs do not show one combined registration example, so native client acceptance remains a later manual check.",
     modelGuidance,
+    "- To select the explicit CLI recovery profile, run `codex --profile terra-max`; the adapter does not configure an automatic Sol-to-Terra fallback.",
     "- Native `workspace-write` is workspace-wide; the implementer's declared task paths remain an outer approval boundary and are not enforced by this adapter.",
     "- Codex Desktop Terra/max selection is manual in its model controls.",
     "",
@@ -439,6 +576,7 @@ export function renderCodex(input = {}) {
   const profile = semanticProfile.id;
   const files = [];
   addFile(files, ".codex-plugin/plugin.json", renderJson(pluginManifest()));
+  addFile(files, ".agents/plugins/marketplace.json", renderJson(marketplaceManifest()));
   addFile(files, "hooks/hooks.json", renderJson(bootstrapHooks(targetRuntime)));
   addFile(files, "hooks/bootstrap.json", BOOTSTRAP_CONFIG_SOURCE);
   addFile(files, `hooks/${codexBootstrapTemplate.module}.mjs`, BOOTSTRAP_SOURCE, 0o755);
@@ -492,15 +630,18 @@ try {
     addFile(files, "hooks/emergency-policy.mjs", EMERGENCY_POLICY_SOURCE, 0o755);
   }
   addFile(files, "AGENTS.md", renderAgentsDocument(core));
-  addFile(files, ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md", capabilityGuidance(semanticProfile));
   addFile(files, "docs/manual-desktop.md", desktopInstructions(semanticProfile));
   const skillRecords = new Map(core.skills.map((record) => [record.id || record.name, record]));
   const missingSkills = [];
-  for (const skill of canonicalSkillIds(core)) {
-    const rendered = renderSkill(skill, skillRecords.get(skill));
-    if (!rendered.hasSource) missingSkills.push({ skill, hasRecord: skillRecords.has(skill) });
-    addFile(files, `.agents/skills/${skill}/SKILL.md`, rendered.content);
-    for (const companion of skillCompanionsFor(skillRecords.get(skill))) addFile(files, `.agents/skills/${skill}/${companion.relativePath}`, companion.content, companion.mode, "companion");
+  const skillRoots = [".agents/skills", "skills"];
+  for (const skillRoot of skillRoots) {
+    addFile(files, `${skillRoot}/using-all-about-agents/references/adapter-capability-guidance.md`, capabilityGuidance(semanticProfile));
+    for (const skill of canonicalSkillIds(core)) {
+      const rendered = renderSkill(skill, skillRecords.get(skill));
+      if (skillRoot === ".agents/skills" && !rendered.hasSource) missingSkills.push({ skill, hasRecord: skillRecords.has(skill) });
+      addFile(files, `${skillRoot}/${skill}/SKILL.md`, rendered.content);
+      for (const companion of skillCompanionsFor(skillRecords.get(skill))) addFile(files, `${skillRoot}/${skill}/${companion.relativePath}`, companion.content, companion.mode, "companion");
+    }
   }
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
   const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort(compareCodePoints);
@@ -524,11 +665,11 @@ try {
         relativePath: "hooks/hooks.json",
         event: codexEmergencyTemplate.event,
         matcher: codexEmergencyTemplate.nativeMatcher,
-        enabled: true,
-        automatic: true,
+        enabled: false,
+        automatic: false,
         trustRequired: true,
-        probeRequired: false,
-        status: "ready"
+        probeRequired: true,
+        status: "not run"
       }
     : {
         ...desktopEmergencyContract(),
@@ -542,10 +683,49 @@ try {
     files,
     registrations: [
       profileTranslation(semanticProfile, CODEX_SURFACE),
+      nativeEmergencyRecord(targetRuntime, semanticProfile),
       {
         kind: "plugin-package",
         relativePath: ".codex-plugin/plugin.json",
-        packageRoot: "."
+        packageRoot: ".",
+        marketplaceArgs: ["plugin", "marketplace", "add", "PACKAGE_ROOT", "--json"],
+        installArgs: ["plugin", "add", "all-about-agents@all-about-agents-dev", "--json"],
+        discoveryArgs: ["plugin", "list", "--available", "--json"]
+      },
+      nativeHookRecord("bootstrap-hook", "adapters/codex/templates/hooks/bootstrap.json"),
+      nativeHookRecord("activity-audit-hook", "adapters/codex/templates/hooks/activity-audit.json"),
+      nativeHookRecord("checkpoint-hook", "adapters/codex/templates/hooks/checkpoint.json"),
+      nativeHookRecord("emergency-guard-hook", "adapters/codex/templates/hooks/emergency-guard.json", targetRuntime === "desktop" ? {
+        rendered: {
+          status: "not-run-unavailable",
+          evidence: "Codex Desktop emergency guard runtime is not emitted; a manual probe is required."
+        },
+        validated: {
+          status: "not-run-unavailable",
+          evidence: "Codex Desktop emergency guard runtime is not emitted, so its native contract cannot be validated."
+        },
+        registered: {
+          status: "not-run-unavailable",
+          evidence: "Codex Desktop has no emitted emergency guard runtime to register in this render."
+        },
+        trusted: {
+          status: "not-run",
+          evidence: "Codex Desktop hook trust remains a manual step; use /hooks after the manual emergency-guard probe."
+        },
+        active: {
+          status: "not-run-unavailable",
+          evidence: "Codex Desktop emergency guard runtime is not emitted; active state is unavailable until a manual probe establishes support."
+        },
+        runtimeVerified: {
+          status: "not-run-unavailable",
+          evidence: "Codex Desktop emergency guard runtime is not emitted; perform the manual deny-output probe before runtime verification."
+        }
+      } : {}, targetRuntime === "desktop" ? desktopEmergencyContract().manualSequence : undefined),
+      {
+        kind: "plugin-marketplace",
+        relativePath: ".agents/plugins/marketplace.json",
+        marketplace: "all-about-agents-dev",
+        source: { source: "url", url: "./" }
       },
       {
         kind: "runtime-prerequisite",
@@ -572,7 +752,10 @@ try {
         event: codexActivityTemplate.event,
         matcher: codexActivityTemplate.nativeMatcher,
         optional: true,
-        automatic: true,
+        enabled: false,
+        automatic: false,
+        trustRequired: true,
+        status: "not run",
         failureMode: codexActivityTemplate.failureMode,
         recordedFields: [...codexActivityTemplate.recordedFields]
       },
@@ -582,7 +765,10 @@ try {
         relativePath: "hooks/hooks.json",
         event: codexCheckpointTemplate.event,
         matcher: codexCheckpointTemplate.nativeMatcher,
-        automatic: true,
+        enabled: false,
+        automatic: false,
+        trustRequired: true,
+        status: "not run",
         durableWorkflow: "explicit",
         failureMode: codexCheckpointTemplate.failureMode,
         recordedFields: [...codexCheckpointTemplate.recordedFields]
@@ -599,6 +785,12 @@ try {
         kind: "skills",
         relativeDirectory: ".agents/skills",
         destination: ".agents/skills",
+        consumers: ["codex-cli", "codex-desktop"]
+      },
+      {
+        kind: "plugin-skills",
+        relativeDirectory: "skills",
+        destination: "skills",
         consumers: ["codex-cli", "codex-desktop"]
       },
       {

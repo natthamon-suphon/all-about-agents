@@ -63,16 +63,20 @@ test("agy clean-profile apply materializes the complete disposable package", asy
     for (const rule of core.rules) await access(resolve(destination, "rules", `${rule.id}.md`));
     for (const path of [
       "plugin.json", "README.md", "hooks.json", "activity-audit.json", "checkpoint.json",
-      "emergency-guard.json", "settings.overlay.json", "rules/model-selection.md",
+      "emergency-guard.json", "settings.overlay.json", "statusline/statusline.mjs",
+      "statusline/statusline.json", "statusline/statusline.ps1", "statusline/statusline.sh", "rules/model-selection.md",
       "rules/permission-safety.md", "rules/hook-contract.md", "rules/settings-overlay.md"
     ]) await access(resolve(destination, path));
     assert.deepEqual((await filesUnder(destination)).filter((path) => path.includes(".gemini/") || path.includes("config/")), []);
 
     const rendered = renderAgy({ core, profile: { id: "template" }, statuslineName: "", platform: process.platform });
     const install = rendered.registrations.find((entry) => entry.kind === "plugin-registration");
-    assert.equal(install.manualOnly, true);
+    assert.equal(install.manualOnly, false);
     assert.equal(install.disposableOnly, true);
-    assert.equal(install.automaticInstall, false);
+    assert.equal(install.automaticInstall, true);
+    assert.equal(install.automaticFromRender, false);
+    assert.equal(install.status, "register-apply-after-review");
+    assert.equal(install.stagedDestination, "~/.gemini/antigravity-cli/plugins/all-about-agents/");
     for (const command of ["agy plugin install PACKAGE_DIRECTORY", "agy plugin list", "agy agents", "agy models"]) {
       assert.ok(rendered.registrations.some((entry) => entry.command === command));
     }
@@ -86,10 +90,15 @@ test("agy clean-profile apply materializes the complete disposable package", asy
     assert.ok(fullAccess.emergencyDeny.includes("command(rm -rf)"));
     assert.ok(fullAccess.emergencyDeny.includes("command(sudo)"));
     const settings = rendered.registrations.find((entry) => entry.kind === "settings-overlay");
-    assert.equal(settings.manualOnly, true);
-    assert.equal(settings.automaticWrite, false);
-    assert.equal(settings.status, "manual-discovery-required");
+    assert.equal(settings.manualOnly, false);
+    assert.equal(settings.automaticWrite, true);
+    assert.equal(settings.status, "apply-after-review");
     assert.deepEqual(settings.destinationCandidates, ["~/.gemini/antigravity-cli/settings.json"]);
+    const overlay = JSON.parse(await readFile(resolve(destination, "settings.overlay.json"), "utf8"));
+    assert.equal(overlay.statusLine.type, "command");
+    assert.equal(overlay.statusLine.enabled, true);
+    assert.equal(overlay.statusLine.padding, 0);
+    assert.equal(overlay.statusLine.stack_with_default, false);
     const hook = rendered.registrations.find((entry) => entry.kind === "hook-contract");
     assert.equal(hook.automaticHookExecution, false);
     assert.equal(hook.probeRequired, true);

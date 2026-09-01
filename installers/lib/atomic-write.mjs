@@ -38,7 +38,7 @@ async function removeTemp(path, remove) {
  * overrides. They exist for disposable tests and must not change the
  * same-directory temporary-file and post-rename hash-verification contract.
  */
-export async function atomicReplaceFile({ destination, content, expectedHash, mode = null, fileSystem = {} } = {}) {
+export async function atomicReplaceFile({ destination, content, expectedHash, mode = null, allowedProductRoots = [], fileSystem = {} } = {}) {
   if (typeof destination !== "string" || destination.length === 0 || destination.includes("\0")) {
     throw new TypeError("destination must be a non-empty path");
   }
@@ -60,7 +60,7 @@ export async function atomicReplaceFile({ destination, content, expectedHash, mo
   const directory = dirname(destinationPath);
   const temporaryPath = resolve(directory, `.${basename(destinationPath)}.aaa-${randomUUID()}.tmp`);
 
-  const verifyDirectory = () => assertSafeDestinationRoot(directory);
+  const verifyDirectory = () => assertSafeDestinationRoot(directory, { allowedProductRoots });
   verifyDirectory();
   await makeDirectory(directory, { recursive: true });
   verifyDirectory();

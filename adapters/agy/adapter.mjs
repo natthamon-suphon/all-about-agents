@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import agyBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
 import agyEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
 import agyActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
@@ -6,15 +8,21 @@ import agyCheckpointTemplate from "./templates/hooks/checkpoint.json" with { typ
 
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
-import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, roleCapabilities, SEMANTIC_CAPABILITIES, isRoleReadOnly } from "../../core/roles/contract.mjs";
+import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency-policy.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
+import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 
 const SURFACE = "agy";
 const PLUGIN_ROOT = "";
 const PLUGIN_NAME = "all-about-agents";
 export const AGY_DOCUMENTED_SETTINGS_DESTINATION = "~/.gemini/antigravity-cli/settings.json";
+export const AGY_INSTALLED_PLUGIN_RELATIVE_ROOT = "plugins/all-about-agents";
+const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
+const STATUSLINE_WINDOWS_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.ps1", import.meta.url), "utf8");
+const STATUSLINE_POSIX_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.sh", import.meta.url), "utf8");
+const STATUSLINE_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.mjs", import.meta.url), "utf8");
 
 const ACTION_IDS = Object.freeze([
   "aaa:design",
@@ -33,12 +41,7 @@ export const AGY_MODEL_POLICY = Object.freeze({
   effort: "high"
 });
 
-/**
- * The agent frontmatter field names are documented, but the current research
- * does not publish a stable CLI tool vocabulary. Empty tool lists are safer
- * than guessing names that can hang an agent; operators can inspect `agy
- * agents` before adding a version-specific tool list.
- */
+/** Shared Antigravity subagent and hook docs publish these exact tool names. */
 export const AGY_DOCUMENTED_AGENT_FIELDS = Object.freeze([
   "name",
   "description",
@@ -52,12 +55,32 @@ export const AGY_DOCUMENTED_AGENT_FIELDS = Object.freeze([
   "plugins"
 ]);
 
-export const AGY_DOCUMENTED_AGENT_TOOLS = Object.freeze([]);
+export const AGY_DOCUMENTED_AGENT_TOOLS = Object.freeze([
+  "view_file", "write_to_file", "replace_file_content", "multi_replace_file_content",
+  "list_dir", "find_by_name", "grep_search", "search_web", "read_url_content",
+  "run_command", "invoke_subagent", "define_subagent", "send_message",
+  "manage_subagents", "ask_permission", "list_permissions"
+]);
 
-/** Semantic capability names remain portable; no undocumented CLI tool is guessed. */
-export const AGY_SEMANTIC_MAPPINGS = Object.freeze(Object.fromEntries([
-  ...SEMANTIC_CAPABILITIES
-].map((capability) => [capability, Object.freeze([])])));
+/** Semantic-to-native mappings use only the documented Antigravity tools. */
+export const AGY_SEMANTIC_MAPPINGS = Object.freeze({
+  "repository-read": Object.freeze(["view_file", "list_dir", "find_by_name", "grep_search"]),
+  "repository-write": Object.freeze(["write_to_file", "replace_file_content", "multi_replace_file_content"]),
+  "web-primary-sources": Object.freeze(["search_web", "read_url_content"]),
+  "isolated-write": Object.freeze(["write_to_file", "replace_file_content", "multi_replace_file_content"]),
+  "command-execution": Object.freeze(["run_command"]),
+  "filesystem-read": Object.freeze(["view_file", "list_dir", "find_by_name", "grep_search"]),
+  "filesystem-write": Object.freeze(["write_to_file", "replace_file_content", "multi_replace_file_content"]),
+  "git-read": Object.freeze(["run_command"]),
+  "git-write": Object.freeze(["run_command"]),
+  "test-execution": Object.freeze(["run_command"]),
+  "external-research": Object.freeze(["search_web", "read_url_content"]),
+  evaluation: Object.freeze(["run_command", "view_file"]),
+  "role-dispatch": Object.freeze(["invoke_subagent", "define_subagent", "manage_subagents"]),
+  "workflow-state": Object.freeze(["view_file", "write_to_file"]),
+  "schema-validation": Object.freeze(["run_command"]),
+  "native-rendering": Object.freeze(["write_to_file"])
+});
 
 /** No canonical action has a documented native agy action mapping. */
 export const AGY_ACTION_MAPPINGS = Object.freeze(Object.fromEntries(ACTION_IDS.map((actionId) => [
@@ -66,7 +89,7 @@ export const AGY_ACTION_MAPPINGS = Object.freeze(Object.fromEntries(ACTION_IDS.m
     supported: false,
     support: "manual-unknown",
     status: "unknown",
-    source: "research-agy-2.md",
+    source: "docs/evaluations/antigravity-contracts-2026-08-31.md",
     reason: "No documented agy native action mapping is published for this canonical action.",
     manualStep: `Use a manually authored agy prompt or operation for ${actionId} only after verifying the installed CLI; no native action mapping is claimed.`
   })
@@ -161,6 +184,85 @@ function ensureText(value) {
   return renderText(typeof value === "string" ? value : String(value ?? ""));
 }
 
+function normalizeWindowsPath(value) {
+  const slashed = value.replaceAll("\\", "/");
+  if (slashed.startsWith("//")) return `//${slashed.slice(2).replace(/\/{2,}/gu, "/")}`;
+  return slashed.replace(/\/{2,}/gu, "/");
+}
+
+function validateAgyConfigRoot(value, platform) {
+  if (typeof value !== "string" || value.trim().length === 0) throw new TypeError("agy statusline config root must be a non-empty path");
+  if (/[\u0000-\u001f\u007f-\u009f]/u.test(value)) throw new TypeError("agy statusline config root contains control characters");
+  const root = value.trim();
+  if (platform !== "win32") {
+    if (!root.startsWith("/")) throw new TypeError("agy statusline command requires an absolute config root");
+    return root.replace(/\/$/u, "") || "/";
+  }
+  if (/[\x22<>|?*]/u.test(root)) throw new TypeError("agy statusline config root contains forbidden Windows path characters");
+  const rawWindows = value.replaceAll("\\", "/");
+  if (/[. ](?:\/|$)/u.test(rawWindows)) throw new TypeError("agy statusline config root contains an unrepresentable trailing dot or space");
+  const slashedInput = root.replaceAll("\\", "/");
+  const unc = slashedInput.startsWith("//");
+  const drive = /^[A-Za-z]:\//u.test(slashedInput);
+  if (!drive && !unc) throw new TypeError("agy statusline command requires an absolute Windows config root");
+  const body = unc ? slashedInput.slice(2) : slashedInput.slice(3);
+  if (/\/{2,}/u.test(body)) throw new TypeError("agy statusline config root contains an empty path segment");
+  const withoutTrailingSlash = body.replace(/\/$/u, "");
+  const segments = withoutTrailingSlash.length > 0 ? withoutTrailingSlash.split("/") : [];
+  if (unc && segments.length < 2) throw new TypeError("agy statusline config root requires a UNC server and share");
+  if (segments.some((segment) => segment.length === 0 || segment === "." || segment === ".." || segment.includes(":") || /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/iu.test(segment))) {
+    throw new TypeError("agy statusline config root contains an invalid path segment");
+  }
+  if (drive && segments.length === 0) return `${slashedInput.slice(0, 2)}/`;
+  const normalized = normalizeWindowsPath(slashedInput).replace(/\/$/u, "");
+  return normalized || `${slashedInput[0]}:/`;
+}
+
+function quotePosix(value) {
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function quotePowerShell(value) {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+
+function isAbsoluteWindowsPath(value) {
+  return /^(?:[A-Za-z]:\/|\/\/)/u.test(value);
+}
+
+/** Resolve the documented agy CLI settings directory without touching it. */
+export function resolveAgyConfigDir({ homeDir = homedir(), platform = process.platform } = {}) {
+  if (!["win32", "darwin", "linux"].includes(platform)) throw new TypeError(`agy statusline does not support platform ${String(platform)}`);
+  if (typeof homeDir !== "string" || homeDir.trim().length === 0) throw new TypeError("agy statusline home directory is unsafe");
+  const root = validateAgyConfigRoot(homeDir, platform);
+  const prefix = root === "/" ? "" : root.endsWith("/") ? root : `${root}/`;
+  return `${prefix}.gemini/antigravity-cli`;
+}
+
+/** Render a shell-safe command for the launcher under the selected agy root. */
+export function renderAgyStatuslineCommand({ configRoot, homeDir = homedir(), platform = process.platform } = {}) {
+  if (!["win32", "darwin", "linux"].includes(platform)) throw new TypeError(`agy statusline does not support platform ${String(platform)}`);
+  const root = validateAgyConfigRoot(configRoot ?? resolveAgyConfigDir({ homeDir, platform }), platform);
+  const rootPrefix = root === "/" ? "" : root.replace(/\/$/u, "");
+  const scriptPath = `${rootPrefix}/${AGY_INSTALLED_PLUGIN_RELATIVE_ROOT}/statusline/${platform === "win32" ? "statusline.ps1" : "statusline.sh"}`;
+  if (platform === "win32") {
+    if (!isAbsoluteWindowsPath(scriptPath)) throw new TypeError("agy statusline command requires an absolute Windows config root");
+    const encoded = Buffer.from(`$ProgressPreference = 'SilentlyContinue'\n& ${quotePowerShell(scriptPath)}\nexit $LASTEXITCODE\n`, "utf16le").toString("base64");
+    return `powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand ${encoded}`;
+  }
+  return quotePosix(scriptPath);
+}
+
+function validateStatuslineName(value) {
+  if (typeof value !== "string") throw new TypeError("statuslineName must be a string");
+  if (/[\u0000-\u001f\u007f]/u.test(value) || value.includes("\u001b") || value.includes("\u009b")) {
+    throw new TypeError("statuslineName contains a control or ANSI escape sequence");
+  }
+  const normalized = value.trim();
+  if ([...normalized].length > MAX_STATUSLINE_NAME_CODE_POINTS) throw new RangeError("statuslineName exceeds 64 Unicode code points");
+  return normalized;
+}
+
 function stripFrontmatter(value) {
   const text = ensureText(value);
   if (!text.startsWith("---\n")) return text;
@@ -238,19 +340,27 @@ function renderAgent(name, role) {
     ...(!role ? fallback.capabilities : [])
   ])].sort(compareCodePoints);
   const readOnly = isRoleReadOnly(role || fallback);
-  const commandExecutionPolicy = readOnly ? "off" : "sandbox";
-  const roleDiagnostics = nativeCapabilityDiagnostics({ surface: SURFACE, role: role || fallback, unavailableCapabilities: roleCapabilities(role || fallback) });
+  let tools = [...new Set(capabilities.flatMap((capability) => AGY_SEMANTIC_MAPPINGS[capability] || []))];
+  if (tools.length === 0 && !role) tools = [...AGY_SEMANTIC_MAPPINGS["repository-read"]];
+  const blockedNativeTools = [
+    "write_to_file", "replace_file_content", "multi_replace_file_content", "run_command",
+    "invoke_subagent", "define_subagent", "manage_subagents"
+  ];
+  if (readOnly) tools = tools.filter((tool) => !blockedNativeTools.includes(tool));
+  tools = tools.filter((tool) => AGY_DOCUMENTED_AGENT_TOOLS.includes(tool)).sort(compareCodePoints);
+  const commandExecutionPolicy = tools.includes("run_command") ? "sandbox" : "off";
+  const roleDiagnostics = nativeCapabilityDiagnostics({ surface: SURFACE, role: role || fallback, mappings: AGY_SEMANTIC_MAPPINGS, blockedNativeTools });
   const prompt = `${role?.prompt || [
     `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`,
     capabilities.length > 0 ? `Semantic capabilities: ${capabilities.join(", ")}.` : "",
-    "The current public agy documentation does not publish a stable tool-name vocabulary; inspect the installed CLI before adding any tool names.",
+    "Use only the documented Antigravity tool names declared in this agent frontmatter.",
     readOnly ? "This role is read-only: do not mutate files or execute commands." : "Apply only scoped changes and use the documented per-run approval controls."
   ].filter(Boolean).join("\n\n")}${roleDiagnostics.length > 0 ? `\n\nNative capability diagnostics:\n${roleDiagnostics.map((entry) => `- ${entry.message}`).join("\n")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
   return ensureText([
     "---",
     `name: ${JSON.stringify(name)}`,
     `description: ${JSON.stringify(description)}`,
-    "tools: []",
+    `tools: [${tools.map((tool) => JSON.stringify(tool)).join(", ")}]`,
     "mainAgent: true",
     "subagent: true",
     "model: inherit",
@@ -264,11 +374,21 @@ function renderAgent(name, role) {
   ].join("\n"));
 }
 
-function renderSettingsOverlay(authority) {
-  return renderJson({
+/** Render only the documented sparse agy settings overlay. */
+export function renderSettingsOverlay(authority, { statuslineCommand } = {}) {
+  if (!Object.hasOwn(AGY_PROFILE_SETTINGS, authority)) throw new TypeError(`unknown agy authority: ${String(authority)}`);
+  if (typeof statuslineCommand !== "string" || statuslineCommand.trim().length === 0) throw new TypeError("agy statusline command must be a non-empty string");
+  return {
     ...AGY_PROFILE_SETTINGS[authority],
+    statusLine: {
+      type: "command",
+      command: statuslineCommand,
+      enabled: true,
+      padding: 0,
+      stack_with_default: false
+    },
     permissions: { deny: [...EMERGENCY_DENIES] }
-  });
+  };
 }
 
 function renderCapabilityGuidance() {
@@ -277,14 +397,14 @@ function renderCapabilityGuidance() {
     "",
     "This package is a portable agy CLI plugin. Its package root contains plugin.json, hooks.json, skills/, agents/, and rules/.",
     "The documented plugin install operation receives the package directory; this adapter never writes an installed profile.",
-    "The current research records conflicting CLI and shared customization roots. Treat the active root for the installed version as unknown until manual discovery.",
-    "The agent frontmatter field names are documented, but the published research does not provide a complete stable tool-name list. Empty tool arrays avoid guessing a name that could hang an agent.",
-    "Read-only capability diagnostics identify every semantic capability with no documented native mapping; record it as unavailable or not run and do not guess a tool.",
+    "The documented installed plugin root is `~/.gemini/antigravity-cli/plugins/<plugin_name>/`; this renderer creates only a portable package.",
+    "The shared Antigravity subagent and hook documentation publishes the agent fields and tool names used by this adapter.",
+    "Read-only roles remove command, mutation, and agent-management tools while keeping useful read and research tools.",
     "Native controls are workspace-wide where available; the implementer's declared task paths remain an outer approval boundary.",
-    "Run agy agents after discovery and add only tool names accepted by that installed version through an explicit operator change.",
+    "Run `agy agents` after discovery and record any version-specific difference without inventing a replacement tool.",
     "",
     "PostToolUse contract: a documented tool event identifies the tool as toolCall.name; do not substitute a Desktop or legacy event field.",
-    `Bootstrap hooks remain disabled: ${agyBootstrapTemplate.probeRequired ? "the installed agy version requires the explicit probe below before any lifecycle schema can be considered." : "no automatic handler is rendered."}`,
+    `Bootstrap hooks remain disabled: ${agyBootstrapTemplate.probeRequired ? "events and JSON input/output are documented, but handler path resolution and hook-process failure behavior still require the explicit probe below." : "no automatic handler is rendered."}`,
     ""
   ].join("\n"));
 }
@@ -343,7 +463,7 @@ function renderHooksRule() {
     "# agy hook contract",
     "",
     "The generated hooks.json is disabled and contains no executable hook command. It is an inert contract artifact, not an installed handler.",
-    "The lifecycle payload parity required for automatic bootstrap is unverified for this CLI. Complete the explicit version/runtime probe before proposing a handler.",
+    "The lifecycle events and JSON input/output are documented for this CLI. Hook process failure behavior and handler path resolution are not documented.",
     ...agyBootstrapTemplate.probe.manualSequence.map((step, index) => `${index + 1}. ${step}`),
     "Any later handler must be reviewed and enabled by the operator in a disposable target. No hook command is auto-installed or executed here.",
     ""
@@ -355,8 +475,8 @@ function renderSettingsRule() {
     "# agy settings overlay",
     "",
     "settings.overlay.json contains only the sparse keys documented by the current CLI settings and permission references.",
-    `The only documented CLI destination candidate is \`${AGY_DOCUMENTED_SETTINGS_DESTINATION}\`. Shared configuration roots and the active merge behavior remain version-sensitive because the public sources conflict.`,
-    "Review the overlay manually after discovery; this adapter does not stage, merge, replace, or write a persistent settings file.",
+    `The documented CLI settings destination is \`${AGY_DOCUMENTED_SETTINGS_DESTINATION}\`.`,
+    "Rendering does not write the persistent settings file. Review the dry-run; an authorized register --apply merges the sparse overlay without deleting unknown keys.",
     ""
   ].join("\n"));
 }
@@ -368,8 +488,9 @@ function renderPackageReadme(profile) {
       "",
       "This is a portable package artifact. Rendering does not install a plugin, write a profile, enable hooks, or execute a command.",
       "The portable profile keeps the installed agy model and effort unchanged.",
-      "Review this directory in a disposable explicit target, then run `agy --help`, `agy models`, `agy agents`, and `agy plugin list` manually; install only a selected disposable package with `agy plugin install PACKAGE_DIRECTORY`.",
-      `The settings overlay is manual and names only the documented CLI candidate ${AGY_DOCUMENTED_SETTINGS_DESTINATION}; it is never written automatically.`,
+      "Review this directory in a disposable explicit target, then run `agy --help`, `agy models`, and `agy agents` manually.",
+      "After a reviewed dry-run and exact authority, repository `register --apply` runs `agy plugin install PACKAGE_DIRECTORY`, checks `agy plugin list`, and merges the sparse settings overlay. Rendering alone remains read-only.",
+      `The settings overlay names only the documented CLI candidate ${AGY_DOCUMENTED_SETTINGS_DESTINATION}. Reload and runtime observation remain manual.`,
       ""
     ].join("\n"));
   }
@@ -378,15 +499,15 @@ function renderPackageReadme(profile) {
     "",
     "This is a portable package artifact. Rendering does not install a plugin, write a profile, enable hooks, or execute a command.",
     "",
-    "## Manual discovery and registration",
+    "## Registration and manual verification",
     "",
-    "Review this directory in a disposable explicit target, then run these documented operations manually:",
+    "Review this directory in a disposable explicit target. Run discovery manually; after a reviewed dry-run and exact authority, repository `register --apply` performs plugin installation, plugin-list discovery, and the sparse settings merge:",
     "",
     "1. `agy --help`",
     "2. `agy models`",
     "3. `agy agents`",
-    "4. `agy plugin list`",
-    "5. On a disposable explicit package directory only: `agy plugin install PACKAGE_DIRECTORY`",
+    "4. `agy plugin list` runs during `register --apply` and may be repeated manually after reload",
+    "5. `agy plugin install PACKAGE_DIRECTORY` runs during `register --apply`; use it directly only for a selected disposable package",
     "",
     "After model discovery, use the exact requested selection only if the installed CLI lists it:",
     "",
@@ -407,7 +528,7 @@ function renderPackageReadme(profile) {
     "",
     "For one explicitly approved full-access run, append `--dangerously-skip-permissions` manually. Emergency denies remain higher priority, and no execution mode is a permission bypass.",
     "",
-    `The settings overlay is intentionally sparse and manual. The only documented CLI destination candidate is \`${AGY_DOCUMENTED_SETTINGS_DESTINATION}\`; shared configuration paths, runtime version, active layout, entitlement, agent tool vocabulary, and native acceptance remain unknown until the operator performs discovery.`,
+    `The settings overlay is intentionally sparse. The documented CLI destination is \`${AGY_DOCUMENTED_SETTINGS_DESTINATION}\`; authorized \`register --apply\` merges it, while runtime version, entitlement, reload, and native acceptance still need operator verification on each machine.`,
     ""
   ].join("\n"));
 }
@@ -512,13 +633,13 @@ export function buildHeadlessArgs({ prompt = "<prompt>", model = AGY_MODEL_POLIC
   ]);
 }
 
-function nativeAcceptance(platform) {
+function nativeAcceptance() {
   return {
     status: "partial",
     product: "agy CLI",
     productVersion: "1.1.22",
     executablePath: "%LOCALAPPDATA%/agy/bin/agy.exe",
-    platform,
+    platform: "win32",
     checkedAt: "2026-08-31",
     reason: "Native Windows evidence is recorded per check; installation, runtime skill discovery, hooks, settings merge, and persistence remain not run.",
     checks: [
@@ -527,6 +648,7 @@ function nativeAcceptance(platform) {
       { id: "effort-help", status: "pass", evidence: "agy --help documented --effort high." },
       { id: "headless-model", status: "pass", evidence: "Headless Flash High with high effort and dangerously-skip-permissions completed successfully." },
       { id: "plugin-validation", status: "pass", evidence: "agy plugin validate accepted both rendered packages and reported 28 skills, 7 agents, and 1 hook." },
+      { id: "statusline-renderer", status: "pass", evidence: "Disposable Windows agy statusline command accepted official sample-shaped JSON and emitted one sanitized line from an unrelated cwd." },
       { id: "agent-selection", status: "pass", evidence: "agy accepted --agent architect in the disposable workspace." },
       { id: "agent-list", status: "inconclusive", evidence: "agy agents exited successfully but printed no agent rows." },
       { id: "plugin-install", status: "not run", evidence: "No live plugin installation was performed." },
@@ -546,7 +668,7 @@ function actionDiagnostics() {
     code: "agy-action-unknown",
     severity: "warning",
     message: `${actionId} has no documented agy native mapping; use a manual operation only after verifying the installed CLI.`,
-    sourcePath: "research-agy-2.md"
+    sourcePath: "docs/evaluations/antigravity-contracts-2026-08-31.md"
   }));
 }
 
@@ -562,7 +684,10 @@ export function renderAgy(input = {}) {
   });
   const profile = semanticProfile.id;
   const modelSelected = semanticProfile.modelPolicies[SURFACE] !== "surface-default";
-  if (typeof input.statuslineName !== "string") throw new TypeError("statuslineName must be a string");
+  const statuslineName = validateStatuslineName(input.statuslineName ?? "");
+  const platform = typeof input.platform === "string" && input.platform.trim() ? input.platform : process.platform;
+  const configRoot = validateAgyConfigRoot(input.configRoot ?? resolveAgyConfigDir({ homeDir: input.homeDir, platform }), platform);
+  const statuslineCommand = renderAgyStatuslineCommand({ configRoot, platform });
   const skillRecords = new Map(input.core.skills.map((record) => [record.id || record.name, record]));
   const roleRecords = new Map(input.core.roles.map((record) => [record.id || record.name, record]));
   const files = [];
@@ -573,7 +698,11 @@ export function renderAgy(input = {}) {
   addFile(files, "activity-audit.json", renderJson(agyActivityTemplate));
   addFile(files, "checkpoint.json", renderJson(agyCheckpointTemplate));
   addFile(files, "emergency-guard.json", renderJson(agyEmergencyTemplate));
-  addFile(files, "settings.overlay.json", renderSettingsOverlay(semanticProfile.authority));
+  addFile(files, "settings.overlay.json", renderJson(renderSettingsOverlay(semanticProfile.authority, { statuslineCommand })));
+  addFile(files, "statusline/statusline.json", renderJson({ schemaVersion: 1, displayName: statuslineName }));
+  addFile(files, "statusline/statusline.mjs", STATUSLINE_SOURCE_TEXT, 0o755);
+  addFile(files, "statusline/statusline.ps1", STATUSLINE_WINDOWS_SOURCE_TEXT);
+  addFile(files, "statusline/statusline.sh", STATUSLINE_POSIX_SOURCE_TEXT, 0o755);
   addFile(files, "rules/adapter-capability-guidance.md", renderCapabilityGuidance());
   addFile(files, "rules/model-selection.md", renderModelRule(semanticProfile));
   addFile(files, "rules/permission-safety.md", renderPermissionRule());
@@ -608,34 +737,33 @@ export function renderAgy(input = {}) {
     {
       code: "agy-runtime-partial",
       severity: "warning",
-      message: "The agy runtime version and executable path are known, but entitlement, active package/settings roots, and merge behavior remain unknown; discover them before applying artifacts.",
+      message: "The agy runtime version and executable path are known, but entitlement and live merge behavior remain unverified; inspect the active machine before applying artifacts.",
       sourcePath: "tests/integration/manual-desktop-checklist.json"
     },
     {
       code: "agy-bootstrap-probe-required",
       severity: "warning",
       message: `${agyBootstrapTemplate.probe.reason} Status: ${agyBootstrapTemplate.probe.status}. Manual sequence: ${agyBootstrapTemplate.probe.manualSequence.join(" ")}`,
-      sourcePath: "research-t013-antigravity-agy-hooks.md"
+      sourcePath: "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       code: "agy-emergency-guard-probe-required",
       severity: "warning",
       message: "agy emergency guard output is documented but executable package-root resolution remains unverified; automatic hook execution is disabled.",
-      sourcePath: "research-t014-pretool-hooks.md"
+      sourcePath: "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
-      code: "agy-layout-conflict",
+      code: "agy-hook-failure-contract-unverified",
       severity: "warning",
-      message: "Official sources conflict on CLI versus shared plugin, skill, hook, and settings roots; this result emits diagnostics and no persistent destination write.",
-      sourcePath: "research-agy-2.md"
+      message: "Antigravity documents agy hook events and JSON input/output, but not hook-process failure behavior or portable package-root command resolution; executable hooks remain disabled.",
+      sourcePath: "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
-    {
-      code: "agy-agent-tools-unknown",
-      severity: "warning",
-      message: "The documented agent field list does not publish a complete stable agy tool vocabulary; generated agent tools remain empty pending agy agents discovery.",
-      sourcePath: "research-agy-2.md"
-    },
-    ...input.core.roles.flatMap((role) => nativeCapabilityDiagnostics({ surface: SURFACE, role, unavailableCapabilities: roleCapabilities(role) })),
+    ...input.core.roles.flatMap((role) => nativeCapabilityDiagnostics({
+      surface: SURFACE,
+      role,
+      mappings: AGY_SEMANTIC_MAPPINGS,
+      blockedNativeTools: ["write_to_file", "replace_file_content", "multi_replace_file_content", "run_command", "invoke_subagent", "define_subagent", "manage_subagents"]
+    })),
     ...nativeScopeDiagnostics(input.core.roles),
     ...actionDiagnostics(),
     ...canonicalSkillIds(input.core).filter((skill) => !skillRecords.has(skill)).map((skill) => ({
@@ -646,25 +774,90 @@ export function renderAgy(input = {}) {
     }))
   ];
 
-  const platform = typeof input.platform === "string" && input.platform.trim() ? input.platform : process.platform;
+  const nativeStatusline = createNativeIntegrationRecord({
+    surface: SURFACE,
+    feature: "statusline",
+    phases: {
+      rendered: { status: "pass", evidence: "agy statusline renderer, config, and platform launchers were rendered." },
+      validated: { status: "pass", evidence: "agy statusline settings, renderer, and launchers pass adapter validation." },
+      registered: { status: "not-run", evidence: "Native registration requires merging the sparse statusLine overlay into the documented agy settings file." },
+      trusted: { status: "not-run-unavailable", evidence: "The agy statusline command has no native trust concept." },
+      active: { status: "not-run", evidence: "An agy CLI session has not been opened to observe the statusline." },
+      runtimeVerified: { status: "not-run", evidence: "A native agy statusline runtime check has not been run." }
+    },
+    sourcePath: "adapters/agy/adapter.mjs",
+    manualSteps: [
+      "After a reviewed dry-run and exact authority, run repository register --apply to install the package and merge the sparse statusLine overlay.",
+      "Confirm plugin discovery with agy plugin list.",
+      "Open a fresh agy CLI session to observe the statusline."
+    ]
+  });
+  const nativeEmergency = createNativeIntegrationRecord({
+    surface: SURFACE,
+    feature: "emergency-protection",
+    phases: {
+      rendered: {
+        status: "pass",
+        evidence: semanticProfile.authority === "full"
+          ? "Rendered the agy always-proceed settings overlay and canonical emergency deny policy; the optional per-run skip operation is recorded separately."
+          : "Rendered the agy request-review settings overlay and canonical emergency deny policy."
+      },
+      validated: {
+        status: "not-run",
+        evidence: "agy has no verified native emergency-policy validator; only the rendered settings deny overlay is recorded."
+      },
+      registered: {
+        status: "not-run",
+        evidence: "The agy settings deny overlay requires an authorized register --apply or an explicit manual merge; native plugin registration was not run during rendering."
+      },
+      trusted: {
+        status: "not-run",
+        evidence: "The native agy emergency hook is disabled; hook trust was not established."
+      },
+      active: {
+        status: "not-run",
+        evidence: "No fresh agy session was opened to observe emergency protection."
+      },
+      runtimeVerified: {
+        status: "not-run",
+        evidence: "agy emergency deny output was not executed in a native runtime probe."
+      }
+    },
+    sourcePath: "adapters/agy/adapter.mjs",
+    manualSteps: [
+      `For the ${semanticProfile.authority === "full" ? "always-proceed" : "request-review"} settings overlay, use a reviewed and authorized register --apply or explicitly merge the deny rules before any native run.`,
+      semanticProfile.authority === "full"
+        ? "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh); the optional per-run skip operation does not remove them."
+        : "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).",
+      "Keep the native emergency hook disabled until a disposable agy deny-output probe verifies hook execution and command resolution."
+    ]
+  });
   const result = {
     files,
     registrations: [
       profileTranslation(semanticProfile, SURFACE),
+      nativeStatusline,
+      nativeEmergency,
       {
         kind: "plugin-registration",
         surface: SURFACE,
         relativePath: "plugin.json",
         command: "agy plugin install PACKAGE_DIRECTORY",
-        manualOnly: true,
+        stagedDestination: "~/.gemini/antigravity-cli/plugins/all-about-agents/",
+        manualOnly: false,
         disposableOnly: true,
-        automaticInstall: false
+        automaticInstall: true,
+        automaticFromRender: false,
+        status: "register-apply-after-review",
+        reason: "Rendering is read-only. After dry-run review and exact authorization, register --apply runs agy plugin install for the supplied package root."
       },
       {
         kind: "plugin-discovery",
         surface: SURFACE,
         command: "agy plugin list",
-        manualOnly: true
+        manualOnly: false,
+        automaticAfterAuthority: true,
+        status: "register-apply-after-review"
       },
       {
         kind: "agent-discovery",
@@ -699,11 +892,19 @@ export function renderAgy(input = {}) {
         surface: SURFACE,
         relativePath: "settings.overlay.json",
         profile,
-        manualOnly: true,
-        automaticWrite: false,
-        status: "manual-discovery-required",
-        reason: "Shared settings roots, complete schema, and active merge behavior remain unknown or version-sensitive; only the documented CLI candidate is emitted.",
+        manualOnly: false,
+        automaticWrite: true,
+        status: "apply-after-review",
+        reason: "Rendering is read-only. After dry-run review and exact authorization, register --apply merges the sparse overlay into the documented settings file and preserves unknown keys.",
         destinationCandidates: [AGY_DOCUMENTED_SETTINGS_DESTINATION]
+      },
+      {
+        kind: "statusline-config",
+        surface: SURFACE,
+        relativePath: "statusline/statusline.json",
+        destination: "statusline/statusline.json",
+        configRoot,
+        command: statuslineCommand
       },
       {
         kind: "hook-contract",
@@ -762,7 +963,7 @@ export function renderAgy(input = {}) {
       {
         kind: "native-acceptance",
         surface: SURFACE,
-        ...nativeAcceptance(platform)
+        ...nativeAcceptance()
       }
     ],
     diagnostics,
@@ -778,6 +979,7 @@ export function renderSurface(input = {}) {
   const capabilityRecord = {
     surface: SURFACE,
     requiredMappings: ACTION_IDS,
+    allowExplicitUnsupported: true,
     actionMappings: AGY_ACTION_MAPPINGS,
     render: () => renderAgy(input)
   };
@@ -792,6 +994,7 @@ export const render = renderAgy;
 export const AGY_CAPABILITY_RECORD = Object.freeze({
   surface: SURFACE,
   requiredMappings: ACTION_IDS,
+  allowExplicitUnsupported: true,
   actionMappings: AGY_ACTION_MAPPINGS,
   semanticMappings: AGY_SEMANTIC_MAPPINGS
 });

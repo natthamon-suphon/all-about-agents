@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import test from "node:test";
 
 const skillId = "subagent-driven-development";
@@ -14,6 +16,7 @@ const skillPath = resolve(process.cwd(), "core/skills/subagent-driven-developmen
 const evaluationPath = resolve(process.cwd(), "core/evals/skill-routing/subagent-driven-development.json");
 const gateFixturePath = resolve(process.cwd(), "tests/fixtures/subagent-driven-development/skill-gate.json");
 const injectionFixturePath = resolve(process.cwd(), "tests/fixtures/subagent-driven-development/command-injection.json");
+const reviewPackagePath = resolve(process.cwd(), "core/skills/subagent-driven-development/scripts/review-package.js");
 
 test("T025 exposes its routing evidence", async () => {
   const skill = await readFile(skillPath, "utf8");
@@ -69,6 +72,77 @@ test("T025 fixtures encode the Skill Gate and command-injection boundaries", asy
   assert.equal(injection.expected.argvOnly, true);
   assert.equal(injection.expected.rejectShellInterpolation, true);
   assert.ok(injection.unsafeShellStrings.some((command) => /\$\(|`|;|&&/u.test(command)));
+});
+
+test("review-package passes an untrusted Git ref as one argument without shell execution", async () => {
+  const root = await mkdtemp(join(tmpdir(), "aaa-review-package-"));
+  const marker = join(root, "owned-marker");
+  const plan = join(root, "plan.md");
+  const installedReviewPackage = join(root, "review-package.cjs");
+  const JavaScript = "require('node:fs').writeFileSync('owned-marker','x')";
+  const maliciousBase = process.platform === "win32"
+    ? `HEAD\" & \"${process.execPath}\" -e \"${JavaScript}\" & rem \"`
+    : `HEAD\"; \"${process.execPath}\" -e \"${JavaScript}\"; #`;
+  try {
+    await writeFile(plan, "# Test plan\n", "utf8");
+    await writeFile(installedReviewPackage, await readFile(reviewPackagePath, "utf8"), "utf8");
+    const initialized = spawnSync("git", ["init", "--quiet"], { cwd: root, encoding: "utf8", shell: false });
+    assert.equal(initialized.status, 0, initialized.stderr);
+
+    const result = spawnSync(process.execPath, [installedReviewPackage, plan, maliciousBase, "HEAD"], {
+      cwd: root,
+      encoding: "utf8",
+      shell: false
+    });
+
+    assert.equal(result.status, 2, result.stderr);
+    assert.match(result.stderr, /bad (?:BASE|HEAD) commit:/u);
+    await assert.rejects(access(marker), { code: "ENOENT" });
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+});
+
+test("review-package keeps its valid review text and summary format", async () => {
+  const root = await mkdtemp(join(tmpdir(), "aaa-review-output-"));
+  const plan = join(root, "plan.md");
+  const installedReviewPackage = join(root, "review-package.cjs");
+  const outFile = join(root, "review.diff");
+  const git = (args) => {
+    const result = spawnSync("git", args, { cwd: root, encoding: "utf8", shell: false });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  try {
+    await writeFile(plan, "# Test plan\n", "utf8");
+    await writeFile(installedReviewPackage, await readFile(reviewPackagePath, "utf8"), "utf8");
+    git(["init", "--quiet"]);
+    git(["config", "user.name", "AAA Test"]);
+    git(["config", "user.email", "aaa-test@example.invalid"]);
+    await writeFile(join(root, "sample.txt"), "one\n", "utf8");
+    git(["add", "sample.txt"]);
+    git(["commit", "--quiet", "-m", "first"]);
+    const base = git(["rev-parse", "HEAD"]);
+    await writeFile(join(root, "sample.txt"), "one\ntwo\n", "utf8");
+    git(["add", "sample.txt"]);
+    git(["commit", "--quiet", "-m", "second"]);
+    const head = git(["rev-parse", "HEAD"]);
+
+    const result = spawnSync(process.execPath, [installedReviewPackage, plan, base, head, outFile], {
+      cwd: root,
+      encoding: "utf8",
+      shell: false
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /wrote .*review[.]diff: 1 commit\(s\), [0-9]+ bytes/u);
+    const review = await readFile(outFile, "utf8");
+    assert.match(review, new RegExp(`^# Review package: ${base}\\.\\.${head}`, "u"));
+    assert.match(review, /## Commits\n.*second/su);
+    assert.match(review, /## Files changed\n/u);
+    assert.match(review, /## Diff\n/u);
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
 });
 
 test("subagent-driven-development routing evaluation defines three complete critical cases", async () => {

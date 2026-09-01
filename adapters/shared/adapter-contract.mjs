@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { validateNativeIntegrationRecord } from "./native-state.mjs";
 
 export const SURFACES = Object.freeze(["claude", "codex", "antigravity-2", "agy"]);
 export const ACTION_IDS = Object.freeze([
@@ -132,11 +133,25 @@ function hasMappingTargetField(mapping) {
   return isObject(mapping) && ["native", "target", "value", "command", "name"].some((key) => Object.hasOwn(mapping, key));
 }
 
+function completeExplicitUnsupported(mapping) {
+  return isObject(mapping)
+    && mapping.supported === false
+    && typeof mapping.source === "string"
+    && mapping.source.trim().length > 0
+    && typeof mapping.reason === "string"
+    && mapping.reason.trim().length > 0
+    && typeof mapping.manualStep === "string"
+    && mapping.manualStep.trim().length > 0;
+}
+
 /** Validate the required semantic-action to native-action mapping. */
-export function validateNativeMappings(capabilityRecord, requiredActionIds = ACTION_IDS) {
+export function validateNativeMappings(capabilityRecord, requiredActionIds = ACTION_IDS, { allowExplicitUnsupported = false } = {}) {
   const errors = [];
   const diagnostics = [];
   if (!isObject(capabilityRecord)) return { valid: false, errors: [issue("missing-capability-record", "capabilityRecord must be an object")] };
+  if (typeof allowExplicitUnsupported !== "boolean") {
+    errors.push(issue("invalid-mapping-policy", "allowExplicitUnsupported must be boolean", "/capabilityRecord/allowExplicitUnsupported"));
+  }
   if (!Array.isArray(requiredActionIds) || requiredActionIds.length === 0) {
     errors.push(issue("invalid-required-mappings", "requiredMappings must be a non-empty approved action subset", "/capabilityRecord/requiredMappings"));
     return { valid: false, errors: sortedErrors(errors), diagnostics };
@@ -172,7 +187,21 @@ export function validateNativeMappings(capabilityRecord, requiredActionIds = ACT
       continue;
     }
     const supported = typeof mapping === "string" || (isObject(mapping) && (mapping.supported === true || mapping.support === "supported"));
-    if (!supported) errors.push(issue("unsupported-native-mapping", `required action ${actionId} is unsupported by this surface`, `/capabilityRecord/mappings/${actionId}`));
+    if (!supported) {
+      if (allowExplicitUnsupported === true && completeExplicitUnsupported(mapping)) {
+        diagnostics.push({
+          code: "native-mapping-explicitly-unsupported",
+          severity: "warning",
+          message: `required action ${actionId} has no documented native mapping; follow the recorded manual step only after verification`,
+          sourcePath: null
+        });
+      } else {
+        const code = allowExplicitUnsupported === true && isObject(mapping) && mapping.supported === false
+          ? "incomplete-unsupported-native-mapping"
+          : "unsupported-native-mapping";
+        errors.push(issue(code, `required action ${actionId} is unsupported without complete source, reason, and manual-step evidence`, `/capabilityRecord/mappings/${actionId}`));
+      }
+    }
     if (supported && mappingTarget(mapping) === null) {
       const code = hasMappingTargetField(mapping) || typeof mapping === "string" ? "invalid-native-target" : "missing-native-mapping";
       errors.push(issue(code, `required action ${actionId} has no non-empty native target`, `/capabilityRecord/mappings/${actionId}`));
@@ -235,6 +264,13 @@ export function validateRenderResult(result) {
     filePaths.push(file.relativePath);
   });
   for (let index = 1; index < filePaths.length; index += 1) if (filePaths[index - 1] > filePaths[index]) errors.push(issue("unstable-file-order", "files must be sorted by relativePath", `/files/${index}`));
+
+  if (Array.isArray(result.registrations)) result.registrations.forEach((registration, index) => {
+    if (!isObject(registration) || registration.kind !== "native-integration") return;
+    const path = `/registrations/${index}`;
+    const validation = validateNativeIntegrationRecord(registration);
+    errors.push(...validation.errors.map((entry) => issue(entry.code, entry.message, `${path}${entry.path}`)));
+  });
 
   if (Array.isArray(result.diagnostics)) result.diagnostics.forEach((diagnostic, index) => {
     const path = `/diagnostics/${index}`;
@@ -302,7 +338,9 @@ export function renderSurface(input) {
     const requiredMappings = Object.hasOwn(input.capabilityRecord, "requiredMappings")
       ? input.capabilityRecord.requiredMappings
       : ACTION_IDS;
-    const mappingValidation = validateNativeMappings(input.capabilityRecord, requiredMappings);
+    const mappingValidation = validateNativeMappings(input.capabilityRecord, requiredMappings, {
+      allowExplicitUnsupported: input.capabilityRecord.allowExplicitUnsupported === true
+    });
     errors.push(...mappingValidation.errors);
     mappingDiagnostics = mappingValidation.diagnostics;
   }

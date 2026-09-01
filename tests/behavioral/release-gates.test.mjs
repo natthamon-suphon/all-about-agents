@@ -1,13 +1,15 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
-import { posix, resolve, win32 } from "node:path";
+import { access, lstat, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { basename, dirname, posix, resolve, win32 } from "node:path";
 import test from "node:test";
 
 import { loadCore } from "../../installers/lib/load-core.mjs";
+import { validateSkillArtifacts } from "../../installers/lib/validate-skill.mjs";
 import { materializeRenderResult, renderForSurface } from "../../installers/lib/render.mjs";
 import { validateRenderResult } from "../../adapters/shared/adapter-contract.mjs";
+import { nativeIntegrationStatus } from "../../adapters/shared/native-state.mjs";
 import { routeRole } from "../../core/roles/router.mjs";
 import { CANONICAL_ROLE_IDS, assertNativeRoleSemantics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { classifyEmergencyAction } from "../../installers/lib/emergency-policy.mjs";
@@ -28,6 +30,35 @@ test("T050 creates every owned artifact", async () => {
   assert.ok(requiredOutputs.length > 0);
   for (const relativePath of requiredOutputs) {
     await access(resolve(process.cwd(), relativePath));
+  }
+});
+
+test("every canonical skill owns its source, inventory, companions, routing cases, and behavioral test", async () => {
+  const core = await loadCore(process.cwd());
+  const results = [];
+  for (const skillId of core.inventory.skills) {
+    results.push(await validateSkillArtifacts({ repositoryRoot: process.cwd(), core, skillId }));
+  }
+  const failures = results.flatMap((result) => result.errors.map((entry) => `${result.skillId}:${entry.code}:${entry.path}`));
+  assert.deepEqual(failures, []);
+  assert.equal(results.length, core.inventory.skills.length);
+  assert.ok(results.every((result) => result.valid));
+});
+
+test("emergency protection remains a non-runtime claim across rendered surfaces", async () => {
+  const core = await loadCore(process.cwd());
+  const renders = [
+    await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "claude", profile: "template", statuslineName: "", platform: process.platform }),
+    await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "codex", profile: "template", targetRuntime: "cli", platform: process.platform }),
+    await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "codex", profile: "template", targetRuntime: "desktop", platform: process.platform }),
+    await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "antigravity-2", profile: "template", statuslineName: "", platform: process.platform }),
+    await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "agy", profile: "template", statuslineName: "", platform: process.platform })
+  ];
+  for (const rendered of renders) {
+    const records = rendered.registrations.filter((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
+    assert.equal(records.length, 1);
+    assert.notEqual(nativeIntegrationStatus(records[0]), "pass");
+    assert.doesNotMatch(JSON.stringify(records[0]), /"(?:automatic|enabled|active|ready)"\s*:\s*true/iu);
   }
 });
 
@@ -87,6 +118,22 @@ function rolePath(surface, roleId) {
   return `.agents/plugins/all-about-agents/agents/${roleId}.md`;
 }
 
+async function removeReleaseGateEvidence() {
+  const expectedParent = resolve(process.cwd(), "tests", ".tmp");
+  if (dirname(evidenceDirectory) !== expectedParent || basename(evidenceDirectory) !== "t050-release-gates") {
+    throw new Error("Refusing to remove an unexpected release-gate evidence path");
+  }
+  try {
+    const metadata = await lstat(evidenceDirectory);
+    if (!metadata.isDirectory() || metadata.isSymbolicLink()) {
+      throw new Error("Refusing to remove release-gate evidence that is not a real directory");
+    }
+    await rm(evidenceDirectory, { recursive: true, force: true });
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+}
+
 test("release rubric has strict weights, status values, and exact release thresholds", async () => {
   const rubric = JSON.parse(await readFile(rubricPath, "utf8"));
   assert.deepEqual(Object.keys(rubric).sort(), [
@@ -135,7 +182,8 @@ test("release rubric has strict weights, status values, and exact release thresh
   assert.doesNotMatch(JSON.stringify(rubric.qualification), /Native product sessions and a macOS host are unavailable|No truthful external fresh-session model transport is available/u);
 });
 
-test("deterministic Gate 0/1 report proves portable seams without native claims", async () => {
+test("deterministic Gate 0/1 report proves portable seams without native claims", async (t) => {
+  t.after(removeReleaseGateEvidence);
   const core = await loadCore(process.cwd());
   const checks = [];
   const surfaceEvidence = [];
@@ -186,7 +234,7 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
   const pathModule = process.platform === "win32" ? win32 : posix;
   assert.equal(isContained(resolve(process.cwd(), "tests", ".tmp"), disposableRoot, pathModule), true);
   assert.equal(isContained(resolve(process.cwd(), "tests", ".tmp"), resolve(process.cwd(), "tests", "outside"), pathModule), false);
-  assert.doesNotThrow(() => assertSafeDestinationRoot(disposableRoot));
+  assert.doesNotThrow(() => assertSafeDestinationRoot(disposableRoot, { allowedProductRoots: [disposableRoot] }));
   checks.push({ id: "containment", status: "PASS", evidence: { disposableRoot: "tests/.tmp/t050-release-gates", traversalRejected: true } });
 
   assert.doesNotThrow(() => assertNativeRoleSemantics(core.roles));

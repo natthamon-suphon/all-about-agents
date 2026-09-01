@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 const activeTopLevelDirectories = [
+  ".agents",
   ".idea",
   "adapters",
   "core",

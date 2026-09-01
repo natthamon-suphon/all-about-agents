@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "task": "T049 clean-profile native acceptance",
+  "task": "T049 clean-profile native acceptance; T07 disposable native integration",
   "status": "partial",
   "checkedAt": "2026-08-31",
-  "scope": "Manual product checks only; this record contains no fabricated pass results.",
+  "scope": "Historical T049 manual evidence and T07 automated disposable evidence. Each section says what ran and what did not run. This record contains no fabricated pass results.",
   "products": [
     {
       "id": "claude",
@@ -113,5 +113,88 @@
         "Run: node scripts/aaa.mjs diff --surface agy --destination-root <DISPOSABLE_ROOT>/agy --format json; record the result and remove the disposable root after evidence capture."
       ]
     }
-  ]
+  ],
+  "t07DisposableIntegration": {
+    "status": "partial",
+    "checkedAt": "2026-08-31",
+    "host": "Windows",
+    "harness": "tests/integration/native-registration.test.mjs",
+    "command": "node --test tests/integration/native-registration.test.mjs",
+    "scope": "Final harness run only. It used fresh OS temporary roots, shell:false, structured argv, and an allowlisted environment. It did not read or write live settings, credentials, plugin caches, or trust records. It did not make an authenticated model request or automate Desktop UI.",
+    "run": {
+      "exitCode": 0,
+      "tests": 37,
+      "passed": 35,
+      "failed": 0,
+      "skipped": 2,
+      "durationMs": 108215.7383
+    },
+    "results": {
+      "claude": {
+        "version": "2.1.251 (Claude Code)",
+        "status": "PASS",
+        "checks": {
+          "portable-and-template-render": "PASS",
+          "portable-and-template-strict-plugin-validation": "PASS",
+          "portable-and-template-statusline-stdin": "PASS",
+          "isolated-marketplace-add": "PASS",
+          "isolated-plugin-install": "PASS",
+          "isolated-plugin-discovery": "PASS",
+          "authenticated-model": "NOT_RUN"
+        }
+      },
+      "codex": {
+        "version": "codex-cli 0.151.0-alpha.7.2",
+        "status": "PASS",
+        "checks": {
+          "isolated-CODEX_HOME": "PASS",
+          "marketplace-add-json": "PASS",
+          "plugin-add-json": "PASS",
+          "plugin-list-json-discovery": "PASS",
+          "registered-hook-files": "PASS",
+          "hook-trust": "NOT_RUN",
+          "authenticated-model": "NOT_RUN"
+        }
+      },
+      "agy": {
+        "version": "1.1.22",
+        "status": "PASS",
+        "checks": {
+          "portable-and-template-render": "PASS",
+          "plugin-validation": "PASS",
+          "skill-count-28": "PASS",
+          "agent-count-7": "PASS",
+          "native-validator-hook-count-1": "PASS",
+          "portable-and-template-statusline-stdin": "PASS",
+          "model-discovery-gemini-3.7-flash-high": "PASS",
+          "plugin-install": "NOT_RUN",
+          "settings-merge": "NOT_RUN",
+          "authenticated-model": "NOT_RUN"
+        }
+      },
+      "antigravity-2": {
+        "status": "NOT_RUN",
+        "checks": {
+          "Desktop-registration": "NOT_RUN",
+          "Desktop-discovery": "NOT_RUN",
+          "Desktop-permission-and-deny": "NOT_RUN"
+        },
+        "reason": "Desktop is installed, but the T07 harness does not automate its UI or trust actions. Follow the manual Desktop steps below and keep unobserved behavior unclaimed."
+      }
+    },
+    "cleanup": {
+      "success-root-removed": "PASS",
+      "intentional-failure-root-removed": "PASS",
+      "symlink-and-canonical-root-audit": "PASS",
+      "live-user-root-metadata-comparison": "NOT_RUN: The harness does not read live product roots, so it cannot compare their metadata.",
+      "backup-created": "NOT_RUN: No backup is part of this disposable test."
+    },
+    "coordinatorProbeIncident": {
+      "status": "REMEDIATED",
+      "scope": "A separate pre-harness Codex schema probe, not the final harness, briefly used <USER_HOME> as CODEX_HOME because a PowerShell variable name was reserved.",
+      "remediation": "The exact plugin and marketplace were removed with native Codex commands. The four new top-level probe artifacts and the disposable probe root were removed. Final existence checks returned false for every affected path.",
+      "retainedInRepository": false
+    },
+    "manualDesktopNextStep": "Open a fresh Antigravity Desktop session, use only the generated disposable package, and record discovery, permissions, emergency Deny rules, hook behavior, and reload evidence. Do not call an inert hook active."
+  }
 }

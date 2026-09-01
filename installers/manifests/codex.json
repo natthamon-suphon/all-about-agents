@@ -2,9 +2,15 @@
   "schemaVersion": 1,
   "surface": "codex",
   "product": "Codex CLI and Desktop",
-  "productVersion": "unknown",
+  "productVersion": "0.151.0-alpha.7.2",
   "package": "all-about-agents",
   "pluginManifest": ".codex-plugin/plugin.json",
+  "pluginRegistration": {
+    "marketplace": "all-about-agents-dev",
+    "marketplaceArgs": ["plugin", "marketplace", "add", "PACKAGE_ROOT", "--json"],
+    "installArgs": ["plugin", "add", "all-about-agents@all-about-agents-dev", "--json"],
+    "discoveryArgs": ["plugin", "list", "--available", "--json"]
+  },
   "configRoot": {
     "environment": "CODEX_HOME",
     "fallback": "~/.codex",
@@ -12,8 +18,10 @@
   },
   "components": {
     "pluginManifest": ".codex-plugin/plugin.json",
+    "marketplace": ".agents/plugins/marketplace.json",
     "instructions": "AGENTS.md",
-    "skills": ".agents/skills/{skill}/SKILL.md",
+    "skills": "skills/{skill}/SKILL.md",
+    "directSkills": ".agents/skills/{skill}/SKILL.md",
     "agents": ".codex/agents/{role}.toml",
     "primaryConfig": "config.toml",
     "alternateConfig": "terra-max.config.toml",
@@ -74,7 +82,12 @@
   },
   "ownedPaths": [
     ".codex-plugin/plugin.json",
+    ".agents/plugins/marketplace.json",
+    "hooks/hooks.json",
+    "hooks/{name}.json",
+    "hooks/{name}.mjs",
     "AGENTS.md",
+    "skills/{skill}/SKILL.md",
     ".agents/skills/{skill}/SKILL.md",
     ".codex/agents/{role}.toml",
     "config.toml",
@@ -84,5 +97,9 @@
   "nativeValidation": {
     "command": ["codex", "doctor", "--json", "--no-color"],
     "requiredWhenAvailable": true
+  },
+  "capabilityEvidence": {
+    "productContracts": "docs/evaluations/research-codex.md",
+    "modelPolicy": "docs/evaluations/research-model-policy-codex.md"
   }
 }

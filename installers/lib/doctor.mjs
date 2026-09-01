@@ -89,7 +89,7 @@ export async function diagnose({ surfaces, profile, destinationRoot, runtimes = 
       : check(`runtime:${surface}`, surface, "not run", `${surface} runtime availability is unknown; no product command or credential probe was attempted`));
 
     try {
-      const normalized = assertSafeDestinationRoot(destinationRoot);
+      const normalized = assertSafeDestinationRoot(destinationRoot, { allowedProductRoots: [destinationRoot] });
       checks.push(check(`root:${surface}`, surface, "pass", `resolved destination root: ${normalized}`));
       const writable = await writableCheck(normalized);
       checks.push(check(`writable:${surface}`, surface, writable.status, writable.evidence));

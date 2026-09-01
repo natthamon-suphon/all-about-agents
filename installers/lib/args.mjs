@@ -1,6 +1,6 @@
 const SURFACES = Object.freeze(["claude", "codex", "antigravity-2", "agy"]);
 const SURFACE_SET = new Set(SURFACES);
-const ACTIONS = new Set(["install", "doctor", "validate", "diff", "eval"]);
+const ACTIONS = new Set(["install", "doctor", "validate", "diff", "eval", "register"]);
 const PROFILES = new Set(["portable", "template"]);
 const FORMATS = new Set(["text", "json"]);
 
@@ -69,6 +69,8 @@ export function parseArgs(argv, options = {}) {
   let modeSeen = false;
   let destinationRoot = null;
   let destinationSeen = false;
+  let packageRoot = null;
+  let packageRootSeen = false;
   let statuslineName = null;
   let statuslineSeen = false;
   let format = "text";
@@ -120,6 +122,11 @@ export function parseArgs(argv, options = {}) {
         if (value.includes("\0")) fail("invalid-destination-root", "--destination-root may not contain NUL bytes");
         destinationRoot = value;
         break;
+      case "--package-root":
+        packageRootSeen = seen(name, packageRootSeen);
+        if (value.includes("\0") || value.trim() === "") fail("invalid-package-root", "--package-root must be a non-empty path");
+        packageRoot = value;
+        break;
       case "--statusline-name":
         statuslineSeen = seen(name, statuslineSeen);
         statuslineName = validateStatuslineName(value);
@@ -135,11 +142,19 @@ export function parseArgs(argv, options = {}) {
   }
 
   if (surfaces === null) surfaces = [...SURFACES];
-  if (statuslineSeen && !surfaces.includes("claude")) {
-    fail("inapplicable-statusline-name", "inapplicable --statusline-name: it applies only to the Claude surface");
+  if (packageRoot !== null && action !== "register") fail("inapplicable-package-root", "--package-root is only valid for register");
+  if (action === "register") {
+    if (surfaces.length !== 1) fail("invalid-registration-surface", "register requires exactly one --surface; --surface all is not supported");
+    if (packageRoot === null) fail("missing-package-root", "register requires --package-root");
+    if (destinationRoot !== null) fail("inapplicable-destination-root", "--destination-root is only valid for install, doctor, or diff");
+    if (statuslineSeen) fail("inapplicable-statusline-name", "--statusline-name is only valid for install");
+  }
+  const hasStatuslineSurface = surfaces.includes("claude") || surfaces.includes("agy");
+  if (statuslineSeen && !hasStatuslineSurface) {
+    fail("inapplicable-statusline-name", "inapplicable --statusline-name: select Claude or agy");
   }
   if (statuslineName === null) {
-    if (options.interactive === true && surfaces.includes("claude")) {
+    if (options.interactive === true && hasStatuslineSurface) {
       if (typeof options.prompt !== "function") fail("interactive-prompt-required", "Interactive statusline input requires an injected prompt callback");
       statuslineName = validateStatuslineName(options.prompt("Statusline display name"));
     } else {
@@ -147,7 +162,7 @@ export function parseArgs(argv, options = {}) {
     }
   }
 
-  return Object.freeze({ action, surfaces: Object.freeze(surfaces), profile, mode, destinationRoot, statuslineName, format });
+  return Object.freeze({ action, surfaces: Object.freeze(surfaces), profile, mode, destinationRoot, packageRoot, statuslineName, format });
 }
 
 export { SURFACES };

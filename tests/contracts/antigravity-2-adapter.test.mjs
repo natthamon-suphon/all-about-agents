@@ -67,7 +67,7 @@ test("canonical Desktop actions are explicit unknown/manual diagnostics", async 
     assert.equal(mapping.supported, false);
     assert.equal(mapping.support, "manual-unknown");
     assert.equal(mapping.status, "unknown");
-    assert.equal(mapping.source, "research-antigravity-2.md");
+    assert.equal(mapping.source, "docs/evaluations/antigravity-contracts-2026-08-31.md");
     assert.match(mapping.reason, /no documented Desktop prompt|workflow mapping/iu);
     assert.match(mapping.manualStep, /Desktop/iu);
   }
@@ -81,10 +81,8 @@ test("canonical Desktop actions are explicit unknown/manual diagnostics", async 
   for (const actionId of actionIds) {
     assert.ok(result.diagnostics.some((entry) => entry.code === "desktop-action-unknown" && entry.message.includes(actionId)), actionId);
   }
-  assert.throws(
-    () => adapter.renderSurface({ core, profile: { id: "portable" }, statuslineName: "" }),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "unsupported-native-mapping")
-  );
+  const publicResult = adapter.renderSurface({ core, profile: { id: "portable" }, statuslineName: "" });
+  assert.equal(publicResult.diagnostics.filter((entry) => entry.code === "native-mapping-explicitly-unsupported").length, actionIds.length);
 });
 
 test("Desktop render rejects CLI paths and effort flags in decoded file bodies", () => {
@@ -242,6 +240,10 @@ test("Desktop hooks remain probe-required without an automatic command", () => {
   assert.equal(registration.automaticHookExecution, false);
   assert.equal(registration.probeRequired, true);
   assert.equal(registration.probe.status, "not run");
+  const rules = fileMap(resultFor()).get(".agents/plugins/all-about-agents/rules/AGENTS.md");
+  assert.match(rules, /events and JSON input\/output are documented/iu);
+  assert.match(rules, /failure behavior.*not documented/iu);
+  assert.equal(resultFor().registrations.find((entry) => entry.kind === "activity-audit").failureMode, "unknown-disabled");
 });
 
 test("Desktop emergency guard is consumed as a disabled probe-only native contract", () => {
@@ -258,6 +260,15 @@ test("Desktop emergency guard is consumed as a disabled probe-only native contra
   assert.equal(registration.automatic, false);
   assert.equal(registration.probeRequired, true);
   assert.ok(result.diagnostics.some((entry) => entry.code === "desktop-emergency-guard-probe-required"));
+  const templateNative = resultFor("template").registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
+  const native = templateNative;
+  assert.ok(native);
+  assert.deepEqual(
+    Object.fromEntries(["rendered", "validated", "registered", "trusted", "active", "runtimeVerified"].map((phase) => [phase, native.phases[phase].status])),
+    { rendered: "pass", validated: "not-run", registered: "not-run", trusted: "not-run", active: "not-run", runtimeVerified: "not-run" }
+  );
+  assert.match(native.manualSteps.join(" "), /Custom.*command\(rm -rf\).*command\(sudo\).*write_file\(\.git\/\).*write_file\(\/home\/user\/\.ssh\)/u);
+  assert.doesNotMatch(JSON.stringify(native), /"(?:enabled|automatic|active|ready|trusted|runtimeVerified)"\s*:\s*true/iu);
 });
 
 test("Desktop emergency normalization uses documented toolCall fields and maps only deny", () => {
@@ -358,7 +369,7 @@ test("Desktop capability evidence records the observed High selector and no sepa
   assert.equal(Object.hasOwn(effort.value || {}, "effort"), false);
   const persistence = evidence.capabilities.find((entry) => entry.feature === "desktop.model-persistence");
   assert.ok(persistence);
-  assert.equal(persistence.source, "research-antigravity-2.md");
+  assert.equal(persistence.source, "docs/evaluations/antigravity-contracts-2026-08-31.md");
   assert.equal(persistence.support, "unknown");
   assert.equal(persistence.stability, "unknown");
   assert.deepEqual(persistence.value, { nativeConfigKey: null, persistence: "unknown" });
@@ -376,10 +387,8 @@ test("Antigravity adapter satisfies the shared action contract and rejects incom
   const result = adapter.renderAntigravity({ core, profile: { id: "portable" }, statuslineName: "" });
   assert.ok(result.files.length > 0);
   assert.ok(result.registrations.some((entry) => entry.kind === "plugin-registration"));
-  assert.throws(
-    () => adapter.renderSurface({ core, profile: { id: "portable" }, statuslineName: "" }),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "unsupported-native-mapping")
-  );
+  const publicResult = adapter.renderSurface({ core, profile: { id: "portable" }, statuslineName: "" });
+  assert.equal(publicResult.diagnostics.filter((entry) => entry.code === "native-mapping-explicitly-unsupported").length, 8);
   assert.throws(
     () => adapter.renderSurface({ core, profile: { id: "portable" }, statuslineName: "", capabilityRecord: { actionMappings: {} } }),
     (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "missing-native-mapping")

@@ -24,6 +24,7 @@ test("T011 creates every owned artifact", async () => {
 
 const adapter = await import("../../adapters/agy/adapter.mjs");
 const core = await loadCore(process.cwd());
+const AGY_FIXTURE_CONFIG_ROOT = "C:/fixtures/agy-config";
 
 function resultFor(profile = "portable", overrides = {}) {
   return adapter.renderAgy({
@@ -31,6 +32,7 @@ function resultFor(profile = "portable", overrides = {}) {
     profile: { id: profile },
     statuslineName: "",
     platform: "win32",
+    configRoot: AGY_FIXTURE_CONFIG_ROOT,
     ...overrides
   });
 }
@@ -70,13 +72,107 @@ test("agy renders nested agents and every canonical skill and rule", () => {
   ]) assert.ok(files.has(path), path);
 });
 
-test("agy agents use only documented frontmatter fields and no guessed tools", () => {
+test("agy renders the documented native statusline package and sparse overlay", () => {
+  const result = resultFor("template", { statuslineName: "ทีม O'Reilly" });
+  const files = fileMap(result);
+  for (const path of [
+    "statusline/statusline.mjs",
+    "statusline/statusline.ps1",
+    "statusline/statusline.sh",
+    "statusline/statusline.json"
+  ]) assert.ok(files.has(path), `missing ${path}`);
+  const settings = JSON.parse(files.get("settings.overlay.json"));
+  assert.deepEqual(settings.statusLine, {
+    type: "command",
+    command: settings.statusLine.command,
+    enabled: true,
+    padding: 0,
+    stack_with_default: false
+  });
+  assert.equal(JSON.parse(files.get("statusline/statusline.json")).displayName, "ทีม O'Reilly");
+  assert.equal(settings.statusLine.command.includes("team"), false);
+});
+
+test("agy resolves the documented CLI config root and quotes platform launchers", () => {
+  assert.equal(adapter.resolveAgyConfigDir({ homeDir: "C:/Users/tester", platform: "win32" }), "C:/Users/tester/.gemini/antigravity-cli");
+  assert.equal(adapter.resolveAgyConfigDir({ homeDir: "C:/", platform: "win32" }), "C:/.gemini/antigravity-cli");
+  assert.equal(adapter.resolveAgyConfigDir({ homeDir: "/Users/tester", platform: "darwin" }), "/Users/tester/.gemini/antigravity-cli");
+  const windows = adapter.renderAgyStatuslineCommand({
+    configRoot: "C:/Agy Config/O'Reilly $&;" + String.fromCharCode(96) + "tick",
+    platform: "win32"
+  });
+  assert.match(windows, /^powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand [A-Za-z0-9+/=]+$/u);
+  const encoded = windows.match(/ ([A-Za-z0-9+/=]+)$/u)[1];
+  const decoded = Buffer.from(encoded, "base64").toString("utf16le");
+  assert.equal(decoded, "$ProgressPreference = 'SilentlyContinue'\n& 'C:/Agy Config/O''Reilly $&;" + String.fromCharCode(96) + "tick/plugins/all-about-agents/statusline/statusline.ps1'\nexit $LASTEXITCODE\n");
+  const driveRoot = adapter.renderAgyStatuslineCommand({ configRoot: "C:/", platform: "win32" });
+  assert.equal(Buffer.from(driveRoot.match(/ ([A-Za-z0-9+/=]+)$/u)[1], "base64").toString("utf16le"), "$ProgressPreference = 'SilentlyContinue'\n& 'C:/plugins/all-about-agents/statusline/statusline.ps1'\nexit $LASTEXITCODE\n");
+  assert.equal(adapter.renderAgyStatuslineCommand({ configRoot: "/Users/tester/Agy Config/O'Reilly", platform: "darwin" }), "'/Users/tester/Agy Config/O'\\''Reilly/plugins/all-about-agents/statusline/statusline.sh'");
+});
+
+test("agy rejects unsafe Windows statusline roots and preserves safe Unicode roots", () => {
+  assert.throws(() => adapter.resolveAgyConfigDir({ homeDir: "C:/safe//child", platform: "win32" }), /empty path segment|config root/iu);
+  for (const root of [
+    "relative", "C:relative", "C:/Agy\nunsafe", "C:/safe\n", "C:/safe\r", "C:/safe\t",
+    "C:/Agy//unsafe", "C:/Agy/../unsafe", "C:/CON", "C:/con.txt", "C:/Agy/PRN.log", "C:/safe ", "C:/Agy/safe. ",
+    "C:/Agy/safe.", "C:/Agy<unsafe", "//server", "//server/"
+  ]) {
+    assert.throws(() => adapter.renderAgyStatuslineCommand({ configRoot: root, platform: "win32" }), /statusline|config root|absolute|segment/iu, root);
+  }
+  const safeWindows = adapter.renderAgyStatuslineCommand({
+    configRoot: "C:/Agy Config/ทีม O'Reilly $&;" + String.fromCharCode(96) + "tick",
+    platform: "win32"
+  });
+  assert.match(Buffer.from(safeWindows.match(/ ([A-Za-z0-9+/=]+)$/u)[1], "base64").toString("utf16le"), /ทีม O''Reilly \$&;/u);
+  const unc = adapter.renderAgyStatuslineCommand({ configRoot: "//server/share/ทีม O'Reilly", platform: "win32" });
+  assert.match(Buffer.from(unc.match(/ ([A-Za-z0-9+/=]+)$/u)[1], "base64").toString("utf16le"), /server\/share\/ทีม/u);
+});
+
+test("agy statusline registration exposes the native lifecycle record", () => {
+  const record = resultFor().registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "statusline");
+  assert.ok(record, "statusline must expose a native integration record");
+  assert.equal(record.surface, "agy");
+  assert.equal(record.phases.rendered.status, "pass");
+  assert.equal(record.phases.validated.status, "pass");
+  assert.equal(record.phases.registered.status, "not-run");
+  assert.equal(record.phases.trusted.status, "not-run-unavailable");
+  assert.equal(record.phases.active.status, "not-run");
+  assert.equal(record.phases.runtimeVerified.status, "not-run");
+  assert.match(record.phases.trusted.evidence, /no native trust/iu);
+});
+
+test("agy emergency protection records the disabled hook and manual deny merge", () => {
+  const result = resultFor("template");
+  const record = result.registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
+  assert.ok(record);
+  assert.deepEqual(
+    Object.fromEntries(["rendered", "validated", "registered", "trusted", "active", "runtimeVerified"].map((phase) => [phase, record.phases[phase].status])),
+    { rendered: "pass", validated: "not-run", registered: "not-run", trusted: "not-run", active: "not-run", runtimeVerified: "not-run" }
+  );
+  assert.match(record.phases.validated.evidence, /only the rendered settings deny overlay/iu);
+  assert.match(record.manualSteps.join(" "), /always-proceed/u);
+  assert.match(record.manualSteps.join(" "), /command\(rm -rf\).*command\(sudo\).*write_file\(\.git\/\).*write_file\(\/home\/user\/\.ssh\)/u);
+  assert.equal(result.registrations.find((entry) => entry.kind === "emergency-guard").enabled, false);
+
+  const portable = resultFor("portable").registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
+  assert.doesNotMatch(`${portable.phases.rendered.evidence} ${portable.manualSteps.join(" ")}`, /always-proceed|per-run skip/iu);
+});
+
+test("agy agents use only documented frontmatter fields and documented native tools", () => {
   const files = fileMap(resultFor());
+  const allowedTools = new Set([
+    "view_file", "write_to_file", "replace_file_content", "multi_replace_file_content", "list_dir", "find_by_name",
+    "grep_search", "search_web", "read_url_content", "run_command", "invoke_subagent", "define_subagent",
+    "send_message", "manage_subagents", "ask_permission", "list_permissions"
+  ]);
+  assert.deepEqual(new Set(adapter.AGY_DOCUMENTED_AGENT_TOOLS), allowedTools);
+  for (const tools of Object.values(adapter.AGY_SEMANTIC_MAPPINGS)) {
+    for (const tool of tools) assert.ok(allowedTools.has(tool), `undocumented agy tool ${tool}`);
+  }
   for (const role of ["researcher", "investigator", "architect", "implementer", "verifier", "reviewer", "security-reviewer"]) {
     const frontmatter = files.get(`agents/${role}/agent.md`).split("---\n")[1];
     const fields = frontmatter.trim().split("\n").map((line) => line.match(/^([A-Za-z][A-Za-z0-9]*):/u)?.[1]);
     for (const field of fields) assert.ok(adapter.AGY_DOCUMENTED_AGENT_FIELDS.includes(field), `${role} has undocumented field ${field}`);
-    assert.match(frontmatter, /^tools: \[\]$/mu);
     assert.match(frontmatter, /^model: inherit$/mu);
     assert.match(frontmatter, /^mcpServers: \[\]$/mu);
     assert.match(frontmatter, /^skills: \[\]$/mu);
@@ -86,12 +182,18 @@ test("agy agents use only documented frontmatter fields and no guessed tools", (
 
 test("agy read-only roles cannot execute or mutate", () => {
   const files = fileMap(resultFor());
+  const mutationTools = /(?:run_command|write_to_file|replace_file_content|multi_replace_file_content)/u;
   for (const role of ["researcher", "investigator", "architect", "verifier", "reviewer", "security-reviewer"]) {
     const content = files.get(`agents/${role}/agent.md`);
-    assert.match(content, /^tools: \[\]$/mu);
-    assert.match(content, /^commandExecutionPolicy: off$/mu);
+    const frontmatter = content.split("---\n")[1];
+    assert.doesNotMatch(frontmatter, mutationTools, `${role} must remain read-only`);
+    assert.match(frontmatter, /(?:view_file|grep_search|search_web)/u, `${role} must retain useful read tools`);
+    assert.match(frontmatter, /^commandExecutionPolicy: off$/mu);
   }
-  assert.match(files.get("agents/implementer/agent.md"), /^commandExecutionPolicy: sandbox$/mu);
+  const implementer = files.get("agents/implementer/agent.md");
+  assert.match(implementer, /run_command/u);
+  assert.match(implementer, /write_to_file/u);
+  assert.match(implementer, /^commandExecutionPolicy: sandbox$/mu);
 });
 
 test("agy hooks are disabled until the explicit lifecycle probe is complete", () => {
@@ -104,10 +206,12 @@ test("agy hooks are disabled until the explicit lifecycle probe is complete", ()
   const guidance = files.get("rules/adapter-capability-guidance.md");
   const hookRule = files.get("rules/hook-contract.md");
   assert.match(guidance, /PostToolUse[\s\S]*toolCall\.name/u);
-  assert.match(guidance, /probe below[\s\S]*lifecycle schema/iu);
-  assert.match(hookRule, /probe-required|lifecycle payload parity/iu);
+  assert.match(guidance, /handler path resolution[\s\S]*failure behavior[\s\S]*probe below/iu);
+  assert.match(hookRule, /events and JSON input\/output are documented/iu);
+  assert.match(hookRule, /failure behavior.*not documented/iu);
   assert.doesNotMatch(hookRule, /PreInvocation\s+contract/u);
   assert.equal(resultFor().registrations.find((entry) => entry.kind === "hook-contract").automaticHookExecution, false);
+  assert.equal(resultFor().registrations.find((entry) => entry.kind === "activity-audit").failureMode, "unknown-disabled");
 });
 
 test("agy emergency guard is consumed as a disabled probe-only native contract", () => {
@@ -147,7 +251,7 @@ test("agy emergency normalization uses documented toolCall fields and maps only 
 });
 
 test("agy settings overlays use only documented sparse keys and preserve emergency denies", () => {
-  const allowed = new Set(["toolPermission", "artifactReviewPolicy", "allowNonWorkspaceAccess", "enableTerminalSandbox", "permissions"]);
+  const allowed = new Set(["toolPermission", "artifactReviewPolicy", "allowNonWorkspaceAccess", "enableTerminalSandbox", "statusLine", "permissions"]);
   for (const profile of ["portable", "template"]) {
     const settings = JSON.parse(fileMap(resultFor(profile)).get("settings.overlay.json"));
     for (const key of Object.keys(settings)) assert.ok(allowed.has(key), `undocumented settings key ${key}`);
@@ -166,15 +270,40 @@ test("agy settings registration names only the documented CLI destination", asyn
   const rendered = resultFor();
   const registration = rendered.registrations.find((entry) => entry.kind === "settings-overlay");
   assert.deepEqual(registration.destinationCandidates, ["~/.gemini/antigravity-cli/settings.json"]);
-  assert.equal(registration.status, "manual-discovery-required");
-  assert.match(registration.reason, /unknown|version-sensitive/iu);
+  assert.equal(registration.status, "apply-after-review");
+  assert.match(registration.reason, /sparse overlay|register --apply/iu);
   assert.doesNotMatch(JSON.stringify(rendered), /~\/\.gemini\/config\/config\.json/u);
 
   const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/agy.json"), "utf8"));
   assert.deepEqual(manifest.settingsOverlay.destinationCandidates, ["~/.gemini/antigravity-cli/settings.json"]);
   assert.doesNotMatch(JSON.stringify(manifest), /~\/\.gemini\/config\/config\.json/u);
   assert.doesNotMatch(JSON.stringify(manifest), /~\/\.gemini\/antigravity\//u);
-  assert.equal(manifest.settingsOverlay.automaticWrite, false);
+  assert.equal(manifest.settingsOverlay.automaticWrite, true);
+  assert.equal(manifest.installedPluginRoot, "~/.gemini/antigravity-cli/plugins/all-about-agents/");
+  assert.equal(manifest.settingsOverlay.status, "apply-after-review");
+  assert.equal(manifest.components.statusline, "statusline/statusline.mjs");
+  assert.equal(manifest.components.statuslineConfig, "statusline/statusline.json");
+  assert.equal(manifest.components.statuslineWindowsLauncher, "statusline/statusline.ps1");
+  assert.equal(manifest.components.statuslinePosixLauncher, "statusline/statusline.sh");
+  assert.deepEqual(manifest.statuslinePrerequisites.requiredBy, ["statusline/statusline.mjs"]);
+});
+
+test("agy official contract evidence is tracked and rendered claims no root conflict", async () => {
+  const evidencePath = "docs/evaluations/antigravity-contracts-2026-08-31.md";
+  const evidence = await readFile(resolve(process.cwd(), evidencePath), "utf8");
+  for (const url of [
+    "https://antigravity.google/docs/cli/headless/",
+    "https://antigravity.google/docs/cli/plugins/",
+    "https://antigravity.google/docs/cli/settings",
+    "https://antigravity.google/docs/cli/subagents",
+    "https://antigravity.google/docs/hooks/"
+  ]) assert.match(evidence, new RegExp(url.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"), url);
+  assert.match(evidence, /Retrieved:\s*2026-08-31/u);
+  const rendered = resultFor();
+  const serialized = JSON.stringify(rendered);
+  assert.doesNotMatch(serialized, /sources conflict|active (?:plugin|package|settings) roots?[^.]*unknown/iu);
+  assert.equal(rendered.registrations.find((entry) => entry.kind === "plugin-registration").stagedDestination, "~/.gemini/antigravity-cli/plugins/all-about-agents/");
+  assert.ok(rendered.diagnostics.every((entry) => entry.sourcePath !== "research-agy-2.md"));
 });
 
 test("agy model and permission operations use the exact documented CLI controls", async () => {
@@ -214,7 +343,7 @@ test("agy generated model docs use a shell-neutral argv representation", () => {
 });
 
 test("agy headless operation is an argument vector that preserves arbitrary prompt bytes", () => {
-  const prompt = `Say "hi" with spaces, an apostrophe ' and a backslash ${String.fromCharCode(92)}`;
+  const prompt = `Say "hi" with spaces, an apostrophe ' plus backtick ${String.fromCharCode(96)}, dollar $HOME, Unicode ไทย 🚀, and a backslash ${String.fromCharCode(92)}`;
   assert.deepEqual(adapter.buildHeadlessArgs({ prompt }), [
     "agy",
     "-p",
@@ -225,6 +354,7 @@ test("agy headless operation is an argument vector that preserves arbitrary prom
     "high"
   ]);
   assert.deepEqual(adapter.buildHeadlessArgs({ prompt, dangerouslySkipPermissions: true }).slice(-1), ["--dangerously-skip-permissions"]);
+  assert.equal(Object.hasOwn(adapter, "buildHeadlessCommand"), false);
 });
 
 test("agy rejects forbidden terms after decoding generated file bodies", () => {
@@ -251,18 +381,30 @@ test("unknown model selection fails with discovery and explicit retry guidance",
   assert.equal(adapter.diagnoseModelSelection({ requested: "gemini-3.7-flash-high", availableModels: ["gemini-3.7-flash-high"] }).status, "ready");
 });
 
-test("manual registrations use documented commands and never write a live profile", () => {
+test("authorized register apply installs and discovers the plugin without making rendering mutating", async () => {
   const result = resultFor();
   const commands = result.registrations.map((entry) => entry.command).filter(Boolean);
   for (const command of ["agy plugin install PACKAGE_DIRECTORY", "agy plugin list", "agy agents", "agy models"]) assert.ok(commands.includes(command), command);
   const install = result.registrations.find((entry) => entry.kind === "plugin-registration");
-  assert.equal(install.manualOnly, true);
+  assert.equal(install.manualOnly, false);
   assert.equal(install.disposableOnly, true);
-  assert.equal(install.automaticInstall, false);
-  assert.equal(result.registrations.find((entry) => entry.kind === "settings-overlay").automaticWrite, false);
+  assert.equal(install.automaticInstall, true);
+  assert.equal(install.automaticFromRender, false);
+  assert.equal(install.status, "register-apply-after-review");
+  const discovery = result.registrations.find((entry) => entry.kind === "plugin-discovery");
+  assert.equal(discovery.manualOnly, false);
+  assert.equal(discovery.automaticAfterAuthority, true);
+  assert.equal(result.registrations.find((entry) => entry.kind === "settings-overlay").automaticWrite, true);
+  const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/agy.json"), "utf8"));
+  assert.equal(manifest.installation.automaticInstall, true);
+  assert.equal(manifest.installation.automaticInstallMode, "register-apply-after-review");
+  assert.equal(manifest.installation.automaticFromRender, false);
+  assert.equal(manifest.installation.liveProfileWrite, true);
+  assert.equal(manifest.installation.liveProfileWriteMode, "register-apply-after-review");
   const readme = fileMap(result).get("README.md");
   assert.match(readme, /agy plugin install PACKAGE_DIRECTORY/u);
   assert.match(readme, /agy plugin list/u);
+  assert.match(readme, /register --apply/u);
   assert.match(readme, /agy agents/u);
   assert.match(readme, /agy models/u);
   assert.doesNotMatch(readme, /plugin validate|plugin dry-run|plugin version/iu);
@@ -279,7 +421,8 @@ test("all canonical action mappings are explicit manual-unknown diagnostics", as
   }
   const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/agy.json"), "utf8"));
   for (const actionId of Object.keys(adapter.AGY_ACTION_MAPPINGS)) assert.equal(manifest.actions[actionId].status, "unknown");
-  assert.throws(() => adapter.renderSurface({ core, profile: { id: "portable" }, statuslineName: "" }), (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "unsupported-native-mapping"));
+  const rendered = adapter.renderSurface({ core, profile: { id: "portable" }, statuslineName: "" });
+  assert.equal(rendered.diagnostics.filter((entry) => entry.code === "native-mapping-explicitly-unsupported").length, Object.keys(adapter.AGY_ACTION_MAPPINGS).length);
 });
 
 test("native acceptance records verified agy 1.1.22 checks without promoting untested behavior", async () => {
@@ -290,7 +433,7 @@ test("native acceptance records verified agy 1.1.22 checks without promoting unt
   assert.equal(acceptance.platform, "win32");
   assert.equal(acceptance.checkedAt, "2026-08-31");
   const checks = new Map(acceptance.checks.map((check) => [check.id, check.status]));
-  for (const passed of ["version", "model-discovery", "effort-help", "headless-model", "plugin-validation", "agent-selection"]) assert.equal(checks.get(passed), "pass", passed);
+  for (const passed of ["version", "model-discovery", "effort-help", "headless-model", "plugin-validation", "statusline-renderer", "agent-selection"]) assert.equal(checks.get(passed), "pass", passed);
   for (const notRun of ["plugin-install", "skill-runtime-discovery", "hook-execution", "settings-merge", "model-persistence"]) assert.equal(checks.get(notRun), "not run", notRun);
   assert.equal(checks.get("agent-list"), "inconclusive");
   assert.deepEqual(acceptance.manualSequence, ["agy --help", "agy models", "agy agents", "agy plugin list"]);
@@ -300,6 +443,12 @@ test("native acceptance records verified agy 1.1.22 checks without promoting unt
   assert.equal(rendered.productVersion, "1.1.22");
   assert.equal(rendered.checks.find((check) => check.id === "plugin-validation").status, "pass");
   assert.equal(rendered.platform, "win32");
+  const darwinRender = resultFor("portable", { platform: "darwin", configRoot: "/tmp/agy-config" });
+  const retainedWindowsEvidence = darwinRender.registrations.find((entry) => entry.kind === "native-acceptance");
+  assert.equal(retainedWindowsEvidence.platform, "win32");
+  assert.match(retainedWindowsEvidence.reason, /Windows evidence/iu);
+  assert.equal(retainedWindowsEvidence.checks.find((check) => check.id === "statusline-renderer").status, "pass");
+  assert.match(retainedWindowsEvidence.checks.find((check) => check.id === "statusline-renderer").evidence, /Windows/iu);
 });
 
 test("agy renders deterministic ownership hashes matching both snapshots", async () => {
@@ -311,6 +460,7 @@ test("agy renders deterministic ownership hashes matching both snapshots", async
     assert.deepEqual(first.diagnostics, second.diagnostics);
     assert.deepEqual(first.ownership, second.ownership);
     const snapshot = JSON.parse(await readFile(resolve(process.cwd(), `tests/snapshots/agy/${profile}.json`), "utf8"));
+    assert.doesNotMatch(JSON.stringify(snapshot), /(?:[A-Za-z]:\/Users\/|\/Users\/)/u, "snapshot must not contain an ambient user home");
     assert.equal(snapshot.fileCount, first.files.length);
     assert.deepEqual(snapshot.paths, first.files.map((file) => file.relativePath));
     assert.deepEqual(snapshot.ownership, first.ownership);

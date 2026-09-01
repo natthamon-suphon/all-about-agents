@@ -1,10 +1,34 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { access, mkdtemp, mkdir, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import test from "node:test";
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 
 const surfaces = ["claude", "codex", "antigravity-2", "agy"];
+const repositoryRoot = resolve(process.cwd());
+const officialHosts = new Set(["antigravity.google", "code.claude.com", "developers.openai.com"]);
+
+async function assertValidSource(source, label) {
+  assert.equal(typeof source, "string", `${label}: source must be a string`);
+  assert.ok(source.length > 0, `${label}: source must not be empty`);
+
+  if (/^[a-z][a-z\d+.-]*:\/\//iu.test(source)) {
+    const url = new URL(source);
+    assert.equal(url.protocol, "https:", `${label}: URL sources must use HTTPS`);
+    assert.ok(officialHosts.has(url.hostname.toLowerCase()), `${label}: URL source must use an allowed official host`);
+    return;
+  }
+
+  assert.equal(source.includes("\\"), false, `${label}: local source must use repository POSIX separators`);
+  assert.equal(isAbsolute(source), false, `${label}: local source must be relative`);
+  const resolvedSource = resolve(repositoryRoot, source);
+  const canonicalRepositoryRoot = await realpath(repositoryRoot);
+  const canonicalSource = await realpath(resolvedSource);
+  const containedPath = relative(canonicalRepositoryRoot, canonicalSource);
+  assert.equal(containedPath === "" || (!containedPath.startsWith("..") && !isAbsolute(containedPath)), true, `${label}: local source must stay in the repository`);
+  assert.equal((await stat(canonicalSource)).isFile(), true, `${label}: local source must be a regular file`);
+}
 
 async function loadCapability(surface) {
   const path = resolve(process.cwd(), `adapters/${surface}/capabilities.json`);
@@ -36,6 +60,81 @@ test("capability records use the strict shared record shape", async () => {
   }
 });
 
+test("capability sources resolve to contained files or official HTTPS URLs", async () => {
+  for (const surface of surfaces) {
+    const record = await loadCapability(surface);
+    for (const capability of record.capabilities) {
+      await assertValidSource(capability.source, `${surface}/${capability.feature}`);
+    }
+  }
+});
+
+test("capability source validation rejects unsafe paths and untrusted URLs", async () => {
+  const invalidSources = [
+    "C:/outside.md",
+    "C:\\outside.md",
+    "/outside.md",
+    "\\\\server\\outside.md",
+    "../outside.md",
+    "nested/../../outside.md",
+    "missing-evidence.md",
+    "http://code.claude.com/docs",
+    "file://repo/evidence.md",
+    "https://example.com/evidence.md",
+    "https://code.claude.com.evil.example/evidence.md"
+  ];
+  for (const source of invalidSources) {
+    await assert.rejects(assertValidSource(source, source), source);
+  }
+});
+
+test("capability source validation rejects directories and links escaping the repository", async () => {
+  await mkdir(resolve(repositoryRoot, "tests/.tmp"), { recursive: true });
+  const disposableRoot = await mkdtemp(resolve(repositoryRoot, "tests/.tmp/capability-sources-"));
+  const outsideRoot = await mkdtemp(join(tmpdir(), "aaa-capability-sources-"));
+  const outsideFile = join(outsideRoot, "outside.md");
+  const linkRoot = join(disposableRoot, "escaped");
+  try {
+    await writeFile(outsideFile, "outside evidence\n", "utf8");
+    try {
+      await symlink(outsideRoot, linkRoot, process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      assert.fail(`Could not create an escape-link regression fixture on ${process.platform}: ${error.message}`);
+    }
+
+    const toSource = (path) => relative(repositoryRoot, path).replaceAll("\\", "/");
+    const rejected = await Promise.all([
+      assertValidSource(toSource(disposableRoot), "directory-source").then(() => false, () => true),
+      assertValidSource(toSource(join(linkRoot, "outside.md")), "escaped-link-source").then(() => false, () => true)
+    ]);
+    assert.deepEqual(rejected, [true, true]);
+  } finally {
+    await rm(disposableRoot, { recursive: true, force: true });
+    await rm(outsideRoot, { recursive: true, force: true });
+  }
+});
+
+test("Claude and agy native statusline capabilities are supported and stable", async () => {
+  for (const surface of ["claude", "agy"]) {
+    const record = await loadCapability(surface);
+    const statusline = record.capabilities.find((item) => item.feature === "statusline.native");
+    assert.ok(statusline, `${surface} statusline capability is missing`);
+    assert.equal(statusline.support, "supported");
+    assert.equal(statusline.stability, "stable");
+    assert.ok(statusline.value && typeof statusline.value === "object");
+  }
+});
+
+test("Claude Fable advisor wording records current support with access limits", async () => {
+  const claude = await loadCapability("claude");
+  const advisor = claude.capabilities.find((item) => item.feature === "model.advisor");
+  assert.ok(advisor);
+  assert.equal(advisor.value, "claude-fable-5");
+  assert.notEqual(advisor.stability, "experimental");
+  assert.match(advisor.notes, /account|plan|version/iu);
+  assert.match(advisor.notes, /access|available|consent|credit/iu);
+});
+
 test("capability evidence keeps unsupported and unknown claims explicit", async () => {
   const codex = await loadCapability("codex");
   const fallback = codex.capabilities.find((item) => item.feature === "model.automatic-fallback");
@@ -43,6 +142,10 @@ test("capability evidence keeps unsupported and unknown claims explicit", async 
   assert.equal(fallback.support, "unsupported");
   assert.equal(fallback.stability, "unsupported");
   assert.match(fallback.source, /research-model-policy-codex\.md$/);
+  const hooks = codex.capabilities.find((item) => item.feature === "hooks.lifecycle");
+  assert.ok(hooks);
+  assert.doesNotMatch(hooks.notes, /enabled by default/iu);
+  assert.match(hooks.notes, /trust|manual|not automatic/iu);
 
   const antigravity = await loadCapability("antigravity-2");
   const persistence = antigravity.capabilities.find((item) => item.feature === "desktop.model-persistence");

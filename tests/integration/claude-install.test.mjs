@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
-import { access, mkdir, readFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 
+import { renderClaude } from "../../adapters/claude/adapter.mjs";
+import { loadCore } from "../../installers/lib/load-core.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
 
 const requiredOutputs = [
@@ -44,5 +46,67 @@ test("Claude clean-profile install works from an unrelated working directory", a
       ".claude-plugin/plugin.json",
       "skills/brainstorming/SKILL.md"
     ]) await access(resolve(destination, registeredPath));
+  });
+});
+
+test("Claude Windows statusline command runs through Git Bash and PowerShell", { skip: process.platform !== "win32" ? "Windows shell routes are unavailable on this platform" : false }, async (t) => {
+  const core = await loadCore(process.cwd());
+  await withTempRoot(async (root) => {
+    const configRoot = join(root, "Claude Config ทีม", "O'Reilly $&;" + String.fromCharCode(96) + "tick");
+    const result = renderClaude({
+      core,
+      profile: "template",
+      statuslineName: "ทีม \"Claude\"",
+      platform: "win32",
+      env: { CLAUDE_CONFIG_DIR: configRoot },
+      homeDir: "C:/Users/tester"
+    });
+    const files = new Map(result.files.map((file) => [file.relativePath, file.content]));
+    const settings = JSON.parse(new TextDecoder().decode(files.get("config/settings.json")));
+    const launcher = files.get("statusline/statusline.ps1");
+    assert.ok(launcher, "rendered package must include the Windows launcher");
+    const renderer = files.get("statusline/statusline.mjs");
+    assert.ok(renderer, "rendered package must include the Node renderer");
+    const config = files.get("config/statusline.json");
+    assert.ok(config, "rendered package must include statusline config");
+    assert.equal(typeof settings.statusLine?.command, "string");
+    await mkdir(join(configRoot, "statusline"), { recursive: true });
+    await mkdir(join(configRoot, "all-about-agents"), { recursive: true });
+    await mkdir(join(root, "unrelated"), { recursive: true });
+    await writeFile(join(configRoot, "statusline", "statusline.ps1"), launcher);
+    await writeFile(join(configRoot, "statusline", "statusline.mjs"), renderer);
+    await writeFile(join(configRoot, "all-about-agents", "statusline.json"), config);
+    const input = JSON.stringify({ workspace: { project_dir: "C:/repo" }, model: { display_name: "Opus" } });
+    const commandPath = (name) => {
+      const lookup = spawnSync("where.exe", [name], { encoding: "utf8" });
+      return lookup.status === 0 ? lookup.stdout.trim().split(/\r?\n/u)[0] : "";
+    };
+    const gitExecutable = commandPath("git.exe");
+    const gitBash = gitExecutable ? join(dirname(dirname(gitExecutable)), "bin", "bash.exe") : "";
+    const routes = [
+      { name: "Git Bash", executable: gitBash, args: ["-lc", settings.statusLine.command] },
+      { name: "PowerShell", executable: commandPath("powershell.exe"), args: ["-NoProfile", "-Command", settings.statusLine.command] }
+    ];
+    let executed = 0;
+    for (const route of routes) {
+      const available = route.executable.length > 0;
+      if (!available) {
+        t.diagnostic(route.name + " route unavailable: the required executable was not found");
+        continue;
+      }
+      const child = spawnSync(route.executable, route.args, {
+        cwd: join(root, "unrelated"),
+        encoding: "utf8",
+        input,
+        env: { ...process.env, CLAUDE_CONFIG_DIR: configRoot }
+      });
+      assert.equal(child.error, undefined, route.name + " failed to start");
+      assert.equal(child.status, 0, route.name + ": " + child.stderr);
+      assert.equal(child.stderr, "", route.name + " stderr must stay empty");
+      assert.equal(child.stdout.trimEnd().split(/\r?\n/u).length, 4, route.name + " must emit four lines");
+      assert.ok(child.stdout.includes('ทีม "Claude"'), route.name + " output should include the exact configured display name");
+      executed += 1;
+    }
+    assert.ok(executed > 0, "at least one Windows shell route must be available");
   });
 });

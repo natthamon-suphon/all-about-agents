@@ -1,6 +1,11 @@
 {
-  "fileCount": 101,
+  "fileCount": 180,
   "files": [
+    {
+      "relativePath": ".agents/plugins/marketplace.json",
+      "sha256": "38fc4aaed410bf1b55d91f749f125e7293d9b51df846be22f176bb7496b64ea4",
+      "mode": null
+    },
     {
       "relativePath": ".agents/skills/brainstorming/SKILL.md",
       "sha256": "92ef6058f7ab86f74c61263c3feb078a11fd5798ee641856a9f19d3932a260e5",
@@ -173,7 +178,7 @@
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/scripts/review-package.js",
-      "sha256": "ec417be0f1a511b01606840e82b904195595a39297019b0f55e0740816802a0b",
+      "sha256": "93c8b56601f5501b3ba2c4d8d6841b1377aa85a0b4045beda8ceea7d68995271",
       "mode": 493
     },
     {
@@ -293,7 +298,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "6646a48caf9bf655ab79aee780c6cfeadff6a19d4f0afabd0b109b0cc2f3d0c5",
+      "sha256": "eda69482e96992f2f46bc9a11813883806f2373f111a68b20ba9565e77476b1a",
       "mode": null
     },
     {
@@ -393,7 +398,7 @@
     },
     {
       "relativePath": ".codex-plugin/plugin.json",
-      "sha256": "cbb2dec01497ad11ee629d7dc88b9000272cdbb37c26cb2501dd82e12e676d4d",
+      "sha256": "5437f996b7532d3d809362db5321f8555fc56224c8ed9192fc83a66a0d6204ef",
       "mode": null
     },
     {
@@ -443,12 +448,12 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "dda44c0ce3295f9864374e5c6d89dc41e8fc6e35d3dbbf539d9a4fa77856f701",
+      "sha256": "fbfe08fc0b82c333fdc711b98338fe1a2629929aa70d405c61f1c47aab183f46",
       "mode": null
     },
     {
       "relativePath": "hooks/activity-audit.json",
-      "sha256": "63fa46120fb9454ad3c7faa7d33dd59a2fc90da1470e70f532e9ced210eca1c0",
+      "sha256": "20219f3b0d53b42a2960bf4ab17f0739ce4946db9d50ae2d28e0f3f703b4d879",
       "mode": null
     },
     {
@@ -473,7 +478,7 @@
     },
     {
       "relativePath": "hooks/checkpoint.json",
-      "sha256": "5c0989dfafcdcd0a8501afa502e700efae070b878b37f31d5a0d24465324690c",
+      "sha256": "8e42420e8a8d218e746243b3d08a1e120128d6cfe173af570860b2a5b8be133e",
       "mode": null
     },
     {
@@ -488,7 +493,7 @@
     },
     {
       "relativePath": "hooks/emergency-policy.mjs",
-      "sha256": "32846b7e4b0d975baf07616b6a61bf5b92fc3e861e34f828714384fd01641ad8",
+      "sha256": "fdf20efa604da6fadf34d04a6ef1d3f43d80b4ec14246784ed917921a684a95c",
       "mode": 493
     },
     {
@@ -502,12 +507,406 @@
       "mode": 493
     },
     {
+      "relativePath": "skills/brainstorming/SKILL.md",
+      "sha256": "92ef6058f7ab86f74c61263c3feb078a11fd5798ee641856a9f19d3932a260e5",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/brainstorming/scripts/frame-template.html",
+      "sha256": "4c3b7d94265cf0f8de437191dcbadccca4106d785591caf89e7c818ff153bc93",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/brainstorming/scripts/helper.js",
+      "sha256": "773e549af4413e28ed7d14aea800a39d8dbf9851d3d31d9687b5a8d8a18775a3",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/brainstorming/scripts/server.cjs",
+      "sha256": "fb8cc401795a174ffbb5fee217950307aefa9f9c2ff5592a731a185cbff8f32b",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/brainstorming/scripts/start-server.sh",
+      "sha256": "bc0436d839139c0a437461bcdf4e726fdded63b3296e248b534ce0a32a71d2e7",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/brainstorming/scripts/stop-server.sh",
+      "sha256": "7c871ab76a85ef58059a95faf9f6c3c2b349c240e3fdf7d07656cb6b4fb7976d",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/brainstorming/spec-document-reviewer-prompt.md",
+      "sha256": "3aa6b80cad6f981f545082430980accf399bcd9401f665134920aff98747d789",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/brainstorming/visual-companion.md",
+      "sha256": "c58a8e00e4a5240d049ccd8d111628c9ed63ece738bba09a3e3e59a3d20ee316",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/codebase-design/DEEPENING.md",
+      "sha256": "bebca021f9f8ec98a8f5b303e8f98fdaa4087706774cb38055cde6fe2a84ee92",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/codebase-design/DESIGN-IT-TWICE.md",
+      "sha256": "3868f94691a2eb050087262d130849803c65790e996a83fca6bc8acbea551769",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/codebase-design/SKILL.md",
+      "sha256": "3591f4055a96601160afbebe02a00eed60edff0c29c72039dca1bbb9d64e9b0a",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/dispatching-parallel-agents/SKILL.md",
+      "sha256": "fb8d10a271b89e2d5b0f4cc7e74e2a2a14640f2707da9ff71401887995c85c47",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/executing-plans/SKILL.md",
+      "sha256": "e073644cdddcbd4d11c0d92a24947ed71fea8cbc7200046beb5942c864427336",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/finishing-a-development-branch/SKILL.md",
+      "sha256": "73a214930096aefedc0bd272e6aad95d392743b4e15c5cd00c8c0ab406a39255",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/handoff/SKILL.md",
+      "sha256": "a163242734b0fd42f45b2ae45ffea151dffd994b2227ac9bc2beb90edc348b30",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/improve-codebase-architecture/HTML-REPORT.md",
+      "sha256": "4076cebca07d68abc2ac7178953419e1d10b42bf5e639bb6ae38964afb8ec7df",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/improve-codebase-architecture/SKILL.md",
+      "sha256": "42d1b18fc8ae431e64377e081044f6db93f046cf3402eb3d9a789001066375c5",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/interviewing/SKILL.md",
+      "sha256": "fd4114abe845db359325195a35e327dbd975490b1c8448021bbcc290b1278770",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/loop-me/SKILL.md",
+      "sha256": "13256b6e7e47a2f93e6c65cb440b9d12c1cc722229afac5d58e7b255e498f679",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/nano-image-generator/SKILL.md",
+      "sha256": "a9de65b7a45e93138781ff4aebdfbf7c8288b937a79d8e247c32f80664185222",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/nano-image-generator/scripts/generate_image.py",
+      "sha256": "a1f9e8b5fca9b0c6399b72679635a7424b16ba94c8cce9c82414d762ac9a0cb6",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/performance-profiling-and-benchmarking/SKILL.md",
+      "sha256": "2ca2b0e65cb0bc2198d0692093b73a57412526c5a5cfab9d7252474d2b340e70",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/performance-profiling-and-benchmarking/profiling-recipes.md",
+      "sha256": "af1378f0d9ea828b13a253acda0ce32f2439c5bc2bdca89bc995838edfc14e5e",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/receiving-code-review/SKILL.md",
+      "sha256": "238576f7b3c2931e194df5dd1c46b04ad04697b69f2da5dc0f96a6c542dd380d",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/requesting-code-review/SKILL.md",
+      "sha256": "ccbb732b3bff366e16fc21c74975abae597521992052e04f30311620d692c4d0",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/requesting-code-review/code-reviewer.md",
+      "sha256": "b2f2ec7596925fe52dac158fdfbca19b3a7d779d619c481e6706a6c0001662d3",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/research/SKILL.md",
+      "sha256": "02214ae5de5756a0920a84603a60fa9bcc2fc5ca991d1caafec7038fc1d38b7e",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/resolving-merge-conflicts/SKILL.md",
+      "sha256": "9fbb2515b9ccd53844b312c37668cfaa00833b35249da9478be0257135e04ff0",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/session-compaction-resilience/SKILL.md",
+      "sha256": "faa762482dc7d3ae434a3c06a0f3ded70184bf0ed0ba7a59f6f84dd87b0c12c1",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/session-compaction-resilience/snapshot-template.md",
+      "sha256": "52e6c3d23b3ba1a530ddc8defa85086cec63c8bb12b6f4bd2f73c678c6bac81f",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/SKILL.md",
+      "sha256": "9379df5722fe0bd9876663809766d7d9c329fac4860b269517b5d191dc19c681",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/implementer-prompt.md",
+      "sha256": "946601616a6f76ab3f165ef98377390968f1ec124ecef87422bc3553404e0332",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/re-review-prompt.md",
+      "sha256": "e1d8e0e65e58ccde6dc920843da9148d23e65aeb0f8932bcc30be1341a703c4c",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/review-package",
+      "sha256": "8439bb55b6c04263ef50f1ff88aed3598997308e8f58e6494e722f5552c91444",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/review-package.js",
+      "sha256": "93c8b56601f5501b3ba2c4d8d6841b1377aa85a0b4045beda8ceea7d68995271",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace",
+      "sha256": "d4dc806033454af1c4f74c6603a2795a654dd8b81b0e5b69f46d1d3ee08cbdff",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace.js",
+      "sha256": "bed597b91b08044f0e7adf0a839ad67a329e83c6bb2e5d38926478cb5fa473fe",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/task-brief",
+      "sha256": "75aeabce5eb21b1230cacd41cf83b00a4bfdf522d62e59ab60d9425cc0b96abc",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/task-brief.js",
+      "sha256": "ad1fc232e49e5c830b1e62cf09e9bc22e6e1342b4177dbc48c304488f5b311a7",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/task-reviewer-prompt.md",
+      "sha256": "e3b4a1bfe7cd55ed0459e5ca9cdddb6ff086c345b99e9097036db6a18545729e",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/CREATION-LOG.md",
+      "sha256": "c24733a5b1821bd6bed1fc950261f0b9f4e90097e0bbb96459d8179713730789",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/SKILL.md",
+      "sha256": "87d5ec389496b394c4244e3d4efe87bc6f8a43b724fafc9ba0b6ce43acdae3c0",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/condition-based-waiting-example.ts",
+      "sha256": "40ae5ebe497fdf310200e43fe986552546d0a22837c0d39e855db1cfd33eb88e",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/condition-based-waiting.md",
+      "sha256": "1beca5126a8f2153abe0bbc6b45c8de435a75bb8fbe65589366e62ee5468be5d",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/defense-in-depth.md",
+      "sha256": "1e175fb86fc357e58c6aebf5441e481e1b7868b4380c0456b63a17eefbd18ba7",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/feedback-loops.md",
+      "sha256": "d56e61991c84b0ff77ba3f2b699494597ee40bf780d9b682bdd813d02cc9f870",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/find-polluter.sh",
+      "sha256": "67e952c46a9f5d15570242425bc2a9895e793ca95c72f9e830040453155f866d",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/hitl-loop.template.sh",
+      "sha256": "18ae07e1cc49b32c71767e241a6e8de4be74ef21d5e3b7e39034d9c7335f2d80",
+      "mode": 493
+    },
+    {
+      "relativePath": "skills/systematic-debugging/root-cause-tracing.md",
+      "sha256": "d2944b36766e51ccecb9f9e891d3b1c56f3122bcd575675c800100bed7be1da7",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/test-academic.md",
+      "sha256": "fe2ba480d78ac0d686dc025f41c2a32a43d642bf533f91b0c6053a04d35d6486",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/test-pressure-1.md",
+      "sha256": "0b6a915db0054577819834c79be9eb614e97bddba10d73768e1fbe91cfed048a",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/test-pressure-2.md",
+      "sha256": "b2030aeffba07050e8ad573ddf87486457c4a016a786bb326235bebd856f2016",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/systematic-debugging/test-pressure-3.md",
+      "sha256": "96b50a52e2c7989c9cf20fb752c47c1e9a3a70dc362f8f7989f8f5b64dac7708",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/test-driven-development/SKILL.md",
+      "sha256": "9fccd95684b4684bca3664be914b96082f82feb1b922edec675882430c244757",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/test-driven-development/writing-good-tests.md",
+      "sha256": "59fa8700582255f43410c001e23298c14094cb2605bde5135a653162069da5d3",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/threat-modeling-and-security/SKILL.md",
+      "sha256": "124170704d14a9bbbaa66c6a8c114b29785bca8c2c044160fad5e33741fcf2e6",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/threat-modeling-and-security/stride-checklist.md",
+      "sha256": "3ec34122e05503ba2999856cc5fc69187252fa01c5c8294fed59b539125cfed0",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/SKILL.md",
+      "sha256": "19bf2f2a073d4bd7b365d943f8b4f8f15e5e6dfd71938f6c9d853671d6cd59e2",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
+      "sha256": "eda69482e96992f2f46bc9a11813883806f2373f111a68b20ba9565e77476b1a",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/references/antigravity-tools.md",
+      "sha256": "85e1b4283f7a55486d07546014a70cc94a24bb58d300f2aaca0ba9ec5851d421",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/references/codex-tools.md",
+      "sha256": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/references/gemini-tools.md",
+      "sha256": "502545bea9b0136df4a1757558caa43f7d51a5b9bb5636679cd167b0ff5e6666",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/references/pi-tools.md",
+      "sha256": "2bbe68e9bf0f2b301c12d622b76db558121ec54d68d0601d38212025fdff6e78",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/using-git-worktrees/SKILL.md",
+      "sha256": "f807df36a45e5c84b3ca1bb5b65b7630779d1f9d246d6bc0d05be07c9cbab32f",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/verification-before-completion/SKILL.md",
+      "sha256": "071aabe06b83edac125b26e469285ae2941a0ca60c483032fd0e072df4010c04",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/wait-what/SKILL.md",
+      "sha256": "a2382cd8a8ef193d1fc51b6f6364f02d5181c9885fadfc387e025b8447b3188f",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/wayfinder/SKILL.md",
+      "sha256": "cdc03c0621b698f3c5b1e801421d343decfe6a082a9b66f6fafec673832ff488",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/writing-plans/SKILL.md",
+      "sha256": "a90ba724209926a9c1ea06d5fbff07e28a0545a440a98561c3340443053b7bca",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/writing-plans/plan-document-reviewer-prompt.md",
+      "sha256": "35d70c2dcce9aa6ab12dc5fb7045b692b17114e13942329e71872b2bebeffaa9",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/writing-skills/SKILL.md",
+      "sha256": "84c1f4ca7ccc7f7e7c04622fd130c3ef0d26b521ddb8793584870dcdf49721e6",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/writing-skills/anthropic-best-practices.md",
+      "sha256": "09b86b0da95023322e3ddb301ca635439906a7141a59b7dbd5135abbe7d1c2ed",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/writing-skills/examples/CLAUDE_MD_TESTING.md",
+      "sha256": "13487a3a4da5cf338b167f4faca7f06291eb6dedb433cafdf86d9b324b47d915",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/writing-skills/graphviz-conventions.dot",
+      "sha256": "f6e534c7b7d79d4a7bd681bd4f5d038c3d19e96349a19b73f8e116ce17cbd66f",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/writing-skills/persuasion-principles.md",
+      "sha256": "8f30a3218e5ff24c523f3310efba8ea65c004264212e813b513478b7394d4a14",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/writing-skills/render-graphs.js",
+      "sha256": "1a9b1626e489905de00ecf6cf84ffec866b1d1ba0507fe94aee9f89cc938a5cb",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/writing-skills/testing-skills-with-subagents.md",
+      "sha256": "ead5e957ec5350c7619217149b52ca6f24fcfa12b475f026cf4cd17d0f30706c",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/zero-downtime-migrations/SKILL.md",
+      "sha256": "1afab7f42ace80f8184f83f9238280effa32603913c86ceff5a5fe1af81e743f",
+      "mode": null
+    },
+    {
+      "relativePath": "skills/zero-downtime-migrations/postgres-expand-contract-examples.md",
+      "sha256": "12f867a1228d0468f6c3e2a8740cf24d96bcfcab80930a8fc71a480ac7f8cacb",
+      "mode": null
+    },
+    {
       "relativePath": "terra-max.config.toml",
       "sha256": "87343d577271242c0c68c379095432480f687b7a528877503a08eed7b00b6011",
       "mode": null
     }
   ],
   "ownership": [
+    {
+      "relativePath": ".agents/plugins/marketplace.json",
+      "sha256": "38fc4aaed410bf1b55d91f749f125e7293d9b51df846be22f176bb7496b64ea4"
+    },
     {
       "relativePath": ".agents/skills/brainstorming/SKILL.md",
       "sha256": "92ef6058f7ab86f74c61263c3feb078a11fd5798ee641856a9f19d3932a260e5"
@@ -646,7 +1045,7 @@
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/scripts/review-package.js",
-      "sha256": "ec417be0f1a511b01606840e82b904195595a39297019b0f55e0740816802a0b"
+      "sha256": "93c8b56601f5501b3ba2c4d8d6841b1377aa85a0b4045beda8ceea7d68995271"
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/scripts/sdd-workspace",
@@ -742,7 +1141,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "6646a48caf9bf655ab79aee780c6cfeadff6a19d4f0afabd0b109b0cc2f3d0c5"
+      "sha256": "eda69482e96992f2f46bc9a11813883806f2373f111a68b20ba9565e77476b1a"
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/antigravity-tools.md",
@@ -822,7 +1221,7 @@
     },
     {
       "relativePath": ".codex-plugin/plugin.json",
-      "sha256": "cbb2dec01497ad11ee629d7dc88b9000272cdbb37c26cb2501dd82e12e676d4d"
+      "sha256": "5437f996b7532d3d809362db5321f8555fc56224c8ed9192fc83a66a0d6204ef"
     },
     {
       "relativePath": ".codex/agents/architect.toml",
@@ -862,11 +1261,11 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "dda44c0ce3295f9864374e5c6d89dc41e8fc6e35d3dbbf539d9a4fa77856f701"
+      "sha256": "fbfe08fc0b82c333fdc711b98338fe1a2629929aa70d405c61f1c47aab183f46"
     },
     {
       "relativePath": "hooks/activity-audit.json",
-      "sha256": "63fa46120fb9454ad3c7faa7d33dd59a2fc90da1470e70f532e9ced210eca1c0"
+      "sha256": "20219f3b0d53b42a2960bf4ab17f0739ce4946db9d50ae2d28e0f3f703b4d879"
     },
     {
       "relativePath": "hooks/activity-audit.mjs",
@@ -886,7 +1285,7 @@
     },
     {
       "relativePath": "hooks/checkpoint.json",
-      "sha256": "5c0989dfafcdcd0a8501afa502e700efae070b878b37f31d5a0d24465324690c"
+      "sha256": "8e42420e8a8d218e746243b3d08a1e120128d6cfe173af570860b2a5b8be133e"
     },
     {
       "relativePath": "hooks/emergency-guard.json",
@@ -898,7 +1297,7 @@
     },
     {
       "relativePath": "hooks/emergency-policy.mjs",
-      "sha256": "32846b7e4b0d975baf07616b6a61bf5b92fc3e861e34f828714384fd01641ad8"
+      "sha256": "fdf20efa604da6fadf34d04a6ef1d3f43d80b4ec14246784ed917921a684a95c"
     },
     {
       "relativePath": "hooks/hooks.json",
@@ -907,6 +1306,318 @@
     {
       "relativePath": "hooks/pre-compact.mjs",
       "sha256": "b0e3e1c46e93938ee5716c6b078a45dfb0c81f3e29acef75cdcb148fe17ca364"
+    },
+    {
+      "relativePath": "skills/brainstorming/SKILL.md",
+      "sha256": "92ef6058f7ab86f74c61263c3feb078a11fd5798ee641856a9f19d3932a260e5"
+    },
+    {
+      "relativePath": "skills/brainstorming/scripts/frame-template.html",
+      "sha256": "4c3b7d94265cf0f8de437191dcbadccca4106d785591caf89e7c818ff153bc93"
+    },
+    {
+      "relativePath": "skills/brainstorming/scripts/helper.js",
+      "sha256": "773e549af4413e28ed7d14aea800a39d8dbf9851d3d31d9687b5a8d8a18775a3"
+    },
+    {
+      "relativePath": "skills/brainstorming/scripts/server.cjs",
+      "sha256": "fb8cc401795a174ffbb5fee217950307aefa9f9c2ff5592a731a185cbff8f32b"
+    },
+    {
+      "relativePath": "skills/brainstorming/scripts/start-server.sh",
+      "sha256": "bc0436d839139c0a437461bcdf4e726fdded63b3296e248b534ce0a32a71d2e7"
+    },
+    {
+      "relativePath": "skills/brainstorming/scripts/stop-server.sh",
+      "sha256": "7c871ab76a85ef58059a95faf9f6c3c2b349c240e3fdf7d07656cb6b4fb7976d"
+    },
+    {
+      "relativePath": "skills/brainstorming/spec-document-reviewer-prompt.md",
+      "sha256": "3aa6b80cad6f981f545082430980accf399bcd9401f665134920aff98747d789"
+    },
+    {
+      "relativePath": "skills/brainstorming/visual-companion.md",
+      "sha256": "c58a8e00e4a5240d049ccd8d111628c9ed63ece738bba09a3e3e59a3d20ee316"
+    },
+    {
+      "relativePath": "skills/codebase-design/DEEPENING.md",
+      "sha256": "bebca021f9f8ec98a8f5b303e8f98fdaa4087706774cb38055cde6fe2a84ee92"
+    },
+    {
+      "relativePath": "skills/codebase-design/DESIGN-IT-TWICE.md",
+      "sha256": "3868f94691a2eb050087262d130849803c65790e996a83fca6bc8acbea551769"
+    },
+    {
+      "relativePath": "skills/codebase-design/SKILL.md",
+      "sha256": "3591f4055a96601160afbebe02a00eed60edff0c29c72039dca1bbb9d64e9b0a"
+    },
+    {
+      "relativePath": "skills/dispatching-parallel-agents/SKILL.md",
+      "sha256": "fb8d10a271b89e2d5b0f4cc7e74e2a2a14640f2707da9ff71401887995c85c47"
+    },
+    {
+      "relativePath": "skills/executing-plans/SKILL.md",
+      "sha256": "e073644cdddcbd4d11c0d92a24947ed71fea8cbc7200046beb5942c864427336"
+    },
+    {
+      "relativePath": "skills/finishing-a-development-branch/SKILL.md",
+      "sha256": "73a214930096aefedc0bd272e6aad95d392743b4e15c5cd00c8c0ab406a39255"
+    },
+    {
+      "relativePath": "skills/handoff/SKILL.md",
+      "sha256": "a163242734b0fd42f45b2ae45ffea151dffd994b2227ac9bc2beb90edc348b30"
+    },
+    {
+      "relativePath": "skills/improve-codebase-architecture/HTML-REPORT.md",
+      "sha256": "4076cebca07d68abc2ac7178953419e1d10b42bf5e639bb6ae38964afb8ec7df"
+    },
+    {
+      "relativePath": "skills/improve-codebase-architecture/SKILL.md",
+      "sha256": "42d1b18fc8ae431e64377e081044f6db93f046cf3402eb3d9a789001066375c5"
+    },
+    {
+      "relativePath": "skills/interviewing/SKILL.md",
+      "sha256": "fd4114abe845db359325195a35e327dbd975490b1c8448021bbcc290b1278770"
+    },
+    {
+      "relativePath": "skills/loop-me/SKILL.md",
+      "sha256": "13256b6e7e47a2f93e6c65cb440b9d12c1cc722229afac5d58e7b255e498f679"
+    },
+    {
+      "relativePath": "skills/nano-image-generator/SKILL.md",
+      "sha256": "a9de65b7a45e93138781ff4aebdfbf7c8288b937a79d8e247c32f80664185222"
+    },
+    {
+      "relativePath": "skills/nano-image-generator/scripts/generate_image.py",
+      "sha256": "a1f9e8b5fca9b0c6399b72679635a7424b16ba94c8cce9c82414d762ac9a0cb6"
+    },
+    {
+      "relativePath": "skills/performance-profiling-and-benchmarking/SKILL.md",
+      "sha256": "2ca2b0e65cb0bc2198d0692093b73a57412526c5a5cfab9d7252474d2b340e70"
+    },
+    {
+      "relativePath": "skills/performance-profiling-and-benchmarking/profiling-recipes.md",
+      "sha256": "af1378f0d9ea828b13a253acda0ce32f2439c5bc2bdca89bc995838edfc14e5e"
+    },
+    {
+      "relativePath": "skills/receiving-code-review/SKILL.md",
+      "sha256": "238576f7b3c2931e194df5dd1c46b04ad04697b69f2da5dc0f96a6c542dd380d"
+    },
+    {
+      "relativePath": "skills/requesting-code-review/SKILL.md",
+      "sha256": "ccbb732b3bff366e16fc21c74975abae597521992052e04f30311620d692c4d0"
+    },
+    {
+      "relativePath": "skills/requesting-code-review/code-reviewer.md",
+      "sha256": "b2f2ec7596925fe52dac158fdfbca19b3a7d779d619c481e6706a6c0001662d3"
+    },
+    {
+      "relativePath": "skills/research/SKILL.md",
+      "sha256": "02214ae5de5756a0920a84603a60fa9bcc2fc5ca991d1caafec7038fc1d38b7e"
+    },
+    {
+      "relativePath": "skills/resolving-merge-conflicts/SKILL.md",
+      "sha256": "9fbb2515b9ccd53844b312c37668cfaa00833b35249da9478be0257135e04ff0"
+    },
+    {
+      "relativePath": "skills/session-compaction-resilience/SKILL.md",
+      "sha256": "faa762482dc7d3ae434a3c06a0f3ded70184bf0ed0ba7a59f6f84dd87b0c12c1"
+    },
+    {
+      "relativePath": "skills/session-compaction-resilience/snapshot-template.md",
+      "sha256": "52e6c3d23b3ba1a530ddc8defa85086cec63c8bb12b6f4bd2f73c678c6bac81f"
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/SKILL.md",
+      "sha256": "9379df5722fe0bd9876663809766d7d9c329fac4860b269517b5d191dc19c681"
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/implementer-prompt.md",
+      "sha256": "946601616a6f76ab3f165ef98377390968f1ec124ecef87422bc3553404e0332"
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/re-review-prompt.md",
+      "sha256": "e1d8e0e65e58ccde6dc920843da9148d23e65aeb0f8932bcc30be1341a703c4c"
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/review-package",
+      "sha256": "8439bb55b6c04263ef50f1ff88aed3598997308e8f58e6494e722f5552c91444"
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/review-package.js",
+      "sha256": "93c8b56601f5501b3ba2c4d8d6841b1377aa85a0b4045beda8ceea7d68995271"
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace",
+      "sha256": "d4dc806033454af1c4f74c6603a2795a654dd8b81b0e5b69f46d1d3ee08cbdff"
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace.js",
+      "sha256": "bed597b91b08044f0e7adf0a839ad67a329e83c6bb2e5d38926478cb5fa473fe"
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/task-brief",
+      "sha256": "75aeabce5eb21b1230cacd41cf83b00a4bfdf522d62e59ab60d9425cc0b96abc"
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/scripts/task-brief.js",
+      "sha256": "ad1fc232e49e5c830b1e62cf09e9bc22e6e1342b4177dbc48c304488f5b311a7"
+    },
+    {
+      "relativePath": "skills/subagent-driven-development/task-reviewer-prompt.md",
+      "sha256": "e3b4a1bfe7cd55ed0459e5ca9cdddb6ff086c345b99e9097036db6a18545729e"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/CREATION-LOG.md",
+      "sha256": "c24733a5b1821bd6bed1fc950261f0b9f4e90097e0bbb96459d8179713730789"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/SKILL.md",
+      "sha256": "87d5ec389496b394c4244e3d4efe87bc6f8a43b724fafc9ba0b6ce43acdae3c0"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/condition-based-waiting-example.ts",
+      "sha256": "40ae5ebe497fdf310200e43fe986552546d0a22837c0d39e855db1cfd33eb88e"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/condition-based-waiting.md",
+      "sha256": "1beca5126a8f2153abe0bbc6b45c8de435a75bb8fbe65589366e62ee5468be5d"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/defense-in-depth.md",
+      "sha256": "1e175fb86fc357e58c6aebf5441e481e1b7868b4380c0456b63a17eefbd18ba7"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/feedback-loops.md",
+      "sha256": "d56e61991c84b0ff77ba3f2b699494597ee40bf780d9b682bdd813d02cc9f870"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/find-polluter.sh",
+      "sha256": "67e952c46a9f5d15570242425bc2a9895e793ca95c72f9e830040453155f866d"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/hitl-loop.template.sh",
+      "sha256": "18ae07e1cc49b32c71767e241a6e8de4be74ef21d5e3b7e39034d9c7335f2d80"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/root-cause-tracing.md",
+      "sha256": "d2944b36766e51ccecb9f9e891d3b1c56f3122bcd575675c800100bed7be1da7"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/test-academic.md",
+      "sha256": "fe2ba480d78ac0d686dc025f41c2a32a43d642bf533f91b0c6053a04d35d6486"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/test-pressure-1.md",
+      "sha256": "0b6a915db0054577819834c79be9eb614e97bddba10d73768e1fbe91cfed048a"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/test-pressure-2.md",
+      "sha256": "b2030aeffba07050e8ad573ddf87486457c4a016a786bb326235bebd856f2016"
+    },
+    {
+      "relativePath": "skills/systematic-debugging/test-pressure-3.md",
+      "sha256": "96b50a52e2c7989c9cf20fb752c47c1e9a3a70dc362f8f7989f8f5b64dac7708"
+    },
+    {
+      "relativePath": "skills/test-driven-development/SKILL.md",
+      "sha256": "9fccd95684b4684bca3664be914b96082f82feb1b922edec675882430c244757"
+    },
+    {
+      "relativePath": "skills/test-driven-development/writing-good-tests.md",
+      "sha256": "59fa8700582255f43410c001e23298c14094cb2605bde5135a653162069da5d3"
+    },
+    {
+      "relativePath": "skills/threat-modeling-and-security/SKILL.md",
+      "sha256": "124170704d14a9bbbaa66c6a8c114b29785bca8c2c044160fad5e33741fcf2e6"
+    },
+    {
+      "relativePath": "skills/threat-modeling-and-security/stride-checklist.md",
+      "sha256": "3ec34122e05503ba2999856cc5fc69187252fa01c5c8294fed59b539125cfed0"
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/SKILL.md",
+      "sha256": "19bf2f2a073d4bd7b365d943f8b4f8f15e5e6dfd71938f6c9d853671d6cd59e2"
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
+      "sha256": "eda69482e96992f2f46bc9a11813883806f2373f111a68b20ba9565e77476b1a"
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/references/antigravity-tools.md",
+      "sha256": "85e1b4283f7a55486d07546014a70cc94a24bb58d300f2aaca0ba9ec5851d421"
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/references/codex-tools.md",
+      "sha256": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68"
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/references/gemini-tools.md",
+      "sha256": "502545bea9b0136df4a1757558caa43f7d51a5b9bb5636679cd167b0ff5e6666"
+    },
+    {
+      "relativePath": "skills/using-all-about-agents/references/pi-tools.md",
+      "sha256": "2bbe68e9bf0f2b301c12d622b76db558121ec54d68d0601d38212025fdff6e78"
+    },
+    {
+      "relativePath": "skills/using-git-worktrees/SKILL.md",
+      "sha256": "f807df36a45e5c84b3ca1bb5b65b7630779d1f9d246d6bc0d05be07c9cbab32f"
+    },
+    {
+      "relativePath": "skills/verification-before-completion/SKILL.md",
+      "sha256": "071aabe06b83edac125b26e469285ae2941a0ca60c483032fd0e072df4010c04"
+    },
+    {
+      "relativePath": "skills/wait-what/SKILL.md",
+      "sha256": "a2382cd8a8ef193d1fc51b6f6364f02d5181c9885fadfc387e025b8447b3188f"
+    },
+    {
+      "relativePath": "skills/wayfinder/SKILL.md",
+      "sha256": "cdc03c0621b698f3c5b1e801421d343decfe6a082a9b66f6fafec673832ff488"
+    },
+    {
+      "relativePath": "skills/writing-plans/SKILL.md",
+      "sha256": "a90ba724209926a9c1ea06d5fbff07e28a0545a440a98561c3340443053b7bca"
+    },
+    {
+      "relativePath": "skills/writing-plans/plan-document-reviewer-prompt.md",
+      "sha256": "35d70c2dcce9aa6ab12dc5fb7045b692b17114e13942329e71872b2bebeffaa9"
+    },
+    {
+      "relativePath": "skills/writing-skills/SKILL.md",
+      "sha256": "84c1f4ca7ccc7f7e7c04622fd130c3ef0d26b521ddb8793584870dcdf49721e6"
+    },
+    {
+      "relativePath": "skills/writing-skills/anthropic-best-practices.md",
+      "sha256": "09b86b0da95023322e3ddb301ca635439906a7141a59b7dbd5135abbe7d1c2ed"
+    },
+    {
+      "relativePath": "skills/writing-skills/examples/CLAUDE_MD_TESTING.md",
+      "sha256": "13487a3a4da5cf338b167f4faca7f06291eb6dedb433cafdf86d9b324b47d915"
+    },
+    {
+      "relativePath": "skills/writing-skills/graphviz-conventions.dot",
+      "sha256": "f6e534c7b7d79d4a7bd681bd4f5d038c3d19e96349a19b73f8e116ce17cbd66f"
+    },
+    {
+      "relativePath": "skills/writing-skills/persuasion-principles.md",
+      "sha256": "8f30a3218e5ff24c523f3310efba8ea65c004264212e813b513478b7394d4a14"
+    },
+    {
+      "relativePath": "skills/writing-skills/render-graphs.js",
+      "sha256": "1a9b1626e489905de00ecf6cf84ffec866b1d1ba0507fe94aee9f89cc938a5cb"
+    },
+    {
+      "relativePath": "skills/writing-skills/testing-skills-with-subagents.md",
+      "sha256": "ead5e957ec5350c7619217149b52ca6f24fcfa12b475f026cf4cd17d0f30706c"
+    },
+    {
+      "relativePath": "skills/zero-downtime-migrations/SKILL.md",
+      "sha256": "1afab7f42ace80f8184f83f9238280effa32603913c86ceff5a5fe1af81e743f"
+    },
+    {
+      "relativePath": "skills/zero-downtime-migrations/postgres-expand-contract-examples.md",
+      "sha256": "12f867a1228d0468f6c3e2a8740cf24d96bcfcab80930a8fc71a480ac7f8cacb"
     },
     {
       "relativePath": "terra-max.config.toml",
@@ -925,9 +1636,224 @@
       "skillSelection": "all-implicit"
     },
     {
+      "kind": "native-integration",
+      "surface": "codex",
+      "feature": "emergency-protection",
+      "phases": {
+        "rendered": {
+          "status": "pass",
+          "evidence": "Rendered the Codex CLI emergency policy with danger-full-access and approvals never."
+        },
+        "validated": {
+          "status": "not-run",
+          "evidence": "The rendered deny policy is recorded only; native package validation was not run for this emergency protection record."
+        },
+        "registered": {
+          "status": "not-run",
+          "evidence": "Codex plugin discovery and registration were not run during rendering."
+        },
+        "trusted": {
+          "status": "not-run",
+          "evidence": "Codex CLI hook trust was not checked; review and trust the plugin hook in /hooks before relying on it."
+        },
+        "active": {
+          "status": "not-run",
+          "evidence": "Codex active emergency hook state was not checked in a fresh CLI session."
+        },
+        "runtimeVerified": {
+          "status": "not-run",
+          "evidence": "Codex CLI emergency hook execution was not run in a native session."
+        }
+      },
+      "sourcePath": "adapters/codex/adapter.mjs",
+      "manualSteps": [
+        "Register the rendered package through the Codex marketplace and plugin commands.",
+        "Open /hooks and review and trust the emergency hook before relying on its deny output.",
+        "Keep danger-full-access and approvals never bounded by the emergency deny policy.",
+        "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).",
+        "Start a fresh Codex CLI session before checking active hook behavior."
+      ]
+    },
+    {
       "kind": "plugin-package",
       "relativePath": ".codex-plugin/plugin.json",
-      "packageRoot": "."
+      "packageRoot": ".",
+      "marketplaceArgs": [
+        "plugin",
+        "marketplace",
+        "add",
+        "PACKAGE_ROOT",
+        "--json"
+      ],
+      "installArgs": [
+        "plugin",
+        "add",
+        "all-about-agents@all-about-agents-dev",
+        "--json"
+      ],
+      "discoveryArgs": [
+        "plugin",
+        "list",
+        "--available",
+        "--json"
+      ]
+    },
+    {
+      "kind": "native-integration",
+      "surface": "codex",
+      "feature": "bootstrap-hook",
+      "phases": {
+        "rendered": {
+          "status": "pass",
+          "evidence": "Rendered the Codex bootstrap-hook contract from adapters/codex/templates/hooks/bootstrap.json."
+        },
+        "validated": {
+          "status": "pass",
+          "evidence": "Adapter validation accepted the Codex bootstrap-hook contract."
+        },
+        "registered": {
+          "status": "not-run",
+          "evidence": "Native Codex marketplace and plugin registration was not run during rendering."
+        },
+        "trusted": {
+          "status": "not-run",
+          "evidence": "Codex hook trust was not checked; review and trust this plugin hook in /hooks."
+        },
+        "active": {
+          "status": "not-run",
+          "evidence": "Codex active hook state was not checked during rendering."
+        },
+        "runtimeVerified": {
+          "status": "not-run",
+          "evidence": "Codex hook runtime was not verified in a native session."
+        }
+      },
+      "sourcePath": "adapters/codex/templates/hooks/bootstrap.json",
+      "manualSteps": [
+        "Register the rendered package through the Codex marketplace and plugin commands.",
+        "Open /hooks and review and trust the current plugin hook definition.",
+        "Start a fresh Codex session before checking active hook behavior."
+      ]
+    },
+    {
+      "kind": "native-integration",
+      "surface": "codex",
+      "feature": "activity-audit-hook",
+      "phases": {
+        "rendered": {
+          "status": "pass",
+          "evidence": "Rendered the Codex activity-audit-hook contract from adapters/codex/templates/hooks/activity-audit.json."
+        },
+        "validated": {
+          "status": "pass",
+          "evidence": "Adapter validation accepted the Codex activity-audit-hook contract."
+        },
+        "registered": {
+          "status": "not-run",
+          "evidence": "Native Codex marketplace and plugin registration was not run during rendering."
+        },
+        "trusted": {
+          "status": "not-run",
+          "evidence": "Codex hook trust was not checked; review and trust this plugin hook in /hooks."
+        },
+        "active": {
+          "status": "not-run",
+          "evidence": "Codex active hook state was not checked during rendering."
+        },
+        "runtimeVerified": {
+          "status": "not-run",
+          "evidence": "Codex hook runtime was not verified in a native session."
+        }
+      },
+      "sourcePath": "adapters/codex/templates/hooks/activity-audit.json",
+      "manualSteps": [
+        "Register the rendered package through the Codex marketplace and plugin commands.",
+        "Open /hooks and review and trust the current plugin hook definition.",
+        "Start a fresh Codex session before checking active hook behavior."
+      ]
+    },
+    {
+      "kind": "native-integration",
+      "surface": "codex",
+      "feature": "checkpoint-hook",
+      "phases": {
+        "rendered": {
+          "status": "pass",
+          "evidence": "Rendered the Codex checkpoint-hook contract from adapters/codex/templates/hooks/checkpoint.json."
+        },
+        "validated": {
+          "status": "pass",
+          "evidence": "Adapter validation accepted the Codex checkpoint-hook contract."
+        },
+        "registered": {
+          "status": "not-run",
+          "evidence": "Native Codex marketplace and plugin registration was not run during rendering."
+        },
+        "trusted": {
+          "status": "not-run",
+          "evidence": "Codex hook trust was not checked; review and trust this plugin hook in /hooks."
+        },
+        "active": {
+          "status": "not-run",
+          "evidence": "Codex active hook state was not checked during rendering."
+        },
+        "runtimeVerified": {
+          "status": "not-run",
+          "evidence": "Codex hook runtime was not verified in a native session."
+        }
+      },
+      "sourcePath": "adapters/codex/templates/hooks/checkpoint.json",
+      "manualSteps": [
+        "Register the rendered package through the Codex marketplace and plugin commands.",
+        "Open /hooks and review and trust the current plugin hook definition.",
+        "Start a fresh Codex session before checking active hook behavior."
+      ]
+    },
+    {
+      "kind": "native-integration",
+      "surface": "codex",
+      "feature": "emergency-guard-hook",
+      "phases": {
+        "rendered": {
+          "status": "pass",
+          "evidence": "Rendered the Codex emergency-guard-hook contract from adapters/codex/templates/hooks/emergency-guard.json."
+        },
+        "validated": {
+          "status": "pass",
+          "evidence": "Adapter validation accepted the Codex emergency-guard-hook contract."
+        },
+        "registered": {
+          "status": "not-run",
+          "evidence": "Native Codex marketplace and plugin registration was not run during rendering."
+        },
+        "trusted": {
+          "status": "not-run",
+          "evidence": "Codex hook trust was not checked; review and trust this plugin hook in /hooks."
+        },
+        "active": {
+          "status": "not-run",
+          "evidence": "Codex active hook state was not checked during rendering."
+        },
+        "runtimeVerified": {
+          "status": "not-run",
+          "evidence": "Codex hook runtime was not verified in a native session."
+        }
+      },
+      "sourcePath": "adapters/codex/templates/hooks/emergency-guard.json",
+      "manualSteps": [
+        "Register the rendered package through the Codex marketplace and plugin commands.",
+        "Open /hooks and review and trust the current plugin hook definition.",
+        "Start a fresh Codex session before checking active hook behavior."
+      ]
+    },
+    {
+      "kind": "plugin-marketplace",
+      "relativePath": ".agents/plugins/marketplace.json",
+      "marketplace": "all-about-agents-dev",
+      "source": {
+        "source": "url",
+        "url": "./"
+      }
     },
     {
       "kind": "runtime-prerequisite",
@@ -963,7 +1889,10 @@
       "event": "PostToolUse",
       "matcher": ".*",
       "optional": true,
-      "automatic": true,
+      "enabled": false,
+      "automatic": false,
+      "trustRequired": true,
+      "status": "not run",
       "failureMode": "fail-open",
       "recordedFields": [
         "timestamp",
@@ -979,7 +1908,10 @@
       "relativePath": "hooks/hooks.json",
       "event": "PreCompact",
       "matcher": ".*",
-      "automatic": true,
+      "enabled": false,
+      "automatic": false,
+      "trustRequired": true,
+      "status": "not run",
       "durableWorkflow": "explicit",
       "failureMode": "fail-open",
       "recordedFields": [
@@ -997,11 +1929,11 @@
       "relativePath": "hooks/hooks.json",
       "event": "PreToolUse",
       "matcher": ".*",
-      "enabled": true,
-      "automatic": true,
+      "enabled": false,
+      "automatic": false,
       "trustRequired": true,
-      "probeRequired": false,
-      "status": "ready"
+      "probeRequired": true,
+      "status": "not run"
     },
     {
       "kind": "instructions",
@@ -1017,6 +1949,15 @@
       "kind": "skills",
       "relativeDirectory": ".agents/skills",
       "destination": ".agents/skills",
+      "consumers": [
+        "codex-cli",
+        "codex-desktop"
+      ]
+    },
+    {
+      "kind": "plugin-skills",
+      "relativeDirectory": "skills",
+      "destination": "skills",
       "consumers": [
         "codex-cli",
         "codex-desktop"

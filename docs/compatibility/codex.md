@@ -1,78 +1,121 @@
 # Codex CLI and Desktop compatibility
 
-This page covers the deterministic Codex package and installer contract. It
-does not turn a package tree into a native Codex claim. Windows Codex CLI
-0.151.0-alpha.7.2 now has partial native evidence for isolated strict config
-loading and Terra profile parsing; authenticated CLI behavior and Desktop
-acceptance remain `NOT_RUN_UNAVAILABLE`. See the
-[evaluation method](../evaluations/method.md).
+This page covers the Codex package and its native boundary. The observed
+runtime is Codex CLI `0.151.0-alpha.7.2` on Windows. The T07 disposable
+checks passed local marketplace add, plugin add, exact plugin discovery, and
+hook-file discovery. Hook trust remains `NOT_RUN`. Authenticated sessions remain
+`NOT_RUN_UNAVAILABLE`.
 
-## Support summary
+## Lifecycle and support
 
-| Capability | Current status | Contract |
+Use these states in order:
+
+```text
+rendered -> validated -> registered -> trusted -> active -> runtime verified
+```
+
+The package can be `rendered` and locally `validated` without being
+`registered`. Plugin discovery is evidence for `registered`. Open `/hooks` for
+the separate `trusted` step when Codex asks. A fresh session is needed for
+`active` and `runtime verified` evidence.
+
+| Capability | Current evidence | Boundary |
 | --- | --- | --- |
-| `AGENTS.md`, skills, role agents, config profiles | Automatic package render under an explicit root | Files are rendered from the repository templates with declared relative paths. |
-| Plugin registration | Manual/native confirmation | `.codex-plugin/plugin.json` is packaged; product discovery must be observed in Codex. |
-| Claude-style command files | Unsupported | Reusable behavior is delivered as skills; Codex command-plugin mapping is not declared. |
-| Hooks | Automatic package render; native execution requires Gate 2 | Lifecycle handlers are declared, but no product run was observed. |
-| Statusline and schedules | Unsupported/unknown native contract | No Codex-native statusline or repository schedule is emitted. |
-| Native validation | Partial; observed on Windows Codex CLI 0.151.0-alpha.7.2 | With an isolated `CODEX_HOME`, strict Doctor reported `config.load: ok` for the Sol/max base config; `--profile terra-max mcp list` parsed the alternate profile. |
-| Product/session behavior | `NOT_RUN_UNAVAILABLE` | The isolated home intentionally had no credentials and the runner was non-interactive, so model/agent/hook execution and Desktop Gate 2/3 were not run. |
+| `AGENTS.md`, skills, roles, and profiles | Package rendered; the disposable CLI loaded the base config and Terra profile | Role execution and Desktop loading are not claimed. |
+| Plugin registration | Disposable marketplace add, plugin add, and `plugin list --available --json` discovery passed | Trust and runtime execution remain separate. |
+| Hooks | Hook files were present in the discovered package | Hooks are not automatic. `/hooks` trust and hook execution were not run. |
+| Statusline display name | Codex has no native statusline contract in this package | Do not infer statusline setup from another product. |
+| Native session | `NOT_RUN_UNAVAILABLE` | No authenticated model or Desktop session was run. |
 
-## Profiles, models, and permissions
+## Models, recovery, and permissions
 
-The `portable` profile is controlled: `sandbox_mode=workspace-write` and
-`approval_policy=on-request`, with no forced model. The `template` profile is
-the approved full-access preset:
+Plugin registration is a manual product action.
 
-- primary model: `gpt-5.6-sol`;
-- reasoning effort: `max`;
+The `portable` profile uses `sandbox_mode=workspace-write` and
+`approval_policy=on-request`. The `template` profile uses:
+
+- model `gpt-5.6-sol`;
+- `model_reasoning_effort=max`;
 - `sandbox_mode=danger-full-access`;
 - `approval_policy=never`.
 
-The alternate `terra-max.config.toml` selects `gpt-5.6-terra` with max
-reasoning. Terra is an explicit operator choice (CLI profile `terra-max` or a
-Desktop model picker), not an automatic failure fallback. Automatic model
-fallback is unsupported and no such behavior is claimed.
+The explicit `terra-max` profile selects `gpt-5.6-terra` with max reasoning.
+This is an operator-selected recovery profile. Automatic model fallback is
+unsupported. No automatic model fallback is claimed.
 
-Full access does not disable the emergency-deny contract. The rendered
-instructions and hook policy retain denies for destructive erasure, raw-disk
-operations, force-push/history rewrite, discarding uncommitted work,
-credential or secret access/output, and guardrail bypass. CLI registration and
-execution of those controls require native observation; Desktop controls must
-be checked manually. Read-only role TOMLs use `sandbox_mode=read-only`; the
-implementer role is the scoped `workspace-write` exception.
+```text
+codex --profile terra-max
+```
 
-## Roots, registration, and paths
+Full access does not remove the emergency-deny contract. The rendered policy
+keeps denies for destructive erasure, raw-disk operations,
+force-push/history rewrite, discarding uncommitted work, secret access or
+output, and guardrail bypass. Native deny behavior needs a product check.
 
-Codex CLI and Desktop share the configured root:
+## Registration and trust
 
-- `CODEX_HOME` when explicitly supplied;
-- otherwise `~/.codex`.
+Codex uses `CODEX_HOME` when it is set. Otherwise it uses `~/.codex`.
+The repository installer uses an explicit disposable package root.
 
-The package contains `AGENTS.md`, `.agents/skills/<skill>/SKILL.md`,
-`.codex/agents/<role>.toml`, `config.toml`, and the explicit Terra alternate
-profile. Role configuration is declared relative to the delivered `agents/`
-directory. The installer’s source-to-destination mapping allows the role
-files to resolve from the selected Codex agents root; it does not infer a live
-root or silently register a Desktop profile.
+Warning: native registration and hook trust can change the selected Codex
+home. Use a disposable home and review the dry-run before an authorized apply.
 
-Qualification applies only below a selected disposable destination root and
-proves containment there. A real operator must confirm native plugin
-discovery, role registration, hook behavior, and Desktop profile selection.
+PowerShell:
 
-## Verification limits
+```powershell
+New-Item -ItemType Directory -Force -LiteralPath "<PRODUCT_ROOT>" | Out-Null
+$env:CODEX_HOME = "<PRODUCT_ROOT>"
+node scripts/aaa.mjs register --surface codex --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
+```
 
-The retained native Doctor evidence proves only that the generated base config
-loads strictly with `gpt-5.6-sol`, max reasoning, approval policy `never`, and
-the unrestricted filesystem sandbox. The Terra overlay parsed through a native
-profile-aware command, but no authenticated model call was made. No fallback
-event, role execution, Desktop registration, hook invocation, or persistence
-observation is claimed. The package also has no native statusline contract, and
-the narrower implementer task path is not enforced by Codex's workspace
-controls alone; the outer installer/approval boundary remains authoritative.
+POSIX shell on macOS or Linux:
 
-See the [evaluation method](../evaluations/method.md) for Gate 2/Gate 3
-requirements and [known limitations](../limitations/known-limitations.md) for
-cross-surface unavailable checks. Use the supported [Windows](../setup/windows.md)
-or [macOS](../setup/macos.md) setup guide with a disposable root.
+```sh
+mkdir -p "<PRODUCT_ROOT>"
+export CODEX_HOME="<PRODUCT_ROOT>"
+node scripts/aaa.mjs register --surface codex --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
+```
+
+Run the same command with `--apply` only after exact authority.
+
+Codex clones a local marketplace source. If `<PACKAGE_ROOT>` is a newly
+rendered folder and is not already a Git repository, prepare only that folder.
+
+Warning: the following Git commands write metadata only inside the reviewed
+`<PACKAGE_ROOT>`. Never run them on an unreviewed existing repository.
+
+```text
+git -C "<PACKAGE_ROOT>" init
+git -C "<PACKAGE_ROOT>" add -A
+git -C "<PACKAGE_ROOT>" -c user.name=all-about-agents -c user.email=all-about-agents@invalid.example commit -m "Prepare local Codex plugin source"
+```
+
+During apply, the installer first overwrites `AGENTS.md`, `config.toml`,
+`terra-max.config.toml` for the template profile, and the seven `agents/*.toml`
+files in `CODEX_HOME`. Native registration runs after these files are present,
+so product-written plugin metadata is not erased by a later config deployment.
+
+The fixed current CLI commands are:
+
+```text
+codex plugin marketplace add "<PACKAGE_ROOT>" --json
+codex plugin add all-about-agents@all-about-agents-dev --json
+codex plugin list --available --json
+```
+
+After a new or changed hook hash, restart Codex and open `/hooks`. Review or
+trust the hook only when Codex presents that step. A registered hook is not
+automatically trusted or active.
+
+## Limits
+
+The disposable check did not run model calls, role execution, hook trust,
+hook execution, Desktop registration, Desktop model selection, persistence,
+macOS execution, or Gate 3. Record these checks as `NOT_RUN` or
+`NOT_RUN_UNAVAILABLE`. Package output and static tests do not promote their
+status.
+
+Use [native registration](../maintenance/native-registration.md),
+[native verification](../maintenance/native-verification.md), and the
+[cross-tool quality guide](../maintenance/cross-tool-quality.md). See
+[known limitations](../limitations/known-limitations.md).

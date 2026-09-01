@@ -11,7 +11,11 @@
     "test:contracts": "node --test",
     "test:integration": "node --test",
     "validate": "node scripts/aaa.mjs validate",
-    "doctor": "node scripts/aaa.mjs doctor"
+    "doctor": "node scripts/aaa.mjs doctor",
+    "sync:status": "node scripts/sync-status.mjs",
+    "quality:quick": "node scripts/quality-gate.mjs quick",
+    "quality:full": "node scripts/quality-gate.mjs full",
+    "quality:skill": "node scripts/quality-gate.mjs skill"
   },
   "dependencies": {},
   "devDependencies": {}

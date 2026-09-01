@@ -1,0 +1,447 @@
+import { lstatSync, readFileSync } from "node:fs";
+import { readFile as defaultReadFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { basename, dirname, isAbsolute, relative, resolve, join } from "node:path";
+
+import { renderClaudeStatuslineCommand, resolveClaudeConfigDir } from "../../adapters/claude/adapter.mjs";
+import { resolveCodexHome } from "../../adapters/codex/adapter.mjs";
+import { resolveAgyConfigDir } from "../../adapters/agy/adapter.mjs";
+import { ANTIGRAVITY_PERMISSION_POLICY } from "../../adapters/antigravity-2/adapter.mjs";
+import { assertSafeDestinationRoot } from "./roots.mjs";
+import { mergeSettingsOverlay } from "./settings-overlay.mjs";
+import { atomicReplaceFile } from "./atomic-write.mjs";
+import { hashBytes } from "./hash.mjs";
+import { parseManagedState, STATE_RELATIVE_PATH } from "./state.mjs";
+import { runProcess as defaultRunProcess } from "../../scripts/lib/process-runner.mjs";
+
+export const REGISTRATION_SURFACES = Object.freeze(["claude", "codex", "antigravity-2", "agy"]);
+const SURFACE_SET = new Set(REGISTRATION_SURFACES);
+const PROFILE_SET = new Set(["portable", "template"]);
+const SHA256 = /^[0-9a-f]{64}$/u;
+const AUTHENTIC_PLANS = new WeakSet();
+
+function object(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function pathError(code, message) {
+  const error = new TypeError(message);
+  error.code = code;
+  return error;
+}
+
+function safeRoot(value, label, { required = false } = {}) {
+  if (typeof value !== "string" || value.trim() === "" || value.includes("\0")) throw pathError("invalid-root", `${label} must be a non-empty path`);
+  if (!isAbsolute(value)) throw pathError("invalid-root", `${label} must be absolute; resolve repository-relative CLI input before planning`);
+  if (value.split(/[\\/]/u).some((segment) => segment === "..")) throw pathError("root-traversal", `${label} may not contain raw '..' traversal segments`);
+  const root = resolve(value);
+  if (!isAbsolute(root)) throw pathError("invalid-root", `${label} must resolve to an absolute path`);
+  assertSafeDestinationRoot(root, { allowedProductRoots: [root] });
+  let metadata;
+  try { metadata = lstatSync(root); } catch (error) {
+    if (error?.code === "ENOENT" && !required) return root;
+    throw pathError("invalid-root", `${label} is unavailable`);
+  }
+  if (metadata.isSymbolicLink()) throw pathError("unsafe-root", `${label} may not be a symlink, junction, or reparse point`);
+  if (!metadata.isDirectory()) throw pathError("invalid-root", `${label} must be a directory`);
+  return root;
+}
+
+function requiredPackageFiles(surface) {
+  return surface === "claude"
+    ? [".claude-plugin/plugin.json", ".claude-plugin/marketplace.json"]
+    : surface === "codex"
+      ? [".codex-plugin/plugin.json", ".agents/plugins/marketplace.json"]
+      : surface === "agy"
+        ? ["plugin.json", "settings.overlay.json"]
+        : [".agents/plugins/all-about-agents/plugin.json"];
+}
+
+function requiredRegistrationSourceFiles(surface, profile) {
+  const markers = requiredPackageFiles(surface);
+  if (surface === "claude") return [...markers, "settings.json", "all-about-agents/statusline.json", "statusline/statusline.mjs", "statusline/track-tool.mjs", "statusline/statusline.ps1", "statusline/statusline.sh"];
+  if (surface === "codex") return [...markers, "AGENTS.md", "config.toml", ...(profile === "template" ? ["terra-max.config.toml"] : []), ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.toml`)];
+  return markers;
+}
+
+function checkPackageFile(packageRoot, relativePath) {
+  const target = resolve(packageRoot, ...relativePath.split("/"));
+  const suffix = relative(packageRoot, target);
+  if (isAbsolute(suffix) || suffix.split(/[\\/]/u)[0] === "..") throw pathError("package-escape", "package file escapes the package root");
+  let current = packageRoot;
+  const segments = relativePath.split("/");
+  for (const segment of segments.slice(0, -1)) {
+    current = join(current, segment);
+    assertSafeDestinationRoot(current, { allowedProductRoots: [packageRoot] });
+    let parentMetadata;
+    try { parentMetadata = lstatSync(current); } catch (error) {
+      if (error?.code === "ENOENT") throw pathError("package-file-missing", `package is missing ${relativePath}`);
+      throw pathError("package-file-unreadable", `unable to inspect package marker ${relativePath}`);
+    }
+    if (parentMetadata.isSymbolicLink() || !parentMetadata.isDirectory()) throw pathError("unsafe-package-file", `package ${relativePath} has an unsafe marker ancestor`);
+  }
+  let metadata;
+  try { metadata = lstatSync(target); } catch (error) {
+    if (error?.code === "ENOENT") throw pathError("package-file-missing", `package is missing ${relativePath}`);
+    throw pathError("package-file-unreadable", `unable to inspect package marker ${relativePath}`);
+  }
+  if (metadata.isSymbolicLink() || !metadata.isFile()) throw pathError("unsafe-package-file", `package ${relativePath} must be a regular file`);
+  return target;
+}
+
+function managedStateLocation(packageRoot, surface) {
+  let statePath;
+  try {
+    statePath = checkPackageFile(packageRoot, STATE_RELATIVE_PATH);
+  } catch (error) {
+    if (error?.code !== "package-file-missing") throw pathError("package-state-invalid", "package managed state is unsafe or unreadable");
+    const parentRoot = dirname(packageRoot);
+    if (basename(packageRoot) !== surface || parentRoot === packageRoot) throw pathError("package-state-missing", "package managed state is missing; render the package before registration");
+    try {
+      statePath = checkPackageFile(parentRoot, STATE_RELATIVE_PATH);
+    } catch (parentError) {
+      if (parentError?.code === "package-file-missing") throw pathError("package-state-missing", "package managed state is missing; render the package before registration");
+      throw pathError("package-state-invalid", "package managed state is unsafe or unreadable");
+    }
+    return { statePath, stateRoot: parentRoot, ownershipPrefix: `${surface}/` };
+  }
+  return { statePath, stateRoot: packageRoot, ownershipPrefix: "" };
+}
+
+function validateManagedPackage(packageRoot, surface, profile) {
+  const { statePath, stateRoot, ownershipPrefix } = managedStateLocation(packageRoot, surface);
+  let state;
+  try {
+    state = parseManagedState(readFileSync(statePath));
+  } catch {
+    state = null;
+  }
+  if (!state) throw pathError("package-state-invalid", "package managed state is malformed or unreadable");
+  if (state.profile !== profile) throw pathError("package-profile-mismatch", "requested profile does not match the rendered package profile");
+  if (!state.surfaces.includes(surface)) throw pathError("package-surface-mismatch", "requested surface is not owned by the rendered package state");
+
+  const scopedOwnership = state.ownedPaths.filter((entry) => entry.relativePath.startsWith(ownershipPrefix));
+  const ownership = new Map(scopedOwnership.map((entry) => [entry.relativePath, entry.sha256]));
+  for (const relativePath of requiredRegistrationSourceFiles(surface, profile)) {
+    if (!ownership.has(`${ownershipPrefix}${relativePath}`)) throw pathError("package-source-unowned", `required registration source is not owned: ${relativePath}`);
+  }
+  for (const entry of scopedOwnership) {
+    let content;
+    try {
+      content = readFileSync(checkPackageFile(stateRoot, entry.relativePath));
+    } catch {
+      throw pathError("package-owned-file-invalid", `managed package file is missing, unsafe, or unreadable: ${entry.relativePath}`);
+    }
+    if (hashBytes(content) !== entry.sha256) throw pathError("package-owned-hash-mismatch", `managed package file does not match its recorded hash: ${entry.relativePath}`);
+  }
+  return { state, ownershipPrefix, ownership };
+}
+
+function processAction(id, executable, args, cwd, environmentKey, expectedProbe, mutates = true) {
+  return { id, kind: "process", executable, args: [...args], cwd, environmentKeys: environmentKey ? [environmentKey] : [], mutates, required: true, expectedProbe };
+}
+
+function manualAction(id, message) {
+  return { id, kind: "manual", mutates: false, required: false, message };
+}
+
+function fileCopyAction(id, packageRoot, productRoot, sourceRelativePath, destinationRelativePath, { mode = null, transform = null, expectedSourceHash } = {}) {
+  if (!(mode === null || (Number.isInteger(mode) && mode >= 0 && mode <= 0o777))) throw new TypeError("native config copy mode must be null or a Unix mode from 0 through 0777");
+  if (!(transform === null || transform === "claude-statusline-product-root")) throw new TypeError("unsupported native config copy transform");
+  if (typeof expectedSourceHash !== "string" || !SHA256.test(expectedSourceHash)) throw new TypeError("native config copy requires a managed source hash");
+  const sourcePath = checkPackageFile(packageRoot, sourceRelativePath);
+  const targetPath = resolve(productRoot, ...destinationRelativePath.split("/"));
+  const suffix = relative(productRoot, targetPath);
+  if (isAbsolute(suffix) || suffix.split(/[\\/]/u)[0] === "..") throw pathError("destination-escape", "native config destination escapes the product root");
+  assertSafeDestinationRoot(dirname(targetPath), { allowedProductRoots: [productRoot] });
+  return { id, kind: "file-copy", sourcePath, sourceRelativePath, expectedSourceHash, targetPath, destinationRelativePath, allowedRoot: productRoot, mode, transform, mutates: true, required: true, expectedProbe: "hash-verified-overwrite", automaticWrite: true };
+}
+
+function lifecycle(surface) {
+  const registrationEvidence = surface === "antigravity-2"
+    ? "Desktop registration is manual-only; no automatic registration command is documented."
+    : "Native registration has not been attempted by this dry-run plan.";
+  const trust = surface === "claude"
+    ? { status: "not-run-unavailable", evidence: "Claude has no separate native trust step for this package registration." }
+    : { status: "not-run", evidence: "Native trust has not been observed; a manual product step may be required." };
+  return {
+    rendered: { status: "pass", evidence: "Observed required marker regular files under the package root." },
+    validated: { status: "not-run", evidence: "Only local structural path checks ran; native schema and product validation were not observed." },
+    registered: { status: "not-run", evidence: registrationEvidence },
+    trusted: trust,
+    active: { status: "not-run", evidence: "A fresh native session has not been opened." },
+    runtimeVerified: { status: "not-run", evidence: "No native runtime behavior was executed by this planner." }
+  };
+}
+
+function assertRenderedConsistency(rendered, surface) {
+  if (rendered === undefined || rendered === null) return;
+  if (!object(rendered)) throw new TypeError("rendered must be an object when supplied");
+  if (Array.isArray(rendered.registrations)) {
+    for (const registration of rendered.registrations) {
+      if (registration?.surface !== undefined && registration.surface !== surface) continue;
+      // Registration metadata is evidence only. It is intentionally never
+      // used as an executable instruction source.
+    }
+  }
+}
+
+/** Build a deterministic plan from fixed, reviewed product command builders. */
+export function planNativeRegistration({ surface, packageRoot, productRoot, profile, platform = process.platform, rendered } = {}) {
+  if (!SURFACE_SET.has(surface)) throw pathError("unsupported-surface", `unsupported registration surface: ${String(surface)}`);
+  if (!PROFILE_SET.has(profile)) throw pathError("invalid-profile", "profile must be portable or template");
+  if (typeof platform !== "string" || !platform.trim()) throw new TypeError("platform must be a non-empty string");
+  assertRenderedConsistency(rendered, surface);
+
+  const pkg = safeRoot(packageRoot, "packageRoot", { required: true });
+  for (const relativePath of requiredPackageFiles(surface)) checkPackageFile(pkg, relativePath);
+  const managedPackage = validateManagedPackage(pkg, surface, profile);
+  const product = surface === "antigravity-2" ? null : safeRoot(productRoot, "productRoot");
+  const actions = [];
+  const deployFile = (id, sourceRelativePath, destinationRelativePath, options = {}) => fileCopyAction(id, pkg, product, sourceRelativePath, destinationRelativePath, {
+    ...options,
+    expectedSourceHash: managedPackage.ownership.get(`${managedPackage.ownershipPrefix}${sourceRelativePath}`)
+  });
+
+  if (surface === "claude") {
+    actions.push(deployFile("claude-settings-deploy", "settings.json", "settings.json", { transform: "claude-statusline-product-root" }));
+    actions.push(deployFile("claude-statusline-config-deploy", "all-about-agents/statusline.json", "all-about-agents/statusline.json"));
+    actions.push(deployFile("claude-statusline-renderer-deploy", "statusline/statusline.mjs", "statusline/statusline.mjs", { mode: 0o755 }));
+    actions.push(deployFile("claude-statusline-tracker-deploy", "statusline/track-tool.mjs", "statusline/track-tool.mjs", { mode: 0o755 }));
+    actions.push(deployFile("claude-statusline-windows-launcher-deploy", "statusline/statusline.ps1", "statusline/statusline.ps1"));
+    actions.push(deployFile("claude-statusline-posix-launcher-deploy", "statusline/statusline.sh", "statusline/statusline.sh", { mode: 0o755 }));
+    actions.push(processAction("claude-marketplace-add", "claude", ["plugin", "marketplace", "add", pkg, "--scope", "user"], pkg, "CLAUDE_CONFIG_DIR", "none"));
+    actions.push(processAction("claude-plugin-install", "claude", ["plugin", "install", "all-about-agents@all-about-agents-dev", "--scope", "user"], pkg, "CLAUDE_CONFIG_DIR", "none"));
+    actions.push(processAction("claude-plugin-list", "claude", ["plugin", "list", "--json"], pkg, "CLAUDE_CONFIG_DIR", "json", false));
+    actions.push(manualAction("claude-reload", "Restart Claude Code or reload the plugin before checking native behavior."));
+  } else if (surface === "codex") {
+    actions.push(deployFile("codex-instructions-deploy", "AGENTS.md", "AGENTS.md"));
+    actions.push(deployFile("codex-config-deploy", "config.toml", "config.toml"));
+    if (profile === "template") actions.push(deployFile("codex-terra-profile-deploy", "terra-max.config.toml", "terra-max.config.toml"));
+    for (const role of ["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]) {
+      actions.push(deployFile(`codex-agent-${role}-deploy`, `agents/${role}.toml`, `agents/${role}.toml`));
+    }
+    actions.push(processAction("codex-marketplace-add", "codex", ["plugin", "marketplace", "add", pkg, "--json"], pkg, "CODEX_HOME", "json"));
+    actions.push(processAction("codex-plugin-install", "codex", ["plugin", "add", "all-about-agents@all-about-agents-dev", "--json"], pkg, "CODEX_HOME", "json"));
+    actions.push(processAction("codex-plugin-list", "codex", ["plugin", "list", "--available", "--json"], pkg, "CODEX_HOME", "json", false));
+    actions.push(manualAction("codex-hooks-trust", "Open `/hooks` in Codex and review/trust the registered hook only if the product presents that step."));
+  } else if (surface === "agy") {
+    const target = join(product, "settings.json");
+    const overlay = join(pkg, "settings.overlay.json");
+    actions.push(processAction("agy-plugin-install", "agy", ["plugin", "install", pkg], pkg, null, "none"));
+    actions.push(processAction("agy-plugin-list", "agy", ["plugin", "list"], pkg, null, "none", false));
+    actions.push({ id: "agy-settings-overlay", kind: "settings-overlay", targetPath: target, overlayPath: overlay, expectedOverlayHash: managedPackage.ownership.get(`${managedPackage.ownershipPrefix}settings.overlay.json`), allowedRoot: product, mutates: true, required: true, expectedProbe: "settings-merge", automaticWrite: true });
+    actions.push(manualAction("agy-reload", "Start a fresh agy TUI session and check the statusline after the settings merge."));
+  } else {
+    actions.push({ id: "desktop-manual-registration", kind: "manual", mutates: false, required: false, message: desktopManualMessage() });
+  }
+
+  const plan = {
+    schemaVersion: 1,
+    surface,
+    packageRoot: pkg,
+    productRoot: product,
+    profile,
+    platform,
+    actions,
+    lifecycle: lifecycle(surface)
+  };
+  deepFreeze(plan);
+  AUTHENTIC_PLANS.add(plan);
+  return plan;
+}
+
+function deepFreeze(value, seen = new WeakSet()) {
+  if (value === null || typeof value !== "object" || seen.has(value)) return value;
+  seen.add(value);
+  for (const key of Reflect.ownKeys(value)) deepFreeze(value[key], seen);
+  return Object.freeze(value);
+}
+
+function envFor(plan, action) {
+  const env = {};
+  for (const key of action.environmentKeys || []) {
+    if (key === "CLAUDE_CONFIG_DIR" || key === "CODEX_HOME") env[key] = plan.productRoot;
+    else throw pathError("unknown-environment-key", `unsupported native environment key ${key}`);
+  }
+  return env;
+}
+
+function probeOutput(action, result) {
+  if (action.expectedProbe !== "json") return null;
+  if (result.stdout === undefined || String(result.stdout).trim() === "") {
+    const error = new Error(`native action ${action.id} returned empty JSON output`);
+    error.code = "malformed-native-json";
+    throw error;
+  }
+  try { return JSON.parse(String(result.stdout)); } catch (cause) {
+    const error = new Error(`native action ${action.id} returned malformed JSON`, { cause });
+    error.code = "malformed-native-json";
+    throw error;
+  }
+}
+
+function reportAction(action, status, extra = {}) {
+  return { ...action, status, ...extra };
+}
+
+function transformCopyContent(action, content, plan) {
+  if (action.transform === null) return content;
+  if (action.transform !== "claude-statusline-product-root") throw pathError("unsupported-copy-transform", `unsupported native config copy transform for ${action.id}`);
+  let settings;
+  try {
+    settings = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(content));
+  } catch (cause) {
+    throw pathError("invalid-claude-settings", `native config source for ${action.id} is not strict UTF-8 JSON`);
+  }
+  if (!object(settings) || !object(settings.statusLine) || settings.statusLine.type !== "command" || typeof settings.statusLine.command !== "string") {
+    throw pathError("invalid-claude-settings", `native config source for ${action.id} has no supported statusLine command`);
+  }
+  settings.statusLine.command = renderClaudeStatuslineCommand({ configRoot: plan.productRoot, platform: plan.platform });
+  return Buffer.from(`${JSON.stringify(settings, null, 2)}\n`, "utf8");
+}
+
+function desktopManualMessage() {
+  const denies = ANTIGRAVITY_PERMISSION_POLICY.full.deny.map((rule) => `Deny ${rule}`).join(", ");
+  return `Antigravity Desktop registration is manual-only. Select Custom full access and retain these emergency Deny rules: ${denies}.`;
+}
+
+function revalidatePlan(plan, { validateState = true } = {}) {
+  const packageRoot = safeRoot(plan.packageRoot, "packageRoot", { required: true });
+  for (const relativePath of requiredPackageFiles(plan.surface)) checkPackageFile(packageRoot, relativePath);
+  if (validateState) validateManagedPackage(packageRoot, plan.surface, plan.profile);
+  if (plan.surface !== "antigravity-2") safeRoot(plan.productRoot, "productRoot", { required: true });
+  for (const action of plan.actions) {
+    if (action.kind !== "file-copy") continue;
+    const sourcePath = checkPackageFile(packageRoot, action.sourceRelativePath);
+    if (sourcePath !== action.sourcePath) throw pathError("source-mismatch", "native config source changed after planning");
+    const targetPath = resolve(plan.productRoot, ...action.destinationRelativePath.split("/"));
+    if (targetPath !== action.targetPath) throw pathError("destination-mismatch", "native config destination changed after planning");
+    assertSafeDestinationRoot(dirname(targetPath), { allowedProductRoots: [plan.productRoot] });
+  }
+}
+
+function failedLifecycle(plan, error) {
+  return {
+    ...plan.lifecycle,
+    registered: {
+      status: "fail",
+      evidence: `Required registration action failed before native semantic discovery was observed: ${error.code || "native-action-failed"}.`
+    }
+  };
+}
+
+function sanitizeString(value, plan) {
+  let output = value;
+  const protectedEmergencyPath = "write_file(/home/user/.ssh)";
+  const protectedToken = "__AAA_PROTECTED_EMERGENCY_PATH__";
+  output = output.split(protectedEmergencyPath).join(protectedToken);
+  const homeCandidates = [
+    homedir(),
+    process.env.USERPROFILE,
+    process.env.HOMEDRIVE && process.env.HOMEPATH ? join(process.env.HOMEDRIVE, process.env.HOMEPATH) : null
+  ].filter((candidate, index, values) => typeof candidate === "string" && candidate !== "" && values.indexOf(candidate) === index);
+  const replacements = [
+    [plan.packageRoot, "<PACKAGE_ROOT>"],
+    [plan.productRoot, "<PRODUCT_ROOT>"],
+    ...homeCandidates.map((candidate) => [candidate, "<HOME>"])
+  ].filter(([needle]) => typeof needle === "string" && needle !== "");
+  const variants = replacements.flatMap(([needle, replacement]) => plan.platform === "win32"
+    ? [[needle, replacement], [needle.replaceAll("\\", "/"), replacement], [needle.replaceAll("/", "\\"), replacement]]
+    : [[needle, replacement]]);
+  const seen = new Set();
+  for (const [needle, replacement] of variants.sort((left, right) => right[0].length - left[0].length)) {
+    const key = `${needle}\0${replacement}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+    output = output.replace(new RegExp(escaped, plan.platform === "win32" ? "giu" : "gu"), replacement);
+  }
+  return output.split(protectedToken).join(protectedEmergencyPath);
+}
+
+function sanitizeReport(value, plan) {
+  if (typeof value === "string") return sanitizeString(value, plan);
+  if (Array.isArray(value)) return value.map((entry) => sanitizeReport(entry, plan));
+  if (!object(value)) return value;
+  return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, sanitizeReport(child, plan)]));
+}
+
+function assertAuthenticPlan(plan) {
+  if (!object(plan) || !AUTHENTIC_PLANS.has(plan)) {
+    const error = new TypeError("native registration plan was not created by planNativeRegistration");
+    error.code = "untrusted-plan";
+    throw error;
+  }
+}
+
+/** Execute a plan with injected process/filesystem seams; dry-run is side-effect free. */
+export async function runNativeRegistration(plan, { mode = "dry-run", runProcess = defaultRunProcess, fileSystem = {} } = {}) {
+  assertAuthenticPlan(plan);
+  if (plan.schemaVersion !== 1 || !SURFACE_SET.has(plan.surface) || !Array.isArray(plan.actions)) throw new TypeError("invalid native registration plan");
+  if (mode !== "dry-run" && mode !== "apply") throw new TypeError("mode must be dry-run or apply");
+  if (typeof runProcess !== "function") throw new TypeError("runProcess must be a function");
+  if (mode === "dry-run") {
+    return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: "dry-run", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, actions: plan.actions.map((action) => reportAction(action, action.kind === "manual" ? "manual-required" : "planned")), completed: [], failed: null, notAttempted: [], lifecycle: plan.lifecycle }, plan);
+  }
+  if (plan.surface === "antigravity-2") {
+    return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: "failed", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: null, actions: plan.actions.map((action) => reportAction(action, "manual-required")), completed: [], failed: null, notAttempted: [], lifecycle: plan.lifecycle, error: { code: "unsupported-automatic-registration", message: desktopManualMessage() } }, plan);
+  }
+  const completed = [];
+  const actionReports = [];
+  let overlay = null;
+  for (let index = 0; index < plan.actions.length; index += 1) {
+    const action = plan.actions[index];
+    try {
+      // Re-check every immutable plan's roots and fixed marker paths immediately
+      // before each action. A root can be redirected after planning.
+      revalidatePlan(plan, { validateState: index === 0 || action.kind === "process" || action.kind === "settings-overlay" });
+      if (action.kind === "manual") {
+        actionReports.push(reportAction(action, "manual-required"));
+      } else if (action.kind === "settings-overlay") {
+        overlay = await mergeSettingsOverlay({ targetPath: action.targetPath, overlayPath: action.overlayPath, expectedOverlayHash: action.expectedOverlayHash, allowedRoot: action.allowedRoot, fileSystem });
+        actionReports.push(reportAction(action, "complete", { result: { changed: overlay.changed, bytes: overlay.bytes, beforeHash: overlay.beforeHash, afterHash: overlay.afterHash } }));
+      } else if (action.kind === "file-copy") {
+        const read = typeof fileSystem?.readFile === "function" ? fileSystem.readFile.bind(fileSystem) : defaultReadFile;
+        const sourceContent = await read(action.sourcePath);
+        if (!(sourceContent instanceof Uint8Array)) throw pathError("invalid-source-bytes", `native config source for ${action.id} did not return bytes`);
+        if (hashBytes(sourceContent) !== action.expectedSourceHash) throw pathError("package-owned-hash-mismatch", `managed package source changed after planning: ${action.sourceRelativePath}`);
+        const content = transformCopyContent(action, sourceContent, plan);
+        const expectedHash = hashBytes(content);
+        const written = await atomicReplaceFile({ destination: action.targetPath, content, expectedHash, mode: action.mode, allowedProductRoots: [action.allowedRoot], fileSystem });
+        actionReports.push(reportAction(action, "complete", { result: { bytes: content.byteLength, sha256: written.sha256, overwrite: true } }));
+      } else {
+        const explicitEnv = envFor(plan, action);
+        const result = await runProcess({ executable: action.executable, args: [...action.args], cwd: action.cwd, environmentKeys: [...(action.environmentKeys || [])], envOverrides: explicitEnv, shell: false });
+        if (!result || typeof result !== "object") throw pathError("invalid-process-result", `native action ${action.id} returned an invalid process result`);
+        if (result.unavailable) throw pathError("native-executable-unavailable", `${action.executable} is unavailable; install it and retry registration`);
+        if (result.timedOut) throw pathError("native-process-timeout", `${action.id} timed out`);
+        if (result.outputTooLarge) throw pathError("native-process-output-too-large", `${action.id} exceeded the bounded output capture`);
+        if (result.exitCode !== 0) throw pathError("native-process-failed", `${action.id} exited with code ${String(result.exitCode)}`);
+        const parsed = probeOutput(action, result);
+        actionReports.push(reportAction(action, "complete", { result: { exitCode: result.exitCode, probe: parsed === null ? "not-run" : "valid-json" } }));
+      }
+      if (action.kind !== "manual") completed.push(action);
+    } catch (error) {
+      const failed = { action: reportAction(action, "failed", { reason: error.message }), reason: error.message, error: { code: error.code || "native-action-failed", message: error.message } };
+      actionReports.push(failed.action);
+      return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: completed.length > 0 ? "partial" : "failed", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, actions: actionReports, completed, failed, error: failed.error, notAttempted: plan.actions.slice(index + 1), lifecycle: failedLifecycle(plan, failed.error), ...(overlay ? { overlay } : {}) }, plan);
+    }
+  }
+  const lifecycle = { ...plan.lifecycle, registered: { status: "not-run", evidence: "Commands completed, but native semantic registration/discovery was not independently observed; run the product discovery probe and record T07 evidence." } };
+  return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: "complete", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, actions: actionReports, completed, failed: null, notAttempted: [], lifecycle, ...(overlay ? { overlay } : {}) }, plan);
+}
+
+export function resolveNativeProductRoot(surface, { env = process.env, homeDir = homedir(), platform = process.platform } = {}) {
+  if (surface === "claude") return resolveClaudeConfigDir({ env, homeDir, platform });
+  if (surface === "codex") return resolveCodexHome({ env, homeDir, platform });
+  if (surface === "agy") return resolveAgyConfigDir({ homeDir, platform });
+  return null;
+}
+
+export function formatNativeRegistrationText(report) {
+  const lines = [`action=${report.action} mode=${report.mode} status=${report.status}`, `surface=${report.surface} profile=${report.profile}`];
+  for (const action of report.actions || []) lines.push(`${action.status}\t${action.id}\t${action.kind}`);
+  if (report.error) lines.push(`error\t${report.error.code}\t${report.error.message}`);
+  return `${lines.join("\n")}\n`;
+}

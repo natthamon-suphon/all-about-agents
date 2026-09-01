@@ -285,16 +285,23 @@ test("audit and checkpoint templates keep native mappings explicit", async () =>
     assert.equal(activity.surface, surface);
     assert.equal(activity.event, "PostToolUse");
     assert.equal(activity.optional, true);
-    assert.equal(activity.failureMode, "fail-open");
+    assert.equal(activity.failureMode, surface === "claude" || surface === "codex" ? "fail-open" : "unknown-disabled");
     assert.deepEqual(activity.recordedFields, audit.recordedFields);
   }
-  for (const surface of ["claude", "codex"]) {
-    const native = await json(`adapters/${surface}/templates/hooks/checkpoint.json`);
-    assert.equal(native.surface, surface);
-    assert.equal(native.event, "PreCompact");
-    assert.equal(native.automatic, true);
-    assert.equal(native.failureMode, "fail-open");
-  }
+  const claudeCheckpoint = await json("adapters/claude/templates/hooks/checkpoint.json");
+  assert.equal(claudeCheckpoint.surface, "claude");
+  assert.equal(claudeCheckpoint.event, "PreCompact");
+  assert.equal(claudeCheckpoint.automatic, true);
+  assert.equal(claudeCheckpoint.failureMode, "fail-open");
+
+  const codexCheckpoint = await json("adapters/codex/templates/hooks/checkpoint.json");
+  assert.equal(codexCheckpoint.surface, "codex");
+  assert.equal(codexCheckpoint.event, "PreCompact");
+  assert.equal(codexCheckpoint.automatic, false);
+  assert.equal(codexCheckpoint.enabled, false);
+  assert.equal(codexCheckpoint.trustRequired, true);
+  assert.equal(codexCheckpoint.status, "not run");
+  assert.equal(codexCheckpoint.failureMode, "fail-open");
   for (const surface of ["antigravity-2", "agy"]) {
     const native = await json(`adapters/${surface}/templates/hooks/checkpoint.json`);
     assert.equal(native.surface, surface);

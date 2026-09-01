@@ -9,6 +9,7 @@ import { promisify } from "node:util";
 
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { AdapterContractError } from "../../adapters/shared/adapter-contract.mjs";
+import { NATIVE_PHASES } from "../../adapters/shared/native-state.mjs";
 
 const adapter = await import("../../adapters/codex/adapter.mjs");
 const core = await loadCore(process.cwd());
@@ -178,6 +179,7 @@ test("Codex bootstrap skill links to a resolvable factual capability guide", () 
   assert.ok(guidance);
   assert.match(guidance, /CODEX_HOME/u);
   assert.match(guidance, /AGENTS\.md/u);
+  assert.match(guidance, /skills.*plugin discovery.*\.agents\/skills.*direct\/global/u);
   assert.match(guidance, /standalone custom-agent TOML/u);
   assert.match(guidance, /Desktop.*manual/u);
   assert.doesNotMatch(guidance, /Claude|spawn_agent|mcp__/iu);
@@ -317,9 +319,24 @@ test("Codex package manifest and Desktop guidance use only documented surfaces",
   assert.ok(files.has(".codex-plugin/plugin.json"));
   const plugin = JSON.parse(files.get(".codex-plugin/plugin.json"));
   assert.deepEqual(plugin, {
+    author: {
+      name: "All About Agents Maintainers"
+    },
     description: "Portable all-about-agents skills for Codex CLI and Desktop.",
+    interface: {
+      capabilities: ["Read", "Write"],
+      category: "Developer Tools",
+      defaultPrompt: [
+        "Use the all-about-agents workflow.",
+        "Guide this change with TDD and verification."
+      ],
+      developerName: "All About Agents Maintainers",
+      displayName: "All About Agents",
+      longDescription: "Portable all-about-agents skills and workflow guidance for coding agents.",
+      shortDescription: "Agent skills and workflow guidance"
+    },
     name: "all-about-agents",
-    skills: "./.agents/skills",
+    skills: "./skills/",
     version: "1.0.0"
   });
   const manual = files.get("docs/manual-desktop.md");
@@ -330,20 +347,94 @@ test("Codex package manifest and Desktop guidance use only documented surfaces",
   const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/codex.json"), "utf8"));
   assert.equal(manifest.surface, "codex");
   assert.equal(manifest.pluginManifest, ".codex-plugin/plugin.json");
+  assert.deepEqual(manifest.pluginRegistration, {
+    marketplace: "all-about-agents-dev",
+    marketplaceArgs: ["plugin", "marketplace", "add", "PACKAGE_ROOT", "--json"],
+    installArgs: ["plugin", "add", "all-about-agents@all-about-agents-dev", "--json"],
+    discoveryArgs: ["plugin", "list", "--available", "--json"]
+  });
   assert.equal(manifest.configRoot.environment, "CODEX_HOME");
   assert.equal(manifest.configRoot.fallback, "~/.codex");
   assert.equal(manifest.components.instructions, "AGENTS.md");
+  assert.equal(manifest.components.marketplace, ".agents/plugins/marketplace.json");
   assert.equal(manifest.components.agents, ".codex/agents/{role}.toml");
   assert.equal(Object.hasOwn(manifest.components, "roleConfigs"), false);
-  assert.equal(manifest.components.skills, ".agents/skills/{skill}/SKILL.md");
+  assert.equal(manifest.components.skills, "skills/{skill}/SKILL.md");
+  assert.equal(manifest.components.directSkills, ".agents/skills/{skill}/SKILL.md");
   assert.equal(manifest.components.primaryConfig, "config.toml");
   assert.equal(manifest.components.alternateConfig, "terra-max.config.toml");
   assert.equal(manifest.components.manualDesktop, "docs/manual-desktop.md");
+  assert.ok(manifest.ownedPaths.includes(".agents/plugins/marketplace.json"));
+  assert.ok(manifest.ownedPaths.includes("skills/{skill}/SKILL.md"));
+  assert.ok(manifest.ownedPaths.includes(".agents/skills/{skill}/SKILL.md"));
+  assert.ok(manifest.ownedPaths.includes("hooks/hooks.json"));
   assert.equal(manifest.ownedPaths.includes(".codex/agents/{role}.config.toml"), false);
   assert.deepEqual(manifest.nativeValidation, {
     command: ["codex", "doctor", "--json", "--no-color"],
     requiredWhenAvailable: true
   });
+});
+
+test("Codex package renders a validator-compatible marketplace and plugin skill layout", () => {
+  const result = resultFor("template");
+  const files = fileMap(result);
+  assert.ok(files.has(".agents/plugins/marketplace.json"), "Codex package must render its repo marketplace");
+  assert.equal(files.has(".codex-plugin/marketplace.json"), false, "marketplace must use the Codex repo location");
+  const marketplace = JSON.parse(files.get(".agents/plugins/marketplace.json"));
+  assert.deepEqual(marketplace, {
+    name: "all-about-agents-dev",
+    interface: { displayName: "All About Agents Dev" },
+    plugins: [{
+      name: "all-about-agents",
+      source: { source: "url", url: "./" },
+      policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
+      category: "Developer Tools"
+    }]
+  });
+  const plugin = JSON.parse(files.get(".codex-plugin/plugin.json"));
+  assert.equal(Object.hasOwn(plugin, "hooks"), false, "the documented default hooks/hooks.json needs no manifest override");
+  assert.equal(plugin.skills, "./skills/");
+  assert.ok(files.has("hooks/hooks.json"), "the documented default plugin hook path must be rendered");
+  const directSkillFiles = [...files.keys()].filter((path) => path.startsWith(".agents/skills/"));
+  assert.ok(directSkillFiles.length > 0);
+  for (const path of directSkillFiles) {
+    const pluginPath = `skills/${path.slice(".agents/skills/".length)}`;
+    assert.ok(files.has(pluginPath), `plugin skill mirror missing for ${path}`);
+  }
+
+  const registration = result.registrations.find((entry) => entry.kind === "plugin-package");
+  assert.ok(registration, "Codex package registration metadata is required");
+  assert.deepEqual(registration.marketplaceArgs, ["plugin", "marketplace", "add", "PACKAGE_ROOT", "--json"]);
+  assert.deepEqual(registration.installArgs, ["plugin", "add", "all-about-agents@all-about-agents-dev", "--json"]);
+  assert.deepEqual(registration.discoveryArgs, ["plugin", "list", "--available", "--json"]);
+  assert.equal(Object.hasOwn(registration, "command"), false, "native registration must not expose a shell command string");
+});
+
+test("Codex plugin hook registrations use the shared native lifecycle and stay unclaimed before trust", () => {
+  const result = resultFor("template");
+  const records = result.registrations.filter((entry) => entry.kind === "native-integration");
+  assert.deepEqual(records.map((entry) => entry.feature), [
+    "emergency-protection",
+    "bootstrap-hook",
+    "activity-audit-hook",
+    "checkpoint-hook",
+    "emergency-guard-hook"
+  ]);
+  const emergency = records.find((entry) => entry.feature === "emergency-protection");
+  assert.deepEqual(NATIVE_PHASES.map((phase) => emergency.phases[phase].status), [
+    "pass", "not-run", "not-run", "not-run", "not-run", "not-run"
+  ]);
+  const portable = resultFor("portable").registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
+  assert.doesNotMatch(portable.manualSteps.join(" "), /danger-full-access|approvals never|approvals-never/iu);
+  const hookRecords = records.filter((entry) => entry.feature !== "emergency-protection");
+  for (const record of hookRecords) {
+    assert.deepEqual(Object.keys(record.phases), NATIVE_PHASES);
+    assert.deepEqual(NATIVE_PHASES.slice(0, 2).map((phase) => record.phases[phase].status), ["pass", "pass"]);
+    assert.deepEqual(NATIVE_PHASES.slice(2).map((phase) => record.phases[phase].status), ["not-run", "not-run", "not-run", "not-run"]);
+    assert.ok(record.manualSteps.some((step) => step.includes("/hooks")), `${record.feature} must name /hooks for trust review`);
+  }
+  const hooks = JSON.stringify(result.registrations);
+  assert.doesNotMatch(hooks, /"(?:automatic|enabled|ready)"\s*:\s*true/iu, "rendering must not claim an active or automatic hook");
 });
 
 test("Codex plugin hooks invoke the rendered runtime and require trust plus Node preflight", async () => {
@@ -379,7 +470,7 @@ test("Codex emergency guard uses documented CLI command forms and canonical poli
   ]);
 });
 
-test("Codex target runtime keeps CLI guard automatic but makes Desktop probe-only without runtime copies", () => {
+test("Codex target runtime keeps CLI guard unclaimed but makes Desktop probe-only without runtime copies", () => {
   const cli = resultFor("portable", { targetRuntime: "cli" });
   const cliFiles = fileMap(cli);
   const cliHooks = JSON.parse(cliFiles.get("hooks/hooks.json")).hooks;
@@ -387,7 +478,7 @@ test("Codex target runtime keeps CLI guard automatic but makes Desktop probe-onl
   assert.ok(cliFiles.has("hooks/emergency-guard.mjs"));
   assert.ok(cliFiles.has("hooks/emergency-policy.mjs"));
   assert.ok(cliFiles.has("hooks/emergency-guard.json"));
-  assert.ok(cli.registrations.some((entry) => entry.kind === "emergency-guard" && entry.targetRuntime === "cli" && entry.automatic === true));
+  assert.ok(cli.registrations.some((entry) => entry.kind === "emergency-guard" && entry.targetRuntime === "cli" && entry.automatic === false && entry.status === "not run"));
 
   const desktop = resultFor("portable", { targetRuntime: "desktop" });
   const desktopFiles = fileMap(desktop);
@@ -398,6 +489,24 @@ test("Codex target runtime keeps CLI guard automatic but makes Desktop probe-onl
   assert.equal(desktopFiles.has("hooks/emergency-guard.json"), false);
   const desktopRegistration = desktop.registrations.find((entry) => entry.kind === "emergency-guard");
   assert.deepEqual({ targetRuntime: desktopRegistration.targetRuntime, automatic: desktopRegistration.automatic, probeRequired: desktopRegistration.probeRequired, status: desktopRegistration.status }, { targetRuntime: "desktop", automatic: false, probeRequired: true, status: "not run" });
+  const desktopProtection = desktop.registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
+  for (const deny of ["command(rm -rf)", "command(sudo)", "write_file(.git/)", "write_file(/home/user/.ssh)"]) {
+    assert.ok(desktopProtection.manualSteps.some((step) => step.includes(deny)), `Codex Desktop must list exact deny ${deny}`);
+  }
+  const desktopEmergencyHook = desktop.registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-guard-hook");
+  assert.ok(desktopEmergencyHook);
+  assert.deepEqual(NATIVE_PHASES.map((phase) => desktopEmergencyHook.phases[phase].status), [
+    "not-run-unavailable",
+    "not-run-unavailable",
+    "not-run-unavailable",
+    "not-run",
+    "not-run-unavailable",
+    "not-run-unavailable"
+  ]);
+  assert.match(desktopEmergencyHook.phases.rendered.evidence, /Desktop.*not emitted/u);
+  assert.match(desktopEmergencyHook.phases.trusted.evidence, /manual.*probe|\/hooks/iu);
+  assert.match(desktopEmergencyHook.manualSteps.join(" "), /disposable package.*deny-output probe/iu);
+  assert.doesNotMatch(desktopEmergencyHook.manualSteps.join(" "), /register the rendered package|trust the current plugin hook/iu);
   assert.ok(desktop.diagnostics.some((entry) => entry.code === "codex-desktop-emergency-guard-probe-required"));
   const desktopAgain = resultFor("portable", { targetRuntime: "desktop" });
   const fileProjection = (result) => result.files.map((file) => ({ relativePath: file.relativePath, mode: file.mode, content: [...file.content] }));

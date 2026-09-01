@@ -1,5 +1,5 @@
 {
-  "fileCount": 119,
+  "fileCount": 121,
   "paths": [
     ".claude-plugin/marketplace.json",
     ".claude-plugin/plugin.json",
@@ -119,6 +119,8 @@
     "skills/zero-downtime-migrations/SKILL.md",
     "skills/zero-downtime-migrations/postgres-expand-contract-examples.md",
     "statusline/statusline.mjs",
+    "statusline/statusline.ps1",
+    "statusline/statusline.sh",
     "statusline/track-tool.mjs"
   ],
   "settings": {
@@ -138,13 +140,18 @@
         "Bash(git push --force*)",
         "Bash(git reset --hard*)"
       ]
+    },
+    "statusLine": {
+      "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwAKACYAIAAnAEMAOgAvAGQAaQBzAHAAbwBzAGEAYgBsAGUALwBjAGwAYQB1AGQAZQAtAGMAbwBuAGYAaQBnAC8AcwB0AGEAdAB1AHMAbABpAG4AZQAvAHMAdABhAHQAdQBzAGwAaQBuAGUALgBwAHMAMQAnAAoAZQB4AGkAdAAgACQATABBAFMAVABFAFgASQBUAEMATwBEAEUACgA=",
+      "padding": 0,
+      "type": "command"
     }
   },
   "content": {
     ".claude-plugin/marketplace.json": "{\n  \"description\": \"Generated local development marketplace for the All About Agents package.\",\n  \"name\": \"all-about-agents-dev\",\n  \"owner\": {\n    \"name\": \"All About Agents\"\n  },\n  \"plugins\": [\n    {\n      \"author\": {\n        \"name\": \"All About Agents\"\n      },\n      \"description\": \"Portable all-about-agents skills, agents, commands, hooks, and rules for Claude Code.\",\n      \"name\": \"all-about-agents\",\n      \"source\": \"./\",\n      \"version\": \"1.0.0\"\n    }\n  ]\n}\n",
     ".claude-plugin/plugin.json": "{\n  \"author\": {\n    \"name\": \"All About Agents\"\n  },\n  \"description\": \"Portable all-about-agents skills, agents, commands, hooks, and rules for Claude Code.\",\n  \"name\": \"all-about-agents\",\n  \"version\": \"1.0.0\"\n}\n",
     "agents/investigator.md": "---\nname: investigator\ndescription: \"Performs read-only forensic investigation and ranks falsifiable root-cause hypotheses.\"\nmodel: inherit\ntools:\n  - Glob\n  - Grep\n  - Read\ndisallowedTools:\n  - Agent\n  - Bash\n  - Edit\n  - Write\n---\n\n# Investigator\n\n## Mission\n\nExplain an internal failure before anyone changes code. Read the complete error, stack, input, and environment evidence; reproduce the behavior when possible; then trace the bad value backward to its origin.\n\n## Boundaries\n\nThis is a forensic role, not an implementation role. Do not edit files, apply a workaround, or turn an untested suspicion into a fix. Do not substitute external research for local reproduction when the failure is inside the repository.\n\n## Working method\n\nRecord observations first, compare a failing path with a known-working path, and rank three or fewer falsifiable hypotheses. For each hypothesis state the prediction, the check that would distinguish it, and the exact source location involved.\n\n## Evidence contract\n\nReport the reproduction command or explain why reproduction was unavailable, include the full evidence chain, label inference explicitly, and end with a handoff that an implementer can test without guessing. Route architecture questions to the architect and fresh black-box checking to the verifier.\n\n\nNative capability diagnostic: Role investigator capability evaluation is unavailable on claude: native mapping Bash is suppressed by the read-only policy. Safe read-only mapping retained: Read. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.\n",
-    "config/settings.json": "{\n  \"advisorModel\": \"claude-fable-5\",\n  \"env\": {\n    \"CLAUDE_CODE_EFFORT_LEVEL\": \"max\"\n  },\n  \"fallbackModel\": [\n    \"claude-sonnet-5\"\n  ],\n  \"model\": \"claude-opus-5\",\n  \"permissions\": {\n    \"defaultMode\": \"bypassPermissions\",\n    \"deny\": [\n      \"Bash(rm -rf /)\",\n      \"Bash(rm -rf ~)\",\n      \"Bash(git push --force*)\",\n      \"Bash(git reset --hard*)\"\n    ]\n  }\n}\n",
+    "config/settings.json": "{\n  \"advisorModel\": \"claude-fable-5\",\n  \"env\": {\n    \"CLAUDE_CODE_EFFORT_LEVEL\": \"max\"\n  },\n  \"fallbackModel\": [\n    \"claude-sonnet-5\"\n  ],\n  \"model\": \"claude-opus-5\",\n  \"permissions\": {\n    \"defaultMode\": \"bypassPermissions\",\n    \"deny\": [\n      \"Bash(rm -rf /)\",\n      \"Bash(rm -rf ~)\",\n      \"Bash(git push --force*)\",\n      \"Bash(git reset --hard*)\"\n    ]\n  },\n  \"statusLine\": {\n    \"command\": \"powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwAKACYAIAAnAEMAOgAvAGQAaQBzAHAAbwBzAGEAYgBsAGUALwBjAGwAYQB1AGQAZQAtAGMAbwBuAGYAaQBnAC8AcwB0AGEAdAB1AHMAbABpAG4AZQAvAHMAdABhAHQAdQBzAGwAaQBuAGUALgBwAHMAMQAnAAoAZQB4AGkAdAAgACQATABBAFMAVABFAFgASQBUAEMATwBEAEUACgA=\",\n    \"padding\": 0,\n    \"type\": \"command\"\n  }\n}\n",
     "hooks/hooks.json": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/activity-audit.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          },\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/statusline/track-tool.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreCompact\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/emergency-guard.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--policy-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/emergency-guard.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--skill-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md\",\n              \"--config-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \"startup\"\n      }\n    ]\n  }\n}\n"
   },
   "ownershipHashes": {
@@ -165,7 +172,7 @@
     "commands/resume.md": "9e329d70ec0ebb39f592b1500def9c92bad63a72207cb54ab9ae67d1ea527caa",
     "commands/review.md": "383bed013fb7fde594337ceba71e2235c71f91beb34e6a676d17d35a78264f71",
     "commands/verify.md": "58888d5b565b5bf18dad9aaa0874bbcb2ed9d8fa3e5e0478665dc4eb4572ae9a",
-    "config/settings.json": "955cb0f58cc43540db34d17822c6ebf7be02e84abff57e5737bbd930cfc15b0c",
+    "config/settings.json": "9b47467ad79886360f65708e9352ac005df66f6d9d15290d4b1516a05e5cc23f",
     "config/statusline.json": "93d4c71fbddf648936df1a555d1919fe9bff5a1e1d278b0dd0acf4fabf6d61ea",
     "docs/semantic-mappings.md": "a3641a47578c6e6610f248833a72738de90e58d44ddc305427f960dcd26403b5",
     "hooks/activity-audit.json": "1f8177e9d48b3e46067736fb4d734a056bb9c0663e7434c14fefca02d341345a",
@@ -176,7 +183,7 @@
     "hooks/checkpoint.json": "8c3968bb7cde354d535f20e99dd22783f06738f9509c0818693ddedc1b832d91",
     "hooks/emergency-guard.json": "f3a4bb8ac32be47d3f9204a114a854dfaeb0d88701f1386f598d9ccd2b24d2fd",
     "hooks/emergency-guard.mjs": "22e41534a48333b3f8d16b34b44b83049b63a3f64871270ce8501721bf120821",
-    "hooks/emergency-policy.mjs": "32846b7e4b0d975baf07616b6a61bf5b92fc3e861e34f828714384fd01641ad8",
+    "hooks/emergency-policy.mjs": "fdf20efa604da6fadf34d04a6ef1d3f43d80b4ec14246784ed917921a684a95c",
     "hooks/hooks.json": "5559142caa803aed3f5bb7e0556ca3741430c5c66eca35c9e2cfa4b62a9d9160",
     "hooks/pre-compact.mjs": "18a76d86ed20459b3a75e881269f2037e34a7ddf7b9d32171b0ee7733bf80988",
     "rules/authority-and-scope.md": "e954e78589912467fcc0f1e273cd7f7028efb014152ec22e9cdd6e99c821764f",
@@ -222,7 +229,7 @@
     "skills/subagent-driven-development/implementer-prompt.md": "946601616a6f76ab3f165ef98377390968f1ec124ecef87422bc3553404e0332",
     "skills/subagent-driven-development/re-review-prompt.md": "e1d8e0e65e58ccde6dc920843da9148d23e65aeb0f8932bcc30be1341a703c4c",
     "skills/subagent-driven-development/scripts/review-package": "8439bb55b6c04263ef50f1ff88aed3598997308e8f58e6494e722f5552c91444",
-    "skills/subagent-driven-development/scripts/review-package.js": "ec417be0f1a511b01606840e82b904195595a39297019b0f55e0740816802a0b",
+    "skills/subagent-driven-development/scripts/review-package.js": "93c8b56601f5501b3ba2c4d8d6841b1377aa85a0b4045beda8ceea7d68995271",
     "skills/subagent-driven-development/scripts/sdd-workspace": "d4dc806033454af1c4f74c6603a2795a654dd8b81b0e5b69f46d1d3ee08cbdff",
     "skills/subagent-driven-development/scripts/sdd-workspace.js": "bed597b91b08044f0e7adf0a839ad67a329e83c6bb2e5d38926478cb5fa473fe",
     "skills/subagent-driven-development/scripts/task-brief": "75aeabce5eb21b1230cacd41cf83b00a4bfdf522d62e59ab60d9425cc0b96abc",
@@ -266,6 +273,8 @@
     "skills/zero-downtime-migrations/SKILL.md": "1afab7f42ace80f8184f83f9238280effa32603913c86ceff5a5fe1af81e743f",
     "skills/zero-downtime-migrations/postgres-expand-contract-examples.md": "12f867a1228d0468f6c3e2a8740cf24d96bcfcab80930a8fc71a480ac7f8cacb",
     "statusline/statusline.mjs": "d2ac67b034c0f959169f0c3eb266ef49b094397fd58ce8a9178e2fd8e15b7659",
+    "statusline/statusline.ps1": "0f1a063d6a715f550dccfc78f605cbe971ca3eab0b91e4088300964ad5601d94",
+    "statusline/statusline.sh": "c0fbfc6fa4e8c4bb943099373b05963010b1e45064887d795aac4c65f4c004f9",
     "statusline/track-tool.mjs": "056ee9d570efeed2e1b9c3f4937d52e733cca7ba3b25db4464b5181d1fe07b4c"
   },
   "registration": {

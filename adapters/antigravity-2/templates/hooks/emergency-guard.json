@@ -7,7 +7,7 @@
   "probeRequired": true,
   "probe": {
     "status": "not run",
-    "reason": "The target Antigravity Desktop build does not have a verified hook command package-root resolution contract.",
+    "reason": "PreToolUse JSON input and deny output are documented, but hook-process failure behavior and plugin-root command resolution are not documented.",
     "manualSequence": [
       "Record the installed Antigravity Desktop version and platform.",
       "Review the documented PreToolUse payload and package-root resolution.",
@@ -15,7 +15,7 @@
     ]
   },
   "contentRef": "core/hooks/emergency-guard.json",
-  "failureMode": "fail-open",
+  "failureMode": "unknown-disabled",
   "input": {
     "format": "json-object",
     "documentedFields": [

@@ -1,5 +1,5 @@
 {
-  "fileCount": 105,
+  "fileCount": 109,
   "paths": [
     "README.md",
     "activity-audit.json",
@@ -105,44 +105,48 @@
     "skills/writing-skills/render-graphs.js",
     "skills/writing-skills/testing-skills-with-subagents.md",
     "skills/zero-downtime-migrations/SKILL.md",
-    "skills/zero-downtime-migrations/postgres-expand-contract-examples.md"
+    "skills/zero-downtime-migrations/postgres-expand-contract-examples.md",
+    "statusline/statusline.json",
+    "statusline/statusline.mjs",
+    "statusline/statusline.ps1",
+    "statusline/statusline.sh"
   ],
   "ownership": [
     {
       "relativePath": "README.md",
-      "sha256": "f654cb0abd56570eb9ffc2787cc5eea14048d23f9f1d153e83f5e9bd6528fb09"
+      "sha256": "7b7eedab2d125648281e91d009bfbe9ac2522cbb14290a658acc155e9ba5d253"
     },
     {
       "relativePath": "activity-audit.json",
-      "sha256": "b27f619ae09b6c99516dcb90d72655c220f828d7ef61b4e1d3fca14d37fce98f"
+      "sha256": "9642d184786a4232588c3d94623d622c068c2bdcc7c6396d6b0aae292a84527d"
     },
     {
       "relativePath": "agents/architect/agent.md",
-      "sha256": "784814cfdd4564f6846f0fec2046ba6be6384bedb0c66a76c3e4fcca522696f9"
+      "sha256": "185eb885b6ad9705189241d80683e9fa40667ae5cd7baca8b1dbc6c0b430f1ad"
     },
     {
       "relativePath": "agents/implementer/agent.md",
-      "sha256": "649e20be45b6d72c23f70c0cc5fd9e3a30f7e760f12a993fd4c60c7a7248f756"
+      "sha256": "c94463cb7ad487c6a54084e12e2e9581ee7ded3fef222f2b8a767b29b94c5d1d"
     },
     {
       "relativePath": "agents/investigator/agent.md",
-      "sha256": "308043c17a4e390e78488160beee23843040f95f3c3277396d53f7960bc730ac"
+      "sha256": "f0506a15665b14cc5023e31b991bda14a428b1a07340cda2f080eee65a6f217f"
     },
     {
       "relativePath": "agents/researcher/agent.md",
-      "sha256": "e2211212bcb057e354cd53cbc1a4285bf27f00ef2be0c33048b287d3c3e92178"
+      "sha256": "ace2cb457e440c0dacbd25e1872fbddaa40e770e71c3a423f62a49acee3247ec"
     },
     {
       "relativePath": "agents/reviewer/agent.md",
-      "sha256": "dd77861e28449aaa5e0da997b587a3bdc945a16441410789d65559a06737fac8"
+      "sha256": "fb654ad0fdf307ea2a94971c756af76cca75439496ce1a6ba62af4838c655c9e"
     },
     {
       "relativePath": "agents/security-reviewer/agent.md",
-      "sha256": "73cb4bc29dd8c2a9d9a1182178cf10ad4484ab89d1358a3f4ab40d2bbcbbd521"
+      "sha256": "cac0157eabef7a7fd2f14fb883232f13ebd8b3f4ee4fd56a19b143483201ae75"
     },
     {
       "relativePath": "agents/verifier/agent.md",
-      "sha256": "145fba95a78f4625d5efa22765ae3f294b07c08ed3c44fee73ebba28ac236cb2"
+      "sha256": "112a089bc9a48249c7b231607a62d66617b7d9fef942a71fe760e8112106ea4c"
     },
     {
       "relativePath": "checkpoint.json",
@@ -150,7 +154,7 @@
     },
     {
       "relativePath": "emergency-guard.json",
-      "sha256": "c10172f609495f8b3546b54cdcd9b1bcc496d55d31b5ec76ee66dbe7789c952a"
+      "sha256": "848b01fe76f388788ddff78ff0b25141daebe1871c6d06ce63b14a9b2bdbd166"
     },
     {
       "relativePath": "hooks.json",
@@ -162,7 +166,7 @@
     },
     {
       "relativePath": "rules/adapter-capability-guidance.md",
-      "sha256": "c3404bc788386ad577338bbf5ecf52185dd164edc4b41d02deb5f050ba7d088a"
+      "sha256": "aa41ab0d3d1ef495acf32360639a9eeb57c5492504c0babf9b1d9a1a903b84a1"
     },
     {
       "relativePath": "rules/authority-and-scope.md",
@@ -186,7 +190,7 @@
     },
     {
       "relativePath": "rules/hook-contract.md",
-      "sha256": "361f8852427ff6a8785d4d09af834aba98e2e1e692ce292b4cce238d4460dffc"
+      "sha256": "b56183c44264794976d72e0bde522192b4aafa553fcb443ab3ca722402a6e0dd"
     },
     {
       "relativePath": "rules/implementation-quality.md",
@@ -214,11 +218,11 @@
     },
     {
       "relativePath": "rules/settings-overlay.md",
-      "sha256": "de99fa53e61ce5ff61fcda7508be26528c4e6b0306a8a16902fe540b3d11859c"
+      "sha256": "d6904c71cf2fcdef6f57139a58a9d11f601c93d6979d5239dfcd439f1dbdfa4d"
     },
     {
       "relativePath": "settings.overlay.json",
-      "sha256": "e2c9195d972a7caa588d21faab398a2a0307b5b7696566bf809c715866e3463c"
+      "sha256": "1796a8dd46bf2912600854d10bae166b2b404d122c4781d4ddf7cdbdc0dab9b9"
     },
     {
       "relativePath": "skills/brainstorming/SKILL.md",
@@ -358,7 +362,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/review-package.js",
-      "sha256": "ec417be0f1a511b01606840e82b904195595a39297019b0f55e0740816802a0b"
+      "sha256": "93c8b56601f5501b3ba2c4d8d6841b1377aa85a0b4045beda8ceea7d68995271"
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace",
@@ -527,6 +531,22 @@
     {
       "relativePath": "skills/zero-downtime-migrations/postgres-expand-contract-examples.md",
       "sha256": "12f867a1228d0468f6c3e2a8740cf24d96bcfcab80930a8fc71a480ac7f8cacb"
+    },
+    {
+      "relativePath": "statusline/statusline.json",
+      "sha256": "818ca4c9b100147914f80693907ee4e81091e4954d0a5de77e18ae2ba60ffc3e"
+    },
+    {
+      "relativePath": "statusline/statusline.mjs",
+      "sha256": "4735172c484391bd8adc86a3ce21107c38dfab56655b47c3063ddea61409ef89"
+    },
+    {
+      "relativePath": "statusline/statusline.ps1",
+      "sha256": "7e147d0f43ef8c572f769f23a768f9614deb36e630fbda2411f7cca64a3cdd1a"
+    },
+    {
+      "relativePath": "statusline/statusline.sh",
+      "sha256": "eae8468f2645f0cf29a075513471500f04fff0972d92ee3c969bac2c104c836c"
     }
   ],
   "registrations": [
@@ -541,19 +561,99 @@
       "skillSelection": "all-implicit"
     },
     {
+      "kind": "native-integration",
+      "surface": "agy",
+      "feature": "statusline",
+      "phases": {
+        "rendered": {
+          "status": "pass",
+          "evidence": "agy statusline renderer, config, and platform launchers were rendered."
+        },
+        "validated": {
+          "status": "pass",
+          "evidence": "agy statusline settings, renderer, and launchers pass adapter validation."
+        },
+        "registered": {
+          "status": "not-run",
+          "evidence": "Native registration requires merging the sparse statusLine overlay into the documented agy settings file."
+        },
+        "trusted": {
+          "status": "not-run-unavailable",
+          "evidence": "The agy statusline command has no native trust concept."
+        },
+        "active": {
+          "status": "not-run",
+          "evidence": "An agy CLI session has not been opened to observe the statusline."
+        },
+        "runtimeVerified": {
+          "status": "not-run",
+          "evidence": "A native agy statusline runtime check has not been run."
+        }
+      },
+      "sourcePath": "adapters/agy/adapter.mjs",
+      "manualSteps": [
+        "After a reviewed dry-run and exact authority, run repository register --apply to install the package and merge the sparse statusLine overlay.",
+        "Confirm plugin discovery with agy plugin list.",
+        "Open a fresh agy CLI session to observe the statusline."
+      ]
+    },
+    {
+      "kind": "native-integration",
+      "surface": "agy",
+      "feature": "emergency-protection",
+      "phases": {
+        "rendered": {
+          "status": "pass",
+          "evidence": "Rendered the agy request-review settings overlay and canonical emergency deny policy."
+        },
+        "validated": {
+          "status": "not-run",
+          "evidence": "agy has no verified native emergency-policy validator; only the rendered settings deny overlay is recorded."
+        },
+        "registered": {
+          "status": "not-run",
+          "evidence": "The agy settings deny overlay requires an authorized register --apply or an explicit manual merge; native plugin registration was not run during rendering."
+        },
+        "trusted": {
+          "status": "not-run",
+          "evidence": "The native agy emergency hook is disabled; hook trust was not established."
+        },
+        "active": {
+          "status": "not-run",
+          "evidence": "No fresh agy session was opened to observe emergency protection."
+        },
+        "runtimeVerified": {
+          "status": "not-run",
+          "evidence": "agy emergency deny output was not executed in a native runtime probe."
+        }
+      },
+      "sourcePath": "adapters/agy/adapter.mjs",
+      "manualSteps": [
+        "For the request-review settings overlay, use a reviewed and authorized register --apply or explicitly merge the deny rules before any native run.",
+        "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).",
+        "Keep the native emergency hook disabled until a disposable agy deny-output probe verifies hook execution and command resolution."
+      ]
+    },
+    {
       "kind": "plugin-registration",
       "surface": "agy",
       "relativePath": "plugin.json",
       "command": "agy plugin install PACKAGE_DIRECTORY",
-      "manualOnly": true,
+      "stagedDestination": "~/.gemini/antigravity-cli/plugins/all-about-agents/",
+      "manualOnly": false,
       "disposableOnly": true,
-      "automaticInstall": false
+      "automaticInstall": true,
+      "automaticFromRender": false,
+      "status": "register-apply-after-review",
+      "reason": "Rendering is read-only. After dry-run review and exact authorization, register --apply runs agy plugin install for the supplied package root."
     },
     {
       "kind": "plugin-discovery",
       "surface": "agy",
       "command": "agy plugin list",
-      "manualOnly": true
+      "manualOnly": false,
+      "automaticAfterAuthority": true,
+      "status": "register-apply-after-review"
     },
     {
       "kind": "agent-discovery",
@@ -572,13 +672,21 @@
       "surface": "agy",
       "relativePath": "settings.overlay.json",
       "profile": "portable",
-      "manualOnly": true,
-      "automaticWrite": false,
-      "status": "manual-discovery-required",
-      "reason": "Shared settings roots, complete schema, and active merge behavior remain unknown or version-sensitive; only the documented CLI candidate is emitted.",
+      "manualOnly": false,
+      "automaticWrite": true,
+      "status": "apply-after-review",
+      "reason": "Rendering is read-only. After dry-run review and exact authorization, register --apply merges the sparse overlay into the documented settings file and preserves unknown keys.",
       "destinationCandidates": [
         "~/.gemini/antigravity-cli/settings.json"
       ]
+    },
+    {
+      "kind": "statusline-config",
+      "surface": "agy",
+      "relativePath": "statusline/statusline.json",
+      "destination": "statusline/statusline.json",
+      "configRoot": "C:/fixtures/agy-config",
+      "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwAKACYAIAAnAEMAOgAvAGYAaQB4AHQAdQByAGUAcwAvAGEAZwB5AC0AYwBvAG4AZgBpAGcALwBwAGwAdQBnAGkAbgBzAC8AYQBsAGwALQBhAGIAbwB1AHQALQBhAGcAZQBuAHQAcwAvAHMAdABhAHQAdQBzAGwAaQBuAGUALwBzAHQAYQB0AHUAcwBsAGkAbgBlAC4AcABzADEAJwAKAGUAeABpAHQAIAAkAEwAQQBTAFQARQBYAEkAVABDAE8ARABFAAoA"
     },
     {
       "kind": "hook-contract",
@@ -592,8 +700,8 @@
         "status": "not run",
         "manualSequence": [
           "Record the installed agy version and platform.",
-          "Review the installed agy hook documentation for the complete lifecycle payload schema.",
-          "On a disposable package, perform an explicit probe and record the observed first-invocation fields before proposing an executable handler."
+          "Review the current hook documentation and the exact installed plugin root.",
+          "On a disposable package, probe command resolution, non-zero exit, timeout, malformed JSON, and first-invocation output before proposing an executable handler."
         ]
       }
     },
@@ -606,7 +714,7 @@
       "automatic": false,
       "probeRequired": true,
       "status": "not run",
-      "failureMode": "fail-open",
+      "failureMode": "unknown-disabled",
       "recordedFields": [
         "timestamp",
         "surface",
@@ -696,6 +804,11 @@
           "evidence": "agy plugin validate accepted both rendered packages and reported 28 skills, 7 agents, and 1 hook."
         },
         {
+          "id": "statusline-renderer",
+          "status": "pass",
+          "evidence": "Disposable Windows agy statusline command accepted official sample-shaped JSON and emitted one sanitized line from an unrelated cwd."
+        },
+        {
           "id": "agent-selection",
           "status": "pass",
           "evidence": "agy accepted --agent architect in the disposable workspace."
@@ -751,249 +864,159 @@
     {
       "code": "agy-runtime-partial",
       "severity": "warning",
-      "message": "The agy runtime version and executable path are known, but entitlement, active package/settings roots, and merge behavior remain unknown; discover them before applying artifacts.",
+      "message": "The agy runtime version and executable path are known, but entitlement and live merge behavior remain unverified; inspect the active machine before applying artifacts.",
       "sourcePath": "tests/integration/manual-desktop-checklist.json"
     },
     {
       "code": "agy-bootstrap-probe-required",
       "severity": "warning",
-      "message": "The installed agy CLI does not have a verified PreInvocation payload contract for automatic bootstrap. Status: not run. Manual sequence: Record the installed agy version and platform. Review the installed agy hook documentation for the complete lifecycle payload schema. On a disposable package, perform an explicit probe and record the observed first-invocation fields before proposing an executable handler.",
-      "sourcePath": "research-t013-antigravity-agy-hooks.md"
+      "message": "PreInvocation JSON input and output are documented, but hook-process failure behavior and portable package-root command resolution are not documented. Status: not run. Manual sequence: Record the installed agy version and platform. Review the current hook documentation and the exact installed plugin root. On a disposable package, probe command resolution, non-zero exit, timeout, malformed JSON, and first-invocation output before proposing an executable handler.",
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "agy-emergency-guard-probe-required",
       "severity": "warning",
       "message": "agy emergency guard output is documented but executable package-root resolution remains unverified; automatic hook execution is disabled.",
-      "sourcePath": "research-t014-pretool-hooks.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
-      "code": "agy-layout-conflict",
+      "code": "agy-hook-failure-contract-unverified",
       "severity": "warning",
-      "message": "Official sources conflict on CLI versus shared plugin, skill, hook, and settings roots; this result emits diagnostics and no persistent destination write.",
-      "sourcePath": "research-agy-2.md"
-    },
-    {
-      "code": "agy-agent-tools-unknown",
-      "severity": "warning",
-      "message": "The documented agent field list does not publish a complete stable agy tool vocabulary; generated agent tools remain empty pending agy agents discovery.",
-      "sourcePath": "research-agy-2.md"
+      "message": "Antigravity documents agy hook events and JSON input/output, but not hook-process failure behavior or portable package-root command resolution; executable hooks remain disabled.",
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "role-capability-unavailable",
       "severity": "warning",
-      "message": "Role architect capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "message": "Role architect capability evaluation is unavailable on agy: native mapping run_command is suppressed by the read-only policy. Safe read-only mapping retained: view_file. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
       "sourcePath": "core/roles/architect/role.json"
     },
     {
       "code": "role-capability-unavailable",
       "severity": "warning",
-      "message": "Role architect capability evaluation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "message": "Role architect capability schema-validation is unavailable on agy: native mapping run_command is suppressed by the read-only policy. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
       "sourcePath": "core/roles/architect/role.json"
     },
     {
       "code": "role-capability-unavailable",
       "severity": "warning",
-      "message": "Role architect capability schema-validation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/architect/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role implementer capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/implementer/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role implementer capability repository-write is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/implementer/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role implementer capability isolated-write is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/implementer/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role implementer capability command-execution is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/implementer/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role implementer capability test-execution is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/implementer/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role investigator capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "message": "Role investigator capability evaluation is unavailable on agy: native mapping run_command is suppressed by the read-only policy. Safe read-only mapping retained: view_file. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
       "sourcePath": "core/roles/investigator/role.json"
     },
     {
       "code": "role-capability-unavailable",
       "severity": "warning",
-      "message": "Role investigator capability filesystem-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/investigator/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role investigator capability evaluation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/investigator/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role researcher capability external-research is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/researcher/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role researcher capability web-primary-sources is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/researcher/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role researcher capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/researcher/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role reviewer capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "message": "Role reviewer capability evaluation is unavailable on agy: native mapping run_command is suppressed by the read-only policy. Safe read-only mapping retained: view_file. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
       "sourcePath": "core/roles/reviewer/role.json"
     },
     {
       "code": "role-capability-unavailable",
       "severity": "warning",
-      "message": "Role reviewer capability evaluation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "message": "Role reviewer capability schema-validation is unavailable on agy: native mapping run_command is suppressed by the read-only policy. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
       "sourcePath": "core/roles/reviewer/role.json"
     },
     {
       "code": "role-capability-unavailable",
       "severity": "warning",
-      "message": "Role reviewer capability schema-validation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/reviewer/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role security-reviewer capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "message": "Role security-reviewer capability evaluation is unavailable on agy: native mapping run_command is suppressed by the read-only policy. Safe read-only mapping retained: view_file. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
       "sourcePath": "core/roles/security-reviewer/role.json"
     },
     {
       "code": "role-capability-unavailable",
       "severity": "warning",
-      "message": "Role security-reviewer capability evaluation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "message": "Role security-reviewer capability schema-validation is unavailable on agy: native mapping run_command is suppressed by the read-only policy. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
       "sourcePath": "core/roles/security-reviewer/role.json"
     },
     {
       "code": "role-capability-unavailable",
       "severity": "warning",
-      "message": "Role security-reviewer capability schema-validation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/security-reviewer/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role verifier capability repository-read is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "message": "Role verifier capability test-execution is unavailable on agy: native mapping run_command is suppressed by the read-only policy. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
       "sourcePath": "core/roles/verifier/role.json"
     },
     {
       "code": "role-capability-unavailable",
       "severity": "warning",
-      "message": "Role verifier capability test-execution is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
-      "sourcePath": "core/roles/verifier/role.json"
-    },
-    {
-      "code": "role-capability-unavailable",
-      "severity": "warning",
-      "message": "Role verifier capability evaluation is unavailable on agy: no documented native tool vocabulary is available. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
+      "message": "Role verifier capability evaluation is unavailable on agy: native mapping run_command is suppressed by the read-only policy. Safe read-only mapping retained: view_file. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.",
       "sourcePath": "core/roles/verifier/role.json"
     },
     {
       "code": "agy-action-unknown",
       "severity": "warning",
       "message": "aaa:design has no documented agy native mapping; use a manual operation only after verifying the installed CLI.",
-      "sourcePath": "research-agy-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "agy-action-unknown",
       "severity": "warning",
       "message": "aaa:build has no documented agy native mapping; use a manual operation only after verifying the installed CLI.",
-      "sourcePath": "research-agy-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "agy-action-unknown",
       "severity": "warning",
       "message": "aaa:fix has no documented agy native mapping; use a manual operation only after verifying the installed CLI.",
-      "sourcePath": "research-agy-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "agy-action-unknown",
       "severity": "warning",
       "message": "aaa:review has no documented agy native mapping; use a manual operation only after verifying the installed CLI.",
-      "sourcePath": "research-agy-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "agy-action-unknown",
       "severity": "warning",
       "message": "aaa:audit has no documented agy native mapping; use a manual operation only after verifying the installed CLI.",
-      "sourcePath": "research-agy-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "agy-action-unknown",
       "severity": "warning",
       "message": "aaa:improve-skill has no documented agy native mapping; use a manual operation only after verifying the installed CLI.",
-      "sourcePath": "research-agy-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "agy-action-unknown",
       "severity": "warning",
       "message": "aaa:resume has no documented agy native mapping; use a manual operation only after verifying the installed CLI.",
-      "sourcePath": "research-agy-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "agy-action-unknown",
       "severity": "warning",
       "message": "aaa:verify has no documented agy native mapping; use a manual operation only after verifying the installed CLI.",
-      "sourcePath": "research-agy-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     }
   ],
   "contentHashes": {
-    "README.md": "f654cb0abd56570eb9ffc2787cc5eea14048d23f9f1d153e83f5e9bd6528fb09",
-    "activity-audit.json": "b27f619ae09b6c99516dcb90d72655c220f828d7ef61b4e1d3fca14d37fce98f",
-    "agents/architect/agent.md": "784814cfdd4564f6846f0fec2046ba6be6384bedb0c66a76c3e4fcca522696f9",
-    "agents/implementer/agent.md": "649e20be45b6d72c23f70c0cc5fd9e3a30f7e760f12a993fd4c60c7a7248f756",
-    "agents/investigator/agent.md": "308043c17a4e390e78488160beee23843040f95f3c3277396d53f7960bc730ac",
-    "agents/researcher/agent.md": "e2211212bcb057e354cd53cbc1a4285bf27f00ef2be0c33048b287d3c3e92178",
-    "agents/reviewer/agent.md": "dd77861e28449aaa5e0da997b587a3bdc945a16441410789d65559a06737fac8",
-    "agents/security-reviewer/agent.md": "73cb4bc29dd8c2a9d9a1182178cf10ad4484ab89d1358a3f4ab40d2bbcbbd521",
-    "agents/verifier/agent.md": "145fba95a78f4625d5efa22765ae3f294b07c08ed3c44fee73ebba28ac236cb2",
+    "README.md": "7b7eedab2d125648281e91d009bfbe9ac2522cbb14290a658acc155e9ba5d253",
+    "activity-audit.json": "9642d184786a4232588c3d94623d622c068c2bdcc7c6396d6b0aae292a84527d",
+    "agents/architect/agent.md": "185eb885b6ad9705189241d80683e9fa40667ae5cd7baca8b1dbc6c0b430f1ad",
+    "agents/implementer/agent.md": "c94463cb7ad487c6a54084e12e2e9581ee7ded3fef222f2b8a767b29b94c5d1d",
+    "agents/investigator/agent.md": "f0506a15665b14cc5023e31b991bda14a428b1a07340cda2f080eee65a6f217f",
+    "agents/researcher/agent.md": "ace2cb457e440c0dacbd25e1872fbddaa40e770e71c3a423f62a49acee3247ec",
+    "agents/reviewer/agent.md": "fb654ad0fdf307ea2a94971c756af76cca75439496ce1a6ba62af4838c655c9e",
+    "agents/security-reviewer/agent.md": "cac0157eabef7a7fd2f14fb883232f13ebd8b3f4ee4fd56a19b143483201ae75",
+    "agents/verifier/agent.md": "112a089bc9a48249c7b231607a62d66617b7d9fef942a71fe760e8112106ea4c",
     "checkpoint.json": "3056071e586cfb879c22d8c26e33f016f44d0e2974dc2b627232161678ecaad0",
-    "emergency-guard.json": "c10172f609495f8b3546b54cdcd9b1bcc496d55d31b5ec76ee66dbe7789c952a",
+    "emergency-guard.json": "848b01fe76f388788ddff78ff0b25141daebe1871c6d06ce63b14a9b2bdbd166",
     "hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
     "plugin.json": "756ec24b1703be2d650e94914f6f7668ba98a1dd746cda65a42e8025e2ba6ead",
-    "rules/adapter-capability-guidance.md": "c3404bc788386ad577338bbf5ecf52185dd164edc4b41d02deb5f050ba7d088a",
+    "rules/adapter-capability-guidance.md": "aa41ab0d3d1ef495acf32360639a9eeb57c5492504c0babf9b1d9a1a903b84a1",
     "rules/authority-and-scope.md": "e954e78589912467fcc0f1e273cd7f7028efb014152ec22e9cdd6e99c821764f",
     "rules/cross-platform-execution.md": "b0db23bbbee452ae698d68171bde816bbdc360464d7e8d3105b46eaefa1d8c62",
     "rules/destructive-actions.md": "69f0320c6279e4f2a5b3dc96381c08d80c5d3dc84a5aa34ae2e6e790b4b452f9",
     "rules/evidence-and-truth.md": "6f0155b38cdafb34fd204576ab721db6220a2f117256f30764026d63f01dfcde",
     "rules/git-and-user-work.md": "b65c9ad2095d570a7ad6299e53a5811698cebc9148c7d38e0d9e77d132404872",
-    "rules/hook-contract.md": "361f8852427ff6a8785d4d09af834aba98e2e1e692ce292b4cce238d4460dffc",
+    "rules/hook-contract.md": "b56183c44264794976d72e0bde522192b4aafa553fcb443ab3ca722402a6e0dd",
     "rules/implementation-quality.md": "b680c552b63c1b11ae103f96a439e1acceb09ba2deebb728bc5e08bf5177ce15",
     "rules/long-task-state.md": "62d1c22e14fa00a01136894dad2336e1d3c059b104e3e64eeb2d66bd3755b2af",
     "rules/model-selection.md": "62f1c78be6b051901448c0c48fa286c48e9677e674d391aa8ed4e31fc221296f",
     "rules/multi-agent-ownership.md": "b346e37ce93910abc0a4a967190502b223d0ec249095988bf3b42ce14e09c2d5",
     "rules/permission-safety.md": "4890141c44ace9e7e28de994b69589ffdddfd8ba990ab201738a3503674ff85d",
     "rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",
-    "rules/settings-overlay.md": "de99fa53e61ce5ff61fcda7508be26528c4e6b0306a8a16902fe540b3d11859c",
-    "settings.overlay.json": "e2c9195d972a7caa588d21faab398a2a0307b5b7696566bf809c715866e3463c",
+    "rules/settings-overlay.md": "d6904c71cf2fcdef6f57139a58a9d11f601c93d6979d5239dfcd439f1dbdfa4d",
+    "settings.overlay.json": "1796a8dd46bf2912600854d10bae166b2b404d122c4781d4ddf7cdbdc0dab9b9",
     "skills/brainstorming/SKILL.md": "7b6e6e3c208e1dc59424aa84bdd21ae9bcc592d3e3c6041fc78082711e034e73",
     "skills/brainstorming/scripts/frame-template.html": "4c3b7d94265cf0f8de437191dcbadccca4106d785591caf89e7c818ff153bc93",
     "skills/brainstorming/scripts/helper.js": "773e549af4413e28ed7d14aea800a39d8dbf9851d3d31d9687b5a8d8a18775a3",
@@ -1028,7 +1051,7 @@
     "skills/subagent-driven-development/implementer-prompt.md": "946601616a6f76ab3f165ef98377390968f1ec124ecef87422bc3553404e0332",
     "skills/subagent-driven-development/re-review-prompt.md": "e1d8e0e65e58ccde6dc920843da9148d23e65aeb0f8932bcc30be1341a703c4c",
     "skills/subagent-driven-development/scripts/review-package": "8439bb55b6c04263ef50f1ff88aed3598997308e8f58e6494e722f5552c91444",
-    "skills/subagent-driven-development/scripts/review-package.js": "ec417be0f1a511b01606840e82b904195595a39297019b0f55e0740816802a0b",
+    "skills/subagent-driven-development/scripts/review-package.js": "93c8b56601f5501b3ba2c4d8d6841b1377aa85a0b4045beda8ceea7d68995271",
     "skills/subagent-driven-development/scripts/sdd-workspace": "d4dc806033454af1c4f74c6603a2795a654dd8b81b0e5b69f46d1d3ee08cbdff",
     "skills/subagent-driven-development/scripts/sdd-workspace.js": "bed597b91b08044f0e7adf0a839ad67a329e83c6bb2e5d38926478cb5fa473fe",
     "skills/subagent-driven-development/scripts/task-brief": "75aeabce5eb21b1230cacd41cf83b00a4bfdf522d62e59ab60d9425cc0b96abc",
@@ -1070,6 +1093,10 @@
     "skills/writing-skills/render-graphs.js": "1a9b1626e489905de00ecf6cf84ffec866b1d1ba0507fe94aee9f89cc938a5cb",
     "skills/writing-skills/testing-skills-with-subagents.md": "ead5e957ec5350c7619217149b52ca6f24fcfa12b475f026cf4cd17d0f30706c",
     "skills/zero-downtime-migrations/SKILL.md": "8b3c42b8c60410bfda8b7265c2e28db5fba6575015577fe91ed93eff0019a102",
-    "skills/zero-downtime-migrations/postgres-expand-contract-examples.md": "12f867a1228d0468f6c3e2a8740cf24d96bcfcab80930a8fc71a480ac7f8cacb"
+    "skills/zero-downtime-migrations/postgres-expand-contract-examples.md": "12f867a1228d0468f6c3e2a8740cf24d96bcfcab80930a8fc71a480ac7f8cacb",
+    "statusline/statusline.json": "818ca4c9b100147914f80693907ee4e81091e4954d0a5de77e18ae2ba60ffc3e",
+    "statusline/statusline.mjs": "4735172c484391bd8adc86a3ce21107c38dfab56655b47c3063ddea61409ef89",
+    "statusline/statusline.ps1": "7e147d0f43ef8c572f769f23a768f9614deb36e630fbda2411f7cca64a3cdd1a",
+    "statusline/statusline.sh": "eae8468f2645f0cf29a075513471500f04fff0972d92ee3c969bac2c104c836c"
   }
 }

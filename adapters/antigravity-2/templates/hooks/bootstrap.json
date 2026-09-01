@@ -7,7 +7,7 @@
   "probeRequired": true,
   "probe": {
     "status": "not run",
-    "reason": "The target Antigravity Desktop build does not have a verified hook command package-root resolution contract.",
+    "reason": "PreInvocation JSON input and output are documented, but hook-process failure behavior and plugin-root command resolution are not documented.",
     "manualSequence": [
       "Record the installed Antigravity Desktop version and platform.",
       "Review the installed Desktop hook documentation for command working-directory and package-root resolution.",
@@ -15,7 +15,7 @@
     ]
   },
   "contentRef": "core/skills/using-all-about-agents/SKILL.md",
-  "failureMode": "fail-open",
+  "failureMode": "unknown-disabled",
   "runtime": {
     "executable": "node",
     "minimumVersion": "22.12.0",

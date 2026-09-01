@@ -115,11 +115,35 @@ function inspectExistingAncestors(root, pathModule) {
   inspectExistingEntry(root, pathModule);
 }
 
+function broadRoot(root, home, pathModule) {
+  const normalizedRoot = pathModule.normalize(root);
+  if (canonicalPath(normalizedRoot, pathModule) === canonicalPath(pathModule.parse(normalizedRoot).root, pathModule)) return true;
+  return isContained(normalizedRoot, home, pathModule);
+}
+
+function allowedRoots(values, home, pathModule) {
+  if (!Array.isArray(values) || values.length === 0) fail("allowed-roots-required", "allowedProductRoots must name at least one verified product or disposable root");
+  const roots = [];
+  for (const value of values) {
+    if (typeof value !== "string" || value.trim() === "" || value.includes("\0") || rawTraversal(value, pathModule) || !pathModule.isAbsolute(value)) {
+      fail("invalid-allowed-root", "allowedProductRoots must contain absolute paths without traversal");
+    }
+    const normalized = pathModule.normalize(value);
+    if (broadRoot(normalized, home, pathModule)) fail("invalid-allowed-root", "allowedProductRoots may not contain a filesystem, account-container, or home root");
+    if (!roots.some((root) => canonicalPath(root, pathModule) === canonicalPath(normalized, pathModule))) roots.push(normalized);
+  }
+  return roots;
+}
+
 /** Validate an already-resolved root without creating or mutating it. */
-export function assertSafeDestinationRoot(root, { platform = process.platform } = {}) {
+export function assertSafeDestinationRoot(root, { platform = process.platform, homeDir = homedir(), allowedProductRoots = [] } = {}) {
   const pathModule = moduleFor(platform);
   if (typeof root !== "string" || !pathModule.isAbsolute(root) || root.includes("\0")) fail("invalid-root", "destination root must be an absolute path");
   const normalized = pathModule.normalize(root);
+  const home = validateHome(homeDir, pathModule);
+  if (broadRoot(normalized, home, pathModule)) fail("broad-root", "destination root may not be a filesystem, account-container, or home root");
+  const allowed = allowedRoots(allowedProductRoots, home, pathModule);
+  if (!allowed.some((candidate) => isContained(candidate, normalized, pathModule))) fail("root-outside-allowed", "destination root must be contained by an allowed product or disposable root");
   inspectExistingAncestors(normalized, pathModule);
   return normalized;
 }
@@ -146,8 +170,7 @@ export function resolveDestinationRoot({ surface, override = null, env = process
     fail("manual-discovery-required", `${surface} has no verified automatic persistent root; provide an explicit destination root for manual/disposable installation`);
   }
   const root = candidatePath(selected, home, pathModule);
-  inspectExistingAncestors(root, pathModule);
-  return root;
+  return assertSafeDestinationRoot(root, { platform, homeDir: home, allowedProductRoots: [root] });
 }
 
 export { isContained, inspectExistingAncestors };

@@ -2,19 +2,22 @@
 
 The adapter renders a portable CLI plugin directory with the documented
 `plugin.json`, `hooks.json`, `skills/`, `agents/`, and `rules/` components.
-Generated settings are a sparse `settings.overlay.json` artifact for manual
-review. Rendering never installs a plugin, writes an installed profile, or
-executes a hook.
+Generated settings are a sparse `settings.overlay.json` artifact for review.
+Rendering never installs a plugin, writes an installed profile, or executes a
+hook. After a reviewed dry-run and exact authority, repository
+`register --apply` installs the plugin, checks plugin discovery, and merges the
+sparse overlay.
 
-The only documented CLI settings destination candidate is
-`~/.gemini/antigravity-cli/settings.json`. Shared configuration paths and the
-active merge behavior remain unknown or version-sensitive; this path is not a
-direct write target.
+The documented CLI settings destination is
+`~/.gemini/antigravity-cli/settings.json`. The generated file is only a sparse
+overlay. Rendering does not write it; authorized `register --apply` is the
+explicit merge path and preserves unknown settings.
 
-The current public records leave the active plugin/settings roots, complete
-agent tool vocabulary, runtime version, and account entitlement unknown. The
-adapter therefore emits diagnostics and empty agent tool lists until an
-operator runs the documented discovery sequence in a disposable target:
+The documented installed plugin root is
+`~/.gemini/antigravity-cli/plugins/<plugin_name>/`. Shared Antigravity docs now
+publish the agent fields and tool names used by this adapter. The runtime
+version and account entitlement still need a check on each machine. Run this
+discovery sequence in a disposable target:
 
 1. `agy --help`
 2. `agy models`
@@ -34,4 +37,6 @@ is emitted; shell-specific invocation is a manual operator concern.
 
 The template profile records `toolPermission: always-proceed` and the
 documented per-run all-tools operation in generated documentation. Emergency
-deny rules remain explicit, and hooks stay disabled and inert.
+deny rules remain explicit. Hook events and JSON input/output are documented,
+but hook-process failure behavior and portable command path resolution are not.
+Hooks therefore stay disabled and inert.

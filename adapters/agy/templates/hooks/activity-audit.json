@@ -8,14 +8,14 @@
   "probeRequired": true,
   "probe": {
     "status": "not run",
-    "reason": "The installed agy CLI does not have a verified PostToolUse executable package-root contract.",
+    "reason": "PostToolUse JSON input and output are documented, but hook-process failure behavior and portable package-root command resolution are not documented.",
     "manualSequence": [
       "Record the installed agy version and platform.",
       "Review the documented PostToolUse payload and package-root resolution.",
       "On a disposable package, perform an explicit audit probe before proposing an executable handler."
     ]
   },
-  "failureMode": "fail-open",
+  "failureMode": "unknown-disabled",
   "input": {
     "format": "json-object",
     "documentedFields": ["toolCall.name", "toolCall.args", "stepIdx"]

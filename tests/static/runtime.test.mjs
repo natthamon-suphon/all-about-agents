@@ -76,6 +76,10 @@ test("package metadata declares ESM Node support without dependencies", async ()
   }
   assert.deepEqual(Object.keys(packageJson.scripts).sort(), [
     "doctor",
+    "quality:full",
+    "quality:quick",
+    "quality:skill",
+    "sync:status",
     "test",
     "test:contracts",
     "test:integration",
@@ -112,7 +116,7 @@ test("withTempRoot cleans its disposable root when the callback throws", async (
   await assert.rejects(access(rootPath), { code: "ENOENT" });
 });
 
-test("CLI help lists the five supported top-level actions", () => {
+test("CLI help lists the six supported top-level actions and registration options", () => {
   const result = spawnSync(process.execPath, ["scripts/aaa.mjs", "--help"], {
     cwd: process.cwd(),
     encoding: "utf8"
@@ -129,8 +133,14 @@ test("CLI help lists the five supported top-level actions", () => {
       "  validate  Validate repository configuration and contracts",
       "  diff      Show the pending configuration diff",
       "  eval      Run an evaluation against a disposable root",
+      "  register  Register one rendered package with its native product (dry-run by default)",
       "",
       "Options:",
+      "  --surface <surface>  Select one surface (register requires exactly one)",
+      "  --profile <profile>  Use portable or template profile",
+      "  --package-root <path>  Package path for register (repository-relative or absolute)",
+      "  --dry-run | --apply  Plan only by default; apply requires explicit --apply",
+      "  --format text|json  Select human or machine-readable output",
       "  -h, --help  Show this help",
       ""
     ].join("\n")

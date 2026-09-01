@@ -8,6 +8,7 @@ import {
   CLAUDE_PREREQUISITES,
   CLAUDE_MODEL_POLICY,
   CLAUDE_SEMANTIC_MAPPINGS,
+  renderClaudeStatuslineCommand,
   renderSurface,
   renderClaude,
   resolveClaudeConfigDir
@@ -129,6 +130,146 @@ test("template Claude render emits full-access settings without unsupported effo
   assert.equal(settings.fallbackModel.includes("claude-fable-5"), false);
   assert.equal(settings.permissions.defaultMode, "bypassPermissions");
   assert.ok(settings.permissions.deny.length > 0);
+});
+
+test("Claude native settings activate the statusline for both profiles and platforms", () => {
+  for (const profile of ["portable", "template"]) {
+    const windows = resultFor(profile, {
+      platform: "win32",
+      env: { CLAUDE_CONFIG_DIR: "C:/disposable/Claude Config/native" },
+      homeDir: "C:/Users/tester"
+    });
+    const winSettings = JSON.parse(fileMap(windows).get("config/settings.json"));
+    assert.equal(winSettings.statusLine.type, "command");
+    assert.equal(winSettings.statusLine.padding, 0);
+    assert.match(winSettings.statusLine.command, /^powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand [A-Za-z0-9+/=]+$/u);
+    const decodedWindowsCommand = decodeWindowsStatuslineCommand(winSettings.statusLine.command);
+    assert.match(decodedWindowsCommand, /statusline[.]ps1/u);
+    assert.match(decodedWindowsCommand, /Claude Config/u);
+
+    const mac = resultFor(profile, {
+      platform: "darwin",
+      env: { CLAUDE_CONFIG_DIR: "/Users/tester/Claude Config/ทีม 'native'" },
+      homeDir: "/Users/tester"
+    });
+    const macSettings = JSON.parse(fileMap(mac).get("config/settings.json"));
+    assert.equal(macSettings.statusLine.type, "command");
+    assert.equal(macSettings.statusLine.padding, 0);
+    assert.match(macSettings.statusLine.command, /statusline[.]sh/u);
+    assert.match(macSettings.statusLine.command, /Claude Config/u);
+  }
+});
+
+test("Claude native statusline command rejects unsafe custom roots", () => {
+  const invalidRoots = [
+    "C:/Claude\nunsafe",
+    "C:/Claude\"unsafe",
+    "C:/Claude<unsafe",
+    "C:/Claude>unsafe",
+    "C:/Claude|unsafe",
+    "C:/Claude?unsafe",
+    "C:/Claude*unsafe",
+    "C:/Claude:unsafe",
+    "C:/Claude/./unsafe",
+    "C:/Claude/../unsafe",
+    "C:/Claude//unsafe",
+    "C:relative",
+    "//",
+    "///server/share",
+    "//server/",
+    "//server//share"
+  ];
+  for (const configRoot of invalidRoots) {
+    assert.throws(
+      () => renderClaudeStatuslineCommand({ platform: "win32", homeDir: "C:/Users/tester", configRoot }),
+      /statusline command|config root|control|segment|absolute|UNC/iu,
+      configRoot
+    );
+  }
+  assert.throws(
+    () => resultFor("portable", { platform: "darwin", env: { CLAUDE_CONFIG_DIR: "/Users/tester/Claude\0unsafe" } }),
+    /statusline command|config root|control/iu
+  );
+});
+
+function decodeWindowsStatuslineCommand(command) {
+  const match = command.match(/^powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand ([A-Za-z0-9+/=]+)$/u);
+  assert.ok(match, "unexpected Windows statusline command: " + command);
+  return Buffer.from(match[1], "base64").toString("utf16le");
+}
+
+test("Claude native statusline command uses shell-neutral UTF-16 PowerShell encoding", () => {
+  assert.equal(
+    decodeWindowsStatuslineCommand(renderClaudeStatuslineCommand({ platform: "win32", homeDir: "C:/Users/tester", configRoot: "C:/Users/tester/.claude" })),
+    "$ProgressPreference = 'SilentlyContinue'\n& 'C:/Users/tester/.claude/statusline/statusline.ps1'\nexit $LASTEXITCODE\n"
+  );
+  const windows = renderClaudeStatuslineCommand({
+    platform: "win32",
+    homeDir: "C:/Users/tester",
+    configRoot: "C:/Claude Config/ทีม/O'Reilly $&;" + String.fromCharCode(96) + "tick"
+  });
+  assert.match(windows, /^powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand [A-Za-z0-9+/=]+$/u);
+  assert.equal(windows.includes("Claude Config"), false);
+  assert.equal(windows.includes("O'Reilly"), false);
+  assert.equal(windows.includes(String.fromCharCode(96)), false);
+  assert.equal(
+    decodeWindowsStatuslineCommand(windows),
+    "$ProgressPreference = 'SilentlyContinue'\n& 'C:/Claude Config/ทีม/O''Reilly $&;" + String.fromCharCode(96) + "tick/statusline/statusline.ps1'\nexit $LASTEXITCODE\n"
+  );
+  const driveRoot = renderClaudeStatuslineCommand({ platform: "win32", homeDir: "C:/Users/tester", configRoot: "C:/" });
+  assert.equal(decodeWindowsStatuslineCommand(driveRoot), "$ProgressPreference = 'SilentlyContinue'\n& 'C:/statusline/statusline.ps1'\nexit $LASTEXITCODE\n");
+  const unc = renderClaudeStatuslineCommand({
+    platform: "win32",
+    homeDir: "C:/Users/tester",
+    configRoot: "\\\\server\\share\\Claude Config\\O'Reilly $&;" + String.fromCharCode(96) + "tick"
+  });
+  assert.equal(
+    decodeWindowsStatuslineCommand(unc),
+    "$ProgressPreference = 'SilentlyContinue'\n& '//server/share/Claude Config/O''Reilly $&;" + String.fromCharCode(96) + "tick/statusline/statusline.ps1'\nexit $LASTEXITCODE\n"
+  );
+  const mac = renderClaudeStatuslineCommand({
+    platform: "darwin",
+    homeDir: "/Users/tester",
+    configRoot: "/Users/tester/Claude Config/ทีม 'native'"
+  });
+  assert.equal(mac, "'/Users/tester/Claude Config/ทีม '\\\''native'\\\''/statusline/statusline.sh'");
+});
+
+test("Claude template Fable diagnostic records documented availability limits", () => {
+  const templateDiagnostics = resultFor("template").diagnostics.filter((entry) => entry.code === "fable-advisor-availability");
+  assert.deepEqual(templateDiagnostics, [{
+    code: "fable-advisor-availability",
+    severity: "warning",
+    message: "Fable advisor is documented, but account, organization, plan, provider, consent, and product-version conditions can limit access; the primary/fallback chain remains unchanged.",
+    sourcePath: "config/settings.json"
+  }]);
+  assert.doesNotMatch(templateDiagnostics[0].message, /experimental/iu);
+  assert.equal(resultFor("portable").diagnostics.some((entry) => entry.code === "fable-advisor-availability"), false);
+});
+
+test("Claude statusline uses a shared native lifecycle record", () => {
+  const record = resultFor().registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "statusline");
+  assert.ok(record, "statusline must expose a native integration record");
+  assert.equal(record.surface, "claude");
+  assert.equal(record.phases.rendered.status, "pass");
+  assert.equal(record.phases.validated.status, "pass");
+  assert.equal(record.phases.registered.status, "not-run");
+  assert.equal(record.phases.trusted.status, "not-run-unavailable");
+  assert.equal(record.phases.active.status, "not-run");
+  assert.equal(record.phases.runtimeVerified.status, "not-run");
+  assert.match(record.phases.trusted.evidence, /no native trust/iu);
+});
+
+test("Claude emergency protection requires strict validation without claiming runtime execution", () => {
+  const record = resultFor("template").registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
+  assert.ok(record);
+  assert.deepEqual(
+    Object.fromEntries(["rendered", "validated", "registered", "trusted", "active", "runtimeVerified"].map((phase) => [phase, record.phases[phase].status])),
+    { rendered: "pass", validated: "not-run", registered: "not-run", trusted: "not-run-unavailable", active: "not-run", runtimeVerified: "not-run" }
+  );
+  assert.match(record.phases.validated.evidence, /strict plugin validation.*not run/iu);
+  assert.match(record.phases.runtimeVerified.evidence, /not run/iu);
+  assert.ok(record.manualSteps.some((step) => step.includes("bypassPermissions")));
 });
 
 test("Claude hooks use exec-form commands with argument arrays and plugin-root paths", () => {

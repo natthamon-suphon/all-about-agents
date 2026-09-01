@@ -1,7 +1,20 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
+
+function runGit(args, options = {}) {
+  return execFileSync('git', args, { ...options, shell: false });
+}
+
+function resolveCommit(label, ref) {
+  try {
+    return runGit(['rev-parse', '--verify', '--quiet', '--end-of-options', `${ref}^{commit}`], { encoding: 'utf8' }).trim();
+  } catch {
+    console.error(`bad ${label} commit: ${ref}`);
+    process.exit(2);
+  }
+}
 
 const planFile = process.argv[2];
 const base = process.argv[3];
@@ -19,22 +32,10 @@ if (!fs.existsSync(resolvedPlan)) {
   process.exit(2);
 }
 
-try {
-  execSync(`git rev-parse --verify --quiet "${base}"`, { stdio: 'ignore' });
-} catch {
-  console.error(`bad BASE commit: ${base}`);
-  process.exit(2);
-}
-
-try {
-  execSync(`git rev-parse --verify --quiet "${head}"`, { stdio: 'ignore' });
-} catch {
-  console.error(`bad HEAD commit: ${head}`);
-  process.exit(2);
-}
-
-const baseShort = execSync(`git rev-parse --short "${base}"`, { encoding: 'utf8' }).trim();
-const headShort = execSync(`git rev-parse --short "${head}"`, { encoding: 'utf8' }).trim();
+const baseCommit = resolveCommit('BASE', base);
+const headCommit = resolveCommit('HEAD', head);
+const baseShort = runGit(['rev-parse', '--short', baseCommit], { encoding: 'utf8' }).trim();
+const headShort = runGit(['rev-parse', '--short', headCommit], { encoding: 'utf8' }).trim();
 
 const planDir = path.dirname(resolvedPlan);
 const sddDir = path.join(planDir, 'sdd');
@@ -45,10 +46,11 @@ if (!fs.existsSync(sddDir)) {
 
 const outFile = customOut ? path.resolve(customOut) : path.join(sddDir, `review-${baseShort}..${headShort}.diff`);
 
-const logOutput = execSync(`git log --oneline "${base}..${head}"`, { encoding: 'utf8' }).trim();
-const statOutput = execSync(`git diff --stat "${base}..${head}"`, { encoding: 'utf8' }).trim();
-const diffOutput = execSync(`git diff -U10 "${base}..${head}"`, { encoding: 'utf8' }).trim();
-const commitCount = execSync(`git rev-list --count "${base}..${head}"`, { encoding: 'utf8' }).trim();
+const commitRange = `${baseCommit}..${headCommit}`;
+const logOutput = runGit(['log', '--oneline', commitRange], { encoding: 'utf8' }).trim();
+const statOutput = runGit(['diff', '--stat', commitRange], { encoding: 'utf8' }).trim();
+const diffOutput = runGit(['diff', '-U10', commitRange], { encoding: 'utf8' }).trim();
+const commitCount = runGit(['rev-list', '--count', commitRange], { encoding: 'utf8' }).trim();
 
 const packageContent = [
   `# Review package: ${base}..${head}`,

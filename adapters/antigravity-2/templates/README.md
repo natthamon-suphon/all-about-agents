@@ -11,7 +11,9 @@ that behavior on other versions and platforms.
 
 Model selection and permission presets remain manual Desktop UI steps. The
 adapter does not emit application settings, install a plugin automatically, or
-execute a hook command. Native evidence is recorded per check; partial
+execute a hook command. Hook events and JSON input/output are documented, but
+hook-process failure behavior and plugin-root command resolution are not.
+Native evidence is recorded per check; partial
 discovery does not qualify untested hook, permission, or role behavior.
 
 ## Native acceptance (partial)
@@ -27,9 +29,10 @@ fixture:
    `.agents/plugins/all-about-agents/plugin.json`; confirm discovery without
    automatic installation or a generated settings file.
 2. `skill-and-rule-discovery` — Inspect the plugin; confirm 28 skills, the
-   consolidated `rules/AGENTS.md`, `hooks.json`, `plugin.json`, and seven agents
-   load. Skills, the consolidated rule, and all seven agents passed in a
-   disposable Windows Desktop 2.11.0 project.
+   consolidated `rules/AGENTS.md`, `plugin.json`, and seven agents load. Confirm
+   `hooks.json` is present, disabled, and inert; do not claim it loaded. Skills,
+   the consolidated rule, and all seven agents passed in a disposable Windows
+   Desktop 2.11.0 project.
 3. `agent-tool-safety` — Invoke every role and inspect tools; read-only roles
    must not expose `run_command`, while implementer retains its documented
    command workflow.

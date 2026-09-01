@@ -147,7 +147,7 @@ export function buildPlan({ payload, destinationRoot, previousState = null, sele
   const diagnostics = Array.isArray(payload.diagnostics) ? payload.diagnostics.map((entry) => ({ ...entry })) : [];
   let rootSafetyError = null;
   try {
-    assertSafeDestinationRoot(root);
+    assertSafeDestinationRoot(root, { allowedProductRoots: [root] });
   } catch (error) {
     rootSafetyError = error;
     diagnostics.push(issue("unsafe-destination-root", "error", `destination root rejected: ${error.message}`, null));

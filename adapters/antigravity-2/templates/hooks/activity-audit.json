@@ -8,14 +8,14 @@
   "probeRequired": true,
   "probe": {
     "status": "not run",
-    "reason": "The target Antigravity Desktop build does not have a verified hook command package-root resolution contract.",
+    "reason": "PostToolUse JSON input and output are documented, but hook-process failure behavior and plugin-root command resolution are not documented.",
     "manualSequence": [
       "Record the installed Antigravity Desktop version and platform.",
       "Review the documented PostToolUse payload and package-root resolution.",
       "On a disposable package, perform an explicit audit probe before proposing an executable handler."
     ]
   },
-  "failureMode": "fail-open",
+  "failureMode": "unknown-disabled",
   "input": {
     "format": "json-object",
     "documentedFields": ["toolCall.name", "toolCall.args", "stepIdx"]

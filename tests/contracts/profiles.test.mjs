@@ -139,12 +139,13 @@ test("every adapter translates both complete profiles and keeps all skills impli
 
 test("portable renders safe permissions without pinning personal model choices", () => {
   const outputs = Object.fromEntries(Object.entries(renderers).map(([surface, render]) => [surface, render(profiles.portable)]));
-  assert.deepEqual(JSON.parse(files(outputs.claude).get("config/settings.json")), {
-    permissions: {
-      defaultMode: "default",
-      deny: ["Bash(rm -rf /)", "Bash(rm -rf ~)", "Bash(git push --force*)", "Bash(git reset --hard*)"]
-    }
+  const claudeSettings = JSON.parse(files(outputs.claude).get("config/settings.json"));
+  assert.deepEqual(claudeSettings.permissions, {
+    defaultMode: "default",
+    deny: ["Bash(rm -rf /)", "Bash(rm -rf ~)", "Bash(git push --force*)", "Bash(git reset --hard*)"]
   });
+  assert.equal(claudeSettings.statusLine.type, "command");
+  assert.equal(typeof claudeSettings.statusLine.command, "string");
   assert.doesNotMatch(serializedFiles(outputs.claude), /claude-(?:opus|sonnet|fable)-5|CLAUDE_CODE_EFFORT_LEVEL/u);
   assert.doesNotMatch(serializedFiles(outputs.codex), /gpt-5\.6-(?:sol|terra)|model_reasoning_effort/u);
   assert.equal(files(outputs.codex).has("terra-max.config.toml"), false);
@@ -179,7 +180,11 @@ test("template full access never removes emergency denies", () => {
   const codexConfig = files(outputs.codex).get("config.toml");
   assert.match(codexConfig, /sandbox_mode = "danger-full-access"/u);
   assert.match(codexConfig, /approval_policy = "never"/u);
-  assert.ok(outputs.codex.registrations.some((entry) => entry.kind === "emergency-guard" && entry.enabled === true));
+  const codexEmergency = outputs.codex.registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
+  assert.ok(codexEmergency);
+  assert.equal(codexEmergency.phases.rendered.status, "pass");
+  assert.equal(codexEmergency.phases.trusted.status, "not-run");
+  assert.ok(codexEmergency.manualSteps.some((step) => step.includes("command(rm -rf)") && step.includes("write_file(/home/user/.ssh)")));
   const desktopPermission = outputs["antigravity-2"].registrations.find((entry) => entry.kind === "permission-ui");
   assert.equal(desktopPermission.preset, "Custom");
   assert.equal(desktopPermission.accessIntent, "full");

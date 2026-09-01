@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   AdapterContractError,
   renderSurface,
+  validateNativeMappings,
   validateRenderResult
 } from "../../adapters/shared/adapter-contract.mjs";
 import {
@@ -14,7 +15,7 @@ import {
   renderText,
   renderToml
 } from "../../adapters/shared/render-utils.mjs";
-import { renderPayload } from "../../installers/lib/render.mjs";
+import { renderForSurface, renderPayload } from "../../installers/lib/render.mjs";
 
 const actionIds = [
   "aaa:design",
@@ -43,6 +44,17 @@ function mappings() {
     required: true,
     supported: true,
     native: `native-${actionId.slice(4)}`
+  }]));
+}
+
+function explicitlyUnsupportedMappings() {
+  return Object.fromEntries(actionIds.map((actionId) => [actionId, {
+    required: true,
+    supported: false,
+    support: "manual-unknown",
+    source: "research-primary.md",
+    reason: `No documented native mapping for ${actionId}.`,
+    manualStep: `Use a manual prompt for ${actionId} after native verification.`
   }]));
 }
 
@@ -146,6 +158,41 @@ test("renderSurface rejects an unsupported required native mapping", () => {
   assert.throws(
     () => renderSurface(input({ capabilityRecord: { surface: "claude", actionMappings: nativeMappings } })),
     (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "unsupported-native-mapping")
+  );
+});
+
+test("native mapping validation accepts only complete explicit unsupported evidence when opted in", () => {
+  const records = explicitlyUnsupportedMappings();
+  const accepted = validateNativeMappings(
+    { surface: "agy", actionMappings: records },
+    actionIds,
+    { allowExplicitUnsupported: true }
+  );
+  assert.equal(accepted.valid, true);
+  assert.equal(accepted.errors.length, 0);
+  assert.equal(accepted.diagnostics.length, actionIds.length);
+  assert.ok(accepted.diagnostics.every((entry) => entry.code === "native-mapping-explicitly-unsupported"));
+
+  delete records["aaa:audit"].manualStep;
+  const incomplete = validateNativeMappings(
+    { surface: "agy", actionMappings: records },
+    actionIds,
+    { allowExplicitUnsupported: true }
+  );
+  assert.equal(incomplete.valid, false);
+  assert.ok(incomplete.errors.some((entry) => entry.code === "incomplete-unsupported-native-mapping"));
+});
+
+test("production rendering cannot bypass the public adapter contract", async () => {
+  await assert.rejects(
+    () => renderForSurface({
+      repositoryRoot: process.cwd(),
+      surface: "claude",
+      profile: "portable",
+      platform: "win32",
+      capabilityRecord: { actionMappings: {} }
+    }),
+    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "missing-native-mapping")
   );
 });
 
@@ -275,4 +322,32 @@ test("renderSurface produces byte-identical complete outputs for identical input
 test("renderPayload dispatches selected surfaces in canonical order", async () => {
   const results = await renderPayload({ surfaces: ["agy", "claude", "codex", "antigravity-2"], profile: "portable", platform: "win32" });
   assert.deepEqual(results.map((result) => result.registrations.find((entry) => entry.kind === "profile-translation")?.surface), ["claude", "codex", "antigravity-2", "agy"]);
+});
+
+test("production rendering validates both profiles and all surfaces through the public seam", async () => {
+  for (const profile of ["portable", "template"]) {
+    const results = await renderPayload({ surfaces: ["agy", "claude", "codex", "antigravity-2"], profile, platform: "win32" });
+    assert.equal(results.length, 4);
+    for (const result of results) assert.equal(validateRenderResult(result).valid, true);
+    for (const surface of ["antigravity-2", "agy"]) {
+      const result = results.find((entry) => entry.registrations.some((registration) => registration.surface === surface || registration.surface === `${surface}-desktop`));
+      assert.ok(result);
+      assert.equal(result.diagnostics.filter((entry) => entry.code === "native-mapping-explicitly-unsupported").length, actionIds.length);
+    }
+  }
+});
+
+test("validateRenderResult validates native integration registrations with stable nested paths", () => {
+  const content = bytes("rendered\n");
+  const result = {
+    files: [{ relativePath: "native/output.txt", content, mode: null }],
+    registrations: [
+      { kind: "native-integration", surface: "claude", feature: "statusline", phases: {}, sourcePath: "adapters/claude/adapter.mjs", manualSteps: [] }
+    ],
+    diagnostics: [],
+    ownership: [ownership("native/output.txt", content)]
+  };
+  const validation = validateRenderResult(result);
+  assert.equal(validation.valid, false);
+  assert.ok(validation.errors.some((error) => error.path === "/registrations/0/phases/rendered"));
 });

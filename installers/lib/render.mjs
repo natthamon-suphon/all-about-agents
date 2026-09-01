@@ -1,10 +1,10 @@
 import { loadCore } from "./load-core.mjs";
 import { hashBytes, equalBytes } from "./hash.mjs";
 import { SURFACES, validateRenderResult } from "../../adapters/shared/adapter-contract.mjs";
-import { render as renderClaude } from "../../adapters/claude/adapter.mjs";
-import { render as renderCodex } from "../../adapters/codex/adapter.mjs";
-import { render as renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
-import { render as renderAgy } from "../../adapters/agy/adapter.mjs";
+import { renderSurface as renderClaude } from "../../adapters/claude/adapter.mjs";
+import { renderSurface as renderCodex } from "../../adapters/codex/adapter.mjs";
+import { renderSurface as renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
+import { renderSurface as renderAgy } from "../../adapters/agy/adapter.mjs";
 
 export const SURFACE_RENDERERS = Object.freeze({
   claude: renderClaude,

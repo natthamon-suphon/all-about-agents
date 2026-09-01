@@ -10,6 +10,7 @@ import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeSc
 import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency-policy.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
+import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 
 const SURFACE = "antigravity-2";
 const DESKTOP_SURFACE = "antigravity-2-desktop";
@@ -59,7 +60,7 @@ export const ANTIGRAVITY_ACTION_MAPPINGS = Object.freeze(Object.fromEntries(
     supported: false,
     support: "manual-unknown",
     status: "unknown",
-    source: "research-antigravity-2.md",
+    source: "docs/evaluations/antigravity-contracts-2026-08-31.md",
     reason: "No documented Desktop prompt or workflow mapping is published for this canonical action.",
     manualStep: `Use a manually authored Desktop prompt or workflow for ${actionId} only after verifying the Desktop UI; no native action mapping is claimed.`
   })])
@@ -265,6 +266,7 @@ function capabilityGuidance() {
     "The Desktop Plugins page omits `agents/`; the Desktop Subagents page separately documents `agents/<role>.md`.",
     "Native Windows Desktop 2.11.0 discovery verified all seven packaged agents; other product versions and platforms still require verification.",
     "The published Desktop tools are the exact names used in agent frontmatter and semantic mappings.",
+    "Hook events and JSON input/output are documented for Desktop and CLI, but hook-process failure behavior is not documented.",
     "Read-only capability diagnostics identify suppressed command or mutation semantics; record them as unavailable or not run and do not infer a substitute.",
     "The implementer's Desktop write controls are workspace-wide; its declared task paths remain an outer approval boundary.",
     "No serialized application preferences, cross-conversation model key, or command-line option is part of this package.",
@@ -324,6 +326,46 @@ function hooksDocument() {
       Stop: []
     }
   };
+}
+
+function nativeEmergencyRecord(profile) {
+  const preset = ANTIGRAVITY_PERMISSION_POLICY[profile.authority].preset;
+  return createNativeIntegrationRecord({
+    surface: SURFACE,
+    feature: "emergency-protection",
+    phases: {
+      rendered: {
+        status: "pass",
+        evidence: `Rendered the Antigravity Desktop ${preset} permission checklist with the canonical emergency deny policy.`
+      },
+      validated: {
+        status: "not-run",
+        evidence: "Antigravity Desktop has no verified native emergency-policy validator; only the rendered policy is recorded."
+      },
+      registered: {
+        status: "not-run",
+        evidence: "Desktop plugin discovery and manual permission registration were not run during rendering."
+      },
+      trusted: {
+        status: "not-run",
+        evidence: "Desktop hook trust was not observed; the emergency hook template remains inert pending a manual probe."
+      },
+      active: {
+        status: "not-run",
+        evidence: "Antigravity Desktop emergency protection was not observed in an active native session."
+      },
+      runtimeVerified: {
+        status: "not-run",
+        evidence: "Antigravity Desktop emergency deny output was not executed in a native runtime probe."
+      }
+    },
+    sourcePath: "adapters/antigravity-2/adapter.mjs",
+    manualSteps: [
+      `In Desktop Project security controls, select ${preset} and retain Deny for command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).`,
+      "Keep hooks.json disabled and inert until a disposable Desktop deny-output probe verifies command resolution and failure behavior.",
+      "Do not treat the rendered checklist or hook template as automatic or runtime-verified emergency protection."
+    ]
+  });
 }
 
 /** Normalize only the documented Antigravity Desktop PreToolUse fields. */
@@ -406,19 +448,20 @@ export function renderAntigravity(input = {}) {
     code: "desktop-emergency-guard-probe-required",
     severity: "warning",
     message: "Desktop emergency guard output is documented but executable package-root resolution remains unverified; automatic hook execution is disabled.",
-    sourcePath: "research-t014-pretool-hooks.md"
+    sourcePath: "docs/evaluations/antigravity-contracts-2026-08-31.md"
   });
   for (const actionId of ACTION_IDS) diagnostics.push({
     code: "desktop-action-unknown",
     severity: "warning",
     message: `${actionId} has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.`,
-    sourcePath: "research-antigravity-2.md"
+    sourcePath: "docs/evaluations/antigravity-contracts-2026-08-31.md"
   });
 
   const result = {
     files,
     registrations: [
       profileTranslation(semanticProfile, SURFACE),
+      nativeEmergencyRecord(semanticProfile),
       {
         kind: "plugin-registration",
         surface: DESKTOP_SURFACE,
@@ -516,6 +559,7 @@ export function renderSurface(input = {}) {
   const capabilityRecord = {
     surface: SURFACE,
     requiredMappings: ACTION_IDS,
+    allowExplicitUnsupported: true,
     actionMappings: ANTIGRAVITY_ACTION_MAPPINGS,
     render: () => renderAntigravity(input)
   };

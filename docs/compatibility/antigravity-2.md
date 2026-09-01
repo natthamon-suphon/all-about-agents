@@ -1,67 +1,98 @@
 # Antigravity 2.0 Desktop compatibility
 
-Antigravity 2.0 Desktop is a manual-integration surface. The repository can
-render a portable plugin package, but the adapter does not automatically
-install a Desktop plugin, write Desktop settings, or execute hooks. Windows
-Desktop 2.11.0 discovery is partially qualified per check; untested behavior
-remains `NOT_RUN`. See the [evaluation method](../evaluations/method.md).
-The redacted observation record is [Native Windows evidence](../evaluations/native-windows-2026-08-31.md).
+Antigravity 2.0 Desktop is a manual integration surface. The observed runtime
+is Windows Desktop `2.11.0`. A disposable project discovered the package,
+28 skills, the consolidated rule, and 7 agents. Hooks, permissions, role
+tools, persistence, and macOS remain `NOT_RUN`.
 
-## Support summary
+## Lifecycle and support
 
-| Capability | Current status | Contract |
+Use these states in order:
+
+```text
+rendered -> validated -> registered -> trusted -> active -> runtime verified
+```
+
+The adapter can render a package. Repository structure checks may pass, but the
+native Desktop `validated` state is `NOT_RUN` until a product validator is
+observed. Desktop `registered`, `trusted`, `active`, and `runtime verified`
+states require manual product observation. A package listing does not prove a
+loaded session.
+
+| Capability | Current evidence | Boundary |
 | --- | --- | --- |
-| Skills and rules | Verified on Windows Desktop 2.11.0 | A disposable project loaded 28 plugin skills and the consolidated `rules/AGENTS.md`. |
-| Agents/subagents | Verified on Windows Desktop 2.11.0 | All seven packaged `agents/<role>.md` entries appeared after restart; other versions/platforms remain manual. |
-| Hooks | Manual/probe-required | The package hook contract is disabled/inert until an operator confirms the Desktop event contract. |
-| Plugin registration | Manual | Workspace `.agents/plugins/<plugin>/` and global `~/.gemini/config/plugins/<plugin>/` are documented discovery locations; automatic install is not declared. |
-| Commands and statusline | Unknown/unsupported native contract | No Desktop command-file or statusline configuration key is established. |
-| Model/effort | Manual, model verified | Gemini 3.7 Flash High is selectable; High is part of the display name and no separate Desktop effort setting or automatic fallback is claimed. |
-| Native/session behavior | Partial Windows evidence | Launch, workspace plugin, 28 skills, consolidated rule, seven agents, and model selection passed; role execution, denies, hooks, persistence, Gate 3, IDE, and macOS remain `NOT_RUN`. |
+| Plugin, skills, rules, and agents | Disposable Windows Desktop discovery passed for 28 skills, the consolidated rule, and 7 agents | Other versions and platforms need a new check. |
+| Registration | Manual workspace or global plugin discovery | The adapter does not install a Desktop plugin. |
+| Hooks | Disabled and inert template | No command handler is active. Failure and blocking behavior are unknown. |
+| Statusline display name | Desktop has no documented native statusline contract | Statusline setup and display-name persistence are unavailable. |
+| Model and effort | `Gemini 3.7 Flash High` was selectable; High is part of the display name | No separate effort key or automatic fallback is claimed. |
 
 ## Model and permission policy
 
-The Windows Desktop 2.11.0 selector exposes **Gemini 3.7 Flash High**.
-Selection is manual and the documented persistence boundary is one
-conversation. `High` is part of the observed display name; no separate effort
-value, settings key, cross-session persistence, or automatic fallback is
-emitted.
+Select `Gemini 3.7 Flash High` in the conversation model selector. The
+observed selection is conversation-local. Do not infer cross-session
+persistence or a separate effort setting.
 
-The template’s full-access intent uses Desktop **Custom** and must be configured
-manually for broad access while retaining the emergency denies. **Turbo mode**
-is not selected because the 2.11.0 UI describes it as disabling safety
-barriers. Emergency denies remain in force:
-`rm -rf` commands, `sudo`, writes into `.git/`, and writes into
-`/home/user/.ssh` are denied. The portable preset uses the Default UI preset.
-The adapter does not emit an application settings overlay, so these controls
-cannot be marked automatic from rendered files.
+The `portable` preset uses Desktop `Default`. The `template` preset uses
+Desktop `Custom` for broad access. Keep `Turbo mode` off. Retain these
+emergency Deny rules:
+
+- `command(rm -rf)`;
+- `command(sudo)`;
+- `write_file(.git/)`;
+- `write_file(/home/user/.ssh)`.
+
+Custom full access does not prove native Deny enforcement. Exercise each rule
+manually only in a disposable workspace and record the product result.
 
 ## Discovery and manual registration
 
-The package contains plugin metadata plus skills, a consolidated
-`rules/AGENTS.md`, and an agent-role directory. The documented workspace discovery root is
-`.agents/plugins/<plugin>/`; the documented global root is
-`~/.gemini/config/plugins/<plugin>/`. The agent path is intentionally retained
-because the Desktop Plugins and Subagents documentation has not been reconciled;
-Windows Desktop 2.11.0 discovered all seven roles, while other versions still
-need confirmation.
+The exact rendered source is:
 
-A safe acceptance sequence is: launch the Desktop product with a disposable
-workspace, inspect plugin/skill/rule discovery, inspect the role list without
-running a role, manually select Flash High, verify conversation-local
-stickiness, and inspect permission ordering (Deny before Ask before Allow).
-Inspect hooks only after their event/input/output contract is confirmed. Do
-not infer any of these results from a package listing.
+```text
+"<PACKAGE_ROOT>/.agents/plugins/all-about-agents/"
+```
 
-The [quarantined Antigravity setup guide](../../quarantine/legacy/setup/setup-guide-antigravity.md)
-describes legacy symlink and automated-hook behavior. It is historical evidence,
-not a supported setup contract; the current adapter contract above takes precedence.
+Copy its contents to exactly one documented destination:
 
-## Verification limits
+```text
+"<WORKSPACE_ROOT>/.agents/plugins/all-about-agents/"
+"~/.gemini/config/plugins/all-about-agents/"
+```
 
-Desktop version 2.11.0, Windows host, Flash High selection, workspace plugin,
-28 skills, the consolidated plugin rule, and seven agents were observed. Entitlement details, native settings
-keys, cross-session persistence, command mapping, statusline behavior, role
-tool enforcement, deny behavior, and hook execution are not passes. Follow the
-[known limitations](../limitations/known-limitations.md) and keep each unrun
-check explicit.
+Do not copy the outer package root or create another nested `.agents/plugins/`
+tree. The plugin contains metadata, skills, `rules/AGENTS.md`, disabled hooks,
+and agent-role files.
+
+Warning: Desktop registration changes a workspace or product location. Use a
+disposable workspace and exact operator approval. The CLI register apply path
+is unsupported for Desktop.
+
+1. Open a disposable project.
+
+2. Copy the exact rendered plugin source to one exact destination above.
+
+3. Restart or reload Desktop.
+
+4. Record plugin, rule, skill, and agent discovery.
+
+5. Select the model and permission preset.
+
+6. Exercise the emergency Deny checklist.
+
+The hook template is disabled and inert. Do not call it active protection.
+The Desktop statusline display name is unavailable because no native Desktop
+statusline contract is established. Do not copy a CLI statusline setting into
+Desktop.
+
+## Limits
+
+The Windows Desktop evidence does not cover role tool enforcement, Deny
+blocking, hook execution, trust, persistence, IDE behavior, authenticated
+requests, or macOS. Record missing checks as `NOT_RUN` or
+`NOT_RUN_UNAVAILABLE`.
+
+Use [native registration](../maintenance/native-registration.md),
+[native verification](../maintenance/native-verification.md), and the
+[cross-tool quality guide](../maintenance/cross-tool-quality.md). See
+[known limitations](../limitations/known-limitations.md).

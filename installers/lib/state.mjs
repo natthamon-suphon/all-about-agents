@@ -194,6 +194,7 @@ export async function writeManagedState({ root, state, fileSystem = {}, relative
     destination: resolve(root, ...relativePath.split("/")),
     content,
     expectedHash: hashBytes(content),
+    allowedProductRoots: [root],
     fileSystem
   });
 }

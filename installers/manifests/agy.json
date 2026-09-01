@@ -6,13 +6,18 @@
   "package": "all-about-agents",
   "pluginManifest": "plugin.json",
   "packageRoot": ".",
+  "installedPluginRoot": "~/.gemini/antigravity-cli/plugins/all-about-agents/",
   "components": {
     "pluginManifest": "plugin.json",
     "hooks": "hooks.json",
     "skills": "skills/{skill}/SKILL.md",
     "agents": "agents/{role}/agent.md",
     "rules": "rules/{rule}.md",
-    "settingsOverlay": "settings.overlay.json"
+    "settingsOverlay": "settings.overlay.json",
+    "statusline": "statusline/statusline.mjs",
+    "statuslineConfig": "statusline/statusline.json",
+    "statuslineWindowsLauncher": "statusline/statusline.ps1",
+    "statuslinePosixLauncher": "statusline/statusline.sh"
   },
   "profileContract": {
     "source": "profiles/{profile}/profile.json",
@@ -30,14 +35,23 @@
       "artifactReviewPolicy",
       "allowNonWorkspaceAccess",
       "enableTerminalSandbox",
+      "statusLine",
       "permissions.deny"
     ],
     "destinationCandidates": [
       "~/.gemini/antigravity-cli/settings.json"
     ],
-    "status": "manual-discovery-required",
-    "automaticWrite": false,
-    "reason": "The documented sparse settings keys are known, but active CLI/shared roots and complete schema are version-sensitive."
+    "status": "apply-after-review",
+    "automaticWrite": true,
+    "reason": "Rendering is read-only. After dry-run review and exact authorization, register --apply merges this sparse overlay into the documented settings file and preserves unknown keys."
+  },
+  "statuslinePrerequisites": {
+    "executable": "node",
+    "check": ["node", "--version"],
+    "minimumVersion": "22.12.0",
+    "onMissing": "reject",
+    "requiredBy": ["statusline/statusline.mjs"],
+    "platforms": ["win32", "darwin", "linux"]
   },
   "profiles": {
     "portable": {
@@ -91,77 +105,77 @@
     "unknownSelection": "Fail, run agy models, then retry with an exact operator-selected slug or omit --model; never substitute silently."
   },
   "semanticCapabilities": {
-    "repository-read": [],
-    "repository-write": [],
-    "web-primary-sources": [],
-    "isolated-write": [],
-    "command-execution": [],
-    "filesystem-read": [],
-    "filesystem-write": [],
-    "git-read": [],
-    "git-write": [],
-    "test-execution": [],
-    "external-research": [],
-    "evaluation": [],
-    "role-dispatch": [],
-    "workflow-state": [],
-    "schema-validation": [],
-    "native-rendering": []
+    "repository-read": ["view_file", "list_dir", "find_by_name", "grep_search"],
+    "repository-write": ["write_to_file", "replace_file_content", "multi_replace_file_content"],
+    "web-primary-sources": ["search_web", "read_url_content"],
+    "isolated-write": ["write_to_file", "replace_file_content", "multi_replace_file_content"],
+    "command-execution": ["run_command"],
+    "filesystem-read": ["view_file", "list_dir", "find_by_name", "grep_search"],
+    "filesystem-write": ["write_to_file", "replace_file_content", "multi_replace_file_content"],
+    "git-read": ["run_command"],
+    "git-write": ["run_command"],
+    "test-execution": ["run_command"],
+    "external-research": ["search_web", "read_url_content"],
+    "evaluation": ["run_command", "view_file"],
+    "role-dispatch": ["invoke_subagent", "define_subagent", "manage_subagents"],
+    "workflow-state": ["view_file", "write_to_file"],
+    "schema-validation": ["run_command"],
+    "native-rendering": ["write_to_file"]
   },
   "actions": {
     "aaa:design": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-agy-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented agy native action mapping is published for this canonical action.",
       "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
     },
     "aaa:build": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-agy-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented agy native action mapping is published for this canonical action.",
       "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
     },
     "aaa:fix": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-agy-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented agy native action mapping is published for this canonical action.",
       "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
     },
     "aaa:review": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-agy-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented agy native action mapping is published for this canonical action.",
       "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
     },
     "aaa:audit": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-agy-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented agy native action mapping is published for this canonical action.",
       "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
     },
     "aaa:improve-skill": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-agy-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented agy native action mapping is published for this canonical action.",
       "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
     },
     "aaa:resume": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-agy-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented agy native action mapping is published for this canonical action.",
       "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
     },
     "aaa:verify": {
       "support": "manual-unknown",
       "status": "unknown",
-      "source": "research-agy-2.md",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
       "reason": "No documented agy native action mapping is published for this canonical action.",
       "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
     }
@@ -180,6 +194,7 @@
       { "id": "effort-help", "status": "pass", "evidence": "agy --help documented --effort high." },
       { "id": "headless-model", "status": "pass", "evidence": "Headless Flash High with high effort and dangerously-skip-permissions completed successfully." },
       { "id": "plugin-validation", "status": "pass", "evidence": "agy plugin validate accepted both rendered packages and reported 28 skills, 7 agents, and 1 hook." },
+      { "id": "statusline-renderer", "status": "pass", "evidence": "Disposable Windows agy statusline command accepted official sample-shaped JSON and emitted one sanitized line from an unrelated cwd." },
       { "id": "agent-selection", "status": "pass", "evidence": "agy accepted --agent architect in the disposable workspace." },
       { "id": "agent-list", "status": "inconclusive", "evidence": "agy agents exited successfully but printed no agent rows." },
       { "id": "plugin-install", "status": "not run", "evidence": "No live plugin installation was performed." },
@@ -199,8 +214,11 @@
   },
   "installation": {
     "registration": "agy plugin install PACKAGE_DIRECTORY",
-    "automaticInstall": false,
+    "automaticInstall": true,
+    "automaticInstallMode": "register-apply-after-review",
+    "automaticFromRender": false,
     "automaticHookExecution": false,
-    "liveProfileWrite": false
+    "liveProfileWrite": true,
+    "liveProfileWriteMode": "register-apply-after-review"
   }
 }

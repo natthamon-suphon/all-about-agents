@@ -1035,6 +1035,81 @@ function isRecursiveFlag(value) {
   return /^-[a-z]*r[a-z]*$/u.test(token);
 }
 
+function isProtectedMoveSource(value) {
+  const raw = cleanPath(value);
+  const lower = raw.toLowerCase();
+  const path = lower.length > 1 ? lower.replace(/\/+$/u, "") : lower;
+  if (["/", "~", "$home", "${home}", "%userprofile%", "$env:userprofile"].includes(path)) return true;
+  if (/^[a-z]:\/?$/u.test(lower) || /^\/\/[a-z0-9._-]+\/[a-z0-9.$_-]+\/?$/u.test(lower)) return true;
+  if (/^\/(?:home|users)\/[^/]+$/u.test(path) || path === "/root" || /^[a-z]:\/users\/[^/]+$/u.test(path)) return true;
+  if (/(?:^|\/)\.(?:git|ssh|aws|gnupg)$/u.test(path)) return true;
+  return SECRET_PATH.test(path);
+}
+
+function moveSources(words, executableIndex) {
+  const executable = commandName(words[executableIndex] || "");
+  const args = words.slice(executableIndex + 1);
+  if (["mv", "move"].includes(executable)) {
+    const positionals = [];
+    let endOfOptions = false;
+    let targetDirectory = false;
+    for (let index = 0; index < args.length; index += 1) {
+      const argument = args[index];
+      const option = normalized(argument);
+      if (!endOfOptions && option === "--") {
+        endOfOptions = true;
+        continue;
+      }
+      if (!endOfOptions && (option.startsWith("-") || executable === "move" && option.startsWith("/"))) {
+        if (["-t", "--target-directory"].includes(option)) {
+          targetDirectory = true;
+          index += 1;
+        } else if (option.startsWith("--target-directory=")) {
+          targetDirectory = true;
+        } else if (["-s", "--suffix", "--context"].includes(option)) {
+          index += 1;
+        }
+        continue;
+      }
+      positionals.push(argument);
+    }
+    return targetDirectory ? positionals : positionals.slice(0, -1);
+  }
+
+  if (!["move-item", "rename-item"].includes(executable)) return [];
+  const namedSources = [];
+  const positionals = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    const option = normalized(argument);
+    const sourceOption = /^-(?:literalpath|path)(?::(.+))?$/u.exec(option);
+    if (sourceOption) {
+      if (sourceOption[1]) namedSources.push(sourceOption[1]);
+      else if (args[index + 1]) namedSources.push(args[index += 1]);
+      continue;
+    }
+    if (/^-(?:destination|newname)(?::.*)?$/u.test(option)) {
+      if (!option.includes(":")) index += 1;
+      continue;
+    }
+    if (option.startsWith("-")) {
+      if (["-filter", "-include", "-exclude"].includes(option)) index += 1;
+      continue;
+    }
+    positionals.push(argument);
+  }
+  if (namedSources.length > 0) return namedSources;
+  return positionals.slice(0, -1);
+}
+
+function destructiveProtectedMove(command) {
+  return commandVariants(command).some((variant) => {
+    const words = lexicalWords(variant);
+    const executableIndex = wrapperEnd(words);
+    return moveSources(words, executableIndex).some(isProtectedMoveSource);
+  });
+}
+
 function recursiveErase(command, capability) {
   const variants = commandVariants(command);
   const commandText = normalized(command);
@@ -1327,6 +1402,7 @@ export function classifyEmergencyAction(input = {}) {
     .filter((entry, index, entries) => entries.findIndex((candidate) => cleanPath(candidate.path) === cleanPath(entry.path)) === index);
   const checks = {
     "filesystem-root-erasure": () => {
+      if (destructiveProtectedMove(command)) return true;
       if (!recursiveErase(command, capability)) return false;
       return !verifiedDisposableTargets(verifiedDisposableRoot, pathEntries, command);
     },

@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
   "surface": "codex",
-  "checkedAt": "2026-08-28",
-  "productVersion": "unknown",
+  "checkedAt": "2026-08-31",
+  "productVersion": "0.151.0-alpha.7.2",
   "capabilities": [
     {
       "feature": "model.primary",
       "support": "supported",
       "stability": "stable",
-      "source": "research-model-policy-codex.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "unknown",
+      "source": "docs/evaluations/research-model-policy-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
       "value": {
         "model": "gpt-5.6-sol",
         "reasoning": "max"
@@ -21,9 +21,9 @@
       "feature": "model.alternate",
       "support": "supported",
       "stability": "stable",
-      "source": "research-model-policy-codex.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "unknown",
+      "source": "docs/evaluations/research-model-policy-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
       "value": {
         "model": "gpt-5.6-terra",
         "reasoning": "max",
@@ -35,9 +35,9 @@
       "feature": "model.automatic-fallback",
       "support": "unsupported",
       "stability": "unsupported",
-      "source": "research-model-policy-codex.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "unknown",
+      "source": "docs/evaluations/research-model-policy-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
       "value": null,
       "notes": "No documented automatic fallback-model configuration or behavior."
     },
@@ -45,9 +45,9 @@
       "feature": "effort.max",
       "support": "supported",
       "stability": "stable",
-      "source": "research-model-policy-codex.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "unknown",
+      "source": "docs/evaluations/research-model-policy-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
       "value": "max",
       "notes": "Current catalog and model guide advertise max for the selected models."
     },
@@ -55,9 +55,9 @@
       "feature": "agents.discovery",
       "support": "supported",
       "stability": "stable",
-      "source": "research-codex.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "unknown",
+      "source": "docs/evaluations/research-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
       "value": {
         "global": "~/.codex/agents/",
         "project": ".codex/agents/",
@@ -74,9 +74,9 @@
       "feature": "hooks.lifecycle",
       "support": "supported",
       "stability": "stable",
-      "source": "research-codex.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "unknown",
+      "source": "docs/evaluations/research-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
       "value": {
         "events": [
           "SessionStart",
@@ -96,15 +96,15 @@
           "mcp_tool"
         ]
       },
-      "notes": "Hooks are documented stable and enabled by default."
+      "notes": "Hook events and handlers are documented stable. Plugin hooks are not automatic before the explicit native trust step."
     },
     {
       "feature": "rules.instructions",
       "support": "supported",
       "stability": "stable",
-      "source": "research-codex.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "unknown",
+      "source": "docs/evaluations/research-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
       "value": {
         "global": "$CODEX_HOME/AGENTS.md",
         "project": "AGENTS.md or AGENTS.override.md"
@@ -115,9 +115,9 @@
       "feature": "skills.discovery",
       "support": "supported",
       "stability": "stable",
-      "source": "research-codex.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "unknown",
+      "source": "docs/evaluations/research-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
       "value": ".agents/skills/<skill>/SKILL.md",
       "notes": "Repository skill discovery is documented under .agents/skills."
     },
@@ -125,9 +125,9 @@
       "feature": "commands.plugin",
       "support": "unsupported",
       "stability": "unsupported",
-      "source": "research-codex.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "unknown",
+      "source": "docs/evaluations/research-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
       "value": null,
       "notes": "Claude-style commands are not portable Codex plugin components; convert reusable behavior to skills."
     },
@@ -135,19 +135,19 @@
       "feature": "statusline.native",
       "support": "unknown",
       "stability": "unknown",
-      "source": "research-codex.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "unknown",
+      "source": "docs/evaluations/research-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
       "value": null,
-      "notes": "The approved Codex records do not establish a native statusline configuration contract."
+      "notes": "The reviewed Codex records do not establish a native statusline configuration contract."
     },
     {
       "feature": "install.plugin",
       "support": "supported",
       "stability": "stable",
-      "source": "research-codex.md",
-      "checkedAt": "2026-08-28",
-      "productVersion": "unknown",
+      "source": "docs/evaluations/research-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
       "value": {
         "manifest": ".codex-plugin/plugin.json",
         "paths": "plugin-root-relative"

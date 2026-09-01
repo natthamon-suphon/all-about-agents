@@ -11,6 +11,7 @@ import { renderCodex } from "../../adapters/codex/adapter.mjs";
 import { renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
 import { renderAgy } from "../../adapters/agy/adapter.mjs";
 import { MAX_STDIN_BYTES, runBootstrap } from "../../core/hooks/bootstrap.mjs";
+import { NATIVE_PHASES } from "../../adapters/shared/native-state.mjs";
 
 const requiredOutputs = [
   "core/hooks/bootstrap.json",
@@ -266,6 +267,36 @@ test("rendered hook configs consume their parsed native templates and declare ru
   assert.equal(antigravityHooks["all-about-agents-safety"].enabled, false);
   assert.doesNotMatch(JSON.stringify(antigravityHooks), /command|\.\//iu);
   assert.ok(antigravity.registrations.some((entry) => entry.kind === "runtime-prerequisite" && entry.onMissing === "unavailable"));
+});
+
+test("Codex hook templates and rendered records remain manual until registration and trust evidence", async () => {
+  const core = await loadCore(process.cwd());
+  const result = renderCodex({ core, profile: { id: "template" }, statuslineName: "", platform: "win32" });
+  for (const templatePath of [
+    "adapters/codex/templates/hooks/bootstrap.json",
+    "adapters/codex/templates/hooks/activity-audit.json",
+    "adapters/codex/templates/hooks/checkpoint.json",
+    "adapters/codex/templates/hooks/emergency-guard.json"
+  ]) {
+    const template = await readJson(templatePath);
+    assert.notEqual(template.automatic, true, `${templatePath} must not claim automatic execution before evidence`);
+    assert.notEqual(template.enabled, true, `${templatePath} must not claim enabled execution before evidence`);
+  }
+  const records = result.registrations.filter((entry) => entry.kind === "native-integration");
+  assert.equal(records.length, 5);
+  const emergency = records.find((record) => record.feature === "emergency-protection");
+  assert.ok(emergency);
+  assert.deepEqual(Object.keys(emergency.phases), NATIVE_PHASES);
+  assert.deepEqual(NATIVE_PHASES.map((phase) => emergency.phases[phase].status), ["pass", "not-run", "not-run", "not-run", "not-run", "not-run"]);
+  assert.ok(emergency.manualSteps.some((step) => /\/hooks/u.test(step)));
+
+  const hookRecords = records.filter((record) => record.feature !== "emergency-protection");
+  assert.equal(hookRecords.length, 4);
+  for (const record of hookRecords) {
+    assert.deepEqual(Object.keys(record.phases), NATIVE_PHASES);
+    assert.deepEqual(NATIVE_PHASES.map((phase) => record.phases[phase].status), ["pass", "pass", "not-run", "not-run", "not-run", "not-run"]);
+    assert.ok(record.manualSteps.some((step) => /\/hooks/u.test(step)));
+  }
 });
 
 test("production runtime uses structured JSON serialization and explicit inputs only", async () => {

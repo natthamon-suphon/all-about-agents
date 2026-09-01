@@ -16,6 +16,7 @@ import {
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
+import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 
 const CLAUDE_SURFACE = "claude";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
@@ -29,6 +30,8 @@ const EMERGENCY_POLICY_SOURCE = readFileSync(new URL("../../installers/lib/emerg
 const AUDIT_LOG_SOURCE = readFileSync(new URL("../../installers/lib/audit-log.mjs", import.meta.url), "utf8");
 const STATUSLINE_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.mjs", import.meta.url), "utf8");
 const STATUSLINE_TRACK_TOOL_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/track-tool.mjs", import.meta.url), "utf8");
+const STATUSLINE_WINDOWS_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.ps1", import.meta.url), "utf8");
+const STATUSLINE_POSIX_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.sh", import.meta.url), "utf8");
 
 /** Static installer preflight for the Node.js entrypoint used by every hook. */
 export const CLAUDE_PREREQUISITES = Object.freeze({
@@ -217,6 +220,73 @@ function validStatuslineName(value) {
   return trimmed;
 }
 
+function normalizeWindowsPath(value) {
+  const slashed = value.replaceAll("\\", "/");
+  if (slashed.startsWith("//")) return "//" + slashed.slice(2).replace(/\/{2,}/gu, "/");
+  return slashed.replace(/\/{2,}/gu, "/");
+}
+
+function isAbsoluteWindowsPath(value) {
+  return /^(?:[A-Za-z]:\/|\/\/)/u.test(value);
+}
+
+function quotePosix(value) {
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function quotePowerShell(value) {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+
+function validateStatuslineRoot(value, platform) {
+  if (typeof value !== "string" || value.trim().length === 0) throw new TypeError("Claude statusline config root must be a non-empty path");
+  const root = value.trim();
+  if (/[\u0000-\u001f\u007f]/u.test(root)) throw new TypeError("Claude statusline config root contains control characters");
+  if (platform !== "win32") {
+    if (!root.startsWith("/")) throw new TypeError("Claude statusline command requires an absolute config root");
+    return root;
+  }
+  if (/[\x22<>|?*]/u.test(root)) throw new TypeError("Claude statusline config root contains forbidden Windows path characters");
+  const slashed = root.replaceAll("\\", "/");
+  const unc = slashed.startsWith("//");
+  const drive = /^[A-Za-z]:\//u.test(slashed);
+  if (!drive && !unc) throw new TypeError("Claude statusline command requires an absolute Windows config root");
+  const body = unc ? slashed.slice(2) : slashed.slice(3);
+  if (/\/{2,}/u.test(body)) throw new TypeError("Claude statusline config root contains an empty path segment");
+  const withoutTrailingSlash = body.replace(/\/$/u, "");
+  const segments = withoutTrailingSlash.length > 0 ? withoutTrailingSlash.split("/") : [];
+  if (unc && segments.length < 2) throw new TypeError("Claude statusline config root requires a UNC server and share");
+  if (segments.some((segment) => segment.length === 0 || segment === "." || segment === ".." || segment.includes(":"))) {
+    throw new TypeError("Claude statusline config root contains an invalid path segment");
+  }
+  const normalized = normalizeWindowsPath(root);
+  if (drive && segments.length === 0) return normalized.endsWith("/") ? normalized : normalized + "/";
+  if (!isAbsoluteWindowsPath(normalized)) throw new TypeError("Claude statusline command requires an absolute Windows config root");
+  return normalized.replace(/\/$/u, "");
+}
+
+/** Build the native command string for the launcher installed under the config root. */
+export function renderClaudeStatuslineCommand({ configRoot, homeDir = homedir(), platform = process.platform } = {}) {
+  if (!["win32", "darwin", "linux"].includes(platform)) throw new TypeError(`Claude statusline does not support platform ${String(platform)}`);
+  if (typeof homeDir !== "string" || homeDir.trim().length === 0 || /[\u0000-\u001f\u007f]/u.test(homeDir)) throw new TypeError("Claude statusline home directory is unsafe");
+  const windows = platform === "win32";
+  const fallbackRoot = resolveClaudeConfigDir({ homeDir, platform });
+  const normalizedRoot = validateStatuslineRoot(configRoot ?? fallbackRoot, platform);
+  const normalizedHome = windows ? normalizeWindowsPath(homeDir.trim()) : homeDir.trim().replace(/\/$/u, "");
+  const defaultRoot = windows ? `${normalizedHome}/.claude` : posix.join(normalizedHome, ".claude");
+  const isDefaultRoot = windows
+    ? normalizedRoot.toLowerCase() === defaultRoot.toLowerCase()
+    : normalizedRoot === defaultRoot;
+  const suffix = windows ? "statusline.ps1" : "statusline.sh";
+  if (windows) {
+    const windowsScriptPath = normalizedRoot + (normalizedRoot.endsWith("/") ? "" : "/") + "statusline/" + suffix;
+    const encodedScript = Buffer.from("$ProgressPreference = 'SilentlyContinue'\n& " + quotePowerShell(windowsScriptPath) + "\nexit $LASTEXITCODE\n", "utf16le").toString("base64");
+    return "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + encodedScript;
+  }
+  const scriptPath = isDefaultRoot ? `~/.claude/statusline/${suffix}` : `${normalizedRoot}/statusline/${suffix}`;
+  return isDefaultRoot ? scriptPath : quotePosix(scriptPath);
+}
+
 /** Resolve the documented Claude settings root without reading or writing it. */
 export function resolveClaudeConfigDir({ env = process.env, homeDir = homedir(), platform = process.platform } = {}) {
   const configured = env && typeof env.CLAUDE_CONFIG_DIR === "string" ? env.CLAUDE_CONFIG_DIR.trim() : "";
@@ -330,10 +400,55 @@ function hookConfig() {
   } };
 }
 
-function settingsFor(profile) {
+function nativeEmergencyRecord(profile) {
+  return createNativeIntegrationRecord({
+    surface: CLAUDE_SURFACE,
+    feature: "emergency-protection",
+    phases: {
+      rendered: {
+        status: "pass",
+        evidence: "Rendered the Claude emergency PreToolUse guard and canonical deny policy."
+      },
+      validated: {
+        status: "not-run",
+        evidence: "Claude strict plugin validation was not run by this render; validation must not imply emergency hook execution."
+      },
+      registered: {
+        status: "not-run",
+        evidence: "Claude plugin registration was not run during rendering."
+      },
+      trusted: {
+        status: "not-run-unavailable",
+        evidence: "This Claude emergency hook feature has no native trust concept."
+      },
+      active: {
+        status: "not-run",
+        evidence: "No fresh Claude Code session was opened to observe the emergency hook state."
+      },
+      runtimeVerified: {
+        status: "not-run",
+        evidence: "Claude emergency hook execution was not run in a native session."
+      }
+    },
+    sourcePath: "adapters/claude/adapter.mjs",
+    manualSteps: [
+      "Run claude plugin validate PACKAGE_ROOT --strict to advance package validation; this does not verify emergency hook execution.",
+      "Register the plugin and open a fresh Claude Code session before checking hook behavior.",
+      `Keep the ${profile.authority === "full" ? "bypassPermissions" : "default"} profile's canonical Bash emergency deny rules in settings.json.`
+    ]
+  });
+}
+
+export function settingsFor(profile, { statuslineCommand } = {}) {
+  if (typeof statuslineCommand !== "string" || statuslineCommand.trim().length === 0) throw new TypeError("Claude statusline command must be a non-empty string");
   const settings = profile.modelPolicies[CLAUDE_SURFACE] === "surface-default"
     ? {}
     : clone(CLAUDE_MODEL_POLICY.template);
+  settings.statusLine = {
+    type: "command",
+    command: statuslineCommand,
+    padding: 0
+  };
   settings.permissions = {
     defaultMode: profile.authority === "full" ? "bypassPermissions" : "default",
     deny: [...EMERGENCY_DENIES]
@@ -419,6 +534,8 @@ export function renderClaude(input = {}) {
   });
   const profile = semanticProfile.id;
   const statuslineName = validStatuslineName(input.statuslineName ?? "");
+  const configRoot = resolveClaudeConfigDir(input);
+  const statuslineCommand = renderClaudeStatuslineCommand({ configRoot, homeDir: input.homeDir, platform: input.platform });
   const files = [];
   const skillRecords = new Map(core.skills.map((record) => [record.id || record.name, record]));
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
@@ -426,7 +543,7 @@ export function renderClaude(input = {}) {
   const plugin = pluginManifest();
   addFile(files, ".claude-plugin/plugin.json", renderJson(plugin));
   addFile(files, ".claude-plugin/marketplace.json", renderJson(marketplaceManifest(plugin)));
-  addFile(files, "config/settings.json", renderJson(settingsFor(semanticProfile)));
+  addFile(files, "config/settings.json", renderJson(settingsFor(semanticProfile, { statuslineCommand })));
   addFile(files, "config/statusline.json", renderJson({ schemaVersion: 1, displayName: statuslineName }));
   addFile(files, "docs/semantic-mappings.md", mappingsDocument());
   addFile(files, "hooks/hooks.json", renderJson(hookConfig()));
@@ -441,6 +558,8 @@ export function renderClaude(input = {}) {
   for (const [fileName, source] of Object.entries(HOOK_SOURCES)) addFile(files, `hooks/${fileName}`, source, 0o755);
   addFile(files, "statusline/statusline.mjs", STATUSLINE_SOURCE_TEXT, 0o755);
   addFile(files, "statusline/track-tool.mjs", STATUSLINE_TRACK_TOOL_SOURCE_TEXT, 0o755);
+  addFile(files, "statusline/statusline.ps1", STATUSLINE_WINDOWS_SOURCE_TEXT);
+  addFile(files, "statusline/statusline.sh", STATUSLINE_POSIX_SOURCE_TEXT, 0o755);
 
   const missingSkills = [];
   for (const skill of canonicalSkillIds(core)) {
@@ -456,11 +575,29 @@ export function renderClaude(input = {}) {
   for (const command of [...core.commands].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `commands/${command.id}.md`, renderCommand(command));
 
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
-  const configRoot = resolveClaudeConfigDir(input);
+  const nativeStatusline = createNativeIntegrationRecord({
+    surface: CLAUDE_SURFACE,
+    feature: "statusline",
+    phases: {
+      rendered: { status: "pass", evidence: "Claude statusline renderer and platform launchers were rendered." },
+      validated: { status: "pass", evidence: "Claude settings, renderer, and launchers pass adapter validation." },
+      registered: { status: "not-run", evidence: "Native registration requires writing the mapped settings to the selected Claude config root." },
+      trusted: { status: "not-run-unavailable", evidence: "Claude Code statusline commands have no native trust step." },
+      active: { status: "not-run", evidence: "A Claude Code session has not been opened to observe the statusline." },
+      runtimeVerified: { status: "not-run", evidence: "A native Claude statusline runtime check has not been run." }
+    },
+    sourcePath: "adapters/claude/adapter.mjs",
+    manualSteps: [
+      "Write the mapped settings.json and statusline files to the selected Claude config root.",
+      "Open a fresh Claude Code session to observe the statusline."
+    ]
+  });
   const result = {
     files,
     registrations: [
       profileTranslation(semanticProfile, CLAUDE_SURFACE),
+      nativeEmergencyRecord(semanticProfile),
+      nativeStatusline,
       {
         kind: "plugin-registration",
         relativePath: ".claude-plugin/plugin.json",
@@ -536,7 +673,7 @@ export function renderClaude(input = {}) {
         sourcePath: "core/inventory.json"
       })),
       ...(profile === "template"
-        ? [{ code: "experimental-advisor", severity: "warning", message: "Fable advisor access is experimental and may be unavailable; the primary/fallback chain remains unchanged.", sourcePath: "config/settings.json" }]
+        ? [{ code: "fable-advisor-availability", severity: "warning", message: "Fable advisor is documented, but account, organization, plan, provider, consent, and product-version conditions can limit access; the primary/fallback chain remains unchanged.", sourcePath: "config/settings.json" }]
         : [])
     ],
     ownership: makeOwnership(files)

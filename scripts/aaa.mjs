@@ -7,16 +7,19 @@ import { dirname, isAbsolute, relative, resolve } from "node:path";
 
 import { readContainedUtf8Jsonl, runEvaluationBatch } from "../core/evals/runner.mjs";
 import { loadCore } from "../installers/lib/load-core.mjs";
+import { validateSkillArtifacts } from "../installers/lib/validate-skill.mjs";
 import { parseArgs } from "../installers/lib/args.mjs";
-import { resolveDestinationRoot, assertSafeDestinationRoot } from "../installers/lib/roots.mjs";
+import { resolveDestinationRoot } from "../installers/lib/roots.mjs";
 import { renderForSurface, materializeRenderResult } from "../installers/lib/render.mjs";
 import { buildPlan } from "../installers/lib/plan.mjs";
-import { applyPlan } from "../installers/lib/apply.mjs";
+import { applyPreparedSurface, preflightOperation } from "../installers/lib/apply.mjs";
 import { readManagedState } from "../installers/lib/state.mjs";
 import { hashBytes } from "../installers/lib/hash.mjs";
 import { validateRenderResult } from "../adapters/shared/adapter-contract.mjs";
 import { diagnose, SURFACES as DOCTOR_SURFACES } from "../installers/lib/doctor.mjs";
 import { formatDiffText, formatPlanText, serializeReport } from "../installers/lib/report.mjs";
+import { planNativeRegistration, runNativeRegistration, resolveNativeProductRoot, formatNativeRegistrationText } from "../installers/lib/native-registration.mjs";
+import { runProcess } from "./lib/process-runner.mjs";
 
 const HELP_TEXT = [
   "Usage: node scripts/aaa.mjs <action>",
@@ -27,13 +30,19 @@ const HELP_TEXT = [
   "  validate  Validate repository configuration and contracts",
   "  diff      Show the pending configuration diff",
   "  eval      Run an evaluation against a disposable root",
+  "  register  Register one rendered package with its native product (dry-run by default)",
   "",
   "Options:",
+  "  --surface <surface>  Select one surface (register requires exactly one)",
+  "  --profile <profile>  Use portable or template profile",
+  "  --package-root <path>  Package path for register (repository-relative or absolute)",
+  "  --dry-run | --apply  Plan only by default; apply requires explicit --apply",
+  "  --format text|json  Select human or machine-readable output",
   "  -h, --help  Show this help",
   ""
 ].join("\n");
 
-const ACTIONS = new Set(["install", "doctor", "validate", "diff", "eval"]);
+const ACTIONS = new Set(["install", "doctor", "validate", "diff", "eval", "register"]);
 const REPOSITORY_VERSION_FALLBACK = "1.0.0";
 const CONTENT_ACTIONS = new Set(["create", "replace", "unchanged"]);
 const DEFAULT_FILE_MODE = 0o600;
@@ -261,46 +270,6 @@ async function observedTarget(target) {
   }
 }
 
-/** Read-only aggregate preflight used before any selected surface is applied. */
-async function preflightEntries(entries) {
-  for (const entry of entries) {
-    const { plan, contents } = entry;
-    try {
-      assertSafeDestinationRoot(plan.root);
-      assertSafeDestinationRoot(resolve(plan.root, ".all-about-agents"));
-    } catch (error) {
-      return { entry, action: plan.actions[0] || null, reason: `destination root is unsafe: ${error.message}` };
-    }
-    const errorDiagnostic = plan.diagnostics.find((diagnostic) => diagnostic.severity === "error");
-    if (errorDiagnostic) return { entry, action: plan.actions[0] || null, reason: `plan contains error diagnostic: ${errorDiagnostic.message}` };
-    for (const action of plan.actions) {
-      if (action.kind === "reject") return { entry, action, reason: `plan rejected before mutation: ${action.reason}` };
-      if (CONTENT_ACTIONS.has(action.kind)) {
-        const content = contents.get(action.relativePath);
-        if (!(content instanceof Uint8Array) || hashBytes(content) !== action.contentHash) return { entry, action, reason: "rendered content rejected before mutation: content hash does not match plan" };
-      }
-      let target;
-      try {
-        target = targetPath(plan.root, action.relativePath);
-        assertSafeDestinationRoot(dirname(target));
-      } catch (error) {
-        return { entry, action, reason: error.message };
-      }
-      const observed = await observedTarget(target);
-      if (action.kind === "create" && observed.kind !== "missing") return { entry, action, reason: "create destination appeared or is not writable as a new file" };
-      if (["replace", "unchanged", "prune"].includes(action.kind)) {
-        if (observed.kind === "missing") return { entry, action, reason: "destination disappeared after planning" };
-        if (observed.kind === "symlink") return { entry, action, reason: "destination is a symlink or junction" };
-        if (observed.kind !== "file") return { entry, action, reason: observed.error ? `destination cannot be read: ${observed.error.message}` : "destination is not a regular file" };
-        const expected = action.kind === "unchanged" ? action.contentHash : action.expectedHash;
-        if (hashBytes(observed.bytes) !== expected) return { entry, action, reason: "destination bytes changed after planning" };
-        if (process.platform !== "win32" && action.expectedMode !== null && action.expectedMode !== undefined && observed.mode !== action.expectedMode) return { entry, action, reason: "destination mode changed after planning" };
-      }
-    }
-  }
-  return null;
-}
-
 function planHasFailure(plan) {
   return plan.actions.some((action) => action.kind === "reject") || plan.diagnostics.some((diagnostic) => diagnostic.severity === "error");
 }
@@ -314,9 +283,42 @@ function installText(report) {
 
 function emitActionReport(report, format, output, errorOutput, exitCode) {
   if (format === "json") output.write(serializeReport(report));
-  else output.write(installText(report));
-  if (exitCode !== 0 && format !== "json" && report.error) errorOutput.write(`${report.error}\n`);
+  else output.write(report.action === "register" ? formatNativeRegistrationText(report) : installText(report));
+  if (exitCode !== 0 && format !== "json" && report.error) errorOutput.write(`${typeof report.error === "string" ? report.error : report.error.message || JSON.stringify(report.error)}\n`);
   return exitCode;
+}
+
+function resolveRegistrationRoot(value, label, base) {
+  if (typeof value !== "string" || value.trim() === "" || value.includes("\0")) throw Object.assign(new Error(`${label} must be a non-empty path`), { code: "invalid-root" });
+  if (value.split(/[\\/]/u).some((segment) => segment === "..")) throw Object.assign(new Error(`${label} may not contain raw '..' traversal segments`), { code: "root-traversal" });
+  return resolve(base, value);
+}
+
+async function registerNative(options, output, errorOutput, cwd, invocationCwd, runtime) {
+  try {
+    const packageRoot = resolveRegistrationRoot(options.packageRoot, "--package-root", invocationCwd);
+    const productRoot = runtime.productRoot === null
+      ? null
+      : typeof runtime.productRoot === "string"
+        ? resolveRegistrationRoot(runtime.productRoot, "productRoot", invocationCwd)
+        : resolveNativeProductRoot(options.surfaces[0], { env: process.env, homeDir: homedir(), platform: process.platform });
+    const plan = planNativeRegistration({
+      surface: options.surfaces[0],
+      packageRoot,
+      productRoot,
+      profile: options.profile,
+      platform: process.platform,
+      rendered: runtime.rendered
+    });
+    const report = await runNativeRegistration(plan, {
+      mode: options.mode,
+      runProcess: runtime.runProcess || runProcess,
+      fileSystem: runtime.fileSystem || {}
+    });
+    return emitActionReport(report, options.format, output, errorOutput, report.status === "dry-run" || report.status === "complete" ? 0 : 1);
+  } catch (error) {
+    return emitError(error, options.format, output, errorOutput, 1);
+  }
 }
 
 async function installOrDiff(options, output, errorOutput, cwd) {
@@ -356,15 +358,23 @@ async function installOrDiff(options, output, errorOutput, cwd) {
     const report = { action: "install", mode: "dry-run", status: hasFailure ? "fail" : "dry-run", profile: options.profile, surfaces: options.surfaces, plans: entries.map(({ plan }) => plan), results: [], ...(hasFailure ? { error: "dry-run preflight rejected one or more selected surfaces" } : {}) };
     return emitActionReport(report, options.format, output, errorOutput, hasFailure ? 1 : 0);
   }
-  const preflightFailure = await preflightEntries(entries);
-  if (preflightFailure) {
-    const report = { action: "install", mode: "apply", status: "failed", profile: options.profile, surfaces: options.surfaces, plans: entries.map(({ plan }) => plan), results: [], error: preflightFailure.reason, failed: preflightFailure.action };
+  const fileSystemByRoot = new Map(entries.map((entry) => [entry.root, {
+    contents: entry.contents,
+    repositoryVersion: repositoryVersion(cwd),
+    profile: options.profile,
+    surfaces: entry.selectedSurfaces,
+    previousState: entry.previousState
+  }]));
+  const operation = await preflightOperation({ entries, fileSystemByRoot });
+  if (!operation.valid) {
+    const preflightFailure = operation.errors[0];
+    const report = { action: "install", mode: "apply", status: "failed", profile: options.profile, surfaces: options.surfaces, plans: entries.map(({ plan }) => plan), results: [], error: preflightFailure.message, failed: preflightFailure.action };
     return emitActionReport(report, options.format, output, errorOutput, 1);
   }
   const results = [];
   let aggregateStatus = "complete";
-  for (const entry of entries) {
-    const result = await applyPlan({ plan: entry.plan, fileSystem: { contents: entry.contents, repositoryVersion: repositoryVersion(cwd), profile: options.profile, surfaces: entry.selectedSurfaces, previousState: entry.previousState } });
+  for (const prepared of operation.prepared) {
+    const result = await applyPreparedSurface(prepared);
     results.push(result);
     if (result.status !== "complete") {
       aggregateStatus = results.some((candidate) => candidate.completed.length > 0) ? "partial" : "failed";
@@ -401,17 +411,14 @@ async function validate(args, output, errorOutput, cwd) {
   try {
     const core = await loadCore(cwd);
     if (options.scope === "skill") {
-      const inventorySkills = readCanonicalSkills(cwd);
-      const skill = core.skills.find((entry) => entry.id === options.skill);
-      const errors = [];
-      if (!inventorySkills.includes(options.skill)) errors.push({ sourcePath: "core/inventory.json", jsonPointer: "/skills", keyword: "reference", message: `skill ${options.skill} is not listed in inventory.skills` });
-      if (!skill) errors.push({ sourcePath: "core/skills", jsonPointer: "", keyword: "reference", message: `canonical skill ${options.skill} was not found` });
-      if (!core.evals.some((entry) => entry.skill === options.skill || entry.skillId === options.skill)) errors.push({ sourcePath: "core/evals", jsonPointer: "", keyword: "reference", message: `evaluation cases for ${options.skill} were not found` });
+      const validation = await validateSkillArtifacts({ repositoryRoot: cwd, core, skillId: options.skill });
+      const errors = validation.errors.map((entry) => ({ sourcePath: entry.path, jsonPointer: "", keyword: entry.code, message: entry.message }));
       const report = { action: "validate", status: errors.length === 0 ? "pass" : "fail", scope: "skill", skill: options.skill, errors };
       return emitValidationResult({ valid: errors.length === 0, scope: "skill", skill: options.skill, errors, format: options.format, report }, output, errorOutput);
     }
-    await Promise.all(DOCTOR_SURFACES.map((surface) => renderForSurface({ repositoryRoot: cwd, core, surface, profile: "portable", statuslineName: "", platform: process.platform })));
-    const report = { action: "validate", status: "pass", scope: options.scope, errors: [] };
+    const profiles = options.scope === "all" ? ["portable", "template"] : ["portable"];
+    await Promise.all(profiles.flatMap((profile) => DOCTOR_SURFACES.map((surface) => renderForSurface({ repositoryRoot: cwd, core, surface, profile, statuslineName: "", platform: process.platform }))));
+    const report = { action: "validate", status: "pass", scope: options.scope, profiles, surfaces: [...DOCTOR_SURFACES], errors: [] };
     return emitValidationResult({ valid: true, scope: options.scope, format: options.format, report }, output, errorOutput);
   } catch (error) {
     const errors = Array.isArray(error.errors) ? error.errors : [{ sourcePath: "core", jsonPointer: "", keyword: "load", message: error.message }];
@@ -525,12 +532,13 @@ export async function main(args, output = process.stdout, errorOutput = process.
   let options;
   try {
     options = normalizeParsedOptions(parseArgs([action, ...rest]), invocationCwd);
-    if (action === "install" && interactive && options.surfaces.includes("claude") && !hasOption(rest, "--statusline-name")) {
+    if (action === "install" && interactive && options.surfaces.some((surface) => ["claude", "agy"].includes(surface)) && !hasOption(rest, "--statusline-name")) {
       const statuslineName = await prompt("Statusline display name");
       options = normalizeParsedOptions(parseArgs([action, ...rest, "--statusline-name", statuslineName]), invocationCwd);
     }
   } catch (error) { return emitError(error, wantsJson(rest) ? "json" : "text", output, errorOutput, 2); }
   if (action === "doctor") return doctor(rest, output, errorOutput, cwd, invocationCwd);
+  if (action === "register") return registerNative(options, output, errorOutput, cwd, invocationCwd, runtimeOptions);
   if (!hasValidFoundation(cwd)) return emitError(new Error("Foundation validation failed: package metadata is missing or invalid"), options.format, output, errorOutput, 1);
   if (action === "install" || action === "diff") return installOrDiff(options, output, errorOutput, cwd);
   return 0;

@@ -6,6 +6,8 @@ import { resolve } from "node:path";
 import { join } from "node:path";
 import test from "node:test";
 
+import { validateSkillArtifacts } from "../../installers/lib/validate-skill.mjs";
+
 const requiredOutputs = [
   "installers/lib/load-core.mjs",
   "core/schemas/rule.schema.json",
@@ -133,20 +135,21 @@ test("validate accepts the exact core scope and rejects incomplete skill scope",
 });
 
 test("skill validation requires the exact skill to be listed in inventory.skills", async () => {
-  const root = await mkdtemp(join(tmpdir(), "aaa-t003-inventory-membership-"));
-  try {
-    await mkdir(resolve(root, "core/skills/requested"), { recursive: true });
-    await mkdir(resolve(root, "core/evals"), { recursive: true });
-    await writeFile(resolve(root, "package.json"), JSON.stringify({ type: "module", engines: { node: ">=22.12.0" } }));
-    await writeFile(resolve(root, "core/inventory.json"), JSON.stringify({ schemaVersion: 1, skills: ["other"] }));
-    await writeFile(resolve(root, "core/skills/requested/SKILL.md"), "---\nname: requested\ndescription: A requested skill.\n---\n\nContent.\n");
-    await writeFile(resolve(root, "core/evals/requested.json"), JSON.stringify({ id: "requested", skill: "requested", cases: ["case"] }));
-    const result = spawnSync(process.execPath, [resolve(process.cwd(), "scripts/aaa.mjs"), "validate", "--scope", "skill", "--skill", "requested"], { cwd: root, encoding: "utf8" });
-    assert.equal(result.status, 1, result.stdout + result.stderr);
-    assert.match(result.stderr, /inventory\.skills/u);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
+  const { loadCore } = await loader();
+  const core = await loadCore(process.cwd());
+  const skillId = "using-all-about-agents";
+  const withoutMembership = {
+    ...core,
+    inventory: {
+      ...core.inventory,
+      skills: core.inventory.skills.filter((name) => name !== skillId)
+    }
+  };
+  const result = await validateSkillArtifacts({ repositoryRoot: process.cwd(), core: withoutMembership, skillId });
+  assert.equal(result.valid, false);
+  const membership = result.errors.find((entry) => entry.code === "missing-inventory-record" && entry.path === "core/inventory.json");
+  assert.ok(membership, "missing inventory.skills membership needs a stable code and source path");
+  assert.match(membership.message, /matching skills and skillSources record/u);
 });
 
 test("loadCore validates inventory against its strict schema when the schema is present", async () => {

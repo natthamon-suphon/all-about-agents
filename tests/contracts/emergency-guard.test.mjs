@@ -57,6 +57,38 @@ test("emergency policy does not grant containment from malformed or incomplete p
   }
 });
 
+test("emergency policy denies destructive moves of protected roots and credential directories", () => {
+  const commands = [
+    "mv / /tmp/root-moved",
+    "mv /Users/alice /tmp/alice-moved",
+    "sudo mv /home/alice /tmp/alice-moved",
+    "mv docs/safe.md /home/alice /tmp/archive",
+    "command /bin/mv -- .git /tmp/project-git",
+    "mv -- ~/.ssh /tmp/alice-ssh",
+    "Move-Item -Path C:/Users/alice/.ssh -Destination C:/Temp/alice-ssh"
+  ];
+  for (const command of commands) {
+    const result = classifyEmergencyAction({ capability: "command-execution", command });
+    assert.deepEqual(
+      { decision: result.decision, ruleId: result.ruleId },
+      { decision: "deny", ruleId: "filesystem-root-erasure" },
+      command
+    );
+  }
+});
+
+test("emergency policy allows contained file moves, including quoted paths", () => {
+  for (const command of [
+    "mv docs/old.md docs/new.md",
+    "mv docs/old.md docs/home-report.md",
+    "mv -- \"docs/old name.md\" \"docs/new name.md\"",
+    "Move-Item -Path 'docs/old name.md' -Destination 'docs/new name.md'"
+  ]) {
+    const result = classifyEmergencyAction({ capability: "command-execution", command });
+    assert.deepEqual({ decision: result.decision, ruleId: result.ruleId }, { decision: "allow", ruleId: null }, command);
+  }
+});
+
 test("emergency policy rejects traversal even when a containment proof is marked resolved", () => {
   const result = classifyEmergencyAction({
     capability: "filesystem-delete",

@@ -114,49 +114,49 @@
       "code": "desktop-action-unknown",
       "severity": "warning",
       "message": "aaa:design has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
-      "sourcePath": "research-antigravity-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "desktop-action-unknown",
       "severity": "warning",
       "message": "aaa:build has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
-      "sourcePath": "research-antigravity-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "desktop-action-unknown",
       "severity": "warning",
       "message": "aaa:fix has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
-      "sourcePath": "research-antigravity-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "desktop-action-unknown",
       "severity": "warning",
       "message": "aaa:review has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
-      "sourcePath": "research-antigravity-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "desktop-action-unknown",
       "severity": "warning",
       "message": "aaa:audit has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
-      "sourcePath": "research-antigravity-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "desktop-action-unknown",
       "severity": "warning",
       "message": "aaa:improve-skill has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
-      "sourcePath": "research-antigravity-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "desktop-action-unknown",
       "severity": "warning",
       "message": "aaa:resume has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
-      "sourcePath": "research-antigravity-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
       "code": "desktop-action-unknown",
       "severity": "warning",
       "message": "aaa:verify has no documented Desktop prompt or workflow mapping; use a manual Desktop prompt or workflow only after verification.",
-      "sourcePath": "research-antigravity-2.md"
+      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     }
   ],
   "contentHashes": {
@@ -168,11 +168,11 @@
     ".agents/plugins/all-about-agents/agents/security-reviewer.md": "98a9f0c4872fb04d2626dbb11226ba02b6ddfca8d67d90ee9169289a19cba0ac",
     ".agents/plugins/all-about-agents/agents/verifier.md": "7fa3632531ff028818ad80158b4e765d2a34b62dfc909fc382575869dd90d3f0",
     ".agents/plugins/all-about-agents/hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
-    ".agents/plugins/all-about-agents/hooks/activity-audit.json": "c4cc3ba51600138254c721de9249b9815c32dab50ce4b89d2fe2703e9adf51f3",
+    ".agents/plugins/all-about-agents/hooks/activity-audit.json": "ca4e1761eb24cf85dbbd71d2b6cb94f4a5d36ca557ccfcfc90498d3a5727bbee",
     ".agents/plugins/all-about-agents/hooks/checkpoint.json": "dc11d6fb23b9399e3920ca887c87afdb3eeb4502ae743af47406fd58be6c7f45",
-    ".agents/plugins/all-about-agents/hooks/emergency-guard.json": "dd227c66da1a11e53512a853cd7f59cbd86b886bb988131369f47e92d8d28859",
+    ".agents/plugins/all-about-agents/hooks/emergency-guard.json": "79bf39d3555b77b85068059a72b359f4f27e8ea18c79cc8a276534b76a20d2cb",
     ".agents/plugins/all-about-agents/plugin.json": "6c9c8a61e842f1857dac5ee03a6457ccc84ba5f168a550732e9e9eb0a979c3ed",
-    ".agents/plugins/all-about-agents/rules/AGENTS.md": "5726c3f6ee55c26e2b6f7f5ad9bf08aee78962a778d26e3cd0773055c6bef2cd",
+    ".agents/plugins/all-about-agents/rules/AGENTS.md": "95aa839961ff7f112471483fb3a6435a28447bf1e8529472414076599de0d2ec",
     ".agents/plugins/all-about-agents/skills/brainstorming/SKILL.md": "7b6e6e3c208e1dc59424aa84bdd21ae9bcc592d3e3c6041fc78082711e034e73",
     ".agents/plugins/all-about-agents/skills/brainstorming/scripts/frame-template.html": "4c3b7d94265cf0f8de437191dcbadccca4106d785591caf89e7c818ff153bc93",
     ".agents/plugins/all-about-agents/skills/brainstorming/scripts/helper.js": "773e549af4413e28ed7d14aea800a39d8dbf9851d3d31d9687b5a8d8a18775a3",
@@ -207,7 +207,7 @@
     ".agents/plugins/all-about-agents/skills/subagent-driven-development/implementer-prompt.md": "946601616a6f76ab3f165ef98377390968f1ec124ecef87422bc3553404e0332",
     ".agents/plugins/all-about-agents/skills/subagent-driven-development/re-review-prompt.md": "e1d8e0e65e58ccde6dc920843da9148d23e65aeb0f8932bcc30be1341a703c4c",
     ".agents/plugins/all-about-agents/skills/subagent-driven-development/scripts/review-package": "8439bb55b6c04263ef50f1ff88aed3598997308e8f58e6494e722f5552c91444",
-    ".agents/plugins/all-about-agents/skills/subagent-driven-development/scripts/review-package.js": "ec417be0f1a511b01606840e82b904195595a39297019b0f55e0740816802a0b",
+    ".agents/plugins/all-about-agents/skills/subagent-driven-development/scripts/review-package.js": "93c8b56601f5501b3ba2c4d8d6841b1377aa85a0b4045beda8ceea7d68995271",
     ".agents/plugins/all-about-agents/skills/subagent-driven-development/scripts/sdd-workspace": "d4dc806033454af1c4f74c6603a2795a654dd8b81b0e5b69f46d1d3ee08cbdff",
     ".agents/plugins/all-about-agents/skills/subagent-driven-development/scripts/sdd-workspace.js": "bed597b91b08044f0e7adf0a839ad67a329e83c6bb2e5d38926478cb5fa473fe",
     ".agents/plugins/all-about-agents/skills/subagent-driven-development/scripts/task-brief": "75aeabce5eb21b1230cacd41cf83b00a4bfdf522d62e59ab60d9425cc0b96abc",
