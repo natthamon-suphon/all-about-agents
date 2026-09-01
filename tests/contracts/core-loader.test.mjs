@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { access, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, mkdtemp, readFile, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { join } from "node:path";
@@ -15,6 +15,11 @@ const requiredOutputs = [
   "core/schemas/workflow.schema.json",
   "core/schemas/command.schema.json",
   "core/schemas/skill.schema.json",
+  "core/schemas/presentation.schema.json",
+  "core/presentation/emoji-registry.json",
+  "core/presentation/progress-contract.json",
+  "installers/lib/presentation-contract.mjs",
+  "tests/contracts/presentation-contract.test.mjs",
   "tests/contracts/core-loader.test.mjs",
   "tests/fixtures/core/valid/",
   "tests/fixtures/core/broken-reference/",
@@ -40,12 +45,172 @@ test("loadCore returns deterministic sorted collections from a valid core", asyn
   const first = await loadCore(fixture("valid"));
   const second = await loadCore(fixture("valid"));
   assert.deepEqual(first, second);
+  assert.deepEqual(first.globalInstructions, {
+    sourcePath: "core/instructions/global-operating-rules.md",
+    content: "# Fixture global operating rules\n\nUse the validated fixture core.\n"
+  });
+  assert.equal(first.presentation.emojiRegistry.schemaVersion, 1);
+  assert.equal(Object.keys(first.presentation.emojiRegistry.skills).length, 2);
+  assert.equal(Object.keys(first.presentation.emojiRegistry.roles).length, 1);
+  assert.equal(Object.keys(first.presentation.emojiRegistry.commands).length, 2);
+  assert.equal(first.presentation.progressContract.maxItems, 7);
   assert.deepEqual(first.rules.map((record) => record.id), ["a-rule", "z-rule"]);
   assert.deepEqual(first.roles.map((record) => record.id), ["reviewer"]);
   assert.deepEqual(first.skills.map((record) => record.id), ["alpha", "beta"]);
   assert.deepEqual(first.workflows.map((record) => record.id), ["a-flow", "z-flow"]);
   assert.deepEqual(first.commands.map((record) => record.id), ["a-command", "z-command"]);
   assert.deepEqual(first.evals.map((record) => record.id), ["a-eval", "z-eval"]);
+});
+
+test("loadCore reports invalid UTF-8 in the canonical global instructions", async () => {
+  const root = await mkdtemp(join(tmpdir(), "aaa-t001-global-encoding-"));
+  try {
+    await cp(fixture("valid"), root, { recursive: true });
+    await mkdir(resolve(root, "core/instructions"), { recursive: true });
+    await writeFile(resolve(root, "core/instructions/global-operating-rules.md"), Buffer.from([0xc3, 0x28]));
+    const { loadCore } = await loader();
+    await assert.rejects(loadCore(root), (error) => {
+      assert.ok(error.errors.some((entry) =>
+        entry.sourcePath === "core/instructions/global-operating-rules.md" &&
+        entry.keyword === "invalid-global-instructions"
+      ));
+      return true;
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("loadCore preserves and rejects a UTF-8 BOM in the canonical global instructions", async () => {
+  const root = await mkdtemp(join(tmpdir(), "aaa-t001-global-bom-"));
+  try {
+    await cp(fixture("valid"), root, { recursive: true });
+    await mkdir(resolve(root, "core/instructions"), { recursive: true });
+    await writeFile(resolve(root, "core/instructions/global-operating-rules.md"), "\uFEFF# Fixture global operating rules\n\nUse the validated fixture core.\n", "utf8");
+    const { loadCore } = await loader();
+    await assert.rejects(loadCore(root), (error) => {
+      assert.ok(error.errors.some((entry) =>
+        entry.sourcePath === "core/instructions/global-operating-rules.md" &&
+        entry.keyword === "global-instructions-bom"
+      ));
+      return true;
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("loadCore rejects symlinked canonical presentation files", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "aaa-t010-presentation-symlink-"));
+  const outside = await mkdtemp(join(tmpdir(), "aaa-t010-presentation-outside-"));
+  try {
+    await cp(fixture("valid"), root, { recursive: true });
+    for (const name of ["emoji-registry.json", "progress-contract.json"]) {
+      const canonicalPath = resolve(root, "core/presentation", name);
+      const outsidePath = resolve(outside, name);
+      await cp(canonicalPath, outsidePath);
+      await unlink(canonicalPath);
+      try {
+        await symlink(outsidePath, canonicalPath, "file");
+      } catch (error) {
+        t.skip(`file symlink creation unavailable: ${error.code}`);
+        return;
+      }
+      const { loadCore } = await loader();
+      await assert.rejects(loadCore(root), (error) => {
+        assert.ok(error.errors.some((entry) =>
+          entry.sourcePath === `core/presentation/${name}` && entry.keyword === "presentationContainment"
+        ));
+        return true;
+      });
+      await unlink(canonicalPath);
+      await cp(outsidePath, canonicalPath);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
+test("loadCore rejects canonical presentation files under an escaping parent junction", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "aaa-t010-presentation-junction-"));
+  const outside = await mkdtemp(join(tmpdir(), "aaa-t010-presentation-junction-outside-"));
+  try {
+    await cp(fixture("valid"), root, { recursive: true });
+    const presentationPath = resolve(root, "core/presentation");
+    const outsidePresentationPath = resolve(outside, "presentation");
+    await cp(presentationPath, outsidePresentationPath, { recursive: true });
+    await rm(presentationPath, { recursive: true, force: true });
+    try {
+      await symlink(outsidePresentationPath, presentationPath, process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      t.skip(`directory junction creation unavailable: ${error.code}`);
+      return;
+    }
+    const { loadCore } = await loader();
+    await assert.rejects(loadCore(root), (error) => {
+      assert.ok(error.errors.some((entry) =>
+        entry.sourcePath === "core/presentation/emoji-registry.json" && entry.keyword === "presentationContainment"
+      ));
+      assert.ok(error.errors.some((entry) =>
+        entry.sourcePath === "core/presentation/progress-contract.json" && entry.keyword === "presentationContainment"
+      ));
+      return true;
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
+test("loadCore rejects canonical presentation files under a contained parent link", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "aaa-t010-presentation-contained-link-"));
+  try {
+    await cp(fixture("valid"), root, { recursive: true });
+    const presentationPath = resolve(root, "core/presentation");
+    const containedTarget = resolve(root, "core/contained-presentation");
+    await cp(presentationPath, containedTarget, { recursive: true });
+    await rm(presentationPath, { recursive: true, force: true });
+    try {
+      await symlink(containedTarget, presentationPath, process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      t.skip(`directory link creation unavailable: ${error.code}`);
+      return;
+    }
+    const { loadCore } = await loader();
+    await assert.rejects(loadCore(root), (error) => {
+      for (const name of ["emoji-registry.json", "progress-contract.json"]) {
+        assert.ok(error.errors.some((entry) => entry.sourcePath === `core/presentation/${name}` && entry.keyword === "presentationContainment"));
+      }
+      return true;
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("loadCore rejects a linked canonical core root even when its target stays in the repository", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "aaa-t010-core-contained-link-"));
+  try {
+    await cp(fixture("valid"), root, { recursive: true });
+    const corePath = resolve(root, "core");
+    const containedTarget = resolve(root, "contained-core");
+    await cp(corePath, containedTarget, { recursive: true });
+    await rm(corePath, { recursive: true, force: true });
+    try {
+      await symlink(containedTarget, corePath, process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      t.skip(`core link creation unavailable: ${error.code}`);
+      return;
+    }
+    const { loadCore } = await loader();
+    await assert.rejects(loadCore(root), (error) => {
+      assert.ok(error.errors.some((entry) => ["global-instructions-containment", "presentationContainment"].includes(entry.keyword)));
+      return true;
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("loadCore reports missing references with the source path and JSON pointer", async () => {

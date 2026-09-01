@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "states": {
+    "pending": { "emoji": "⬜", "terminal": false }, "in-progress": { "emoji": "🔄", "terminal": false }, "completed": { "emoji": "✅", "terminal": true }, "blocked": { "emoji": "🚧", "terminal": true, "reasonRequired": true }, "failed": { "emoji": "❌", "terminal": true, "reasonRequired": true }, "not-run": { "emoji": "⏸️", "terminal": true, "reasonRequired": true }, "skipped": { "emoji": "⏭️", "terminal": true, "reasonRequired": true }
+  },
+  "minItems": 2, "maxItems": 7, "maxSequentialInProgress": 1, "updateOnlyOnStateChange": true, "terminalCompletionRequired": true
+}

@@ -13,6 +13,7 @@ const requiredOutputs = [
   "README.md",
   "docs/setup/windows.md",
   "docs/setup/macos.md",
+  "docs/maintenance/global-instructions.md",
   "docs/compatibility/claude.md",
   "docs/compatibility/codex.md",
 "docs/compatibility/antigravity-2.md",
@@ -146,6 +147,63 @@ test("documentation is strict UTF-8, replacement-free, link-complete, and secret
       assert.ok(await exists(resolve(root, pathFromMarkdownLink(relativePath, target))), `${relativePath} link does not resolve: ${target}`);
     }
   }
+});
+
+test("T09 documents the dual layer, exact destinations, and receiving-machine order", async () => {
+  const flow = "pull -> validate -> render -> dry-run -> apply package -> dry-run registration -> explicit registration apply -> restart -> verify loaded instructions";
+  const global = await textAt("docs/maintenance/global-instructions.md");
+  const sync = await textAt("docs/maintenance/sync-and-update.md");
+  const readme = await textAt("README.md");
+
+  assert.match(global, /one canonical source/iu);
+  for (const destination of ["CLAUDE.md", "AGENTS.md", "GEMINI.md"]) assert.ok(global.includes(destination), `global guide omits ${destination}`);
+  assert.match(global, /global layer/iu);
+  assert.match(global, /project and plugin layer/iu);
+  assert.match(global, /more specific second layer/iu);
+  assert.match(global, /core\/instructions\/global-operating-rules\.md/u);
+  assert.match(global, /CLAUDE_CONFIG_DIR.*CLAUDE\.md[\s\S]{0,160}CODEX_HOME.*AGENTS\.md[\s\S]{0,220}~\/\.gemini\/GEMINI\.md/iu);
+  assert.match(global, /CLAUDE\.local\.md[\s\S]{0,120}(?:private|project)[\s\S]{0,120}(?:not|never)[\s\S]{0,120}global/iu);
+  assert.match(global, /GEMINI\.local\.md[\s\S]{0,120}(?:not|never)[\s\S]{0,120}global/iu);
+  assert.match(global, /Using skill \*\*brainstorming 🧠\*\*/u);
+  assert.match(global, /reason is one short sentence/iu);
+  assert.match(global, /checklist[\s\S]{0,300}(?:pending|in progress|completed)/iu);
+  assert.match(global, /prompt guidance[\s\S]{0,120}(?:not|no)[\s\S]{0,80}UI guarantee/iu);
+
+  assert.ok(sync.includes(flow), "sync guide omits the receiving-machine flow");
+  assert.match(sync, /Git is the (?:cross-machine )?source of truth/iu);
+  assert.match(sync, /pull[\s\S]{0,180}does not (?:install|write live)/iu);
+  assert.match(sync, /package apply[\s\S]{0,180}native registration[\s\S]{0,180}separate/iu);
+  assert.match(sync, /managed global files[\s\S]{0,120}overwrite[\s\S]{0,120}without a backup/iu);
+  assert.match(readme, /docs\/maintenance\/global-instructions\.md/u);
+  assert.match(readme, /global layer[\s\S]{0,180}project[\s\S]{0,180}second/iu);
+});
+
+test("T09 provides one copyable eight-step quality checklist and new-skill flow", async () => {
+  const quality = await textAt("docs/maintenance/cross-tool-quality.md");
+  const skills = await textAt("docs/maintenance/skill-development.md");
+  const sync = await textAt("docs/maintenance/sync-and-update.md");
+  for (const phrase of [
+    "read the repository entrypoint",
+    "run core validation",
+    "focused tests for changed files",
+    "render both profiles",
+    "run dry-run",
+    "package/presentation integrity",
+    "update checkpoints",
+    "do not call native behavior active"
+  ]) assert.match(quality, new RegExp(phrase, "iu"), `quality checklist omits ${phrase}`);
+  for (const phrase of [
+    "canonical skill content",
+    "inventory",
+    "emoji registry",
+    "behavior scenario",
+    "render all surfaces",
+    "commit/push",
+    "receiving machine"
+  ]) assert.match(skills, new RegExp(phrase, "iu"), `skill update flow omits ${phrase}`);
+  assert.match(sync, /## Source machine \(author machine\)/iu);
+  assert.match(sync, /## Receiving machine/iu);
+  assert.match(sync, /pull[\s\S]{0,120}validate[\s\S]{0,120}render[\s\S]{0,120}dry-run/iu);
 });
 
 test("setup documentation states safe installation and statusline prerequisites", async () => {

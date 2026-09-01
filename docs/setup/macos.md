@@ -7,6 +7,20 @@ configuration, or prove native discovery. Use a new root for every run.
 If this checkout came from another machine, follow [sync and update](../maintenance/sync-and-update.md)
 first. A pull does not install or update any coding tool.
 
+Read [global instructions](../maintenance/global-instructions.md) for the
+shared rules and the two-layer model. Global behavior is followed by the more
+specific project and plugin layer.
+
+For a receiving machine, keep this exact order:
+
+```text
+pull -> validate -> render -> dry-run -> apply package -> dry-run registration -> explicit registration apply -> restart -> verify loaded instructions
+```
+
+The `install --dry-run` command performs the render and plan step. Package
+apply and native registration are separate. Do not treat a pull or a package
+render as a live product update.
+
 ## Prerequisites
 
 - Node.js 22.12.0 or newer:

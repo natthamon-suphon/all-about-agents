@@ -18,6 +18,20 @@ hooks. `active` means a fresh product session loaded the feature. `runtime
 verified` means the required native action was observed. A later state cannot be
 claimed when an earlier state is missing.
 
+For a receiving machine, use this order:
+
+```text
+pull -> validate -> render -> dry-run -> apply package -> dry-run registration -> explicit registration apply -> restart -> verify loaded instructions
+```
+
+Git pull changes the repository only. Package apply and native registration
+are separate explicit actions. The managed global destinations are
+`<CLAUDE_CONFIG_DIR>/CLAUDE.md`, `<CODEX_HOME>/AGENTS.md`, and
+`~/.gemini/GEMINI.md` for both Antigravity Desktop and `agy`.
+
+An authorized apply may overwrite these managed global files without a backup.
+It must not guess a product root or replace unknown neighboring files.
+
 ## Before registration
 
 1. Enter the repository root.

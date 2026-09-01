@@ -13,7 +13,7 @@ import { main } from "../../scripts/aaa.mjs";
 const REPOSITORY_ROOT = resolve(process.cwd());
 const CLAUDE_FIXTURE = await readFile(resolve(REPOSITORY_ROOT, "tests/fixtures/native-statusline/claude.json"), "utf8");
 const AGY_FIXTURE = await readFile(resolve(REPOSITORY_ROOT, "tests/fixtures/native-statusline/agy.json"), "utf8");
-const CLAUDE_MARKERS = [".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "statusline/statusline.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", "all-about-agents/statusline.json"];
+const CLAUDE_MARKERS = ["CLAUDE.md", ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "statusline/statusline.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", "all-about-agents/statusline.json"];
 const CODEX_MARKERS = [".codex-plugin/plugin.json", ".agents/plugins/marketplace.json", "hooks/hooks.json", "hooks/emergency-guard.mjs"];
 const AGY_MARKERS = ["plugin.json", "settings.overlay.json", "statusline/statusline.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", "statusline/statusline.json"];
 const CODEX_HOOK_FILES = ["hooks/hooks.json", "hooks/bootstrap.mjs", "hooks/activity-audit.mjs", "hooks/emergency-guard.mjs", "hooks/emergency-policy.mjs"];
@@ -51,6 +51,15 @@ async function auditTreeContainment(root, directory = root) {
   }
 }
 
+async function removeDisposableRoot(target, { remove = rm } = {}) {
+  await remove(target, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 100
+  });
+}
+
 async function withDisposableRoot(callback) {
   const createdRoot = await mkdtemp(join(tmpdir(), "aaa-t07-native-"));
   const root = await realpath(createdRoot);
@@ -64,10 +73,23 @@ async function withDisposableRoot(callback) {
     const canonicalRoot = await realpath(createdRoot);
     assertContained(canonicalTemp, canonicalRoot, "canonical cleanup target");
     await auditTreeContainment(canonicalRoot);
-    await rm(createdRoot, { recursive: true, force: true });
+    await removeDisposableRoot(createdRoot);
     assert.equal(await pathExists(createdRoot), false, "disposable root must be removed after the check");
   }
 }
+
+test("T10 disposable native cleanup retries transient Windows lock errors", async () => {
+  let observed = null;
+  await removeDisposableRoot("disposable-root", {
+    remove: async (target, options) => {
+      observed = { target, options };
+    }
+  });
+  assert.deepEqual(observed, {
+    target: "disposable-root",
+    options: { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }
+  });
+});
 
 async function captureAaa(args, runtime = {}) {
   let stdout = "";
@@ -815,6 +837,42 @@ test("T07 agy validates both packages and checks statusline and model discovery 
       assert.equal(files.some((path) => /settings\.json$/u.test(path)), false, "agy model probe must not create settings.json");
       assert.equal(files.some((path) => /(?:^|\/)plugins?(?:\/|$)|(?:^|\/)settings\.json$/iu.test(path)), false, "agy model probe must not create plugin or settings state");
     });
+  });
+});
+
+test("T06 agy registration copies GEMINI.md to the separate Gemini home before plugin actions", async () => {
+  await withDisposableRoot(async (root) => {
+    const packageRoot = resolve(root, "agy-template");
+    const instructionRoot = resolve(root, "gemini");
+    const productRoot = resolve(instructionRoot, "antigravity-cli");
+    await renderPackage("agy", "template", packageRoot);
+    await mkdir(productRoot, { recursive: true });
+    const plan = planNativeRegistration({
+      surface: "agy",
+      packageRoot,
+      productRoot,
+      instructionRoot,
+      profile: "template",
+      platform: process.platform
+    });
+    const dryRun = await runNativeRegistration(plan, { mode: "dry-run" });
+    assert.equal(dryRun.status, "dry-run");
+    assert.equal(dryRun.productRoot, "<PRODUCT_ROOT>");
+    assert.equal(dryRun.instructionRoot, "<INSTRUCTION_ROOT>");
+    assert.equal(dryRun.actions[0].id, "gemini-instructions-deploy");
+    const first = await runNativeRegistration(plan, {
+      mode: "apply",
+      runProcess: async () => ({ exitCode: 0, stdout: "", stderr: "" })
+    });
+    assert.equal(first.status, "complete");
+    assert.equal(await readFile(resolve(instructionRoot, "GEMINI.md"), "utf8"), await readFile(resolve(packageRoot, "GEMINI.md"), "utf8"));
+    const second = await runNativeRegistration(plan, {
+      mode: "apply",
+      runProcess: async () => ({ exitCode: 0, stdout: "", stderr: "" })
+    });
+    assert.equal(second.status, "complete");
+    assert.equal(second.actions[0].result.changed, false);
+    assert.equal(await pathExists(resolve(productRoot, "settings.json")), true);
   });
 });
 

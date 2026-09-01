@@ -5,6 +5,19 @@
   "productVersion": "2.1.251",
   "capabilities": [
     {
+      "feature": "instructions.global",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-claude-code.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.1.251",
+      "value": {
+        "package": "CLAUDE.md",
+        "destination": "<CLAUDE_CONFIG_DIR>/CLAUDE.md"
+      },
+      "notes": "The shared global instruction body is deployed separately from plugin rules and project instructions."
+    },
+    {
       "feature": "model.primary",
       "support": "supported",
       "stability": "stable",

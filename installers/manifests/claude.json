@@ -16,6 +16,7 @@
     "sharedBy": ["claude-code-cli", "claude-desktop-local-code"]
   },
   "components": {
+    "globalInstructions": "CLAUDE.md",
     "skills": "skills/{skill}/SKILL.md",
     "agents": "agents/{role}.md",
     "commands": "commands/{command}.md",
@@ -91,21 +92,30 @@
     "disallowedTools": ["Agent", "Bash", "Edit", "Write"]
   },
   "ownedPaths": [
-    ".claude-plugin/plugin.json",
+    ".claude-plugin/**",
     ".claude-plugin/marketplace.json",
-    "skills/{skill}/SKILL.md",
+    ".claude-plugin/plugin.json",
+    "CLAUDE.md",
     "agents/{role}.md",
+    "all-about-agents/statusline.json",
     "commands/{command}.md",
-    "rules/{rule}.md",
-    "hooks/hooks.json",
-    "hooks/{name}.mjs",
-    "statusline/statusline.mjs",
-    "statusline/track-tool.mjs",
-    "statusline/statusline.ps1",
-    "statusline/statusline.sh",
+    "config/**",
     "config/settings.json",
     "config/statusline.json",
-    "docs/semantic-mappings.md"
+    "docs/semantic-mappings.md",
+    "hooks/**",
+    "hooks/hooks.json",
+    "hooks/{name}.mjs",
+    "rules/**",
+    "rules/{rule}.md",
+    "settings.json",
+    "skills/{skill}/**",
+    "skills/{skill}/SKILL.md",
+    "statusline/**",
+    "statusline/statusline.mjs",
+    "statusline/statusline.ps1",
+    "statusline/statusline.sh",
+    "statusline/track-tool.mjs"
   ],
   "nativeValidation": {
     "command": ["claude", "plugin", "validate", ".", "--strict"],
@@ -126,7 +136,7 @@
     "onMissing": "reject",
     "requiredBy": ["statusline/statusline.mjs", "statusline/track-tool.mjs"]
   },
-  "rootInstructionContext": "not emitted; plugin-root CLAUDE.md is not a plugin context",
+  "rootInstructionContext": "CLAUDE.md is emitted as the global instruction source and deployed to <CLAUDE_CONFIG_DIR>/CLAUDE.md; plugin rules remain separate",
   "capabilityEvidence": {
     "productContracts": "docs/evaluations/research-claude-code.md",
     "modelPolicy": "docs/evaluations/research-model-policy-claude.md"

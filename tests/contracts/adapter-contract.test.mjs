@@ -73,6 +73,11 @@ function input(overrides = {}) {
   return {
     core: {
       inventory: {},
+      presentation: { emojiRegistry: {}, progressContract: {} },
+      globalInstructions: {
+        sourcePath: "core/instructions/global-operating-rules.md",
+        content: "# Fixture global operating rules\n\nUse the validated fixture core.\n"
+      },
       rules: [],
       roles: [],
       skills: [],
@@ -106,6 +111,19 @@ test("renderSurface returns a validated RenderResult for complete required mappi
   assert.deepEqual(result.diagnostics, []);
   assert.deepEqual(result.ownership, []);
   assert.equal(validateRenderResult(result).valid, true);
+});
+
+test("renderSurface requires a complete canonical global instructions object", () => {
+  const completeInput = input();
+  for (const globalInstructions of [undefined, {}, { sourcePath: "core/instructions/global-operating-rules.md" }, { sourcePath: "other.md", content: "# Fixture global operating rules\n" }, { sourcePath: "core/instructions/global-operating-rules.md", content: 42 }]) {
+    const core = { ...completeInput.core };
+    if (globalInstructions === undefined) delete core.globalInstructions;
+    else core.globalInstructions = globalInstructions;
+    assert.throws(
+      () => renderSurface({ ...completeInput, core }),
+      (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "invalid-core" && entry.path.startsWith("/core/globalInstructions"))
+    );
+  }
 });
 
 test("renderSurface rejects an empty core command list", () => {
@@ -333,6 +351,20 @@ test("production rendering validates both profiles and all surfaces through the 
       const result = results.find((entry) => entry.registrations.some((registration) => registration.surface === surface || registration.surface === `${surface}-desktop`));
       assert.ok(result);
       assert.equal(result.diagnostics.filter((entry) => entry.code === "native-mapping-explicitly-unsupported").length, actionIds.length);
+    }
+  }
+});
+
+test("all surface ownership arrays are complete, sorted, unique, and hash-correct for both profiles", async () => {
+  for (const profile of ["portable", "template"]) {
+    const results = await renderPayload({ surfaces: ["agy", "claude", "codex", "antigravity-2"], profile, platform: "win32" });
+    for (const result of results) {
+      assert.deepEqual(result.ownership.map((entry) => entry.relativePath), result.files.map((file) => file.relativePath), `${result.registrations[0]?.surface}/${profile} ownership order drift`);
+      assert.equal(new Set(result.ownership.map((entry) => entry.relativePath)).size, result.ownership.length, `${result.registrations[0]?.surface}/${profile} ownership paths are not unique`);
+      for (const [index, entry] of result.ownership.entries()) {
+        assert.match(entry.sha256, /^[0-9a-f]{64}$/u);
+        assert.equal(entry.sha256, createHash("sha256").update(result.files[index].content).digest("hex"), `${result.registrations[0]?.surface}/${profile}/${entry.relativePath} hash drift`);
+      }
     }
   }
 });

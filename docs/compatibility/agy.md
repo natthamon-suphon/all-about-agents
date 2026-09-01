@@ -33,6 +33,16 @@ and rejects control and ANSI characters.
 
 ## Model, permissions, and headless arguments
 
+The shared global file is rendered from
+`core/instructions/global-operating-rules.md` and is registered at
+`~/.gemini/GEMINI.md`. Project `GEMINI.md`, `AGENTS.md`, workspace rules, and
+plugin rules are the more specific second layer. Desktop and `agy` use the
+same global destination.
+
+Visible skills, agents, commands, and workflows keep their machine IDs and
+show a registry emoji after the name, a short reason, and a 2-to-7 item
+checklist. This is prompt guidance, not a UI guarantee.
+
 The exact model policy is `gemini-3.7-flash-high` with `high` effort. The
 template profile records per-run full access with:
 

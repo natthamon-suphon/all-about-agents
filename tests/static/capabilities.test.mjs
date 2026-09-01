@@ -6,6 +6,12 @@ import test from "node:test";
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 
 const surfaces = ["claude", "codex", "antigravity-2", "agy"];
+const manifestGlobalNames = new Map([
+  ["claude", "CLAUDE.md"],
+  ["codex", "AGENTS.md"],
+  ["antigravity-2", "GEMINI.md"],
+  ["agy", "GEMINI.md"]
+]);
 const repositoryRoot = resolve(process.cwd());
 const officialHosts = new Set(["antigravity.google", "code.claude.com", "developers.openai.com"]);
 
@@ -40,6 +46,21 @@ test("capability records exist for every supported surface", async () => {
     await access(resolve(process.cwd(), `adapters/${surface}/capabilities.json`));
   }
   await access(resolve(process.cwd(), "core/schemas/capability.schema.json"));
+});
+
+test("manifest ownership is complete, sorted, unique, and names the global output", async () => {
+  for (const surface of surfaces) {
+    const manifest = JSON.parse(await readFile(resolve(process.cwd(), `installers/manifests/${surface}.json`), "utf8"));
+    assert.equal(manifest.surface, surface);
+    assert.ok(Array.isArray(manifest.ownedPaths), `${surface} manifest must declare ownedPaths`);
+    assert.equal(new Set(manifest.ownedPaths).size, manifest.ownedPaths.length, `${surface} manifest ownership must be unique`);
+    assert.deepEqual([...manifest.ownedPaths].sort(), manifest.ownedPaths, `${surface} manifest ownership must be sorted`);
+    const global = manifest.components.globalInstructions;
+    const packageName = typeof global === "string" ? global : global?.package;
+    assert.equal(packageName, manifestGlobalNames.get(surface));
+    assert.ok(manifest.ownedPaths.some((path) => path === packageName), `${surface} manifest must own ${packageName}`);
+    assert.doesNotMatch(JSON.stringify(manifest), /\p{Extended_Pictographic}/u, `${surface} manifest machine data must not contain emoji`);
+  }
 });
 
 test("capability records use the strict shared record shape", async () => {

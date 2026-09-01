@@ -12,6 +12,13 @@ For the separate native mutation and lifecycle record, use
 [native registration](../maintenance/native-registration.md) and
 [native verification](../maintenance/native-verification.md).
 
+The global behavior source is
+`core/instructions/global-operating-rules.md`. Claude, Codex, Desktop, and
+`agy` render it into their documented global files. Project and plugin rules
+are a second, more specific layer. The presentation contract checks the emoji
+after each visible name, a short reason, and a 2-to-7 item checklist. This is
+model guidance, not a UI guarantee.
+
 ## Status vocabulary and the no-fabrication rule
 
 Every check and sample has exactly one status: `PASS`, `FAIL`, `NOT_RUN`,
@@ -63,6 +70,16 @@ repository revision under qualification.
 Any parser, schema, contract, or safety error is a Gate 0 failure. A warning
 that describes an unknown or manual capability remains a warning only when the
 artifact also explicitly prevents automatic use.
+
+Gate 0 also checks that the exact global destinations are documented:
+`<CLAUDE_CONFIG_DIR>/CLAUDE.md`, `<CODEX_HOME>/AGENTS.md`, and
+`~/.gemini/GEMINI.md` for Antigravity Desktop and `agy`. It checks that
+`CLAUDE.local.md` and `GEMINI.local.md` are not used as global destinations,
+and that the receiving-machine order is:
+
+```text
+pull -> validate -> render -> dry-run -> apply package -> dry-run registration -> explicit registration apply -> restart -> verify loaded instructions
+```
 
 ### Gate 1 — package and installer integrity
 

@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "id": "presentation-contract",
+  "kind": "behavioral-presentation",
+  "description": "Deterministic structured traces for the cross-surface presentation contract.",
+  "scenarios": [
+    {
+      "id": "one-skill",
+      "category": "skill-invocation",
+      "cases": [
+        {
+          "id": "skill-brainstorming-completes",
+          "expectedValid": true,
+          "trace": {
+            "invocationId": "skill-brainstorming",
+            "events": [
+              { "type": "announcement", "kind": "skill", "id": "brainstorming", "label": "brainstorming 🧠", "reason": "Use brainstorming 🧠 to frame the requested behavior change." },
+              { "type": "checklist", "revision": 1, "owner": "sequential", "items": [
+                { "id": "understand-request", "text": "Understand the request", "status": "completed" },
+                { "id": "frame-options", "text": "Frame sound options", "status": "completed" }
+              ] },
+              { "type": "completion" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "one-role",
+      "category": "role-invocation",
+      "cases": [
+        {
+          "id": "role-architect-completes",
+          "expectedValid": true,
+          "trace": {
+            "invocationId": "role-architect",
+            "events": [
+              { "type": "announcement", "kind": "role", "id": "architect", "label": "architect 🏛️", "reason": "Use architect 🏛️ to define the safest module boundary." },
+              { "type": "checklist", "revision": 1, "owner": "sequential", "items": [
+                { "id": "inspect-context", "text": "Inspect the current context", "status": "completed" },
+                { "id": "define-boundary", "text": "Define the module boundary", "status": "completed" }
+              ] },
+              { "type": "completion" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "one-subagent",
+      "category": "dynamic-subagent-invocation",
+      "cases": [
+        {
+          "id": "dynamic-worker-completes",
+          "expectedValid": true,
+          "trace": {
+            "invocationId": "subagent-worker-alpha",
+            "events": [
+              { "type": "announcement", "kind": "subagent", "id": "worker-alpha", "label": "worker-alpha 🤖", "reason": "Delegate the isolated check to worker-alpha 🤖." },
+              { "type": "checklist", "revision": 1, "owner": "sequential", "items": [
+                { "id": "run-check", "text": "Run the isolated check", "status": "completed" },
+                { "id": "report-evidence", "text": "Report the evidence", "status": "completed" }
+              ] },
+              { "type": "completion" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "command-workflow",
+      "category": "command-starts-workflow",
+      "cases": [
+        {
+          "id": "design-command-single-checklist",
+          "expectedValid": true,
+          "trace": {
+            "invocationId": "command-design",
+            "events": [
+              { "type": "announcement", "kind": "command", "id": "aaa:design", "label": "aaa:design 🎨", "reason": "Run aaa:design 🎨 for the requested design workflow.", "workflowId": "design-change" },
+              { "type": "checklist", "revision": 1, "owner": "workflow-design-change", "items": [
+                { "id": "collect-context", "text": "Collect context for the workflow", "status": "completed" },
+                { "id": "write-plan", "text": "Write the approved plan", "status": "completed" }
+              ] },
+              { "type": "completion" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "parallel-owners",
+      "category": "parallel-owner-work",
+      "cases": [
+        {
+          "id": "parallel-checks-have-named-owners",
+          "expectedValid": true,
+          "trace": {
+            "invocationId": "parallel-validation",
+            "events": [
+              { "type": "announcement", "kind": "workflow", "id": "review-and-audit", "label": "review-and-audit 🔍", "reason": "Start review-and-audit 🔍 for independent parallel checks." },
+              { "type": "checklist", "revision": 1, "owner": "parallel", "items": [
+                { "id": "inspect-claude", "text": "Inspect Claude output", "status": "in-progress", "owner": "reviewer-a" },
+                { "id": "inspect-gemini", "text": "Inspect Gemini output", "status": "in-progress", "owner": "reviewer-b" }
+              ] },
+              { "type": "checklist", "revision": 2, "owner": "parallel", "items": [
+                { "id": "inspect-claude", "text": "Inspect Claude output", "status": "completed", "owner": "reviewer-a" },
+                { "id": "inspect-gemini", "text": "Inspect Gemini output", "status": "completed", "owner": "reviewer-b" }
+              ] },
+              { "type": "completion" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "exceptional-terminal-reasons",
+      "category": "exceptional-terminal-reasons",
+      "cases": [
+        {
+          "id": "exceptional-states-have-reasons",
+          "expectedValid": true,
+          "trace": {
+            "invocationId": "exceptional-outcomes",
+            "events": [
+              { "type": "announcement", "kind": "skill", "id": "verification-before-completion", "label": "verification-before-completion ✅", "reason": "Use verification-before-completion ✅ to record every outcome." },
+              { "type": "checklist", "revision": 1, "owner": "sequential", "items": [
+                { "id": "normal", "text": "Complete the normal check", "status": "completed" },
+                { "id": "blocked-item", "text": "Run the unavailable check", "status": "blocked", "reason": "Required access was not available." },
+                { "id": "failed-item", "text": "Run the failing check", "status": "failed", "reason": "The check failed with a reproducible error." },
+                { "id": "skipped-item", "text": "Run the optional check", "status": "skipped", "reason": "The optional check is outside this scope." },
+                { "id": "not-run-item", "text": "Run the native check", "status": "not-run", "reason": "The native product was not available." }
+              ] },
+              { "type": "completion" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "resumed-work",
+      "category": "resume-without-repeat",
+      "cases": [
+        {
+          "id": "resume-preserves-completed-steps",
+          "expectedValid": true,
+          "trace": {
+            "invocationId": "long-review",
+            "events": [
+              { "type": "announcement", "kind": "workflow", "id": "release-qualification", "label": "release-qualification 🚦", "reason": "Resume release-qualification 🚦 from its durable checkpoint." },
+              { "type": "checklist", "revision": 1, "owner": "sequential", "items": [
+                { "id": "read-plan", "text": "Read the approved plan", "status": "completed" },
+                { "id": "run-focused", "text": "Run the focused checks", "status": "completed" },
+                { "id": "run-full", "text": "Run the full checks", "status": "in-progress" }
+              ] },
+              { "type": "checklist", "revision": 2, "owner": "sequential", "items": [
+                { "id": "read-plan", "text": "Read the approved plan", "status": "completed" },
+                { "id": "run-focused", "text": "Run the focused checks", "status": "completed" },
+                { "id": "run-full", "text": "Run the full checks", "status": "completed" }
+              ] },
+              { "type": "completion" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "all-terminal-completion",
+      "category": "terminal-completion",
+      "cases": [
+        {
+          "id": "completion-after-terminal-states",
+          "expectedValid": true,
+          "trace": {
+            "invocationId": "terminal-report",
+            "events": [
+              { "type": "announcement", "kind": "role", "id": "verifier", "label": "verifier ✅", "reason": "Use verifier ✅ to finish with terminal evidence." },
+              { "type": "checklist", "revision": 1, "owner": "sequential", "items": [
+                { "id": "completed", "text": "Complete the verified step", "status": "completed" },
+                { "id": "blocked", "text": "Check the unavailable step", "status": "blocked", "reason": "The dependency was unavailable." },
+                { "id": "failed", "text": "Check the failed step", "status": "failed", "reason": "The command returned a failure." },
+                { "id": "not-run", "text": "Check the native step", "status": "not-run", "reason": "No native session was available." },
+                { "id": "skipped", "text": "Check the optional step", "status": "skipped", "reason": "The optional step was excluded." }
+              ] },
+              { "type": "completion" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "unchanged-checklist",
+      "category": "unchanged-checklist-rejection",
+      "cases": [
+        {
+          "id": "same-checklist-twice",
+          "expectedValid": false,
+          "trace": {
+            "invocationId": "unchanged-progress",
+            "events": [
+              { "type": "announcement", "kind": "skill", "id": "research", "label": "research 🔎", "reason": "Use research 🔎 to find the requested primary source." },
+              { "type": "checklist", "revision": 1, "owner": "sequential", "items": [
+                { "id": "find-source", "text": "Find the primary source", "status": "completed" },
+                { "id": "cite-source", "text": "Cite the source", "status": "completed" }
+              ] },
+              { "type": "checklist", "revision": 2, "owner": "sequential", "items": [
+                { "id": "find-source", "text": "Find the primary source", "status": "completed" },
+                { "id": "cite-source", "text": "Cite the source", "status": "completed" }
+              ] },
+              { "type": "completion" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "emoji-order-and-unknown",
+      "category": "emoji-order-and-unknown-rejection",
+      "cases": [
+        {
+          "id": "emoji-before-name",
+          "expectedValid": false,
+          "trace": {
+            "invocationId": "bad-emoji-order",
+            "events": [
+              { "type": "announcement", "kind": "skill", "id": "brainstorming", "label": "🧠 brainstorming", "reason": "Use brainstorming for the requested design." },
+              { "type": "checklist", "revision": 1, "owner": "sequential", "items": [
+                { "id": "one", "text": "Do the first step", "status": "completed" },
+                { "id": "two", "text": "Do the second step", "status": "completed" }
+              ] },
+              { "type": "completion" }
+            ]
+          }
+        },
+        {
+          "id": "unknown-emoji",
+          "expectedValid": false,
+          "trace": {
+            "invocationId": "bad-emoji-value",
+            "events": [
+              { "type": "announcement", "kind": "skill", "id": "brainstorming", "label": "brainstorming ❌", "reason": "Use brainstorming for the requested design." },
+              { "type": "checklist", "revision": 1, "owner": "sequential", "items": [
+                { "id": "one", "text": "Do the first step", "status": "completed" },
+                { "id": "two", "text": "Do the second step", "status": "completed" }
+              ] },
+              { "type": "completion" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

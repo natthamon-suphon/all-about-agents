@@ -36,6 +36,23 @@ command asks for a display name when it is interactive. Use
 
 Some native behavior remains unsupported until a product session is observed.
 
+## Global instructions and presentation
+
+The shared global file is rendered from
+`core/instructions/global-operating-rules.md`. Claude registration deploys it
+to `<CLAUDE_CONFIG_DIR>/CLAUDE.md`, or `~/.claude/CLAUDE.md` when the normal
+root is used. Project `CLAUDE.md`, `.claude/CLAUDE.md`, and plugin rules are a
+more specific second layer.
+
+Visible skills, agents, commands, and workflows keep their machine IDs. Their
+user-facing labels put the emoji after the name, with a short reason and a
+2-to-7 item checklist. For example: `Using skill **brainstorming 🧠** —
+Explore the requirement.` This is prompt guidance, not a UI guarantee.
+
+After a pull, follow the [receiving-machine order](../maintenance/sync-and-update.md):
+pull, validate, render, dry-run, apply the package, dry-run registration,
+explicit registration apply, restart, and verify loaded instructions.
+
 ## Models, permissions, and hooks
 
 The `portable` profile uses Claude's surface default with controlled

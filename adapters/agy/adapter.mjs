@@ -13,6 +13,8 @@ import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
+import { renderGeminiGlobalInstructions } from "../shared/global-instructions.mjs";
+import { displayLabel, renderInvocationGuidance, renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
 
 const SURFACE = "agy";
 const PLUGIN_ROOT = "";
@@ -311,14 +313,20 @@ function renderPluginManifest() {
   });
 }
 
-function renderSkill(name, record) {
+function renderSkill(name, record, presentation) {
   const description = typeof record?.description === "string" && record.description.trim()
     ? record.description.trim()
     : `Canonical ${name} skill.`;
   const body = typeof record?.content === "string" && record.content.trim()
     ? stripFrontmatter(record.content)
     : "DEFERRED: canonical source is missing.\nOwner: cycle-05-skill-remediation (T017-T043).\n";
-  return ensureText(`---\nname: ${JSON.stringify(name)}\ndescription: ${JSON.stringify(description)}\n---\n\n${body}`);
+  const guidance = renderInvocationGuidance(presentation, {
+    kind: "skill",
+    id: name,
+    task: `Apply ${displayLabel(presentation, "skill", name)} to the current task`,
+    reason: `Use ${displayLabel(presentation, "skill", name)} when its scope matches the current task.`
+  });
+  return ensureText(`---\nname: ${JSON.stringify(name)}\ndescription: ${JSON.stringify(description)}\n---\n\n${guidance}\n\n${body}`);
 }
 
 function renderRule(rule) {
@@ -328,7 +336,7 @@ function renderRule(rule) {
   return ensureText(lines.join("\n"));
 }
 
-function renderAgent(name, role) {
+function renderAgent(name, role, presentation) {
   const fallback = DEFAULT_ROLES[name] || Object.freeze({ description: "Unknown role; no native capabilities are granted.", capabilities: [], readOnly: true });
   const description = typeof role?.description === "string" && role.description.trim()
     ? role.description.trim()
@@ -350,7 +358,13 @@ function renderAgent(name, role) {
   tools = tools.filter((tool) => AGY_DOCUMENTED_AGENT_TOOLS.includes(tool)).sort(compareCodePoints);
   const commandExecutionPolicy = tools.includes("run_command") ? "sandbox" : "off";
   const roleDiagnostics = nativeCapabilityDiagnostics({ surface: SURFACE, role: role || fallback, mappings: AGY_SEMANTIC_MAPPINGS, blockedNativeTools });
-  const prompt = `${role?.prompt || [
+  const guidance = renderInvocationGuidance(presentation, {
+    kind: "role",
+    id: name,
+    task: `Delegate the current task to ${displayLabel(presentation, "role", name)}`,
+    reason: `Use ${displayLabel(presentation, "role", name)} when its role matches the task and scope.`
+  });
+  const prompt = `${guidance}\n\n${role?.prompt || [
     `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`,
     capabilities.length > 0 ? `Semantic capabilities: ${capabilities.join(", ")}.` : "",
     "Use only the documented Antigravity tool names declared in this agent frontmatter.",
@@ -401,6 +415,7 @@ function renderCapabilityGuidance() {
     "The shared Antigravity subagent and hook documentation publishes the agent fields and tool names used by this adapter.",
     "Read-only roles remove command, mutation, and agent-management tools while keeping useful read and research tools.",
     "Native controls are workspace-wide where available; the implementer's declared task paths remain an outer approval boundary.",
+    "Dynamic subagent names stay unchanged; use `default 🤖` only as the display fallback.",
     "Run `agy agents` after discovery and record any version-specific difference without inventing a replacement tool.",
     "",
     "PostToolUse contract: a documented tool event identifies the tool as toolCall.name; do not substitute a Desktop or legacy event field.",
@@ -487,6 +502,8 @@ function renderPackageReadme(profile) {
       "# all-about-agents agy plugin",
       "",
       "This is a portable package artifact. Rendering does not install a plugin, write a profile, enable hooks, or execute a command.",
+      "The package root contains GEMINI.md, the shared global instruction file. An authorized register --apply may copy it to ~/.gemini/GEMINI.md; rendering alone remains read-only.",
+      "rules/presentation.md contains the compact name-and-emoji catalog. Every visible skill and agent prompt includes a reason and small checklist while native identifiers stay unchanged.",
       "The portable profile keeps the installed agy model and effort unchanged.",
       "Review this directory in a disposable explicit target, then run `agy --help`, `agy models`, and `agy agents` manually.",
       "After a reviewed dry-run and exact authority, repository `register --apply` runs `agy plugin install PACKAGE_DIRECTORY`, checks `agy plugin list`, and merges the sparse settings overlay. Rendering alone remains read-only.",
@@ -498,6 +515,8 @@ function renderPackageReadme(profile) {
     "# all-about-agents agy plugin",
     "",
     "This is a portable package artifact. Rendering does not install a plugin, write a profile, enable hooks, or execute a command.",
+    "The package root contains GEMINI.md, the shared global instruction file. An authorized register --apply may copy it to ~/.gemini/GEMINI.md; rendering alone remains read-only.",
+    "rules/presentation.md contains the compact name-and-emoji catalog. Every visible skill and agent prompt includes a reason and small checklist while native identifiers stay unchanged.",
     "",
     "## Registration and manual verification",
     "",
@@ -692,6 +711,7 @@ export function renderAgy(input = {}) {
   const roleRecords = new Map(input.core.roles.map((record) => [record.id || record.name, record]));
   const files = [];
 
+  addFile(files, "GEMINI.md", renderGeminiGlobalInstructions(input.core));
   addFile(files, "plugin.json", renderPluginManifest());
   addFile(files, "README.md", renderPackageReadme(semanticProfile));
   addFile(files, "hooks.json", renderJson(hookDocument()));
@@ -708,13 +728,14 @@ export function renderAgy(input = {}) {
   addFile(files, "rules/permission-safety.md", renderPermissionRule());
   addFile(files, "rules/hook-contract.md", renderHooksRule());
   addFile(files, "rules/settings-overlay.md", renderSettingsRule());
+  addFile(files, "rules/presentation.md", renderPresentationCatalog(input.core.presentation));
 
   for (const rule of [...input.core.rules].sort((left, right) => String(left.id).localeCompare(String(right.id)))) {
     addFile(files, `rules/${rule.id}.md`, renderRule(rule));
   }
   const opaqueCompanionPaths = new Set();
   for (const skill of canonicalSkillIds(input.core)) {
-    addFile(files, `skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill)));
+    addFile(files, `skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill), input.core.presentation));
     for (const companion of skillCompanionsFor(skillRecords.get(skill))) {
       const path = `skills/${skill}/${companion.relativePath}`;
       addFile(files, path, companion.content, companion.mode, "companion");
@@ -722,7 +743,7 @@ export function renderAgy(input = {}) {
     }
   }
   const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort(compareCodePoints);
-  for (const roleName of roleNames) addFile(files, `agents/${roleName}/agent.md`, renderAgent(roleName, roleRecords.get(roleName)));
+  for (const roleName of roleNames) addFile(files, `agents/${roleName}/agent.md`, renderAgent(roleName, roleRecords.get(roleName), input.core.presentation));
 
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   validateAgyContent(files, opaqueCompanionPaths);

@@ -29,6 +29,15 @@ loaded session.
 
 ## Model and permission policy
 
+The shared global file is rendered from
+`core/instructions/global-operating-rules.md` and is copied manually to
+`~/.gemini/GEMINI.md`. Project `.agents/rules/` and plugin rules are the more
+specific second layer. `agy` also reads this same global destination.
+
+Visible skills, agents, commands, and workflows keep their machine IDs and
+show a registry emoji after the name, a short reason, and a 2-to-7 item
+checklist. This is prompt guidance, not a UI guarantee.
+
 Select `Gemini 3.7 Flash High` in the conversation model selector. The
 observed selection is conversation-local. Do not infer cross-session
 persistence or a separate effort setting.

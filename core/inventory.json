@@ -719,6 +719,38 @@
       }
     },
     {
+      "path": "core/instructions/global-operating-rules.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Canonical vendor-neutral global operating rules used by all adapters."
+      }
+    },
+    {
+      "path": "core/presentation/emoji-registry.json",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Canonical display emoji metadata used by all adapters."
+      }
+    },
+    {
+      "path": "core/presentation/progress-contract.json",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Canonical checklist state metadata used by all adapters."
+      }
+    },
+    {
+      "path": "core/schemas/presentation.schema.json",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Strict schema for the presentation registry and checklist contract."
+      }
+    },
+    {
       "path": "core/skills/brainstorming/SKILL.md",
       "kind": "source",
       "auditDisposition": {
@@ -1372,6 +1404,46 @@
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "tests/static/presentation-safety.test.mjs",
+      "kind": "test",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Static safety scan for presentation leakage, portable paths, and package ownership."
+      }
+    },
+    {
+      "path": "core/evals/presentation-trace.mjs",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Deterministic structured evaluator for invocation presentation evidence."
+      }
+    },
+    {
+      "path": "core/evals/presentation-trace.schema.json",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Strict schema for structured invocation presentation traces."
+      }
+    },
+    {
+      "path": "core/evals/scenarios/presentation-contract.json",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Deterministic valid and invalid presentation behavior scenarios."
+      }
+    },
+    {
+      "path": "tests/behavioral/presentation-contract.test.mjs",
+      "kind": "test",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Behavior tests for structured presentation traces and four native render surfaces."
       }
     }
   ],

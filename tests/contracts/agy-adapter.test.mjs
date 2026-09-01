@@ -6,6 +6,8 @@ import test from "node:test";
 
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { AdapterContractError } from "../../adapters/shared/adapter-contract.mjs";
+import { renderGeminiGlobalInstructions } from "../../adapters/shared/global-instructions.mjs";
+import { displayLabel } from "../../installers/lib/presentation-contract.mjs";
 
 const requiredOutputs = [
   "adapters/agy/adapter.mjs",
@@ -45,12 +47,53 @@ function sha256(content) {
   return createHash("sha256").update(content).digest("hex");
 }
 
+test("agy emits the canonical package-root GEMINI.md and the shared presentation contract", () => {
+  const portable = resultFor("portable");
+  const template = resultFor("template");
+  const portableFiles = fileMap(portable);
+  const templateFiles = fileMap(template);
+  const expected = renderGeminiGlobalInstructions(core);
+  assert.equal(portableFiles.get("GEMINI.md"), expected);
+  assert.equal(templateFiles.get("GEMINI.md"), expected);
+  assert.equal(sha256(portableFiles.get("GEMINI.md")), sha256(templateFiles.get("GEMINI.md")));
+  assert.equal([...expected].length < 12000, true);
+  assert.match(expected, /[^\n]\n$/u);
+  assert.doesNotMatch(expected, /<\/?[A-Za-z][^>]*>|@keyframes|animation\s*:/iu);
+  assert.doesNotMatch(expected, /\u001b/u);
+
+  const presentation = portableFiles.get("rules/presentation.md");
+  assert.equal((presentation.match(/Presentation catalog/gu) || []).length, 1);
+  assert.match(presentation, /brainstorming 🧠/u);
+  assert.match(presentation, /architect 🏛️/u);
+  assert.match(presentation, /default 🤖/u);
+  assert.match(portableFiles.get("rules/adapter-capability-guidance.md"), /Dynamic subagent names stay unchanged/u);
+  assert.equal(displayLabel(core.presentation, "subagent", "runtime-worker"), "runtime-worker 🤖");
+  assert.match(portableFiles.get("skills/brainstorming/SKILL.md"), /Using skill \*\*brainstorming 🧠\*\* —/u);
+  assert.match(portableFiles.get("agents/architect/agent.md"), /Invoking agent \*\*architect 🏛️\*\* —/u);
+  assert.equal(portableFiles.has("config/settings.json"), false);
+});
+
 test("agy renders a strict documented plugin manifest", () => {
   const manifest = JSON.parse(fileMap(resultFor()).get("plugin.json"));
   assert.deepEqual(Object.keys(manifest).sort(), ["$schema", "description", "name"]);
   assert.equal(manifest.$schema, "https://antigravity.google/schemas/v1/plugin.json");
   assert.equal(manifest.name, "all-about-agents");
   assert.equal(typeof manifest.description, "string");
+});
+
+test("Desktop and agy package GEMINI.md bodies are byte-identical for both profiles", async () => {
+  const desktop = await import("../../adapters/antigravity-2/adapter.mjs");
+  for (const profile of ["portable", "template"]) {
+    const desktopFiles = new Map(desktop.renderAntigravity({
+      core,
+      profile: { id: profile },
+      statuslineName: "",
+      platform: "win32",
+      homeDir: "C:/Users/tester"
+    }).files.map((file) => [file.relativePath, file.content]));
+    const agyFiles = new Map(resultFor(profile).files.map((file) => [file.relativePath, file.content]));
+    assert.deepEqual([...desktopFiles.get("GEMINI.md")], [...agyFiles.get("GEMINI.md")], profile);
+  }
 });
 
 test("agy renders nested agents and every canonical skill and rule", () => {
@@ -275,6 +318,12 @@ test("agy settings registration names only the documented CLI destination", asyn
   assert.doesNotMatch(JSON.stringify(rendered), /~\/\.gemini\/config\/config\.json/u);
 
   const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/agy.json"), "utf8"));
+  assert.deepEqual(manifest.components.globalInstructions, {
+    package: "GEMINI.md",
+    destination: "~/.gemini/GEMINI.md",
+    registration: "register --apply",
+    automaticWrite: true
+  });
   assert.deepEqual(manifest.settingsOverlay.destinationCandidates, ["~/.gemini/antigravity-cli/settings.json"]);
   assert.doesNotMatch(JSON.stringify(manifest), /~\/\.gemini\/config\/config\.json/u);
   assert.doesNotMatch(JSON.stringify(manifest), /~\/\.gemini\/antigravity\//u);
@@ -366,7 +415,7 @@ test("agy rejects forbidden terms after decoding generated file bodies", () => {
     "permission bypass: --mode=accept-edits",
     "guessed key: modelKey"
   ]) {
-    const poisonedCore = { ...core, skills: [{ id: "poisoned", content: `---\ndescription: poisoned\n---\n\n${poison}\n` }] };
+    const poisonedCore = { ...core, skills: [{ id: "brainstorming", content: `---\ndescription: poisoned\n---\n\n${poison}\n` }] };
     assert.throws(() => adapter.renderAgy({ core: poisonedCore, profile: { id: "portable" }, statuslineName: "" }), /agy render rejected/u, poison);
   }
 });

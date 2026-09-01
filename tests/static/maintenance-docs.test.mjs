@@ -23,6 +23,11 @@ const relatedDocs = [
   "docs/compatibility/agy.md",
   "docs/limitations/known-limitations.md",
   "docs/evaluations/method.md",
+  "docs/maintenance/global-instructions.md",
+  "adapters/claude/templates/README.md",
+  "adapters/codex/templates/README.md",
+  "adapters/antigravity-2/templates/README.md",
+  "adapters/agy/templates/README.md",
   ...maintenanceDocs
 ];
 
@@ -151,6 +156,27 @@ test("maintenance guides define the complete shared workflow", async () => {
   ]) assert.match(verification, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "iu"), `verification guide omits ${value}`);
 });
 
+test("global instruction guide defines the shared source and dual-layer model", async () => {
+  const body = await text("docs/maintenance/global-instructions.md");
+  for (const value of [
+    "core/instructions/global-operating-rules.md",
+    "CLAUDE_CONFIG_DIR",
+    "CLAUDE.md",
+    "CODEX_HOME",
+    "AGENTS.md",
+    "~/.gemini/GEMINI.md",
+    "Global layer",
+    "Project and plugin layer",
+    "brainstorming 🧠",
+    "Using skill",
+    "Checklist",
+    "reason",
+    "not a UI guarantee"
+  ]) assert.match(body, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "iu"), `global guide omits ${value}`);
+  assert.match(body, /CLAUDE\.local\.md[\s\S]{0,120}(?:private|project)[\s\S]{0,120}(?:not|never)[\s\S]{0,120}global/iu);
+  assert.match(body, /GEMINI\.local\.md[\s\S]{0,120}(?:not|never)[\s\S]{0,120}global/iu);
+});
+
 test("entry and platform docs link the maintenance workflow", async () => {
   const readme = await text("README.md");
   for (const target of ["CONTRIBUTING.md", ...maintenanceDocs]) {
@@ -209,6 +235,15 @@ test("maintenance documentation has valid links and no stale workflow claims", a
       const target = match[1].split(/[?#]/u, 1)[0];
       if (!target || /^[a-z]+:/iu.test(target)) continue;
       await access(resolve(root, dirname(relativePath), decodeURIComponent(target)));
+    }
+  }
+
+  for (const relativePath of relatedDocs) {
+    const body = await text(relativePath);
+    for (const line of body.split(/\r?\n/u)) {
+      if (/(?:CLAUDE\.local\.md|GEMINI\.local\.md)/iu.test(line) && /global|destination/iu.test(line)) {
+        assert.match(line, /\b(?:not|never|no)\b/iu, `${relativePath} has stale local-global guidance`);
+      }
     }
   }
 });

@@ -10,6 +10,7 @@ import { promisify } from "node:util";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { AdapterContractError } from "../../adapters/shared/adapter-contract.mjs";
 import { NATIVE_PHASES } from "../../adapters/shared/native-state.mjs";
+import { displayLabel, renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
 
 const adapter = await import("../../adapters/codex/adapter.mjs");
 const core = await loadCore(process.cwd());
@@ -135,6 +136,47 @@ test("Codex render emits a regular AGENTS.md and every canonical skill without r
   }
   assert.equal(result.files.some((file) => /(?:automations|cron)/iu.test(file.relativePath)), false);
   assert.doesNotMatch(JSON.stringify(result.registrations), /(?:automations|cron)/iu);
+});
+
+test("Codex AGENTS.md composes the canonical body, labeled catalog, rules, and one checklist per action workflow", () => {
+  const result = resultFor();
+  const files = fileMap(result);
+  const agents = files.get("AGENTS.md");
+  const canonicalBody = core.globalInstructions.content;
+  assert.ok(agents.startsWith(canonicalBody), "canonical global body must be first");
+  assert.match(agents.slice(canonicalBody.length), /^\n---\n# All About Agents for Codex\n/u);
+  assert.equal((agents.match(/# Global Operating Rules/g) ?? []).length, 1);
+  assert.equal((agents.match(/Presentation catalog/g) ?? []).length, 1);
+  assert.equal((agents.match(/## Canonical repository rules/g) ?? []).length, 1);
+  assert.equal((agents.match(/## Canonical actions/g) ?? []).length, 1);
+  assert.equal((agents.match(/^Checklist$/gmu) ?? []).length, core.commands.length);
+  assert.equal((agents.match(/Reason rule:/g) ?? []).length, core.commands.length);
+  for (const command of core.commands) {
+    const commandLabel = displayLabel(core.presentation, "command", command.actionId);
+    const workflowLabel = displayLabel(core.presentation, "workflow", command.workflowId);
+    assert.ok(agents.includes(`### ${commandLabel}\n`), `missing display heading ${commandLabel}`);
+    assert.ok(agents.includes(`- action: ${command.actionId}\n- workflowId: ${command.workflowId}\n- description: ${command.presentation.help}\n- workflow: ${workflowLabel}`), `missing display workflow mapping ${workflowLabel}`);
+  }
+  assert.equal(agents.includes(renderPresentationCatalog(core.presentation)), true);
+  assert.ok(new TextEncoder().encode(agents).byteLength < 32768);
+  assert.doesNotMatch(agents, /<\/?[A-Za-z][^>]*>|\u001b/iu);
+});
+
+test("Codex skill and role prompts carry one labeled invocation guide without changing machine identifiers", () => {
+  const result = resultFor();
+  const files = fileMap(result);
+  const skill = files.get(".agents/skills/using-all-about-agents/SKILL.md");
+  assert.match(skill, /^---\nname: using-all-about-agents\n/u);
+  assert.match(skill, /Using skill \*\*using-all-about-agents 🧰\*\* —/u);
+  assert.equal((skill.match(/^Checklist$/gmu) ?? []).length, 1);
+  const role = adapter.parseCodexToml(files.get(".codex/agents/reviewer.toml"));
+  assert.match(role.name, /^reviewer$/u);
+  assert.match(role.developer_instructions, /Invoking agent \*\*reviewer 👀\*\* —/u);
+  assert.equal((role.developer_instructions.match(/^Checklist$/gmu) ?? []).length, 1);
+  assert.doesNotMatch(role.developer_instructions, /<\/?[A-Za-z][^>]*>|\u001b/iu);
+  for (const skillId of core.inventory.skills) {
+    assert.match(files.get(`.agents/skills/${skillId}/SKILL.md`), new RegExp(`^---\\nname: ${skillId}\\n`, "u"));
+  }
 });
 
 test("Codex preserves supplied skill content and renders the final canonical skill", () => {
@@ -310,6 +352,10 @@ test("Codex maps each canonical role to a documented standalone TOML agent", () 
     assert.match(content, /^description = /mu);
     assert.match(content, /^developer_instructions = /mu);
     assert.doesNotMatch(content, /(?:^|\n)\s*(?:tools|nativeTool|spawn_agent|invoke_subagent|mcp__)\b/imu);
+    assert.doesNotMatch(`.codex/agents/${role}.toml`, /[^\x00-\x7F]/u, "native role path must keep its machine identifier plain");
+    const parsed = adapter.parseCodexToml(content);
+    assert.doesNotMatch(parsed.name, /[^\x00-\x7F]/u, "native agent name must keep its machine identifier plain");
+    for (const key of Object.keys(parsed)) assert.doesNotMatch(key, /[^\x00-\x7F]/u, "TOML keys must remain machine-readable");
   }
   assert.ok(result.registrations.some((entry) => entry.kind === "agents" && entry.destination === "agents"));
 });

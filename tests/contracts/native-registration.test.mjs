@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve, relative } from "node:path";
 import test, { after } from "node:test";
 
-import { planNativeRegistration, runNativeRegistration } from "../../installers/lib/native-registration.mjs";
+import { planNativeRegistration, runNativeRegistration, resolveNativeInstructionRoot } from "../../installers/lib/native-registration.mjs";
 import { renderClaudeStatuslineCommand } from "../../adapters/claude/adapter.mjs";
 import { hashBytes } from "../../installers/lib/hash.mjs";
 
@@ -26,9 +26,10 @@ after(async () => {
 async function fixture(profile = "template") {
   const root = await generatedTempRoot("aaa-t06-");
   const packageRoot = join(root, "package");
-  const productRoot = join(root, "product");
+  const instructionRoot = join(root, "gemini");
+  const productRoot = join(instructionRoot, "antigravity-cli");
   await mkdir(packageRoot);
-  await mkdir(productRoot);
+  await mkdir(productRoot, { recursive: true });
   await mkdir(join(packageRoot, ".claude-plugin"));
   await mkdir(join(packageRoot, ".codex-plugin"));
   await mkdir(join(packageRoot, ".agents", "plugins"), { recursive: true });
@@ -43,7 +44,9 @@ async function fixture(profile = "template") {
   await writeFile(join(packageRoot, ".agents", "plugins", "all-about-agents", "plugin.json"), "{}\n");
   await writeFile(join(packageRoot, "plugin.json"), "{}\n");
   await writeFile(join(packageRoot, "settings.overlay.json"), '{"statusLine":{"enabled":true}}\n');
+  await writeFile(join(packageRoot, "GEMINI.md"), "# Global instructions\n");
   await writeFile(join(packageRoot, "settings.json"), '{"permissions":{"defaultMode":"bypassPermissions"},"statusLine":{"type":"command","command":"stale-package-root-command"}}\n');
+  await writeFile(join(packageRoot, "CLAUDE.md"), "# Global instructions\n");
   await writeFile(join(packageRoot, "all-about-agents", "statusline.json"), '{"schemaVersion":1,"displayName":"Test"}\n');
   await writeFile(join(packageRoot, "statusline", "statusline.mjs"), "// renderer\n");
   await writeFile(join(packageRoot, "statusline", "track-tool.mjs"), "// tracker\n");
@@ -58,7 +61,7 @@ async function fixture(profile = "template") {
   const ownedPaths = (await treeBytes(packageRoot)).map(([relativePath, content]) => ({
     relativePath: relativePath.replaceAll("\\", "/"),
     sha256: hashBytes(Buffer.from(content, "base64"))
-  }));
+  })).sort((left, right) => left.relativePath === right.relativePath ? 0 : left.relativePath < right.relativePath ? -1 : 1);
   await mkdir(join(packageRoot, ".all-about-agents"), { recursive: true });
   await writeFile(join(packageRoot, ".all-about-agents", "state.json"), `${JSON.stringify({
     schemaVersion: 1,
@@ -67,7 +70,7 @@ async function fixture(profile = "template") {
     surfaces: ["agy", "antigravity-2", "claude", "codex"],
     ownedPaths
   })}\n`);
-  return { root, packageRoot, productRoot };
+  return { root, packageRoot, productRoot, instructionRoot };
 }
 
 async function treeBytes(root) {
@@ -89,6 +92,7 @@ function base(input, surface) {
     surface,
     packageRoot: input.packageRoot,
     productRoot: input.productRoot,
+    instructionRoot: surface === "agy" ? input.instructionRoot : input.productRoot,
     profile: "template",
     platform: process.platform,
     rendered: { files: [], registrations: [{ executable: "rm", args: ["-rf", "/"] }] }
@@ -98,9 +102,9 @@ function base(input, surface) {
 test("planner creates deterministic known actions for every surface", async () => {
   const input = await fixture();
   const expected = {
-    claude: ["claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list", "claude-reload"],
+    claude: ["claude-instructions-deploy", "claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list", "claude-reload"],
     codex: ["codex-instructions-deploy", "codex-config-deploy", "codex-terra-profile-deploy", "codex-agent-architect-deploy", "codex-agent-implementer-deploy", "codex-agent-investigator-deploy", "codex-agent-researcher-deploy", "codex-agent-reviewer-deploy", "codex-agent-security-reviewer-deploy", "codex-agent-verifier-deploy", "codex-marketplace-add", "codex-plugin-install", "codex-plugin-list", "codex-hooks-trust"],
-    agy: ["agy-plugin-install", "agy-plugin-list", "agy-settings-overlay", "agy-reload"],
+    agy: ["gemini-instructions-deploy", "agy-plugin-install", "agy-plugin-list", "agy-settings-overlay", "agy-reload"],
     "antigravity-2": ["desktop-manual-registration"]
   };
   for (const [surface, ids] of Object.entries(expected)) {
@@ -191,18 +195,46 @@ test("planner emits exact structured argv and ignores rendered executable metada
 test("planner keeps agy settings on the exact documented destination", async () => {
   const input = await fixture();
   const plan = base(input, "agy");
-  const overlay = plan.actions[2];
+  const instruction = plan.actions[0];
+  assert.equal(instruction.kind, "file-copy");
+  assert.equal(instruction.sourcePath, resolve(input.packageRoot, "GEMINI.md"));
+  assert.equal(instruction.targetPath, resolve(input.instructionRoot, "GEMINI.md"));
+  assert.equal(instruction.allowedRoot, input.instructionRoot);
+  assert.equal(instruction.expectedSourceHash, hashBytes(Buffer.from("# Global instructions\n")));
+  const overlay = plan.actions[3];
   assert.equal(overlay.kind, "settings-overlay");
   assert.equal(overlay.targetPath, resolve(input.productRoot, "settings.json"));
   assert.equal(overlay.overlayPath, resolve(input.packageRoot, "settings.overlay.json"));
   assert.equal(overlay.automaticWrite, true);
-  assert.deepEqual(plan.actions.slice(0, 2).map((action) => action.args), [["plugin", "install", input.packageRoot], ["plugin", "list"]]);
+  assert.deepEqual(plan.actions.slice(1, 3).map((action) => action.args), [["plugin", "install", input.packageRoot], ["plugin", "list"]]);
+  assert.notEqual(plan.productRoot, plan.instructionRoot);
+});
+
+test("native instruction roots map to the documented surface roots", async () => {
+  const home = process.platform === "win32" ? "C:\\Users\\fixture" : "/Users/fixture";
+  assert.equal(resolveNativeInstructionRoot("claude", { env: {}, homeDir: home, platform: process.platform }), process.platform === "win32" ? "C:\\Users\\fixture\\.claude" : "/Users/fixture/.claude");
+  assert.equal(resolveNativeInstructionRoot("codex", { env: {}, homeDir: home, platform: process.platform }), process.platform === "win32" ? "C:\\Users\\fixture\\.codex" : "/Users/fixture/.codex");
+  assert.equal(resolveNativeInstructionRoot("agy", { homeDir: home, platform: process.platform }), process.platform === "win32" ? "C:\\Users\\fixture\\.gemini" : "/Users/fixture/.gemini");
+  assert.equal(resolveNativeInstructionRoot("antigravity-2", { homeDir: home, platform: process.platform }), null);
+});
+
+test("agy plan rejects product and instruction root confusion", async () => {
+  const input = await fixture();
+  assert.throws(
+    () => planNativeRegistration({ ...input, surface: "agy", instructionRoot: input.productRoot, profile: "template" }),
+    (error) => error.code === "root-confusion"
+  );
+  assert.throws(
+    () => planNativeRegistration({ ...input, surface: "agy", instructionRoot: input.root, profile: "template" }),
+    (error) => error.code === "root-confusion"
+  );
 });
 
 test("planner deploys the Claude and Codex runtime config needed by the installed package", async () => {
   const input = await fixture();
   const claudeCopies = base(input, "claude").actions.filter((action) => action.kind === "file-copy");
   assert.deepEqual(claudeCopies.map(({ sourcePath, targetPath, mode, transform }) => [relative(input.packageRoot, sourcePath), relative(input.productRoot, targetPath), mode, transform ?? null]), [
+    ["CLAUDE.md", "CLAUDE.md", null, null],
     ["settings.json", "settings.json", null, "claude-statusline-product-root"],
     [join("all-about-agents", "statusline.json"), join("all-about-agents", "statusline.json"), null, null],
     [join("statusline", "statusline.mjs"), join("statusline", "statusline.mjs"), 0o755, null],
@@ -297,8 +329,67 @@ test("dry-run reports the full plan without process or settings writes", async (
   });
   assert.equal(report.status, "dry-run");
   assert.equal(calls, 0);
-  assert.deepEqual(report.actions.map((action) => action.status), ["planned", "planned", "planned", "manual-required"]);
+  assert.deepEqual(report.actions.map((action) => action.status), ["planned", "planned", "planned", "planned", "manual-required"]);
   assert.deepEqual(await treeBytes(input.root), before);
+});
+
+test("agy instruction deployment overwrites exactly and is unchanged on the second apply", async () => {
+  const input = await fixture();
+  const target = join(input.instructionRoot, "GEMINI.md");
+  await writeFile(target, "old instructions\n");
+  const plan = base(input, "agy");
+  const first = await runNativeRegistration(plan, {
+    mode: "apply",
+    runProcess: async () => ({ exitCode: 0, stdout: "", stderr: "" })
+  });
+  assert.equal(first.status, "complete");
+  assert.equal(await readFile(target, "utf8"), "# Global instructions\n");
+  const firstAction = first.actions.find((action) => action.id === "gemini-instructions-deploy");
+  assert.deepEqual(firstAction.result, { bytes: 22, sha256: hashBytes(Buffer.from("# Global instructions\n")), overwrite: true, changed: true });
+  const second = await runNativeRegistration(plan, {
+    mode: "apply",
+    runProcess: async () => ({ exitCode: 0, stdout: "", stderr: "" })
+  });
+  assert.equal(second.status, "complete");
+  const secondAction = second.actions.find((action) => action.id === "gemini-instructions-deploy");
+  assert.deepEqual(secondAction.result, { bytes: 22, sha256: hashBytes(Buffer.from("# Global instructions\n")), overwrite: false, changed: false });
+});
+
+test("agy instruction copy failure blocks plugin and settings actions", async () => {
+  const input = await fixture();
+  let processCalls = 0;
+  const report = await runNativeRegistration(base(input, "agy"), {
+    mode: "apply",
+    runProcess: async () => { processCalls += 1; return { exitCode: 0, stdout: "", stderr: "" }; },
+    fileSystem: { writeFile: async () => { throw Object.assign(new Error("instruction copy failed"), { code: "copy-failed" }); } }
+  });
+  assert.equal(report.status, "failed");
+  assert.equal(report.failed.action.id, "gemini-instructions-deploy");
+  assert.equal(processCalls, 0);
+  assert.deepEqual(report.notAttempted.map((action) => action.id), ["agy-plugin-install", "agy-plugin-list", "agy-settings-overlay", "agy-reload"]);
+});
+
+test("agy instruction deployment rejects a symlink destination before native commands", async () => {
+  const input = await fixture();
+  const outside = await generatedTempRoot("aaa-t06-outside-file-");
+  const outsideFile = join(outside, "outside.md");
+  const target = join(input.instructionRoot, "GEMINI.md");
+  await writeFile(outsideFile, "must-not-change\n");
+  try {
+    await (await import("node:fs/promises")).symlink(outsideFile, target, "file");
+  } catch {
+    return;
+  }
+  let processCalls = 0;
+  const report = await runNativeRegistration(base(input, "agy"), {
+    mode: "apply",
+    runProcess: async () => { processCalls += 1; return { exitCode: 0, stdout: "", stderr: "" }; }
+  });
+  assert.equal(report.status, "failed");
+  assert.equal(report.failed.action.id, "gemini-instructions-deploy");
+  assert.equal(report.error.code, "unsafe-destination");
+  assert.equal(processCalls, 0);
+  assert.equal(await readFile(outsideFile, "utf8"), "must-not-change\n");
 });
 
 test("apply stops at the first required process failure and reports a partial result", async () => {
@@ -340,8 +431,8 @@ test("successful reports keep manual actions out of completed execution", async 
   const input = await fixture();
   const cases = [
     ["codex", ["codex-instructions-deploy", "codex-config-deploy", "codex-terra-profile-deploy", "codex-agent-architect-deploy", "codex-agent-implementer-deploy", "codex-agent-investigator-deploy", "codex-agent-researcher-deploy", "codex-agent-reviewer-deploy", "codex-agent-security-reviewer-deploy", "codex-agent-verifier-deploy", "codex-marketplace-add", "codex-plugin-install", "codex-plugin-list"]],
-    ["claude", ["claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list"]],
-    ["agy", ["agy-plugin-install", "agy-plugin-list", "agy-settings-overlay"]]
+    ["claude", ["claude-instructions-deploy", "claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list"]],
+    ["agy", ["gemini-instructions-deploy", "agy-plugin-install", "agy-plugin-list", "agy-settings-overlay"]]
   ];
   for (const [surface, executedIds] of cases) {
     const report = await runNativeRegistration(base(input, surface), {
@@ -551,9 +642,9 @@ test("apply fails closed when native process output exceeds the bounded capture"
     mode: "apply",
     runProcess: async () => ({ exitCode: 0, stdout: "truncated", stderr: "", outputTooLarge: true })
   });
-  assert.equal(report.status, "failed");
+  assert.equal(report.status, "partial");
   assert.equal(report.error.code, "native-process-output-too-large");
-  assert.equal(report.completed.length, 0);
+  assert.deepEqual(report.completed.map((action) => action.id), ["gemini-instructions-deploy"]);
 });
 
 test("agy apply merges settings and preserves the unknown existing key", async () => {
@@ -571,12 +662,16 @@ test("agy apply merges settings and preserves the unknown existing key", async (
 
 test("apply atomically overwrites approved Claude and Codex config destinations", async () => {
   const input = await fixture();
+  await writeFile(join(input.productRoot, "CLAUDE.md"), "old instructions\n");
   await writeFile(join(input.productRoot, "settings.json"), '{"old":true}\n');
   const claude = await runNativeRegistration(base(input, "claude"), {
     mode: "apply",
     runProcess: async () => ({ exitCode: 0, stdout: "{}", stderr: "" })
   });
   assert.equal(claude.status, "complete");
+  assert.equal(await readFile(join(input.productRoot, "CLAUDE.md"), "utf8"), "# Global instructions\n");
+  const productEntries = await (await import("node:fs/promises")).readdir(input.productRoot);
+  assert.equal(productEntries.some((entry) => entry.includes("backup")), false);
   const installedClaudeSettings = JSON.parse(await readFile(join(input.productRoot, "settings.json"), "utf8"));
   assert.deepEqual(installedClaudeSettings.permissions, { defaultMode: "bypassPermissions" });
   assert.equal(installedClaudeSettings.statusLine.command, renderClaudeStatuslineCommand({ configRoot: input.productRoot, platform: process.platform }));

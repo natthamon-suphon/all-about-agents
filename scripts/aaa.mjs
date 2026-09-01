@@ -18,7 +18,7 @@ import { hashBytes } from "../installers/lib/hash.mjs";
 import { validateRenderResult } from "../adapters/shared/adapter-contract.mjs";
 import { diagnose, SURFACES as DOCTOR_SURFACES } from "../installers/lib/doctor.mjs";
 import { formatDiffText, formatPlanText, serializeReport } from "../installers/lib/report.mjs";
-import { planNativeRegistration, runNativeRegistration, resolveNativeProductRoot, formatNativeRegistrationText } from "../installers/lib/native-registration.mjs";
+import { planNativeRegistration, runNativeRegistration, resolveNativeProductRoot, resolveNativeInstructionRoot, formatNativeRegistrationText } from "../installers/lib/native-registration.mjs";
 import { runProcess } from "./lib/process-runner.mjs";
 
 const HELP_TEXT = [
@@ -297,15 +297,26 @@ function resolveRegistrationRoot(value, label, base) {
 async function registerNative(options, output, errorOutput, cwd, invocationCwd, runtime) {
   try {
     const packageRoot = resolveRegistrationRoot(options.packageRoot, "--package-root", invocationCwd);
+    const productOverride = typeof runtime.productRoot === "string"
+      ? resolveRegistrationRoot(runtime.productRoot, "productRoot", invocationCwd)
+      : null;
     const productRoot = runtime.productRoot === null
       ? null
-      : typeof runtime.productRoot === "string"
-        ? resolveRegistrationRoot(runtime.productRoot, "productRoot", invocationCwd)
+      : productOverride !== null
+        ? productOverride
         : resolveNativeProductRoot(options.surfaces[0], { env: process.env, homeDir: homedir(), platform: process.platform });
+    const instructionRoot = runtime.instructionRoot === null
+      ? null
+      : typeof runtime.instructionRoot === "string"
+        ? resolveRegistrationRoot(runtime.instructionRoot, "instructionRoot", invocationCwd)
+        : productOverride !== null && ["claude", "codex"].includes(options.surfaces[0])
+          ? productRoot
+          : resolveNativeInstructionRoot(options.surfaces[0], { env: process.env, homeDir: homedir(), platform: process.platform });
     const plan = planNativeRegistration({
       surface: options.surfaces[0],
       packageRoot,
       productRoot,
+      instructionRoot,
       profile: options.profile,
       platform: process.platform,
       rendered: runtime.rendered

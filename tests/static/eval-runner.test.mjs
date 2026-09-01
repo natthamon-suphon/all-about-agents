@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
@@ -222,5 +222,16 @@ test("CLI rejects missing input, malformed JSONL, duplicate IDs, wrong counts, t
 
 test("CLI does not depend on a vendor model transport", async () => {
   const source = await readFile(resolve(process.cwd(), "core/evals/runner.mjs"), "utf8");
+  assert.doesNotMatch(source, /fetch\(|axios|openai|anthropic|gemini|codex|claude/iu);
+});
+
+test("presentation trace evaluation artifacts remain in the core eval boundary", async () => {
+  for (const relativePath of [
+    "core/evals/presentation-trace.mjs",
+    "core/evals/presentation-trace.schema.json",
+    "core/evals/scenarios/presentation-contract.json",
+    "tests/behavioral/presentation-contract.test.mjs"
+  ]) await access(resolve(process.cwd(), relativePath));
+  const source = await readFile(resolve(process.cwd(), "core/evals/presentation-trace.mjs"), "utf8");
   assert.doesNotMatch(source, /fetch\(|axios|openai|anthropic|gemini|codex|claude/iu);
 });

@@ -1,13 +1,33 @@
 import assert from "node:assert/strict";
 import { mkdir, readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import test from "node:test";
 
 import { main } from "../../scripts/aaa.mjs";
+import { loadCore } from "../../installers/lib/load-core.mjs";
+import { renderForSurface } from "../../installers/lib/render.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
 
 const SURFACES = ["claude", "codex", "antigravity-2", "agy"];
 const NAMESPACES = new Set(SURFACES.map((surface) => `${surface}/`));
+
+function manifestPatternRegex(pattern) {
+  const tokens = [];
+  const marker = (value) => {
+    tokens.push(value);
+    return `\u0000${tokens.length - 1}\u0000`;
+  };
+  let escaped = String(pattern).replaceAll("<plugin>", marker("[^/]+"));
+  for (const name of ["skill", "role", "command", "rule", "name"]) escaped = escaped.replaceAll(`{${name}}`, marker("[^/]+"));
+  escaped = escaped.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  for (let index = 0; index < tokens.length; index += 1) escaped = escaped.replace(`${String.fromCharCode(0)}${index}${String.fromCharCode(0)}`, tokens[index]);
+  if (escaped.endsWith("/\\*\\*")) escaped = `${escaped.slice(0, -5)}(?:/.*)?`;
+  return new RegExp(`^${escaped}$`, "u");
+}
+
+function manifestOwns(manifest, relativePath) {
+  return manifest.ownedPaths.some((pattern) => manifestPatternRegex(pattern).test(relativePath));
+}
 
 async function runCli(args) {
   let stdout = "";
@@ -88,6 +108,8 @@ test("explicit all-surface apply is namespaced and idempotent", async () => {
     const afterFirst = await snapshotTree(root);
     const installed = Object.keys(afterFirst).filter((relativePath) => relativePath !== ".all-about-agents/state.json");
     assertNamespaced(installed);
+    assert.ok(afterFirst["antigravity-2/GEMINI.md"], "Desktop global instructions must remain at the package root for manual review and copy");
+    assert.equal(installed.some((relativePath) => relativePath.startsWith("antigravity-2/~/")), false, "aggregate packages must not materialize a literal home-marker directory");
     assert.ok(afterFirst[".all-about-agents/state.json"], "aggregate ownership state must be written");
     const state = JSON.parse(Buffer.from(afterFirst[".all-about-agents/state.json"], "base64").toString("utf8"));
     assert.deepEqual(new Set(state.surfaces), new Set(SURFACES));
@@ -149,4 +171,24 @@ test("automatic all-surface apply fails before mutating discovered roots", async
       else process.env.CODEX_HOME = previousCodex;
     }
   });
+});
+
+test("every rendered surface file is declared by its manifest ownership patterns", async () => {
+  const core = await loadCore(process.cwd());
+  for (const surface of SURFACES) {
+    const manifest = JSON.parse(await readFile(resolve(process.cwd(), `installers/manifests/${surface}.json`), "utf8"));
+    for (const profile of ["portable", "template"]) {
+      const result = await renderForSurface({
+        repositoryRoot: process.cwd(),
+        core,
+        surface,
+        profile,
+        statuslineName: "",
+        platform: "win32",
+        targetRuntime: surface === "codex" ? "cli" : undefined
+      });
+      const uncovered = result.files.map((file) => file.relativePath).filter((path) => !manifestOwns(manifest, path));
+      assert.deepEqual(uncovered, [], `${surface}/${profile} has files outside manifest ownership: ${uncovered.join(", ")}`);
+    }
+  }
 });

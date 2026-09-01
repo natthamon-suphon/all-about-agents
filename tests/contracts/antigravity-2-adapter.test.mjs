@@ -6,6 +6,9 @@ import test from "node:test";
 
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { AdapterContractError } from "../../adapters/shared/adapter-contract.mjs";
+import { renderGeminiGlobalInstructions } from "../../adapters/shared/global-instructions.mjs";
+import { displayLabel } from "../../installers/lib/presentation-contract.mjs";
+import { materializeRenderResult } from "../../installers/lib/render.mjs";
 
 const requiredOutputs = [
   "adapters/antigravity-2/adapter.mjs",
@@ -32,6 +35,46 @@ function fileMap(result) {
 function sha256(content) {
   return createHash("sha256").update(content).digest("hex");
 }
+
+test("Desktop emits the canonical package-root GEMINI.md with shared presentation guidance", () => {
+  const portable = resultFor("portable");
+  const template = resultFor("template");
+  const portableFiles = fileMap(portable);
+  const templateFiles = fileMap(template);
+  const expected = renderGeminiGlobalInstructions(core);
+  assert.equal(portableFiles.get("GEMINI.md"), expected);
+  assert.equal(templateFiles.get("GEMINI.md"), expected);
+  assert.equal(sha256(portableFiles.get("GEMINI.md")), sha256(templateFiles.get("GEMINI.md")));
+  assert.equal([...expected].length < 12000, true);
+  assert.match(expected, /[^\n]\n$/u);
+  assert.doesNotMatch(expected, /<\/?[A-Za-z][^>]*>|@keyframes|animation\s*:/iu);
+  assert.doesNotMatch(expected, /\u001b/u);
+
+  const rules = portableFiles.get(".agents/plugins/all-about-agents/rules/AGENTS.md");
+  assert.equal((rules.match(/Presentation catalog/gu) || []).length, 1);
+  assert.match(rules, /brainstorming 🧠/u);
+  assert.match(rules, /architect 🏛️/u);
+  assert.match(rules, /default 🤖/u);
+  assert.match(rules, /Dynamic subagent names stay unchanged/u);
+  assert.equal(displayLabel(core.presentation, "subagent", "runtime-worker"), "runtime-worker 🤖");
+  assert.match(portableFiles.get(".agents/plugins/all-about-agents/skills/brainstorming/SKILL.md"), /Using skill \*\*brainstorming 🧠\*\* —/u);
+  assert.match(portableFiles.get(".agents/plugins/all-about-agents/agents/architect.md"), /Invoking agent \*\*architect 🏛️\*\* —/u);
+  assert.equal(portableFiles.has("settings.json"), false);
+  assert.equal(portableFiles.has("config/settings.json"), false);
+});
+
+test("Desktop manual global instructions stay at the package root until an authorized native copy", () => {
+  const rendered = resultFor("portable");
+  const registration = rendered.registrations.find((entry) => entry.kind === "instructions" && entry.surface === "antigravity-2-desktop");
+  assert.ok(registration);
+  assert.equal(registration.manualDestination, "~/.gemini/GEMINI.md");
+  assert.equal(Object.hasOwn(registration, "destination"), false, "manual Desktop metadata must not trigger package materialization");
+
+  const materialized = materializeRenderResult(rendered);
+  const paths = materialized.files.map((file) => file.relativePath);
+  assert.ok(paths.includes("GEMINI.md"), "the installable package must retain its canonical root GEMINI.md");
+  assert.equal(paths.some((relativePath) => relativePath === "~" || relativePath.startsWith("~/")), false, "a portable package must never contain a literal home-marker directory");
+});
 
 function resultFor(profileId = "portable", overrides = {}) {
   return adapter.renderAntigravity({
@@ -91,7 +134,7 @@ test("Desktop render rejects CLI paths and effort flags in decoded file bodies",
     "CLI flag leak: --effort high"
   ]) {
     const poisonedCore = JSON.parse(JSON.stringify(core));
-    poisonedCore.skills = [{ id: "poisoned", content: `---\ndescription: poisoned\n---\n\n${forbiddenBody}\n` }];
+    poisonedCore.skills = [{ id: "brainstorming", content: `---\ndescription: poisoned\n---\n\n${forbiddenBody}\n` }];
     assert.throws(
       () => adapter.renderAntigravity({ core: poisonedCore, profile: { id: "portable" }, statuslineName: "" }),
       /forbidden Desktop content/iu
@@ -299,6 +342,13 @@ test("Desktop manifest documents workspace/global discovery and no serialized se
   assert.equal(manifest.discovery.global, "~/.gemini/config/plugins/<plugin>/");
   assert.equal(manifest.components.rules, ".agents/plugins/<plugin>/rules/AGENTS.md");
   assert.equal(manifest.components.hooks, ".agents/plugins/<plugin>/hooks.json");
+  assert.deepEqual(manifest.components.globalInstructions, {
+    package: "GEMINI.md",
+    destination: "~/.gemini/GEMINI.md",
+    registration: "manual-copy",
+    automaticWrite: false
+  });
+  assert.ok(manifest.ownedPaths.includes("GEMINI.md"));
   assert.equal(manifest.components.agents.path, ".agents/plugins/<plugin>/agents/{role}.md");
   assert.equal(manifest.nativeValidation.status, "partial");
   assert.equal(manifest.nativeValidation.productVersion, "2.11.0");

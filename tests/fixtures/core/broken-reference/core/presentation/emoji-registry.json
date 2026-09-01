@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "skills": { "alpha": { "emoji": "🅰️" } },
+  "roles": {},
+  "subagents": { "default": { "emoji": "🤖" } },
+  "commands": {},
+  "workflows": {},
+  "hooks": { "activity-audit": { "emoji": "🧾" }, "bootstrap": { "emoji": "🚀" }, "checkpoint": { "emoji": "💾" }, "emergency-guard": { "emoji": "🛡️" } },
+  "profiles": { "portable": { "emoji": "🧳" }, "template": { "emoji": "⚙️" } }
+}

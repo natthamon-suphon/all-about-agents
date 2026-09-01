@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Presentation registry or progress contract",
+  "oneOf": [
+    { "$ref": "#/$defs/emojiRegistry" },
+    { "$ref": "#/$defs/progressContract" }
+  ],
+  "$defs": {
+    "emojiEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["emoji"],
+      "properties": { "emoji": { "type": "string", "minLength": 1 } }
+    },
+    "emojiCategory": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/emojiEntry" }
+    },
+    "emojiRegistry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "skills", "roles", "subagents", "commands", "workflows", "hooks", "profiles"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "skills": { "$ref": "#/$defs/emojiCategory" },
+        "roles": { "$ref": "#/$defs/emojiCategory" },
+        "subagents": { "$ref": "#/$defs/emojiCategory" },
+        "commands": { "$ref": "#/$defs/emojiCategory" },
+        "workflows": { "$ref": "#/$defs/emojiCategory" },
+        "hooks": { "$ref": "#/$defs/emojiCategory" },
+        "profiles": { "$ref": "#/$defs/emojiCategory" }
+      }
+    },
+    "progressState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["emoji", "terminal"],
+      "properties": {
+        "emoji": { "type": "string", "minLength": 1 },
+        "terminal": { "type": "boolean" },
+        "reasonRequired": { "type": "boolean" }
+      }
+    },
+    "progressStates": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/progressState" }
+    },
+    "progressContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "states", "minItems", "maxItems", "maxSequentialInProgress", "updateOnlyOnStateChange", "terminalCompletionRequired"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "states": { "$ref": "#/$defs/progressStates" },
+        "minItems": { "type": "integer", "minimum": 2 },
+        "maxItems": { "type": "integer", "maximum": 7 },
+        "maxSequentialInProgress": { "type": "integer", "minimum": 1 },
+        "updateOnlyOnStateChange": { "type": "boolean", "const": true },
+        "terminalCompletionRequired": { "type": "boolean", "const": true }
+      }
+    }
+  }
+}

@@ -19,6 +19,24 @@ native tool registered, trusted, active, or runtime verified the skill. Use
 The canonical source is `core/skills/<skill-name>/`. Do not edit a generated
 Claude, Codex, Antigravity, or `agy` copy as the source.
 
+## New-skill update flow
+
+Use this order when adding a skill:
+
+1. Update the canonical skill content under `core/skills/<skill-name>/`.
+2. Update `core/inventory.json` and the `emoji registry` when the skill is
+   new or its presentation changes.
+3. Add or update a behavior scenario when the skill changes behavior.
+4. Render all surfaces and both profiles in disposable roots.
+5. Run the focused skill test, then the package and repository tests.
+6. Record exact evidence in checkpoints or a handoff.
+7. Commit/push only on the author machine after explicit Git authority.
+
+On a receiving machine, pull the approved commit and repeat validation,
+rendering, dry-run, package apply, registration dry-run, explicit registration
+apply, restart, and native verification in that order. A pull never installs a
+skill or changes live configuration.
+
 Review these items together:
 
 - `SKILL.md`

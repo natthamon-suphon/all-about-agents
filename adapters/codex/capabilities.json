@@ -5,6 +5,33 @@
   "productVersion": "0.151.0-alpha.7.2",
   "capabilities": [
     {
+      "feature": "instructions.global",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-codex.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
+      "value": {
+        "package": "AGENTS.md",
+        "destination": "$CODEX_HOME/AGENTS.md",
+        "consumers": ["codex-cli", "codex-desktop"]
+      },
+      "notes": "The canonical global body is rendered once at the start of AGENTS.md; project and plugin rules remain more specific layers."
+    },
+    {
+      "feature": "presentation.invocation",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/maintenance/cross-tool-quality.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "0.151.0-alpha.7.2",
+      "value": {
+        "registry": "core/presentation/emoji-registry.json",
+        "checklists": "core/presentation/progress-contract.json"
+      },
+      "notes": "Rendered labels are display text only. Native IDs, TOML keys, and file paths remain unchanged."
+    },
+    {
       "feature": "model.primary",
       "support": "supported",
       "stability": "stable",

@@ -9,6 +9,12 @@
   "installedPluginRoot": "~/.gemini/antigravity-cli/plugins/all-about-agents/",
   "components": {
     "pluginManifest": "plugin.json",
+    "globalInstructions": {
+      "package": "GEMINI.md",
+      "destination": "~/.gemini/GEMINI.md",
+      "registration": "register --apply",
+      "automaticWrite": true
+    },
     "hooks": "hooks.json",
     "skills": "skills/{skill}/SKILL.md",
     "agents": "agents/{role}/agent.md",
@@ -180,6 +186,20 @@
       "manualStep": "Use a manually authored agy prompt or operation only after verifying the installed CLI."
     }
   },
+  "ownedPaths": [
+    "GEMINI.md",
+    "README.md",
+    "activity-audit.json",
+    "agents/{role}/**",
+    "checkpoint.json",
+    "emergency-guard.json",
+    "hooks.json",
+    "plugin.json",
+    "rules/**",
+    "settings.overlay.json",
+    "skills/{skill}/**",
+    "statusline/**"
+  ],
   "nativeValidation": {
     "status": "partial",
     "product": "agy CLI",

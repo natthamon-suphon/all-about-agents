@@ -5,6 +5,20 @@
   "productVersion": "2.11.0",
   "capabilities": [
     {
+      "feature": "instructions.global",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "2.11.0",
+      "value": {
+        "package": "GEMINI.md",
+        "destination": "~/.gemini/GEMINI.md",
+        "registration": "manual-copy"
+      },
+      "notes": "The package renders the documented shared global instruction file. Desktop registration remains one exact manual copy step; no Desktop settings schema is inferred."
+    },
+    {
       "feature": "model.desktop",
       "support": "manual",
       "stability": "manual",

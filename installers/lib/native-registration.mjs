@@ -1,5 +1,5 @@
-import { lstatSync, readFileSync } from "node:fs";
-import { readFile as defaultReadFile } from "node:fs/promises";
+import { lstatSync, readFileSync, realpathSync } from "node:fs";
+import { lstat as defaultLstat, readFile as defaultReadFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, relative, resolve, join } from "node:path";
 
@@ -7,7 +7,7 @@ import { renderClaudeStatuslineCommand, resolveClaudeConfigDir } from "../../ada
 import { resolveCodexHome } from "../../adapters/codex/adapter.mjs";
 import { resolveAgyConfigDir } from "../../adapters/agy/adapter.mjs";
 import { ANTIGRAVITY_PERMISSION_POLICY } from "../../adapters/antigravity-2/adapter.mjs";
-import { assertSafeDestinationRoot } from "./roots.mjs";
+import { assertSafeDestinationRoot, resolveGeminiHome } from "./roots.mjs";
 import { mergeSettingsOverlay } from "./settings-overlay.mjs";
 import { atomicReplaceFile } from "./atomic-write.mjs";
 import { hashBytes } from "./hash.mjs";
@@ -47,19 +47,55 @@ function safeRoot(value, label, { required = false } = {}) {
   return root;
 }
 
+function canonicalRoot(value) {
+  const normalized = resolve(value);
+  try {
+    return resolve(realpathSync.native(normalized));
+  } catch (error) {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return normalized;
+    throw pathError("unreadable-root", "unable to canonicalize native destination root");
+  }
+}
+
+function sameRoot(left, right) {
+  if (typeof left !== "string" || typeof right !== "string") return false;
+  const leftCanonical = canonicalRoot(left);
+  const rightCanonical = canonicalRoot(right);
+  return process.platform === "win32"
+    ? leftCanonical.toLowerCase() === rightCanonical.toLowerCase()
+    : leftCanonical === rightCanonical;
+}
+
+function assertRootPair(surface, productRoot, instructionRoot) {
+  if (surface === "antigravity-2") {
+    if (productRoot !== null || instructionRoot !== null) throw pathError("unexpected-root", "Antigravity Desktop registration has no automatic native root");
+    return;
+  }
+  if (typeof productRoot !== "string" || typeof instructionRoot !== "string") throw pathError("instruction-root-required", "native registration requires both productRoot and instructionRoot");
+  if (surface === "claude" || surface === "codex") {
+    if (!sameRoot(productRoot, instructionRoot)) throw pathError("root-confusion", `${surface} productRoot and instructionRoot must be the same canonical path`);
+    return;
+  }
+  if (surface !== "agy") throw pathError("unsupported-surface", `unsupported registration surface: ${surface}`);
+  if (sameRoot(productRoot, instructionRoot)) throw pathError("root-confusion", "agy productRoot and instructionRoot must be distinct");
+  if (basename(productRoot).toLowerCase() !== "antigravity-cli" || !sameRoot(dirname(productRoot), instructionRoot)) {
+    throw pathError("root-confusion", "agy productRoot must be the antigravity-cli directory directly inside instructionRoot");
+  }
+}
+
 function requiredPackageFiles(surface) {
   return surface === "claude"
     ? [".claude-plugin/plugin.json", ".claude-plugin/marketplace.json"]
     : surface === "codex"
       ? [".codex-plugin/plugin.json", ".agents/plugins/marketplace.json"]
       : surface === "agy"
-        ? ["plugin.json", "settings.overlay.json"]
+        ? ["plugin.json", "settings.overlay.json", "GEMINI.md"]
         : [".agents/plugins/all-about-agents/plugin.json"];
 }
 
 function requiredRegistrationSourceFiles(surface, profile) {
   const markers = requiredPackageFiles(surface);
-  if (surface === "claude") return [...markers, "settings.json", "all-about-agents/statusline.json", "statusline/statusline.mjs", "statusline/track-tool.mjs", "statusline/statusline.ps1", "statusline/statusline.sh"];
+  if (surface === "claude") return [...markers, "CLAUDE.md", "settings.json", "all-about-agents/statusline.json", "statusline/statusline.mjs", "statusline/track-tool.mjs", "statusline/statusline.ps1", "statusline/statusline.sh"];
   if (surface === "codex") return [...markers, "AGENTS.md", "config.toml", ...(profile === "template" ? ["terra-max.config.toml"] : []), ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.toml`)];
   return markers;
 }
@@ -145,16 +181,16 @@ function manualAction(id, message) {
   return { id, kind: "manual", mutates: false, required: false, message };
 }
 
-function fileCopyAction(id, packageRoot, productRoot, sourceRelativePath, destinationRelativePath, { mode = null, transform = null, expectedSourceHash } = {}) {
+function fileCopyAction(id, packageRoot, destinationRoot, sourceRelativePath, destinationRelativePath, { mode = null, transform = null, expectedSourceHash, allowedRoot = destinationRoot } = {}) {
   if (!(mode === null || (Number.isInteger(mode) && mode >= 0 && mode <= 0o777))) throw new TypeError("native config copy mode must be null or a Unix mode from 0 through 0777");
   if (!(transform === null || transform === "claude-statusline-product-root")) throw new TypeError("unsupported native config copy transform");
   if (typeof expectedSourceHash !== "string" || !SHA256.test(expectedSourceHash)) throw new TypeError("native config copy requires a managed source hash");
   const sourcePath = checkPackageFile(packageRoot, sourceRelativePath);
-  const targetPath = resolve(productRoot, ...destinationRelativePath.split("/"));
-  const suffix = relative(productRoot, targetPath);
-  if (isAbsolute(suffix) || suffix.split(/[\\/]/u)[0] === "..") throw pathError("destination-escape", "native config destination escapes the product root");
-  assertSafeDestinationRoot(dirname(targetPath), { allowedProductRoots: [productRoot] });
-  return { id, kind: "file-copy", sourcePath, sourceRelativePath, expectedSourceHash, targetPath, destinationRelativePath, allowedRoot: productRoot, mode, transform, mutates: true, required: true, expectedProbe: "hash-verified-overwrite", automaticWrite: true };
+  const targetPath = resolve(destinationRoot, ...destinationRelativePath.split("/"));
+  const suffix = relative(destinationRoot, targetPath);
+  if (isAbsolute(suffix) || suffix.split(/[\\/]/u)[0] === "..") throw pathError("destination-escape", "native config destination escapes the selected native root");
+  assertSafeDestinationRoot(dirname(targetPath), { allowedProductRoots: [allowedRoot] });
+  return { id, kind: "file-copy", sourcePath, sourceRelativePath, expectedSourceHash, targetPath, destinationRelativePath, allowedRoot, mode, transform, mutates: true, required: true, expectedProbe: "hash-verified-overwrite", automaticWrite: true };
 }
 
 function lifecycle(surface) {
@@ -187,7 +223,7 @@ function assertRenderedConsistency(rendered, surface) {
 }
 
 /** Build a deterministic plan from fixed, reviewed product command builders. */
-export function planNativeRegistration({ surface, packageRoot, productRoot, profile, platform = process.platform, rendered } = {}) {
+export function planNativeRegistration({ surface, packageRoot, productRoot, instructionRoot, profile, platform = process.platform, rendered } = {}) {
   if (!SURFACE_SET.has(surface)) throw pathError("unsupported-surface", `unsupported registration surface: ${String(surface)}`);
   if (!PROFILE_SET.has(profile)) throw pathError("invalid-profile", "profile must be portable or template");
   if (typeof platform !== "string" || !platform.trim()) throw new TypeError("platform must be a non-empty string");
@@ -197,13 +233,19 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, prof
   for (const relativePath of requiredPackageFiles(surface)) checkPackageFile(pkg, relativePath);
   const managedPackage = validateManagedPackage(pkg, surface, profile);
   const product = surface === "antigravity-2" ? null : safeRoot(productRoot, "productRoot");
+  if (surface === "agy" && (typeof instructionRoot !== "string" || instructionRoot.trim() === "")) throw pathError("instruction-root-required", "agy registration requires a separately resolved instructionRoot");
+  const instruction = surface === "antigravity-2"
+    ? null
+    : safeRoot(instructionRoot ?? (surface === "agy" ? undefined : product), "instructionRoot");
+  assertRootPair(surface, product, instruction);
   const actions = [];
-  const deployFile = (id, sourceRelativePath, destinationRelativePath, options = {}) => fileCopyAction(id, pkg, product, sourceRelativePath, destinationRelativePath, {
+  const deployFile = (id, sourceRelativePath, destinationRelativePath, options = {}, destinationRoot = product) => fileCopyAction(id, pkg, destinationRoot, sourceRelativePath, destinationRelativePath, {
     ...options,
     expectedSourceHash: managedPackage.ownership.get(`${managedPackage.ownershipPrefix}${sourceRelativePath}`)
   });
 
   if (surface === "claude") {
+    actions.push(deployFile("claude-instructions-deploy", "CLAUDE.md", "CLAUDE.md"));
     actions.push(deployFile("claude-settings-deploy", "settings.json", "settings.json", { transform: "claude-statusline-product-root" }));
     actions.push(deployFile("claude-statusline-config-deploy", "all-about-agents/statusline.json", "all-about-agents/statusline.json"));
     actions.push(deployFile("claude-statusline-renderer-deploy", "statusline/statusline.mjs", "statusline/statusline.mjs", { mode: 0o755 }));
@@ -228,6 +270,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, prof
   } else if (surface === "agy") {
     const target = join(product, "settings.json");
     const overlay = join(pkg, "settings.overlay.json");
+    actions.push(deployFile("gemini-instructions-deploy", "GEMINI.md", "GEMINI.md", {}, instruction));
     actions.push(processAction("agy-plugin-install", "agy", ["plugin", "install", pkg], pkg, null, "none"));
     actions.push(processAction("agy-plugin-list", "agy", ["plugin", "list"], pkg, null, "none", false));
     actions.push({ id: "agy-settings-overlay", kind: "settings-overlay", targetPath: target, overlayPath: overlay, expectedOverlayHash: managedPackage.ownership.get(`${managedPackage.ownershipPrefix}settings.overlay.json`), allowedRoot: product, mutates: true, required: true, expectedProbe: "settings-merge", automaticWrite: true });
@@ -241,6 +284,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, prof
     surface,
     packageRoot: pkg,
     productRoot: product,
+    instructionRoot: instruction,
     profile,
     platform,
     actions,
@@ -285,6 +329,30 @@ function reportAction(action, status, extra = {}) {
   return { ...action, status, ...extra };
 }
 
+async function readExistingDestination(targetPath, fileSystem) {
+  const inspect = typeof fileSystem?.lstat === "function" ? fileSystem.lstat.bind(fileSystem) : defaultLstat;
+  let metadata;
+  try {
+    metadata = await inspect(targetPath);
+  } catch (error) {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return null;
+    throw pathError("destination-unreadable", "unable to inspect the native instruction destination");
+  }
+  if (metadata?.isSymbolicLink?.() || metadata?.isDirectory?.() || !metadata?.isFile?.()) {
+    throw pathError("unsafe-destination", "native instruction destination must be a regular file, not a symlink, junction, reparse point, or directory");
+  }
+  const read = typeof fileSystem?.readFile === "function" ? fileSystem.readFile.bind(fileSystem) : defaultReadFile;
+  let content;
+  try {
+    content = await read(targetPath);
+  } catch (error) {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return null;
+    throw pathError("destination-unreadable", "unable to read the native instruction destination");
+  }
+  if (!(content instanceof Uint8Array)) throw pathError("invalid-destination-bytes", "native instruction destination did not return bytes");
+  return content;
+}
+
 function transformCopyContent(action, content, plan) {
   if (action.transform === null) return content;
   if (action.transform !== "claude-statusline-product-root") throw pathError("unsupported-copy-transform", `unsupported native config copy transform for ${action.id}`);
@@ -310,14 +378,18 @@ function revalidatePlan(plan, { validateState = true } = {}) {
   const packageRoot = safeRoot(plan.packageRoot, "packageRoot", { required: true });
   for (const relativePath of requiredPackageFiles(plan.surface)) checkPackageFile(packageRoot, relativePath);
   if (validateState) validateManagedPackage(packageRoot, plan.surface, plan.profile);
-  if (plan.surface !== "antigravity-2") safeRoot(plan.productRoot, "productRoot", { required: true });
+  const productRoot = plan.surface === "antigravity-2" ? null : safeRoot(plan.productRoot, "productRoot", { required: true });
+  const instructionRoot = plan.surface === "antigravity-2" ? null : safeRoot(plan.instructionRoot, "instructionRoot", { required: true });
+  assertRootPair(plan.surface, productRoot, instructionRoot);
   for (const action of plan.actions) {
     if (action.kind !== "file-copy") continue;
     const sourcePath = checkPackageFile(packageRoot, action.sourceRelativePath);
     if (sourcePath !== action.sourcePath) throw pathError("source-mismatch", "native config source changed after planning");
-    const targetPath = resolve(plan.productRoot, ...action.destinationRelativePath.split("/"));
+    const selectedRoot = action.allowedRoot;
+    if (selectedRoot !== productRoot && selectedRoot !== instructionRoot) throw pathError("root-confusion", "native config action uses an unplanned native root");
+    const targetPath = resolve(selectedRoot, ...action.destinationRelativePath.split("/"));
     if (targetPath !== action.targetPath) throw pathError("destination-mismatch", "native config destination changed after planning");
-    assertSafeDestinationRoot(dirname(targetPath), { allowedProductRoots: [plan.productRoot] });
+    assertSafeDestinationRoot(dirname(targetPath), { allowedProductRoots: [selectedRoot] });
   }
 }
 
@@ -344,6 +416,7 @@ function sanitizeString(value, plan) {
   const replacements = [
     [plan.packageRoot, "<PACKAGE_ROOT>"],
     [plan.productRoot, "<PRODUCT_ROOT>"],
+    [plan.instructionRoot, "<INSTRUCTION_ROOT>"],
     ...homeCandidates.map((candidate) => [candidate, "<HOME>"])
   ].filter(([needle]) => typeof needle === "string" && needle !== "");
   const variants = replacements.flatMap(([needle, replacement]) => plan.platform === "win32"
@@ -382,10 +455,11 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
   if (mode !== "dry-run" && mode !== "apply") throw new TypeError("mode must be dry-run or apply");
   if (typeof runProcess !== "function") throw new TypeError("runProcess must be a function");
   if (mode === "dry-run") {
-    return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: "dry-run", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, actions: plan.actions.map((action) => reportAction(action, action.kind === "manual" ? "manual-required" : "planned")), completed: [], failed: null, notAttempted: [], lifecycle: plan.lifecycle }, plan);
+    revalidatePlan(plan, { validateState: true });
+    return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: "dry-run", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, instructionRoot: plan.instructionRoot, actions: plan.actions.map((action) => reportAction(action, action.kind === "manual" ? "manual-required" : "planned")), completed: [], failed: null, notAttempted: [], lifecycle: plan.lifecycle }, plan);
   }
   if (plan.surface === "antigravity-2") {
-    return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: "failed", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: null, actions: plan.actions.map((action) => reportAction(action, "manual-required")), completed: [], failed: null, notAttempted: [], lifecycle: plan.lifecycle, error: { code: "unsupported-automatic-registration", message: desktopManualMessage() } }, plan);
+    return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: "failed", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: null, instructionRoot: null, actions: plan.actions.map((action) => reportAction(action, "manual-required")), completed: [], failed: null, notAttempted: [], lifecycle: plan.lifecycle, error: { code: "unsupported-automatic-registration", message: desktopManualMessage() } }, plan);
   }
   const completed = [];
   const actionReports = [];
@@ -408,8 +482,14 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
         if (hashBytes(sourceContent) !== action.expectedSourceHash) throw pathError("package-owned-hash-mismatch", `managed package source changed after planning: ${action.sourceRelativePath}`);
         const content = transformCopyContent(action, sourceContent, plan);
         const expectedHash = hashBytes(content);
+        const existing = await readExistingDestination(action.targetPath, fileSystem);
+        if (existing !== null && hashBytes(existing) === expectedHash) {
+          actionReports.push(reportAction(action, "complete", { result: { bytes: content.byteLength, sha256: expectedHash, overwrite: false, changed: false } }));
+          completed.push(action);
+          continue;
+        }
         const written = await atomicReplaceFile({ destination: action.targetPath, content, expectedHash, mode: action.mode, allowedProductRoots: [action.allowedRoot], fileSystem });
-        actionReports.push(reportAction(action, "complete", { result: { bytes: content.byteLength, sha256: written.sha256, overwrite: true } }));
+        actionReports.push(reportAction(action, "complete", { result: { bytes: content.byteLength, sha256: written.sha256, overwrite: true, changed: true } }));
       } else {
         const explicitEnv = envFor(plan, action);
         const result = await runProcess({ executable: action.executable, args: [...action.args], cwd: action.cwd, environmentKeys: [...(action.environmentKeys || [])], envOverrides: explicitEnv, shell: false });
@@ -425,11 +505,11 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
     } catch (error) {
       const failed = { action: reportAction(action, "failed", { reason: error.message }), reason: error.message, error: { code: error.code || "native-action-failed", message: error.message } };
       actionReports.push(failed.action);
-      return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: completed.length > 0 ? "partial" : "failed", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, actions: actionReports, completed, failed, error: failed.error, notAttempted: plan.actions.slice(index + 1), lifecycle: failedLifecycle(plan, failed.error), ...(overlay ? { overlay } : {}) }, plan);
+      return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: completed.length > 0 ? "partial" : "failed", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, instructionRoot: plan.instructionRoot, actions: actionReports, completed, failed, error: failed.error, notAttempted: plan.actions.slice(index + 1), lifecycle: failedLifecycle(plan, failed.error), ...(overlay ? { overlay } : {}) }, plan);
     }
   }
   const lifecycle = { ...plan.lifecycle, registered: { status: "not-run", evidence: "Commands completed, but native semantic registration/discovery was not independently observed; run the product discovery probe and record T07 evidence." } };
-  return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: "complete", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, actions: actionReports, completed, failed: null, notAttempted: [], lifecycle, ...(overlay ? { overlay } : {}) }, plan);
+  return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: "complete", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, instructionRoot: plan.instructionRoot, actions: actionReports, completed, failed: null, notAttempted: [], lifecycle, ...(overlay ? { overlay } : {}) }, plan);
 }
 
 export function resolveNativeProductRoot(surface, { env = process.env, homeDir = homedir(), platform = process.platform } = {}) {
@@ -439,8 +519,16 @@ export function resolveNativeProductRoot(surface, { env = process.env, homeDir =
   return null;
 }
 
+export function resolveNativeInstructionRoot(surface, { env = process.env, homeDir = homedir(), platform = process.platform, override = null } = {}) {
+  if (surface === "claude") return resolveClaudeConfigDir({ env, homeDir, platform });
+  if (surface === "codex") return resolveCodexHome({ env, homeDir, platform });
+  if (surface === "agy") return resolveGeminiHome({ override, homeDir, platform });
+  if (surface === "antigravity-2") return null;
+  throw pathError("unsupported-surface", `unsupported registration surface: ${String(surface)}`);
+}
+
 export function formatNativeRegistrationText(report) {
-  const lines = [`action=${report.action} mode=${report.mode} status=${report.status}`, `surface=${report.surface} profile=${report.profile}`];
+  const lines = [`action=${report.action} mode=${report.mode} status=${report.status}`, `surface=${report.surface} profile=${report.profile}`, `productRoot=${report.productRoot ?? "<NONE>"} instructionRoot=${report.instructionRoot ?? "<NONE>"}`];
   for (const action of report.actions || []) lines.push(`${action.status}\t${action.id}\t${action.kind}`);
   if (report.error) lines.push(`error\t${report.error.code}\t${report.error.message}`);
   return `${lines.join("\n")}\n`;

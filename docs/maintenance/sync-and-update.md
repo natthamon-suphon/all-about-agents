@@ -15,6 +15,24 @@ rendered -> validated -> registered -> trusted -> active -> runtime verified
 Keep every state tied to its exact command and evidence. Use
 `NOT_RUN_UNAVAILABLE` when a product or host is unavailable.
 
+The required receiving-machine order for Windows and macOS is:
+
+```text
+pull -> validate -> render -> dry-run -> apply package -> dry-run registration -> explicit registration apply -> restart -> verify loaded instructions
+```
+
+Here, `render` means the package is produced by the install command. The
+`install --dry-run` step plans it without writing.
+Package apply and native registration are separate explicit actions.
+Managed global files are separate
+from Git pull. An authorized native apply may overwrite them without a backup.
+
+The global destinations are `<CLAUDE_CONFIG_DIR>/CLAUDE.md`,
+`<CODEX_HOME>/AGENTS.md`, and `~/.gemini/GEMINI.md` for both Desktop and
+`agy`. Project instruction files and plugin rules remain the more specific
+second layer. Read [global instructions](global-instructions.md) for the
+complete model.
+
 ## Source machine (author machine)
 
 Use this order:

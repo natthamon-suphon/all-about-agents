@@ -11,6 +11,12 @@
   },
   "components": {
     "pluginManifest": ".agents/plugins/<plugin>/plugin.json",
+    "globalInstructions": {
+      "package": "GEMINI.md",
+      "destination": "~/.gemini/GEMINI.md",
+      "registration": "manual-copy",
+      "automaticWrite": false
+    },
     "skills": ".agents/plugins/<plugin>/skills/{skill}/SKILL.md",
     "rules": ".agents/plugins/<plugin>/rules/AGENTS.md",
     "agents": {
@@ -136,11 +142,8 @@
     }
   },
   "ownedPaths": [
-    ".agents/plugins/<plugin>/plugin.json",
-    ".agents/plugins/<plugin>/skills/{skill}/SKILL.md",
-    ".agents/plugins/<plugin>/rules/AGENTS.md",
-    ".agents/plugins/<plugin>/agents/{role}.md",
-    ".agents/plugins/<plugin>/hooks.json"
+    ".agents/plugins/<plugin>/**",
+    "GEMINI.md"
   ],
   "nativeValidation": {
     "status": "partial",

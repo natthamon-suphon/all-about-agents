@@ -29,6 +29,14 @@ the separate `trusted` step when Codex asks. A fresh session is needed for
 
 ## Models, recovery, and permissions
 
+The shared global file is rendered from
+`core/instructions/global-operating-rules.md` and registered at
+`<CODEX_HOME>/AGENTS.md`, or `~/.codex/AGENTS.md` with the normal root. Project
+`AGENTS.override.md` or `AGENTS.md`, plus plugin rules, are the more specific
+second layer. Visible names use the registry emoji after the machine ID and
+include a short reason and a 2-to-7 item checklist. This is prompt guidance,
+not a UI guarantee.
+
 Plugin registration is a manual product action.
 
 The `portable` profile uses `sandbox_mode=workspace-write` and

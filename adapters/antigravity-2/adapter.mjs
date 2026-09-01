@@ -11,6 +11,8 @@ import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
+import { renderGeminiGlobalInstructions } from "../shared/global-instructions.mjs";
+import { displayLabel, renderInvocationGuidance, renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
 
 const SURFACE = "antigravity-2";
 const DESKTOP_SURFACE = "antigravity-2-desktop";
@@ -146,14 +148,20 @@ function skillIds(core) {
   return [...new Set([...inventory, ...records].filter((id) => typeof id === "string" && id.length > 0))].sort();
 }
 
-function renderSkill(name, record) {
+function renderSkill(name, record, presentation) {
   const description = typeof record?.description === "string" && record.description.trim()
     ? record.description.trim()
     : `Canonical ${name} skill.`;
   const body = typeof record?.content === "string" && record.content.trim()
     ? stripFrontmatter(record.content)
     : "DEFERRED: canonical source is missing.\nOwner: cycle-05-skill-remediation (T017-T043).\n";
-  return ensureText(`---\nname: ${JSON.stringify(name)}\ndescription: ${JSON.stringify(description)}\n---\n\n${body}`);
+  const guidance = renderInvocationGuidance(presentation, {
+    kind: "skill",
+    id: name,
+    task: `Apply ${displayLabel(presentation, "skill", name)} to the current task`,
+    reason: `Use ${displayLabel(presentation, "skill", name)} when its scope matches the current task.`
+  });
+  return ensureText(`---\nname: ${JSON.stringify(name)}\ndescription: ${JSON.stringify(description)}\n---\n\n${guidance}\n\n${body}`);
 }
 
 function renderRule(rule) {
@@ -163,7 +171,7 @@ function renderRule(rule) {
   return ensureText(lines.join("\n"));
 }
 
-function consolidatedRules(profile, rules) {
+function consolidatedRules(profile, rules, presentation) {
   const sections = [
     capabilityGuidance(),
     modelRule(profile),
@@ -175,11 +183,15 @@ function consolidatedRules(profile, rules) {
   return ensureText([
     "# All About Agents Desktop rules",
     "",
-    ...sections.flatMap((section, index) => index === 0 ? [section, ""] : ["---", "", section, ""])
+    ...sections.flatMap((section, index) => index === 0 ? [section, ""] : ["---", "", section, ""]),
+    "---",
+    "",
+    renderPresentationCatalog(presentation),
+    ""
   ].join("\n"));
 }
 
-function renderAgent(name, role) {
+function renderAgent(name, role, presentation) {
   const fallback = DEFAULT_ROLES[name] || Object.freeze({ description: "Unknown role; no native capabilities are granted.", capabilities: [], readOnly: true });
   const description = typeof role?.description === "string" && role.description.trim() ? role.description.trim() : fallback.description;
   const capabilities = [...new Set([
@@ -199,6 +211,12 @@ function renderAgent(name, role) {
   const commandExecutionPolicy = tools.includes("run_command") ? "sandbox" : "off";
   const roleDiagnostics = nativeCapabilityDiagnostics({ surface: SURFACE, role: role || fallback, mappings: ANTIGRAVITY_SEMANTIC_MAPPINGS, blockedNativeTools: ["write_to_file", "replace_file_content", "multi_replace_file_content", "run_command", "invoke_subagent", "define_subagent", "manage_subagents"] });
   const promptDiagnostics = roleDiagnostics.map((entry) => entry.message.replace(/: [\s\S]*? Manual\/fail-closed guidance:/u, ": native read-only policy does not expose this capability. Manual/fail-closed guidance:"));
+  const guidance = renderInvocationGuidance(presentation, {
+    kind: "role",
+    id: name,
+    task: `Delegate the current task to ${displayLabel(presentation, "role", name)}`,
+    reason: `Use ${displayLabel(presentation, "role", name)} when its role matches the task and scope.`
+  });
   const lines = [
     "---",
     `name: ${JSON.stringify(name)}`,
@@ -213,7 +231,7 @@ function renderAgent(name, role) {
     "plugins: []",
     "---",
     "",
-    `${role?.prompt || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${promptDiagnostics.length > 0 ? `\n\nNative capability diagnostics:\n${promptDiagnostics.map((message) => `- ${message}`).join("\n")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`
+    `${guidance}\n\n${role?.prompt || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${promptDiagnostics.length > 0 ? `\n\nNative capability diagnostics:\n${promptDiagnostics.map((message) => `- ${message}`).join("\n")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`
   ];
   return ensureText(lines.join("\n"));
 }
@@ -269,6 +287,7 @@ function capabilityGuidance() {
     "Hook events and JSON input/output are documented for Desktop and CLI, but hook-process failure behavior is not documented.",
     "Read-only capability diagnostics identify suppressed command or mutation semantics; record them as unavailable or not run and do not infer a substitute.",
     "The implementer's Desktop write controls are workspace-wide; its declared task paths remain an outer approval boundary.",
+    "Dynamic subagent names stay unchanged; use `default 🤖` only as the display fallback.",
     "No serialized application preferences, cross-conversation model key, or command-line option is part of this package.",
     ""
   ].join("\n"));
@@ -411,15 +430,16 @@ export function renderAntigravity(input = {}) {
   const skillRecords = new Map(input.core.skills.map((record) => [record.id || record.name, record]));
   const roleRecords = new Map(input.core.roles.map((record) => [record.id || record.name, record]));
 
+  addFile(files, "GEMINI.md", renderGeminiGlobalInstructions(input.core));
   addFile(files, `${PLUGIN_ROOT}/plugin.json`, renderJson({ name: "all-about-agents" }));
   addFile(files, `${PLUGIN_ROOT}/hooks.json`, renderJson(hooksDocument()));
   addFile(files, `${PLUGIN_ROOT}/hooks/activity-audit.json`, renderJson(antigravityActivityTemplate));
   addFile(files, `${PLUGIN_ROOT}/hooks/checkpoint.json`, renderJson(antigravityCheckpointTemplate));
   addFile(files, `${PLUGIN_ROOT}/hooks/emergency-guard.json`, renderJson(antigravityEmergencyTemplate));
-  addFile(files, `${PLUGIN_ROOT}/rules/AGENTS.md`, consolidatedRules(semanticProfile, input.core.rules));
+  addFile(files, `${PLUGIN_ROOT}/rules/AGENTS.md`, consolidatedRules(semanticProfile, input.core.rules, input.core.presentation));
   const opaqueCompanionPaths = new Set();
   for (const skill of skillIds(input.core)) {
-    addFile(files, `${PLUGIN_ROOT}/skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill)));
+    addFile(files, `${PLUGIN_ROOT}/skills/${skill}/SKILL.md`, renderSkill(skill, skillRecords.get(skill), input.core.presentation));
     for (const companion of skillCompanionsFor(skillRecords.get(skill))) {
       const path = `${PLUGIN_ROOT}/skills/${skill}/${companion.relativePath}`;
       addFile(files, path, companion.content, companion.mode, "companion");
@@ -428,7 +448,7 @@ export function renderAntigravity(input = {}) {
   }
 
   const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort();
-  for (const role of roleNames) addFile(files, `${PLUGIN_ROOT}/agents/${role}.md`, renderAgent(role, roleRecords.get(role)));
+  for (const role of roleNames) addFile(files, `${PLUGIN_ROOT}/agents/${role}.md`, renderAgent(role, roleRecords.get(role), input.core.presentation));
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   validateDesktopContent(files, opaqueCompanionPaths);
 
@@ -468,6 +488,16 @@ export function renderAntigravity(input = {}) {
         relativePath: `${PLUGIN_ROOT}/plugin.json`,
         discovery: "Desktop workspace plugin discovery",
         manualOnly: true
+      },
+      {
+        kind: "instructions",
+        surface: DESKTOP_SURFACE,
+        relativePath: "GEMINI.md",
+        manualDestination: "~/.gemini/GEMINI.md",
+        manualOnly: true,
+        automaticWrite: false,
+        status: "manual-copy-after-review",
+        reason: "Desktop uses the documented shared Gemini global instruction file; no Desktop settings schema or automatic write is claimed."
       },
       ...(modelSelected ? [{
         kind: "manual-model-selection",

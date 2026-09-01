@@ -10,6 +10,10 @@ const execFileAsync = promisify(execFile);
 
 const requiredOutputs = [
   "core/inventory.json",
+  "core/instructions/global-operating-rules.md",
+  "core/presentation/emoji-registry.json",
+  "core/presentation/progress-contract.json",
+  "core/schemas/presentation.schema.json",
   "core/schemas/inventory.schema.json",
   "adapters/claude/capabilities.json",
   "adapters/codex/capabilities.json",
@@ -18,14 +22,28 @@ const requiredOutputs = [
   "core/schemas/capability.schema.json",
   "tests/static/inventory.test.mjs",
   "tests/static/capabilities.test.mjs",
+  "tests/static/presentation-safety.test.mjs",
   "scripts/aaa.mjs",
   "installers/lib/validate-schema.mjs",
   "core/evals/runner.mjs",
   "core/evals/result-envelope.schema.json",
+  "core/evals/presentation-trace.mjs",
+  "core/evals/presentation-trace.schema.json",
+  "core/evals/scenarios/presentation-contract.json",
+  "tests/behavioral/presentation-contract.test.mjs",
   "tests/static/eval-runner.test.mjs"
 ];
 
 const expectedBaselineFiles = new Map([
+  ["core/instructions/global-operating-rules.md", { kind: "source", status: "stable" }],
+  ["core/presentation/emoji-registry.json", { kind: "metadata", status: "stable" }],
+  ["core/presentation/progress-contract.json", { kind: "metadata", status: "stable" }],
+  ["core/schemas/presentation.schema.json", { kind: "metadata", status: "stable" }],
+  ["core/evals/presentation-trace.mjs", { kind: "source", status: "stable" }],
+  ["core/evals/presentation-trace.schema.json", { kind: "metadata", status: "stable" }],
+  ["core/evals/scenarios/presentation-contract.json", { kind: "metadata", status: "stable" }],
+  ["tests/behavioral/presentation-contract.test.mjs", { kind: "test", status: "stable" }],
+  ["tests/static/presentation-safety.test.mjs", { kind: "test", status: "stable" }],
   ["core/skills/test-driven-development/writing-good-tests.md", { kind: "asset", status: "stable" }],
   ["core/skills/zero-downtime-migrations/postgres-expand-contract-examples.md", { kind: "asset", status: "stable" }],
   ["quarantine/legacy/agents/codebase-architect.json", { kind: "config", status: "quarantined" }],
@@ -101,6 +119,10 @@ scripts/lint-shell.sh
 quarantine/legacy/setup/setup-antigravity.ps1
 quarantine/legacy/setup/setup-antigravity.sh
 quarantine/legacy/setup/setup-guide-antigravity.md
+core/instructions/global-operating-rules.md
+core/presentation/emoji-registry.json
+core/presentation/progress-contract.json
+core/schemas/presentation.schema.json
 core/skills/brainstorming/SKILL.md
 core/skills/brainstorming/scripts/frame-template.html
 core/skills/brainstorming/scripts/helper.js
@@ -183,6 +205,11 @@ quarantine/legacy/statusline/track-tool.js
 tests/helpers/temp-root.mjs
 tests/static/repository-layout.test.mjs
 tests/static/runtime.test.mjs
+tests/static/presentation-safety.test.mjs
+core/evals/presentation-trace.mjs
+core/evals/presentation-trace.schema.json
+core/evals/scenarios/presentation-contract.json
+tests/behavioral/presentation-contract.test.mjs
 `.trim().split(/\r?\n/u);
 
 test("T002 creates every owned artifact", async () => {

@@ -1,8 +1,16 @@
 # Codex adapter templates
 
 The adapter renders a deterministic Codex package from the canonical core.
-It writes a regular `AGENTS.md`, repository skills under `.agents/skills/`,
-and standalone custom-agent TOML files under `.codex/agents/`.
+It writes a regular `AGENTS.md` whose first section is the shared canonical
+global body, followed by Codex rules, one compact presentation catalog, and
+the canonical action-to-workflow mappings. Repository skills live under
+`.agents/skills/`, and standalone custom-agent TOML files live under
+`.codex/agents/`.
+
+Visible skill, agent, command, and workflow entries use the canonical display
+name plus its registered emoji. Each prompt or action includes one short
+reason and one bounded checklist. This is model guidance: it keeps the
+machine IDs, TOML keys, file paths, and native discovery names unchanged.
 
 Every canonical role is registered in `config.toml` as `[agents.<role>]` with
 a relative `config_file` under the delivered `agents/` directory. The package
@@ -21,6 +29,7 @@ The shared `config.toml` overlay uses Sol with Max reasoning. The explicit
 the documented Terra model and Max reasoning keys for its global policy; it is
 selected manually with the CLI profile mechanism.
 Desktop Terra/Max selection remains a manual model-control step.
+Codex does not claim an automatic Sol-to-Terra fallback.
 
 Native workspace controls do not enforce the implementer's narrower task paths;
 those paths remain an outer approval boundary.
@@ -34,3 +43,15 @@ diagnostic. This keeps the full public skill inventory visible without
 claiming unavailable source content.
 
 The package does not define repository schedules or a Codex-native statusline.
+The global `AGENTS.md` output is kept below the repository's 32 KiB Codex
+instruction gate and does not copy the shared global body into each skill or
+role prompt.
+
+The global layer is `<CODEX_HOME>/AGENTS.md`; project `AGENTS.override.md` or
+`AGENTS.md` and plugin rules are the more specific second layer. A visible
+name uses its registry emoji after the ID, then a short reason and a 2-to-7
+item checklist. This is prompt guidance, not a UI guarantee.
+
+For a receiving machine, use `pull -> validate -> render -> dry-run -> apply
+package -> dry-run registration -> explicit registration apply -> restart ->
+verify loaded instructions`. Pull alone does not install or write live config.

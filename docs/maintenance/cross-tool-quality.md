@@ -27,6 +27,28 @@ Run a focused test before these commands when one component changes. These
 checks do not establish native registration, trust, active sessions, or runtime
 behavior.
 
+## Eight-step checklist for any tool or session
+
+Copy this checklist into a new Claude Code, Codex, Antigravity Desktop, or
+`agy` session. It keeps the same quality on Windows and macOS:
+
+```text
+- [ ] 1. Read the repository entrypoint and current global instructions.
+- [ ] 2. Run core validation.
+- [ ] 3. Run the focused tests for changed files.
+- [ ] 4. Render both profiles in a disposable root.
+- [ ] 5. Run dry-run and inspect destinations.
+- [ ] 6. Run package/presentation integrity checks.
+- [ ] 7. Update checkpoints or handoff with exact evidence.
+- [ ] 8. Do not call native behavior active unless it was observed.
+```
+
+Use the [global instruction guide](global-instructions.md) for the dual-layer
+model. Visible names use the registry emoji after the name, then one short
+reason, for example `Using skill **brainstorming 🧠** — Explore the request.`
+Show a 2-to-7 item checklist before material work and update it only when a
+state changes. This is prompt guidance, not a UI guarantee.
+
 ## Rendered package checks
 
 Rendered checks validate adapter output, manifests, paths, hashes, and

@@ -2,6 +2,8 @@ import { lstat, readFile, readdir, realpath, stat } from "node:fs/promises";
 import { dirname, extname, posix, relative, resolve, sep, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateSchema } from "./validate-schema.mjs";
+import { validateGlobalInstructionBody } from "./global-instructions.mjs";
+import { validatePresentationContract } from "./presentation-contract.mjs";
 import { CANONICAL_ROLE_IDS, canonicalRoleCapabilityErrors, isSafePortableRolePrompt, isValidMutationScopeOperation, isValidMutationScopePath, PRIVILEGED_SEMANTIC_CAPABILITIES, SEMANTIC_CAPABILITIES, VENDOR_NATIVE_TOOL_NAMES, WRITE_SEMANTIC_CAPABILITIES } from "../../core/roles/contract.mjs";
 
 export { SEMANTIC_CAPABILITIES, VENDOR_NATIVE_TOOL_NAMES };
@@ -115,14 +117,108 @@ async function pathExists(path) {
   }
 }
 
-async function readUtf8(path) {
+async function readUtf8(path, { preserveBom = false } = {}) {
   const bytes = await readFile(path);
   try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: preserveBom }).decode(bytes);
   } catch {
     const error = new Error("file is not valid UTF-8");
     error.code = "ERR_INVALID_UTF8";
     throw error;
+  }
+}
+
+function coreFileError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
+function sameFileIdentity(left, right) {
+  return left.dev === right.dev && left.ino === right.ino;
+}
+
+function canonicalNativePath(path) {
+  const pathApi = process.platform === "win32" ? win32 : posix;
+  const normalized = pathApi.normalize(path);
+  return process.platform === "win32" ? normalized.toLowerCase() : normalized;
+}
+
+async function assertPlainCoreComponent(path, { final }) {
+  const metadata = await lstat(path);
+  if (metadata.isSymbolicLink()) throw coreFileError("ERR_UNSAFE_CORE_FILE", "canonical core path may not cross a symlink, junction, or reparse point");
+  if (final ? !metadata.isFile() : !metadata.isDirectory()) {
+    throw coreFileError("ERR_UNSAFE_CORE_FILE", final ? "canonical core file must be a regular file" : "canonical core path ancestors must be directories");
+  }
+  if (process.platform !== "win32") return;
+
+  let resolved;
+  try {
+    resolved = await realpath(path);
+  } catch {
+    throw coreFileError("ERR_CORE_FILE_CONTAINMENT", "canonical core path component could not be canonicalized");
+  }
+  if (canonicalNativePath(resolved) === canonicalNativePath(path)) return;
+  const resolvedMetadata = await lstat(resolved);
+  if (!sameFileIdentity(metadata, resolvedMetadata)) {
+    throw coreFileError("ERR_UNSAFE_CORE_FILE", "canonical core path may not cross a redirecting reparse point");
+  }
+}
+
+async function assertPlainCorePath(path, { repositoryRoot, coreRoot }) {
+  const repositoryPath = resolve(repositoryRoot);
+  const corePath = resolve(coreRoot);
+  const filePath = resolve(path);
+  if (!realpathIsContained(repositoryPath, corePath) || !realpathIsContained(corePath, filePath)) {
+    throw coreFileError("ERR_CORE_FILE_CONTAINMENT", "canonical core file lexical path must remain inside the repository and core roots");
+  }
+  const segments = relative(repositoryPath, filePath).split(sep).filter(Boolean);
+  await assertPlainCoreComponent(repositoryPath, { final: false });
+  let current = repositoryPath;
+  for (const [index, segment] of segments.entries()) {
+    current = resolve(current, segment);
+    await assertPlainCoreComponent(current, { final: index === segments.length - 1 });
+  }
+}
+
+/** Read a canonical core file only after proving it is a contained regular file. */
+async function readContainedCoreUtf8(path, { repositoryRoot, coreRoot, preserveBom = false } = {}) {
+  await assertPlainCorePath(path, { repositoryRoot, coreRoot });
+
+  let repositoryRealpath;
+  let coreRealpath;
+  let fileRealpath;
+  try {
+    [repositoryRealpath, coreRealpath, fileRealpath] = await Promise.all([
+      realpath(repositoryRoot),
+      realpath(coreRoot),
+      realpath(path)
+    ]);
+  } catch {
+    throw coreFileError("ERR_CORE_FILE_CONTAINMENT", "canonical core file realpath could not be proven contained");
+  }
+  if (!realpathIsContained(repositoryRealpath, fileRealpath) || !realpathIsContained(coreRealpath, fileRealpath)) {
+    throw coreFileError("ERR_CORE_FILE_CONTAINMENT", "canonical core file realpath must remain inside the repository and core roots");
+  }
+  return readUtf8(path, { preserveBom });
+}
+
+async function readContainedCoreJson(path, sourcePath, errors, roots) {
+  let text;
+  try {
+    text = await readContainedCoreUtf8(path, roots);
+  } catch (error) {
+    const keyword = error?.code === "ERR_UNSAFE_CORE_FILE" || error?.code === "ERR_CORE_FILE_CONTAINMENT"
+      ? "presentationContainment"
+      : "read";
+    errors.push(errorRecord(sourcePath, "", keyword, error.message));
+    return null;
+  }
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    errors.push(errorRecord(sourcePath, "", "json", `invalid JSON: ${error.message}`));
+    return null;
   }
 }
 
@@ -806,6 +902,61 @@ function validateInventory(inventory, sourcePath, errors) {
   }
 }
 
+async function loadGlobalInstructions(repositoryRoot, coreRoot, errors) {
+  const path = resolve(coreRoot, "instructions", "global-operating-rules.md");
+  const sourcePath = toPortablePath(repositoryRoot, path);
+  let content;
+  try {
+    content = await readContainedCoreUtf8(path, {
+      repositoryRoot,
+      coreRoot,
+      preserveBom: true
+    });
+  } catch (error) {
+    const keyword = error?.code === "ENOENT" || error?.code === "ENOTDIR"
+      ? "missing-global-instructions"
+      : error?.code === "ERR_INVALID_UTF8"
+        ? "invalid-global-instructions"
+        : error?.code === "ERR_UNSAFE_CORE_FILE" || error?.code === "ERR_CORE_FILE_CONTAINMENT"
+          ? "global-instructions-containment"
+        : "read";
+    errors.push(errorRecord(sourcePath, "", keyword, keyword === "missing-global-instructions"
+      ? "canonical global instructions file is required"
+      : error.message));
+    return null;
+  }
+  const validation = validateGlobalInstructionBody({ sourcePath, content });
+  errors.push(...validation.errors.map((entry) => errorRecord(sourcePath, "", entry.code, entry.message)));
+  return { sourcePath, content };
+}
+
+const FIXED_PRESENTATION_HOOKS = Object.freeze(["activity-audit", "bootstrap", "checkpoint", "emergency-guard"]);
+const FIXED_PRESENTATION_PROFILES = Object.freeze(["portable", "template"]);
+
+async function loadPresentation(repositoryRoot, coreRoot, canonical, errors) {
+  const registryPath = resolve(coreRoot, "presentation", "emoji-registry.json");
+  const progressPath = resolve(coreRoot, "presentation", "progress-contract.json");
+  const registrySourcePath = toPortablePath(repositoryRoot, registryPath);
+  const progressSourcePath = toPortablePath(repositoryRoot, progressPath);
+  const [emojiRegistry, progressContract] = await Promise.all([
+    readContainedCoreJson(registryPath, registrySourcePath, errors, { repositoryRoot, coreRoot }),
+    readContainedCoreJson(progressPath, progressSourcePath, errors, { repositoryRoot, coreRoot })
+  ]);
+  if (emojiRegistry === null || progressContract === null) return null;
+
+  const schema = await schemaFor(repositoryRoot, "presentation", errors);
+  if (schema) {
+    errors.push(...validateSchema({ schema, value: emojiRegistry, sourcePath: registrySourcePath }).errors);
+    errors.push(...validateSchema({ schema, value: progressContract, sourcePath: progressSourcePath }).errors);
+  }
+  const result = validatePresentationContract({ emojiRegistry, progressContract, canonical });
+  for (const entry of result.errors) {
+    const sourcePath = entry.path.startsWith("/progressContract") ? progressSourcePath : registrySourcePath;
+    errors.push(errorRecord(sourcePath, entry.path.replace(/^\/(?:emojiRegistry|progressContract)/u, ""), entry.code, entry.message));
+  }
+  return { emojiRegistry, progressContract };
+}
+
 export async function loadCore(root, options = {}) {
   if (typeof root !== "string" || root.trim() === "") throw new TypeError("loadCore(root) requires a non-empty root path");
   assertUnifiedSkillPortfolio(options);
@@ -825,7 +976,8 @@ export async function loadCore(root, options = {}) {
     }
   }
 
-  const [rules, roles, skills, workflows, commands, evals] = await Promise.all([
+  const [globalInstructions, rules, roles, skills, workflows, commands, evals] = await Promise.all([
+    loadGlobalInstructions(repositoryRoot, coreRoot, errors),
     loadJsonCollection(repositoryRoot, coreRoot, "rules", "rule", errors),
     loadRoleCollection(repositoryRoot, coreRoot, errors),
     loadSkills(repositoryRoot, coreRoot, inventory, errors),
@@ -839,14 +991,25 @@ export async function loadCore(root, options = {}) {
   errors.push(...await mutationScopeContainmentErrors(repositoryRoot, roles));
   checkReferences(collections, errors);
   for (const collection of Object.values(collections)) collection.sort(sortEntries);
+  const canonical = {
+    skills: Array.isArray(inventory?.skills) ? inventory.skills : [],
+    roles: roles.map((entry) => entry.record.id),
+    commands: commands.map((entry) => entry.record.actionId),
+    workflows: workflows.map((entry) => entry.record.id),
+    hooks: [...FIXED_PRESENTATION_HOOKS],
+    profiles: [...FIXED_PRESENTATION_PROFILES]
+  };
+  const presentation = await loadPresentation(repositoryRoot, coreRoot, canonical, errors);
   if (errors.length > 0) throw new CoreLoadError(errors);
   return {
     inventory,
+    globalInstructions,
     rules: rules.map((entry) => entry.record),
     roles: roles.map((entry) => entry.record),
     skills: skills.map((entry) => entry.record),
     workflows: workflows.map((entry) => entry.record),
     commands: commands.map((entry) => entry.record),
-    evals: evals.map((entry) => entry.record)
+    evals: evals.map((entry) => entry.record),
+    presentation
   };
 }

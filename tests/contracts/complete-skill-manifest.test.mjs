@@ -113,6 +113,22 @@ test("all four surfaces render every companion once beside its owning skill", as
   }
 });
 
+test("all package manifests declare the rendered global file and complete skill roots", async () => {
+  const expectedGlobal = new Map([
+    ["claude", "CLAUDE.md"],
+    ["codex", "AGENTS.md"],
+    ["antigravity-2", "GEMINI.md"],
+    ["agy", "GEMINI.md"]
+  ]);
+  for (const [surface, globalName] of expectedGlobal) {
+    const manifest = JSON.parse(await readFile(resolve(process.cwd(), `installers/manifests/${surface}.json`), "utf8"));
+    const global = manifest.components.globalInstructions;
+    assert.equal(typeof global === "string" ? global : global?.package, globalName);
+    assert.ok(manifest.ownedPaths.includes(globalName), `${surface} manifest must own ${globalName}`);
+    assert.equal(new Set(manifest.ownedPaths).size, manifest.ownedPaths.length, `${surface} manifest ownership must be unique`);
+  }
+});
+
 test("opaque companion flags do not weaken generated-instruction leakage checks", async () => {
   const core = await loadCore(process.cwd());
   const poisoned = structuredClone(core);

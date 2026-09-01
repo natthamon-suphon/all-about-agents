@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "skills": {
+    "brainstorming": { "emoji": "🧠" },
+    "codebase-design": { "emoji": "🧱" },
+    "dispatching-parallel-agents": { "emoji": "⚡" },
+    "executing-plans": { "emoji": "🚀" },
+    "finishing-a-development-branch": { "emoji": "🏁" },
+    "handoff": { "emoji": "🤝" },
+    "improve-codebase-architecture": { "emoji": "🏛️" },
+    "interviewing": { "emoji": "🎤" },
+    "loop-me": { "emoji": "🔁" },
+    "nano-image-generator": { "emoji": "🖼️" },
+    "performance-profiling-and-benchmarking": { "emoji": "⏱️" },
+    "receiving-code-review": { "emoji": "📥" },
+    "requesting-code-review": { "emoji": "📤" },
+    "research": { "emoji": "🔎" },
+    "resolving-merge-conflicts": { "emoji": "🧩" },
+    "session-compaction-resilience": { "emoji": "🗜️" },
+    "subagent-driven-development": { "emoji": "👥" },
+    "systematic-debugging": { "emoji": "🐛" },
+    "test-driven-development": { "emoji": "🧪" },
+    "threat-modeling-and-security": { "emoji": "🛡️" },
+    "using-all-about-agents": { "emoji": "🧰" },
+    "using-git-worktrees": { "emoji": "🌳" },
+    "verification-before-completion": { "emoji": "✅" },
+    "wait-what": { "emoji": "❓" },
+    "wayfinder": { "emoji": "🧭" },
+    "writing-plans": { "emoji": "📝" },
+    "writing-skills": { "emoji": "✍️" },
+    "zero-downtime-migrations": { "emoji": "🔄" }
+  },
+  "roles": {
+    "architect": { "emoji": "🏛️" },
+    "implementer": { "emoji": "🛠️" },
+    "investigator": { "emoji": "🕵️" },
+    "researcher": { "emoji": "🔎" },
+    "reviewer": { "emoji": "👀" },
+    "security-reviewer": { "emoji": "🛡️" },
+    "verifier": { "emoji": "✅" }
+  },
+  "subagents": {
+    "default": { "emoji": "🤖" }
+  },
+  "commands": {
+    "aaa:design": { "emoji": "🎨" },
+    "aaa:build": { "emoji": "🏗️" },
+    "aaa:fix": { "emoji": "🔧" },
+    "aaa:review": { "emoji": "👀" },
+    "aaa:audit": { "emoji": "🔍" },
+    "aaa:improve-skill": { "emoji": "✨" },
+    "aaa:resume": { "emoji": "▶️" },
+    "aaa:verify": { "emoji": "✅" }
+  },
+  "workflows": {
+    "design-change": { "emoji": "🎨" },
+    "fix-bug": { "emoji": "🐛" },
+    "implement-change": { "emoji": "🛠️" },
+    "improve-skill": { "emoji": "✨" },
+    "release-qualification": { "emoji": "🚦" },
+    "review-and-audit": { "emoji": "🔍" }
+  },
+  "hooks": {
+    "bootstrap": { "emoji": "🚀" },
+    "activity-audit": { "emoji": "🧾" },
+    "checkpoint": { "emoji": "💾" },
+    "emergency-guard": { "emoji": "🛡️" }
+  },
+  "profiles": {
+    "portable": { "emoji": "🧳" },
+    "template": { "emoji": "⚙️" }
+  }
+}

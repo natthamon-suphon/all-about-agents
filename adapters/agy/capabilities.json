@@ -5,6 +5,20 @@
   "productVersion": "1.1.22",
   "capabilities": [
     {
+      "feature": "instructions.global",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/antigravity-contracts-2026-08-31.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "1.1.22",
+      "value": {
+        "package": "GEMINI.md",
+        "destination": "~/.gemini/GEMINI.md",
+        "registration": "register --apply"
+      },
+      "notes": "The package renders the shared global instruction file. An authorized agy registration may copy it to the documented Gemini home; rendering alone never writes it."
+    },
+    {
       "feature": "model.cli",
       "support": "supported",
       "stability": "stable",

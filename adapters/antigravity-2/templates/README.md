@@ -9,6 +9,18 @@ separately documents `agents/<role>.md`. A native Windows Desktop 2.11.0
 project session nevertheless discovered all seven packaged agents. Reverify
 that behavior on other versions and platforms.
 
+## Global instructions
+
+The package root contains `GEMINI.md`, rendered from the shared canonical
+global instruction source. Desktop uses the documented global destination
+`~/.gemini/GEMINI.md`. Copy that one file manually after reviewing the package;
+this adapter does not guess or write a Desktop settings file. The package root
+file is rendered evidence, not proof that a Desktop session loaded it.
+
+The consolidated plugin rule contains the presentation catalog once. Skills
+and agents keep their native names and frontmatter, and add a display label,
+reason, and small checklist for visible invocation.
+
 Model selection and permission presets remain manual Desktop UI steps. The
 adapter does not emit application settings, install a plugin automatically, or
 execute a hook command. Hook events and JSON input/output are documented, but
@@ -45,3 +57,11 @@ fixture:
 6. `hooks-contract` — Inspect `hooks.json`; only with explicit approval,
    verify hook decisions using a disposable handler; confirm this package stays
    disabled and inert.
+
+The global layer is `~/.gemini/GEMINI.md`. Workspace `.agents/rules/` and
+plugin rules are the more specific second layer. Visible names keep native IDs
+and add a registry emoji, a short reason, and a 2-to-7 item checklist. This is
+prompt guidance, not a UI guarantee. A receiving machine follows:
+`pull -> validate -> render -> dry-run -> apply package -> dry-run
+registration -> explicit registration apply -> restart -> verify loaded
+instructions`. Pull alone does not install the package.

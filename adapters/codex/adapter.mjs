@@ -13,6 +13,8 @@ import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, hasScopedMutation, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
+import { displayLabel, renderInvocationGuidance } from "../../installers/lib/presentation-contract.mjs";
+import { renderCodexGlobalInstructions } from "../shared/global-instructions.mjs";
 
 const CODEX_SURFACE = "codex";
 const CODEX_TARGET_RUNTIMES = Object.freeze(["cli", "desktop"]);
@@ -155,7 +157,7 @@ function canonicalSkillIds(core) {
   return [...new Set([...fromInventory, ...fromRecords].filter((id) => typeof id === "string" && id.length > 0))].sort(compareCodePoints);
 }
 
-function renderSkill(name, record) {
+function renderSkill(name, record, presentation) {
   const hasSource = typeof record?.content === "string" && record.content.trim().length > 0;
   const description = record?.description || `Canonical ${name} skill.`;
   const source = hasSource
@@ -164,13 +166,19 @@ function renderSkill(name, record) {
   const guidanceReference = name === "using-all-about-agents"
     ? "\nSee [Codex adapter capability guidance](./references/adapter-capability-guidance.md).\n"
     : "";
+  const guidance = renderInvocationGuidance(presentation, {
+    kind: "skill",
+    id: name,
+    task: `Apply ${displayLabel(presentation, "skill", name)} to the current task`,
+    reason: `Use ${displayLabel(presentation, "skill", name)} when its scope matches the current task.`
+  });
   return {
-    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${source}${guidanceReference}`),
+    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${guidance}\n\n${source}${guidanceReference}`),
     hasSource
   };
 }
 
-function renderRole(name, role) {
+function renderRole(name, role, presentation) {
   const fallback = DEFAULT_ROLES[name] || Object.freeze({ description: "Unknown role; no native capabilities are granted.", capabilities: [] });
   const description = role?.description || role?.purpose || fallback.description;
   const capabilities = role
@@ -186,7 +194,13 @@ function renderRole(name, role) {
     Array.isArray(role?.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
     Array.isArray(role?.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
-  const instructions = `${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
+  const guidance = renderInvocationGuidance(presentation, {
+    kind: "role",
+    id: name,
+    task: `Delegate the current task to ${displayLabel(presentation, "role", name)}`,
+    reason: `Use ${displayLabel(presentation, "role", name)} when its role matches the task and scope.`
+  });
+  const instructions = `${guidance}\n\n${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
   const readOnly = isRoleReadOnly(role);
   const sandboxMode = readOnly || !hasScopedMutation(role) ? "read-only" : "workspace-write";
   return ensureText([
@@ -471,37 +485,10 @@ export function parseCodexToml(value) {
 }
 
 function renderAgentsDocument(core) {
-  const lines = [
-    "# All About Agents",
-    "",
-    "Use the `using-all-about-agents` skill before the first answer or action when its trigger applies. Follow the active user and repository instruction hierarchy, preserve unrelated work, and report evidence or uncertainty.",
-    "",
-    "## Canonical rules",
-    ""
-  ];
-  for (const rule of [...(core.rules || [])].sort((left, right) => compareCodePoints(String(left.id), String(right.id)))) {
-    lines.push(`### ${rule.title || rule.id}`, "", rule.description || rule.purpose || "Canonical portable rule.");
-    if (Array.isArray(rule.requirements)) for (const requirement of rule.requirements) lines.push(`- ${requirement}`);
-    if (Array.isArray(rule.invariants)) for (const invariant of rule.invariants) lines.push(`- ${invariant}`);
-    lines.push("");
-  }
-  lines.push(
-    "## Canonical actions",
-    "",
-    "Actions dispatch their declared workflow; reusable procedures belong in skills. No repository recurrence definition is emitted; configure recurring operation through a supported product surface.",
-    ""
-  );
-  for (const command of [...core.commands].sort((left, right) => compareCodePoints(String(left.actionId), String(right.actionId)))) {
-    lines.push(
-      `### ${command.actionId}`,
-      "",
-      `- action: ${command.actionId}`,
-      `- workflowId: ${command.workflowId}`,
-      `- description: ${command.presentation.help}`,
-      ""
-    );
-  }
-  return ensureText(lines.join("\n"));
+  return renderCodexGlobalInstructions(core, {
+    canonicalRules: core.rules,
+    commands: core.commands
+  });
 }
 
 function validateCommandPresentation(commands) {
@@ -637,7 +624,7 @@ try {
   for (const skillRoot of skillRoots) {
     addFile(files, `${skillRoot}/using-all-about-agents/references/adapter-capability-guidance.md`, capabilityGuidance(semanticProfile));
     for (const skill of canonicalSkillIds(core)) {
-      const rendered = renderSkill(skill, skillRecords.get(skill));
+      const rendered = renderSkill(skill, skillRecords.get(skill), core.presentation);
       if (skillRoot === ".agents/skills" && !rendered.hasSource) missingSkills.push({ skill, hasRecord: skillRecords.has(skill) });
       addFile(files, `${skillRoot}/${skill}/SKILL.md`, rendered.content);
       for (const companion of skillCompanionsFor(skillRecords.get(skill))) addFile(files, `${skillRoot}/${skill}/${companion.relativePath}`, companion.content, companion.mode, "companion");
@@ -650,7 +637,7 @@ try {
   if (semanticProfile.modelPolicies[CODEX_SURFACE] !== "surface-default") addFile(files, "terra-max.config.toml", configFor(null, profile, false, renderedRoles));
   for (const roleName of roleNames) {
     const role = roleRecords.get(roleName) || { id: roleName, ...DEFAULT_ROLES[roleName] };
-    addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName)));
+    addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName), core.presentation));
   }
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   for (const file of files) {

@@ -14,6 +14,7 @@ import {
   resolveClaudeConfigDir
 } from "../../adapters/claude/adapter.mjs";
 import { AdapterContractError } from "../../adapters/shared/adapter-contract.mjs";
+import { renderClaudeGlobalInstructions, renderCodexGlobalInstructions, renderGeminiGlobalInstructions } from "../../adapters/shared/global-instructions.mjs";
 
 const requiredOutputs = [
   "adapters/claude/adapter.mjs",
@@ -38,6 +39,16 @@ test("Claude template documentation matches the deferred current core output", a
 });
 
 const core = await loadCore(process.cwd());
+
+test("shared global renderers use the loaded canonical body and normalize only line endings", () => {
+  assert.equal(renderClaudeGlobalInstructions(core), core.globalInstructions.content);
+  assert.equal(renderGeminiGlobalInstructions(core), core.globalInstructions.content);
+  const codex = renderCodexGlobalInstructions(core, { canonicalRules: core.rules.slice(0, 1), commands: core.commands.slice(0, 1) });
+  assert.match(codex, /^# Global Operating Rules/mu);
+  assert.match(codex, /## Canonical repository rules/u);
+  assert.match(codex, /## Canonical actions/u);
+  assert.equal((codex.match(/# Global Operating Rules/g) || []).length, 1);
+});
 
 function resultFor(profileId = "portable", overrides = {}) {
   return renderClaude({
@@ -105,9 +116,37 @@ test("portable Claude render contains every native component and all canonical s
     assert.ok(files.has(`skills/${skill}/SKILL.md`), `missing canonical skill ${skill}`);
     for (const companion of core.skills.find((record) => record.id === skill).companions) assert.ok(files.has(`skills/${skill}/${companion.relativePath}`), `missing companion ${skill}/${companion.relativePath}`);
   }
-  assert.equal(files.has("CLAUDE.md"), false);
+  assert.ok(files.has("CLAUDE.md"));
   assert.equal(files.has(".claude/CLAUDE.md"), false);
   assert.equal(files.has("AGENTS.md"), false);
+});
+
+test("Claude render emits the canonical global file and one presentation contract per visible prompt", () => {
+  const result = resultFor();
+  const files = fileMap(result);
+  assert.equal(files.get("CLAUDE.md"), core.globalInstructions.content);
+  assert.equal(files.get("CLAUDE.md").endsWith("\n"), true);
+  const presentationRule = files.get("rules/presentation.md");
+  assert.match(presentationRule, /brainstorming 🧠/u);
+  assert.match(presentationRule, /architect 🏛️/u);
+  assert.match(presentationRule, /aaa:build 🏗️/u);
+  assert.match(presentationRule, /implement-change 🛠️/u);
+  assert.equal((presentationRule.match(/brainstorming 🧠/gu) || []).length, 1);
+
+  const skill = files.get("skills/brainstorming/SKILL.md");
+  assert.match(skill, /Using skill \*\*brainstorming 🧠\*\*/u);
+  assert.match(skill, /Checklist/u);
+  assert.match(skill, /task-specific reason/u);
+
+  const agent = files.get("agents/architect.md");
+  assert.match(agent, /^name: architect$/mu);
+  assert.match(agent, /Invoking agent \*\*architect 🏛️\*\*/u);
+  assert.match(agent, /Checklist/u);
+
+  const command = files.get("commands/build.md");
+  assert.match(command, /aaa:build 🏗️/u);
+  assert.match(command, /implement-change 🛠️/u);
+  assert.equal((command.match(/^Checklist$/gmu) || []).length, 1);
 });
 
 test("Claude plugin relies on conventional hook discovery without duplicate manifest registration", () => {
@@ -435,6 +474,7 @@ test("Claude ownership manifest documents roots, mappings, and native validation
   const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/claude.json"), "utf8"));
   assert.equal(manifest.surface, "claude");
   assert.equal(manifest.configRoot.environment, "CLAUDE_CONFIG_DIR");
+  assert.equal(manifest.components.globalInstructions, "CLAUDE.md");
   assert.deepEqual(manifest.configRoot.sharedBy, ["claude-code-cli", "claude-desktop-local-code"]);
   assert.deepEqual(manifest.semanticCapabilities["web-primary-sources"], ["WebSearch", "WebFetch"]);
   assert.deepEqual([...manifest.readOnlyRoles.roles].sort(), ["architect", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]);
@@ -443,6 +483,7 @@ test("Claude ownership manifest documents roots, mappings, and native validation
   assert.deepEqual(manifest.pluginRegistration.marketplaceCommand, ["claude", "plugin", "marketplace", "add", "."]);
   assert.deepEqual(manifest.pluginRegistration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]);
   assert.ok(manifest.ownedPaths.includes(".claude-plugin/marketplace.json"));
+  assert.ok(manifest.ownedPaths.includes("CLAUDE.md"));
   assert.deepEqual(manifest.preflight, CLAUDE_PREREQUISITES);
   assert.deepEqual(manifest.profiles.portable.settings.permissions, {
     defaultMode: "default",
@@ -455,7 +496,7 @@ test("Claude ownership manifest documents roots, mappings, and native validation
   for (const profile of Object.values(manifest.profiles)) {
     assert.equal(Object.keys(profile.settings).some((key) => key.includes(".")), false);
   }
-  assert.match(manifest.rootInstructionContext, /not emitted/u);
+  assert.match(manifest.rootInstructionContext, /deployed to <CLAUDE_CONFIG_DIR>\/CLAUDE[.]md/u);
 });
 
 test("Claude render is deterministic and matches the checked-in portable snapshot", async () => {

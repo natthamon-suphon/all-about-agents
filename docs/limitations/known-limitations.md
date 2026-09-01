@@ -6,6 +6,11 @@ The status vocabulary follows the [evaluation method](../evaluations/method.md).
 required product, host, entitlement, session, or transport was unavailable.
 Neither status is a pass.
 
+Global instructions come from one canonical source and are rendered for all
+four surfaces. See [global instructions](../maintenance/global-instructions.md)
+for the two-layer model, exact destinations, emoji labels, and checklist
+guidance.
+
 The native lifecycle is ordered:
 
 ```text
@@ -50,6 +55,10 @@ permission blocking, persistence, and Gate 3 remain `NOT_RUN` or
   protection.
 - Native manual steps must use a fresh disposable product or workspace root.
   Do not request real credentials or paid model calls for a repository check.
+- Emoji labels, short reasons, and 2-to-7 item checklists are prompt guidance.
+  They are not a guarantee about vendor UI rendering.
+- `git pull` updates the repository only. It does not install or register live
+  configuration. Package apply and native registration remain separate.
 
 ## Required next evidence
 

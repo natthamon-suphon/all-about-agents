@@ -57,6 +57,7 @@ runtime checks without opening a native product. `diff` is non-mutating.
 Use these guides to keep the same source and quality on every machine:
 
 - [Contributing protocol](CONTRIBUTING.md)
+- [Global instructions and presentation](docs/maintenance/global-instructions.md)
 - [Sync and update](docs/maintenance/sync-and-update.md)
 - [Skill development](docs/maintenance/skill-development.md)
 - [Cross-tool quality](docs/maintenance/cross-tool-quality.md)
@@ -66,6 +67,20 @@ Use these guides to keep the same source and quality on every machine:
 
 A pull updates only the repository. It does not install files into a coding
 tool. Installation always needs a separate, exact action.
+
+The global layer gives shared safety and quality behavior. Project files and
+plugin rules are the more specific second layer. Read [global instructions and
+presentation](docs/maintenance/global-instructions.md) for the exact files,
+destinations, emoji labels, and checklist rules.
+
+On a receiving machine, use this exact order:
+
+```text
+pull -> validate -> render -> dry-run -> apply package -> dry-run registration -> explicit registration apply -> restart -> verify loaded instructions
+```
+
+Git is the source of truth. Pull does not install or write live configuration.
+Package apply and native registration are separate explicit actions.
 
 Use this lifecycle for every surface:
 

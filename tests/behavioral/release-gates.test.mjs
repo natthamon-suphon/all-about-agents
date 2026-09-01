@@ -14,7 +14,9 @@ import { routeRole } from "../../core/roles/router.mjs";
 import { CANONICAL_ROLE_IDS, assertNativeRoleSemantics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { classifyEmergencyAction } from "../../installers/lib/emergency-policy.mjs";
 import { isContained, assertSafeDestinationRoot } from "../../installers/lib/roots.mjs";
+import { auditPresentationTrace } from "../../core/evals/presentation-trace.mjs";
 import routingFixture from "./roles/routing.json" with { type: "json" };
+import presentationScenarios from "../../core/evals/scenarios/presentation-contract.json" with { type: "json" };
 import emergencyFixture from "../fixtures/emergency-actions.json" with { type: "json" };
 import emergencyPolicy from "../../core/hooks/emergency-guard.json" with { type: "json" };
 import { withTempRoot } from "../helpers/temp-root.mjs";
@@ -22,6 +24,10 @@ import { main } from "../../scripts/aaa.mjs";
 
 const requiredOutputs = [
   "core/evals/rubric.json",
+  "core/evals/presentation-trace.mjs",
+  "core/evals/presentation-trace.schema.json",
+  "core/evals/scenarios/presentation-contract.json",
+  "tests/behavioral/presentation-contract.test.mjs",
   "tests/behavioral/release-gates.test.mjs",
   "docs/evaluations/method.md"
 ];
@@ -60,6 +66,22 @@ test("emergency protection remains a non-runtime claim across rendered surfaces"
     assert.notEqual(nativeIntegrationStatus(records[0]), "pass");
     assert.doesNotMatch(JSON.stringify(records[0]), /"(?:automatic|enabled|active|ready)"\s*:\s*true/iu);
   }
+});
+
+test("T07 structured presentation scenarios are deterministic and do not make native claims", async () => {
+  const core = await loadCore(process.cwd());
+  assert.equal(presentationScenarios.scenarios.length, 10);
+  for (const scenario of presentationScenarios.scenarios) {
+    for (const entry of scenario.cases) {
+      const first = auditPresentationTrace({ trace: entry.trace, presentation: core.presentation });
+      const second = auditPresentationTrace({ trace: entry.trace, presentation: core.presentation });
+      assert.deepEqual(first, second, `${scenario.id}/${entry.id} must be deterministic`);
+      assert.equal(first.valid, entry.expectedValid, `${scenario.id}/${entry.id}: ${JSON.stringify(first.errors)}`);
+      if (entry.expectedValid) assert.deepEqual(first.errors, []);
+    }
+  }
+  const exceptional = auditPresentationTrace({ trace: presentationScenarios.scenarios.find((entry) => entry.id === "exceptional-terminal-reasons").cases[0].trace, presentation: core.presentation });
+  assert.equal(exceptional.summary.terminalExceptionalStates.length, 4);
 });
 
 const rubricPath = resolve(process.cwd(), "core/evals/rubric.json");

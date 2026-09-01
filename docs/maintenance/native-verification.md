@@ -18,6 +18,17 @@ Record each state separately. Use `PASS` only for an observed operation. Use
 `NOT_RUN_UNAVAILABLE` when the product, host, entitlement, session, or
 transport is unavailable.
 
+For a receiving machine, use this exact order before the observations below:
+
+```text
+pull -> validate -> render -> dry-run -> apply package -> dry-run registration -> explicit registration apply -> restart -> verify loaded instructions
+```
+
+Git is the source of truth, but pull does not install or write live
+configuration. Package apply and native registration are separate explicit
+actions. See [global instructions](global-instructions.md) for the exact
+global destinations and the project/plugin second layer.
+
 ## Repository and disposable checks
 
 Run these checks from the repository root:

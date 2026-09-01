@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { validateNativeIntegrationRecord } from "./native-state.mjs";
+import { GLOBAL_INSTRUCTION_SOURCE_PATH } from "../../installers/lib/global-instructions.mjs";
 
 export const SURFACES = Object.freeze(["claude", "codex", "antigravity-2", "agy"]);
 export const ACTION_IDS = Object.freeze([
@@ -319,6 +320,18 @@ function coreShapeErrors(core) {
   for (const key of ["inventory", "rules", "roles", "skills", "workflows", "commands", "evals"]) {
     if (!Object.hasOwn(core, key)) errors.push(issue("invalid-core", `core.${key} is required`, `/core/${key}`));
     else if (key !== "inventory" && !Array.isArray(core[key])) errors.push(issue("invalid-core", `core.${key} must be an array`, `/core/${key}`));
+  }
+  if (!Object.hasOwn(core, "globalInstructions")) errors.push(issue("invalid-core", "core.globalInstructions is required", "/core/globalInstructions"));
+  else if (!isObject(core.globalInstructions)) errors.push(issue("invalid-core", "core.globalInstructions must be an object", "/core/globalInstructions"));
+  else {
+    if (core.globalInstructions.sourcePath !== GLOBAL_INSTRUCTION_SOURCE_PATH) errors.push(issue("invalid-core", `core.globalInstructions.sourcePath must equal ${GLOBAL_INSTRUCTION_SOURCE_PATH}`, "/core/globalInstructions/sourcePath"));
+    if (typeof core.globalInstructions.content !== "string") errors.push(issue("invalid-core", "core.globalInstructions.content must be a string", "/core/globalInstructions/content"));
+  }
+  if (!Object.hasOwn(core, "presentation")) errors.push(issue("invalid-core", "core.presentation is required", "/core/presentation"));
+  else if (!isObject(core.presentation)) errors.push(issue("invalid-core", "core.presentation must be an object", "/core/presentation"));
+  else {
+    if (!isObject(core.presentation.emojiRegistry)) errors.push(issue("invalid-core", "core.presentation.emojiRegistry must be an object", "/core/presentation/emojiRegistry"));
+    if (!isObject(core.presentation.progressContract)) errors.push(issue("invalid-core", "core.presentation.progressContract must be an object", "/core/presentation/progressContract"));
   }
   return errors;
 }

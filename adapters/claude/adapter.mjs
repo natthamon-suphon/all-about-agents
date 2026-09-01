@@ -17,6 +17,8 @@ import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeSc
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
+import { renderClaudeGlobalInstructions } from "../shared/global-instructions.mjs";
+import { displayLabel, renderInvocationGuidance, renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
 
 const CLAUDE_SURFACE = "claude";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
@@ -299,14 +301,20 @@ function canonicalSkillIds(core) {
   return [...new Set([...fromInventory, ...fromRecords].filter((id) => typeof id === "string" && id.length > 0))].sort();
 }
 
-function renderSkill(name, record) {
+function renderSkill(name, record, presentation) {
   const hasSource = Boolean(record && typeof record.content === "string" && record.content.trim().length > 0);
   const description = record?.description || `Canonical ${name} skill.`;
-  const body = hasSource
+  const sourceBody = hasSource
     ? stripFrontmatter(record.content)
     : "DEFERRED: canonical source is missing.\nOwner: cycle-05-skill-remediation (T017-T043).\n";
+  const guidance = renderInvocationGuidance(presentation, {
+    kind: "skill",
+    id: name,
+    task: `Apply ${displayLabel(presentation, "skill", name)} to the current task`,
+    reason: `Use ${displayLabel(presentation, "skill", name)} when its scope matches the current task.`
+  });
   return {
-    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${body}`),
+    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${guidance}\n\n${sourceBody}`),
     hasSource
   };
 }
@@ -322,7 +330,7 @@ function renderRule(rule) {
   return ensureText(lines.join("\n"));
 }
 
-function renderAgent(name, role) {
+function renderAgent(name, role, presentation) {
   const defaultRole = DEFAULT_ROLES[name];
   const fallback = defaultRole || Object.freeze({ description: "Unknown role; no native capabilities are granted.", capabilities: [], readOnly: true });
   const description = role?.description || role?.purpose || fallback.description;
@@ -339,7 +347,13 @@ function renderAgent(name, role) {
     Array.isArray(role?.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
   const capabilityDiagnostics = nativeCapabilityDiagnostics({ surface: CLAUDE_SURFACE, role: role || fallback, mappings: CLAUDE_SEMANTIC_MAPPINGS, blockedNativeTools: READ_ONLY_NATIVE_TOOLS });
-  const body = `${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.\n`}${capabilityDiagnostics.length > 0 ? `\n\nNative capability diagnostic: ${capabilityDiagnostics.map((entry) => entry.message).join(" ")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
+  const guidance = renderInvocationGuidance(presentation, {
+    kind: "role",
+    id: name,
+    task: `Delegate the current task to ${displayLabel(presentation, "role", name)}`,
+    reason: `Use ${displayLabel(presentation, "role", name)} when its role matches the task and scope.`
+  });
+  const body = `${guidance}\n\n${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.\n`}${capabilityDiagnostics.length > 0 ? `\n\nNative capability diagnostic: ${capabilityDiagnostics.map((entry) => entry.message).join(" ")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
   const readOnly = isRoleReadOnly(role || fallback);
   const allowedTools = readOnly ? tools.filter((tool) => !READ_ONLY_NATIVE_TOOLS.includes(tool)) : tools;
   const restriction = readOnly
@@ -348,9 +362,17 @@ function renderAgent(name, role) {
   return ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\nmodel: inherit\ntools:\n${allowedTools.map((tool) => `  - ${tool}`).join("\n")}\n${restriction}---\n\n${body}`);
 }
 
-function renderCommand(command) {
+function renderCommand(command, presentation) {
   const description = command.presentation?.help || `Dispatch ${command.actionId}.`;
-  return ensureText(`---\ndescription: ${quoteFrontmatter(description)}\n---\n\nDispatch canonical action \`${command.actionId}\` through workflow \`${command.workflowId}\`.\n`);
+  const guidance = renderInvocationGuidance(presentation, {
+    kind: "command",
+    id: command.actionId,
+    workflowId: command.workflowId,
+    task: `Run ${displayLabel(presentation, "command", command.actionId)} for the requested workflow`,
+    reason: `Run ${displayLabel(presentation, "command", command.actionId)} for the requested workflow.`
+  });
+  const workflowLabel = displayLabel(presentation, "workflow", command.workflowId);
+  return ensureText(`---\ndescription: ${quoteFrontmatter(description)}\n---\n\nDispatch canonical action \`${command.actionId}\` through workflow \`${workflowLabel}\`.\n\n${guidance}\n`);
 }
 
 function hookConfig() {
@@ -543,6 +565,7 @@ export function renderClaude(input = {}) {
   const plugin = pluginManifest();
   addFile(files, ".claude-plugin/plugin.json", renderJson(plugin));
   addFile(files, ".claude-plugin/marketplace.json", renderJson(marketplaceManifest(plugin)));
+  addFile(files, "CLAUDE.md", renderClaudeGlobalInstructions(core));
   addFile(files, "config/settings.json", renderJson(settingsFor(semanticProfile, { statuslineCommand })));
   addFile(files, "config/statusline.json", renderJson({ schemaVersion: 1, displayName: statuslineName }));
   addFile(files, "docs/semantic-mappings.md", mappingsDocument());
@@ -563,16 +586,17 @@ export function renderClaude(input = {}) {
 
   const missingSkills = [];
   for (const skill of canonicalSkillIds(core)) {
-    const rendered = renderSkill(skill, skillRecords.get(skill));
+    const rendered = renderSkill(skill, skillRecords.get(skill), core.presentation);
     if (!rendered.hasSource) missingSkills.push(skill);
     addFile(files, `skills/${skill}/SKILL.md`, rendered.content);
     for (const companion of skillCompanionsFor(skillRecords.get(skill))) addFile(files, `skills/${skill}/${companion.relativePath}`, companion.content, companion.mode, "companion");
   }
+  addFile(files, "rules/presentation.md", renderPresentationCatalog(core.presentation));
   for (const rule of [...core.rules].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `rules/${rule.id}.md`, renderRule(rule));
 
   const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort();
-  for (const roleName of roleNames) addFile(files, `agents/${roleName}.md`, renderAgent(roleName, roleRecords.get(roleName)));
-  for (const command of [...core.commands].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `commands/${command.id}.md`, renderCommand(command));
+  for (const roleName of roleNames) addFile(files, `agents/${roleName}.md`, renderAgent(roleName, roleRecords.get(roleName), core.presentation));
+  for (const command of [...core.commands].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `commands/${command.id}.md`, renderCommand(command, core.presentation));
 
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   const nativeStatusline = createNativeIntegrationRecord({
@@ -621,6 +645,13 @@ export function renderClaude(input = {}) {
         relativePath: "config/settings.json",
         rootEnv: "CLAUDE_CONFIG_DIR",
         destination: "settings.json",
+        consumers: ["claude-code-cli", "claude-desktop-local-code"]
+      },
+      {
+        kind: "instructions",
+        relativePath: "CLAUDE.md",
+        rootEnv: "CLAUDE_CONFIG_DIR",
+        destination: "CLAUDE.md",
         consumers: ["claude-code-cli", "claude-desktop-local-code"]
       },
       {

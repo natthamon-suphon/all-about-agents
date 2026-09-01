@@ -20,6 +20,7 @@
     "pluginManifest": ".codex-plugin/plugin.json",
     "marketplace": ".agents/plugins/marketplace.json",
     "instructions": "AGENTS.md",
+    "globalInstructions": "AGENTS.md",
     "skills": "skills/{skill}/SKILL.md",
     "directSkills": ".agents/skills/{skill}/SKILL.md",
     "agents": ".codex/agents/{role}.toml",
@@ -81,19 +82,29 @@
     "aaa:verify": "AGENTS.md"
   },
   "ownedPaths": [
-    ".codex-plugin/plugin.json",
     ".agents/plugins/marketplace.json",
+    ".agents/skills/{skill}/**",
+    ".agents/skills/{skill}/SKILL.md",
+    ".codex-plugin/plugin.json",
+    ".codex/agents/{role}.toml",
+    "AGENTS.md",
+    "agents/{role}.toml",
+    "config.toml",
+    "docs/manual-desktop.md",
+    "hooks/**",
     "hooks/hooks.json",
     "hooks/{name}.json",
     "hooks/{name}.mjs",
-    "AGENTS.md",
+    "skills/{skill}/**",
     "skills/{skill}/SKILL.md",
-    ".agents/skills/{skill}/SKILL.md",
-    ".codex/agents/{role}.toml",
-    "config.toml",
-    "terra-max.config.toml",
-    "docs/manual-desktop.md"
+    "terra-max.config.toml"
   ],
+  "presentation": {
+    "registry": "core/presentation/emoji-registry.json",
+    "progressContract": "core/presentation/progress-contract.json",
+    "renderedIn": "AGENTS.md and native skill/role prompts"
+  },
+  "rootInstructionContext": "AGENTS.md is emitted with the canonical global body first, followed by Codex rules, presentation labels, and action-to-workflow mappings; project AGENTS.md remains the more specific layer",
   "nativeValidation": {
     "command": ["codex", "doctor", "--json", "--no-color"],
     "requiredWhenAvailable": true

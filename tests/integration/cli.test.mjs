@@ -67,6 +67,9 @@ test("register binds real single-surface and namespaced multi-surface packages t
     assert.equal(singleInstall.code, 0, singleInstall.stderr);
     const productRoot = resolve(root, "product");
     await mkdir(productRoot, { recursive: true });
+    const agyInstructionRoot = resolve(root, "gemini");
+    const agyProductRoot = resolve(agyInstructionRoot, "antigravity-cli");
+    await mkdir(agyProductRoot, { recursive: true });
     const singleRegister = await capture(["register", "--surface", "claude", "--profile", "template", "--package-root", singlePackage, "--format", "json"], { productRoot });
     assert.equal(singleRegister.code, 0, singleRegister.stderr);
     assert.equal(jsonOutput(singleRegister).mode, "dry-run");
@@ -76,10 +79,21 @@ test("register binds real single-surface and namespaced multi-surface packages t
     const aggregateInstall = await capture(["install", "--surface", "all", "--profile", "template", "--statusline-name", "State binding", "--destination-root", aggregateRoot, "--apply", "--format", "json"]);
     assert.equal(aggregateInstall.code, 0, aggregateInstall.stderr);
     for (const surface of ["claude", "codex", "agy", "antigravity-2"]) {
-      const runtime = surface === "antigravity-2" ? { productRoot: null } : { productRoot };
+      const runtime = surface === "antigravity-2"
+        ? { productRoot: null, instructionRoot: null }
+        : surface === "agy"
+          ? { productRoot: agyProductRoot, instructionRoot: agyInstructionRoot }
+          : { productRoot };
       const result = await capture(["register", "--surface", surface, "--profile", "template", "--package-root", resolve(aggregateRoot, surface), "--format", "json"], runtime);
       assert.equal(result.code, 0, `${surface}: ${result.stderr}`);
-      assert.equal(jsonOutput(result).status, "dry-run");
+      const report = jsonOutput(result);
+      assert.equal(report.status, "dry-run");
+      if (surface === "agy") {
+        assert.equal(report.productRoot, "<PRODUCT_ROOT>");
+        assert.equal(report.instructionRoot, "<INSTRUCTION_ROOT>");
+        assert.equal(report.actions[0].id, "gemini-instructions-deploy");
+        assert.match(report.actions[0].targetPath, /^<INSTRUCTION_ROOT>[\\/]GEMINI\.md$/u);
+      }
     }
   });
 });

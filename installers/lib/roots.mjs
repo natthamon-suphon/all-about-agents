@@ -173,4 +173,24 @@ export function resolveDestinationRoot({ surface, override = null, env = process
   return assertSafeDestinationRoot(root, { platform, homeDir: home, allowedProductRoots: [root] });
 }
 
+/**
+ * Resolve the shared documented Gemini instruction home without creating it
+ * or reading any product settings. An explicit override is intended for a
+ * disposable package root; it is still subjected to the same fail-closed
+ * destination checks as the native home.
+ */
+export function resolveGeminiHome({ override = null, homeDir = homedir(), platform = process.platform } = {}) {
+  const pathModule = moduleFor(platform);
+  const home = validateHome(homeDir, pathModule);
+  const selected = override === null || override === undefined
+    ? pathModule.join(home, ".gemini")
+    : override;
+  const root = candidatePath(selected, home, pathModule);
+  return assertSafeDestinationRoot(root, {
+    platform,
+    homeDir: home,
+    allowedProductRoots: [root]
+  });
+}
+
 export { isContained, inspectExistingAncestors };
