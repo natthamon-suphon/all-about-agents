@@ -50,7 +50,11 @@ permission blocking, persistence, and Gate 3 remain `NOT_RUN` or
 - Codex hooks are not automatic. Registration, trust, active loading, and
   runtime behavior are separate states.
 - The `agy` settings artifact is a sparse overlay. Its only documented
-  destination is `~/.gemini/antigravity-cli/settings.json`.
+  destination is `~/.gemini/antigravity-cli/settings.json`. Its installed
+  plugin root is a different directory, `~/.gemini/config/plugins/`, which
+  Antigravity Desktop also reads. On the observed versions a global `agy`
+  install and a global Desktop install cannot both own `all-about-agents`.
+  See [agy compatibility](../compatibility/agy.md).
 - Desktop hook templates are disabled and inert. They are not active
   protection.
 - Native manual steps must use a fresh disposable product or workspace root.
@@ -59,6 +63,38 @@ permission blocking, persistence, and Gate 3 remain `NOT_RUN` or
   They are not a guarantee about vendor UI rendering.
 - `git pull` updates the repository only. It does not install or register live
   configuration. Package apply and native registration remain separate.
+- Native registration needs the product binary on `PATH`. When it is missing,
+  the plan copies managed files and then fails its native commands, so a
+  package can look installed while the product knows nothing about it. Confirm
+  with the product's own discovery command, never from installer output.
+- A registered package root is read on every product launch. A root under
+  `%TEMP%`, `$TMPDIR`, or `/tmp` can be removed by routine cleanup, which
+  breaks the registration with no error at install time.
+
+## Over-broad emergency-guard matches
+
+`installers/lib/emergency-policy.mjs` classifies a command before it runs and
+`core/hooks/emergency-guard.mjs` applies that decision. The classifier fails
+closed, so it denies some read-only commands that are not destructive.
+
+Observed on Windows with the installed Claude package on 2026-09-01:
+
+| Command shape | Reported reason |
+| --- | --- |
+| `node scripts/aaa.mjs validate --format json` | `guardrail-bypass` |
+| `cp <config file> <scratch directory>` | `raw-disk-destruction` |
+| two chained `ls -a` reads of separate config directories | `secret-output-or-transmission` |
+| `rm -r "<one resolved absolute directory>"` | `filesystem-root-erasure` |
+
+The same `validate` invocation run through its `npm` script alias was allowed,
+so the trigger is the command text, not the operation.
+
+Treat a denial as a classifier result to check, not as proof that the command
+was dangerous. Re-express the work as a single simple command, or use the
+repository's `npm` script aliases. Do not disable the guard to get past a
+denial, and do not weaken a rule without exact authority and a focused
+regression check. Narrowing these patterns is an open change; until it lands,
+the false positives above are expected behavior.
 
 ## Required next evidence
 

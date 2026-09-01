@@ -28,6 +28,15 @@ its plugin manifest and local marketplace together inside the generated package.
 - Windows: PowerShell and Node.js. See [Windows setup](docs/setup/windows.md).
 - macOS: Bash or another POSIX `sh` and Node.js. See [macOS setup](docs/setup/macos.md).
 
+That is the whole requirement list. The repository declares no `dependencies`
+and no `devDependencies`. Optional workstation tools such as `uvx`,
+`ui-ux-pro-max-cli`, Ponytail, and Context7 are described in
+[companion tooling](docs/setup/companion-tooling.md); none of them is needed to
+render, validate, or install a package.
+
+Native registration additionally needs the product binary to resolve. See
+[native registration](docs/maintenance/native-registration.md).
+
 ## Safe repository workflow
 
 Warning: `--apply` is installer-authoritative for the selected root. It may

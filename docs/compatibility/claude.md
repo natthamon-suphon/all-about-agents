@@ -74,6 +74,26 @@ Full access does not remove the emergency denies. The profiles keep denies for
 `disableAllHooks` setting disables hooks globally. It does not prove that an
 emergency deny is active, and it does not replace the narrow deny policy.
 
+## Session defaults
+
+Both profiles render the same session defaults, because they describe the
+operator experience rather than a model or permission policy:
+
+| Key | Value | Effect |
+| --- | --- | --- |
+| `viewMode` | `focus` | Starts each session in the focus transcript view. |
+| `autoMemoryEnabled` | `true` | Lets the session read and write its auto-memory store. |
+| `autoDreamEnabled` | `true` | Enables background memory consolidation. |
+
+`autoMemoryDirectory` is deliberately not rendered. Leaving it unset keeps the
+per-project default `~/.claude/projects/<sanitized-cwd>/memory/`, so projects do
+not share one store. Claude Code also ignores that key when it comes from a
+checked-in project settings file, so the user-level file written by
+`register --apply` is the only place it would take effect.
+
+These are settings values, not observed behavior. Record `active` only after a
+fresh session shows them.
+
 ## Registration and reload
 
 Claude uses `CLAUDE_CONFIG_DIR` when it is set. Otherwise it uses `~/.claude`.

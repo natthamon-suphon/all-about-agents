@@ -32,6 +32,30 @@ are separate explicit actions. The managed global destinations are
 An authorized apply may overwrite these managed global files without a backup.
 It must not guess a product root or replace unknown neighboring files.
 
+## Product binaries must resolve first
+
+The native steps of `register --apply` spawn `claude`, `codex`, and `agy` by
+bare name. Rendering and package apply never call them. When a binary does not
+resolve, the plan still copies its managed files and then fails the native
+commands, which leaves a package that looks installed but that the product
+does not know about. Verify discovery with each product's own command before
+you register:
+
+```text
+claude plugin list
+codex plugin list --available --json
+agy plugin list
+```
+
+Prepend the product's `bin` directory to `PATH` for the registration command
+only when the binary is installed outside `PATH`. Resolve that directory on the
+machine you are setting up; never reuse a path recorded on another machine.
+
+The registered package root is stored in live product configuration and read on
+every launch. Use a durable root, not a temporary directory that the operating
+system cleans up. See [Windows setup](../setup/windows.md) and
+[macOS setup](../setup/macos.md).
+
 ## Before registration
 
 1. Enter the repository root.

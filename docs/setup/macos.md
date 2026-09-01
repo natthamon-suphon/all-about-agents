@@ -35,6 +35,46 @@ render as a live product update.
 The launcher at `installers/install.sh` resolves its own directory and forwards
 the CLI arguments to `scripts/aaa.mjs`.
 
+Optional workstation tools are listed in
+[companion tooling](companion-tooling.md). They are not repository
+dependencies.
+
+### Product binaries must resolve before native registration
+
+`register --apply` spawns the product executables by bare name: `claude`,
+`codex`, and `agy`. Rendering and `install --apply` do not need them, so a
+package can be complete while a later registration silently fails its native
+steps. Confirm each binary you intend to register:
+
+```sh
+command -v claude codex agy
+```
+
+A product installed outside `PATH` still works; prepend its `bin` directory for
+the registration command only, rather than editing your shell profile:
+
+```sh
+PATH="<PRODUCT_BIN_DIRECTORY>:$PATH" node scripts/aaa.mjs register ...
+```
+
+Do not copy another machine's install path. Resolve it on the machine you are
+setting up.
+
+## Choose the package root before you render
+
+There are two different jobs, and only one of them may use a temporary
+directory:
+
+- **Reviewing a render.** Use a fresh `mktemp -d` root and delete it when the
+  review is done. Every example below is this case.
+- **A package you will register.** Claude and Codex store the package path in
+  live configuration and read it on every launch, so the root must outlive the
+  session. macOS removes items from `$TMPDIR` and `/tmp`, which silently breaks
+  a registered plugin. Use a durable root such as `~/.all-about-agents/package`
+  instead.
+
+The root is still explicit either way; the CLI never guesses one.
+
 ## Validate before rendering
 
 ```sh

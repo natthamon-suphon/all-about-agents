@@ -171,6 +171,18 @@ test("template Claude render emits full-access settings without unsupported effo
   assert.ok(settings.permissions.deny.length > 0);
 });
 
+test("Claude settings deploy the focus view and auto-memory session defaults for both profiles", () => {
+  for (const profile of ["portable", "template"]) {
+    const settings = JSON.parse(fileMap(resultFor(profile)).get("config/settings.json"));
+    assert.equal(settings.viewMode, "focus");
+    assert.equal(settings.autoMemoryEnabled, true);
+    assert.equal(settings.autoDreamEnabled, true);
+    // autoMemoryDirectory stays unset so each project keeps its own
+    // ~/.claude/projects/<sanitized-cwd>/memory/ store.
+    assert.equal(Object.hasOwn(settings, "autoMemoryDirectory"), false);
+  }
+});
+
 test("Claude native settings activate the statusline for both profiles and platforms", () => {
   for (const profile of ["portable", "template"]) {
     const windows = resultFor(profile, {

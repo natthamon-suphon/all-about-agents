@@ -101,6 +101,19 @@ export const CLAUDE_MODEL_POLICY = Object.freeze({
   })
 });
 
+/**
+ * Session defaults deployed to every machine, independent of the model policy.
+ *
+ * `autoMemoryDirectory` stays unset on purpose: Claude Code then keeps a separate
+ * `~/.claude/projects/<sanitized-cwd>/memory/` store per project, and the key is
+ * ignored anyway when it comes from a checked-in project settings file.
+ */
+export const CLAUDE_SESSION_DEFAULTS = Object.freeze({
+  viewMode: "focus",
+  autoMemoryEnabled: true,
+  autoDreamEnabled: true
+});
+
 const EMERGENCY_DENIES = Object.freeze([
   "Bash(rm -rf /)",
   "Bash(rm -rf ~)",
@@ -466,6 +479,7 @@ export function settingsFor(profile, { statuslineCommand } = {}) {
   const settings = profile.modelPolicies[CLAUDE_SURFACE] === "surface-default"
     ? {}
     : clone(CLAUDE_MODEL_POLICY.template);
+  Object.assign(settings, clone(CLAUDE_SESSION_DEFAULTS));
   settings.statusLine = {
     type: "command",
     command: statuslineCommand,
