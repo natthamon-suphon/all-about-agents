@@ -21,6 +21,7 @@ const PLUGIN_ROOT = "";
 const PLUGIN_NAME = "all-about-agents";
 export const AGY_DOCUMENTED_SETTINGS_DESTINATION = "~/.gemini/antigravity-cli/settings.json";
 export const AGY_INSTALLED_PLUGIN_RELATIVE_ROOT = "plugins/all-about-agents";
+export const AGY_INSTALLED_PLUGIN_ROOT = "~/.gemini/config/plugins/all-about-agents/";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
 const STATUSLINE_WINDOWS_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.ps1", import.meta.url), "utf8");
 const STATUSLINE_POSIX_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.sh", import.meta.url), "utf8");
@@ -232,19 +233,34 @@ function isAbsoluteWindowsPath(value) {
   return /^(?:[A-Za-z]:\/|\/\/)/u.test(value);
 }
 
-/** Resolve the documented agy CLI settings directory without touching it. */
-export function resolveAgyConfigDir({ homeDir = homedir(), platform = process.platform } = {}) {
+function resolveAgyHomeChild(child, { homeDir = homedir(), platform = process.platform } = {}) {
   if (!["win32", "darwin", "linux"].includes(platform)) throw new TypeError(`agy statusline does not support platform ${String(platform)}`);
   if (typeof homeDir !== "string" || homeDir.trim().length === 0) throw new TypeError("agy statusline home directory is unsafe");
   const root = validateAgyConfigRoot(homeDir, platform);
   const prefix = root === "/" ? "" : root.endsWith("/") ? root : `${root}/`;
-  return `${prefix}.gemini/antigravity-cli`;
+  return `${prefix}.gemini/${child}`;
 }
 
-/** Render a shell-safe command for the launcher under the selected agy root. */
+/** Resolve the documented agy CLI settings directory without touching it. */
+export function resolveAgyConfigDir(options = {}) {
+  return resolveAgyHomeChild("antigravity-cli", options);
+}
+
+/**
+ * Resolve the directory that holds installed agy plugins.
+ *
+ * `agy plugin install` writes to `~/.gemini/config/plugins/<plugin_name>/`, which is a
+ * different root from the CLI settings directory returned by `resolveAgyConfigDir`.
+ * Observed with agy 1.1.23; see docs/compatibility/agy.md.
+ */
+export function resolveAgyPluginContainerDir(options = {}) {
+  return resolveAgyHomeChild("config", options);
+}
+
+/** Render a shell-safe command for the launcher under the selected agy plugin root. */
 export function renderAgyStatuslineCommand({ configRoot, homeDir = homedir(), platform = process.platform } = {}) {
   if (!["win32", "darwin", "linux"].includes(platform)) throw new TypeError(`agy statusline does not support platform ${String(platform)}`);
-  const root = validateAgyConfigRoot(configRoot ?? resolveAgyConfigDir({ homeDir, platform }), platform);
+  const root = validateAgyConfigRoot(configRoot ?? resolveAgyPluginContainerDir({ homeDir, platform }), platform);
   const rootPrefix = root === "/" ? "" : root.replace(/\/$/u, "");
   const scriptPath = `${rootPrefix}/${AGY_INSTALLED_PLUGIN_RELATIVE_ROOT}/statusline/${platform === "win32" ? "statusline.ps1" : "statusline.sh"}`;
   if (platform === "win32") {
@@ -411,7 +427,7 @@ function renderCapabilityGuidance() {
     "",
     "This package is a portable agy CLI plugin. Its package root contains plugin.json, hooks.json, skills/, agents/, and rules/.",
     "The documented plugin install operation receives the package directory; this adapter never writes an installed profile.",
-    "The documented installed plugin root is `~/.gemini/antigravity-cli/plugins/<plugin_name>/`; this renderer creates only a portable package.",
+    "The documented installed plugin root is `~/.gemini/config/plugins/<plugin_name>/`; this renderer creates only a portable package.",
     "The shared Antigravity subagent and hook documentation publishes the agent fields and tool names used by this adapter.",
     "Read-only roles remove command, mutation, and agent-management tools while keeping useful read and research tools.",
     "Native controls are workspace-wide where available; the implementer's declared task paths remain an outer approval boundary.",
@@ -705,7 +721,7 @@ export function renderAgy(input = {}) {
   const modelSelected = semanticProfile.modelPolicies[SURFACE] !== "surface-default";
   const statuslineName = validateStatuslineName(input.statuslineName ?? "");
   const platform = typeof input.platform === "string" && input.platform.trim() ? input.platform : process.platform;
-  const configRoot = validateAgyConfigRoot(input.configRoot ?? resolveAgyConfigDir({ homeDir: input.homeDir, platform }), platform);
+  const configRoot = validateAgyConfigRoot(input.configRoot ?? resolveAgyPluginContainerDir({ homeDir: input.homeDir, platform }), platform);
   const statuslineCommand = renderAgyStatuslineCommand({ configRoot, platform });
   const skillRecords = new Map(input.core.skills.map((record) => [record.id || record.name, record]));
   const roleRecords = new Map(input.core.roles.map((record) => [record.id || record.name, record]));
@@ -864,7 +880,7 @@ export function renderAgy(input = {}) {
         surface: SURFACE,
         relativePath: "plugin.json",
         command: "agy plugin install PACKAGE_DIRECTORY",
-        stagedDestination: "~/.gemini/antigravity-cli/plugins/all-about-agents/",
+        stagedDestination: AGY_INSTALLED_PLUGIN_ROOT,
         manualOnly: false,
         disposableOnly: true,
         automaticInstall: true,

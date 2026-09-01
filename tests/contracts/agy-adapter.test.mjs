@@ -153,6 +153,24 @@ test("agy resolves the documented CLI config root and quotes platform launchers"
   assert.equal(adapter.renderAgyStatuslineCommand({ configRoot: "/Users/tester/Agy Config/O'Reilly", platform: "darwin" }), "'/Users/tester/Agy Config/O'\\''Reilly/plugins/all-about-agents/statusline/statusline.sh'");
 });
 
+test("agy separates the CLI settings root from the observed installed plugin root", () => {
+  assert.equal(adapter.resolveAgyPluginContainerDir({ homeDir: "C:/Users/tester", platform: "win32" }), "C:/Users/tester/.gemini/config");
+  assert.equal(adapter.resolveAgyPluginContainerDir({ homeDir: "C:/", platform: "win32" }), "C:/.gemini/config");
+  assert.equal(adapter.resolveAgyPluginContainerDir({ homeDir: "/Users/tester", platform: "darwin" }), "/Users/tester/.gemini/config");
+  assert.notEqual(
+    adapter.resolveAgyPluginContainerDir({ homeDir: "C:/Users/tester", platform: "win32" }),
+    adapter.resolveAgyConfigDir({ homeDir: "C:/Users/tester", platform: "win32" })
+  );
+  const windows = adapter.renderAgyStatuslineCommand({ homeDir: "C:/Users/tester", platform: "win32" });
+  const decoded = Buffer.from(windows.match(/ ([A-Za-z0-9+/=]+)$/u)[1], "base64").toString("utf16le");
+  assert.match(decoded, /C:\/Users\/tester\/\.gemini\/config\/plugins\/all-about-agents\/statusline\/statusline\.ps1/u);
+  assert.equal(decoded.includes("antigravity-cli"), false);
+  assert.equal(
+    adapter.renderAgyStatuslineCommand({ homeDir: "/Users/tester", platform: "darwin" }),
+    "'/Users/tester/.gemini/config/plugins/all-about-agents/statusline/statusline.sh'"
+  );
+});
+
 test("agy rejects unsafe Windows statusline roots and preserves safe Unicode roots", () => {
   assert.throws(() => adapter.resolveAgyConfigDir({ homeDir: "C:/safe//child", platform: "win32" }), /empty path segment|config root/iu);
   for (const root of [
@@ -328,7 +346,7 @@ test("agy settings registration names only the documented CLI destination", asyn
   assert.doesNotMatch(JSON.stringify(manifest), /~\/\.gemini\/config\/config\.json/u);
   assert.doesNotMatch(JSON.stringify(manifest), /~\/\.gemini\/antigravity\//u);
   assert.equal(manifest.settingsOverlay.automaticWrite, true);
-  assert.equal(manifest.installedPluginRoot, "~/.gemini/antigravity-cli/plugins/all-about-agents/");
+  assert.equal(manifest.installedPluginRoot, "~/.gemini/config/plugins/all-about-agents/");
   assert.equal(manifest.settingsOverlay.status, "apply-after-review");
   assert.equal(manifest.components.statusline, "statusline/statusline.mjs");
   assert.equal(manifest.components.statuslineConfig, "statusline/statusline.json");
@@ -351,7 +369,7 @@ test("agy official contract evidence is tracked and rendered claims no root conf
   const rendered = resultFor();
   const serialized = JSON.stringify(rendered);
   assert.doesNotMatch(serialized, /sources conflict|active (?:plugin|package|settings) roots?[^.]*unknown/iu);
-  assert.equal(rendered.registrations.find((entry) => entry.kind === "plugin-registration").stagedDestination, "~/.gemini/antigravity-cli/plugins/all-about-agents/");
+  assert.equal(rendered.registrations.find((entry) => entry.kind === "plugin-registration").stagedDestination, "~/.gemini/config/plugins/all-about-agents/");
   assert.ok(rendered.diagnostics.every((entry) => entry.sourcePath !== "research-agy-2.md"));
 });
 

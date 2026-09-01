@@ -142,9 +142,9 @@
       "productVersion": "1.1.22",
       "value": {
         "command": "agy plugin install <local-or-remote-path>",
-        "path": "~/.gemini/antigravity-cli/plugins/<name>/"
+        "path": "~/.gemini/config/plugins/<name>/"
       },
-      "notes": "Documented CLI staging and installation command."
+      "notes": "Documented CLI staging and installation command. The installed plugin root is a different directory from the CLI settings root; observed with agy 1.1.23 on Windows."
     },
     {
       "feature": "model.persistence-json",

@@ -6,7 +6,7 @@
   "package": "all-about-agents",
   "pluginManifest": "plugin.json",
   "packageRoot": ".",
-  "installedPluginRoot": "~/.gemini/antigravity-cli/plugins/all-about-agents/",
+  "installedPluginRoot": "~/.gemini/config/plugins/all-about-agents/",
   "components": {
     "pluginManifest": "plugin.json",
     "globalInstructions": {

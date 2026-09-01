@@ -20,8 +20,8 @@ The documented CLI settings destination is
 overlay. Rendering does not write it; authorized `register --apply` is the
 explicit merge path and preserves unknown settings.
 
-The documented installed plugin root is
-`~/.gemini/antigravity-cli/plugins/<plugin_name>/`. Shared Antigravity docs now
+The installed plugin root is a different directory from the settings root:
+`~/.gemini/config/plugins/<plugin_name>/`. Shared Antigravity docs now
 publish the agent fields and tool names used by this adapter. The runtime
 version and account entitlement still need a check on each machine. Run this
 discovery sequence in a disposable target:

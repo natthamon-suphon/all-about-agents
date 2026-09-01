@@ -172,7 +172,7 @@
     },
     {
       "relativePath": "rules/adapter-capability-guidance.md",
-      "sha256": "2492bdc5f82f528cf7fed56c7421ac80b1c78d35e9b15154f881beba1c41f740"
+      "sha256": "cef2902704f243e1d38ab7abd1f122b1a9061069cbd01aa58d5d9c4acfcc5710"
     },
     {
       "relativePath": "rules/authority-and-scope.md",
@@ -649,7 +649,7 @@
       "surface": "agy",
       "relativePath": "plugin.json",
       "command": "agy plugin install PACKAGE_DIRECTORY",
-      "stagedDestination": "~/.gemini/antigravity-cli/plugins/all-about-agents/",
+      "stagedDestination": "~/.gemini/config/plugins/all-about-agents/",
       "manualOnly": false,
       "disposableOnly": true,
       "automaticInstall": true,
@@ -1052,7 +1052,7 @@
     "emergency-guard.json": "848b01fe76f388788ddff78ff0b25141daebe1871c6d06ce63b14a9b2bdbd166",
     "hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
     "plugin.json": "756ec24b1703be2d650e94914f6f7668ba98a1dd746cda65a42e8025e2ba6ead",
-    "rules/adapter-capability-guidance.md": "2492bdc5f82f528cf7fed56c7421ac80b1c78d35e9b15154f881beba1c41f740",
+    "rules/adapter-capability-guidance.md": "cef2902704f243e1d38ab7abd1f122b1a9061069cbd01aa58d5d9c4acfcc5710",
     "rules/authority-and-scope.md": "e954e78589912467fcc0f1e273cd7f7028efb014152ec22e9cdd6e99c821764f",
     "rules/cross-platform-execution.md": "b0db23bbbee452ae698d68171bde816bbdc360464d7e8d3105b46eaefa1d8c62",
     "rules/destructive-actions.md": "69f0320c6279e4f2a5b3dc96381c08d80c5d3dc84a5aa34ae2e6e790b4b452f9",

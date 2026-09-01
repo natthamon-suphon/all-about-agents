@@ -69,11 +69,16 @@ The only documented settings destination is:
 ~/.gemini/antigravity-cli/settings.json
 ```
 
-The documented staged plugin root is:
+The installed plugin root is a different directory:
 
 ```text
-~/.gemini/antigravity-cli/plugins/<plugin_name>/
+~/.gemini/config/plugins/<plugin_name>/
 ```
+
+`agy plugin install` writes there, not under `antigravity-cli/`. Observed with
+agy 1.1.23 on Windows. The generated statusline command targets this root.
+Antigravity Desktop reads the same directory, so a global `agy` install and a
+global Desktop install cannot both own `all-about-agents` on these versions.
 
 The settings artifact is a sparse overlay. Rendering does not write it. Review
 the dry-run before apply. An authorized `register --apply` merges it and

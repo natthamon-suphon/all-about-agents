@@ -76,7 +76,7 @@ test("agy clean-profile apply materializes the complete disposable package", asy
     assert.equal(install.automaticInstall, true);
     assert.equal(install.automaticFromRender, false);
     assert.equal(install.status, "register-apply-after-review");
-    assert.equal(install.stagedDestination, "~/.gemini/antigravity-cli/plugins/all-about-agents/");
+    assert.equal(install.stagedDestination, "~/.gemini/config/plugins/all-about-agents/");
     for (const command of ["agy plugin install PACKAGE_DIRECTORY", "agy plugin list", "agy agents", "agy models"]) {
       assert.ok(rendered.registrations.some((entry) => entry.command === command));
     }
