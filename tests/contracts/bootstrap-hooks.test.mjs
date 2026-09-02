@@ -275,23 +275,21 @@ test("Codex hook templates and rendered records remain manual until registration
   for (const templatePath of [
     "adapters/codex/templates/hooks/bootstrap.json",
     "adapters/codex/templates/hooks/activity-audit.json",
-    "adapters/codex/templates/hooks/checkpoint.json",
-    "adapters/codex/templates/hooks/emergency-guard.json"
+    "adapters/codex/templates/hooks/checkpoint.json"
   ]) {
     const template = await readJson(templatePath);
     assert.notEqual(template.automatic, true, `${templatePath} must not claim automatic execution before evidence`);
     assert.notEqual(template.enabled, true, `${templatePath} must not claim enabled execution before evidence`);
   }
   const records = result.registrations.filter((entry) => entry.kind === "native-integration");
-  assert.equal(records.length, 5);
+  assert.equal(records.length, 4);
   const emergency = records.find((record) => record.feature === "emergency-protection");
   assert.ok(emergency);
   assert.deepEqual(Object.keys(emergency.phases), NATIVE_PHASES);
-  assert.deepEqual(NATIVE_PHASES.map((phase) => emergency.phases[phase].status), ["pass", "not-run", "not-run", "not-run", "not-run", "not-run"]);
-  assert.ok(emergency.manualSteps.some((step) => /\/hooks/u.test(step)));
+  assert.deepEqual(NATIVE_PHASES.map((phase) => emergency.phases[phase].status), ["pass", "not-run", "not-run", "not-run-unavailable", "not-run", "not-run"]);
 
   const hookRecords = records.filter((record) => record.feature !== "emergency-protection");
-  assert.equal(hookRecords.length, 4);
+  assert.equal(hookRecords.length, 3);
   for (const record of hookRecords) {
     assert.deepEqual(Object.keys(record.phases), NATIVE_PHASES);
     assert.deepEqual(NATIVE_PHASES.map((phase) => record.phases[phase].status), ["pass", "pass", "not-run", "not-run", "not-run", "not-run"]);

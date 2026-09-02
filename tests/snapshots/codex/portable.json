@@ -1,5 +1,5 @@
 {
-  "fileCount": 179,
+  "fileCount": 176,
   "files": [
     {
       "relativePath": ".agents/plugins/marketplace.json",
@@ -438,7 +438,7 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "28d508c47158c2ef53e3778318ff480cd2860c260a6e7a68cad34e0a6b922616",
+      "sha256": "4673aef8c9cc24d9b7a8e6748c87582bb51098533ed2bcefb5299b67ee24ef41",
       "mode": null
     },
     {
@@ -448,7 +448,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "95c4aa89e158a9cab252106fb89f9850607d3c2262bab0b80087ae4447db0e40",
+      "sha256": "bfcd899fda2c20470e9e249aa5b1f4aa1514ced0ea20eba1b74b8a82d2bdd8b9",
       "mode": null
     },
     {
@@ -482,23 +482,8 @@
       "mode": null
     },
     {
-      "relativePath": "hooks/emergency-guard.json",
-      "sha256": "f3a4bb8ac32be47d3f9204a114a854dfaeb0d88701f1386f598d9ccd2b24d2fd",
-      "mode": null
-    },
-    {
-      "relativePath": "hooks/emergency-guard.mjs",
-      "sha256": "22e41534a48333b3f8d16b34b44b83049b63a3f64871270ce8501721bf120821",
-      "mode": 493
-    },
-    {
-      "relativePath": "hooks/emergency-policy.mjs",
-      "sha256": "fdf20efa604da6fadf34d04a6ef1d3f43d80b4ec14246784ed917921a684a95c",
-      "mode": 493
-    },
-    {
       "relativePath": "hooks/hooks.json",
-      "sha256": "5d7915c197a06b61e1ddc592bad5af358819ca2555360af875f9206cdb418c4c",
+      "sha256": "b6f5f1bfb5b8e5ea792548c0077c504d45aa9a60a333f5f37ce3926a42070aba",
       "mode": null
     },
     {
@@ -1248,7 +1233,7 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "28d508c47158c2ef53e3778318ff480cd2860c260a6e7a68cad34e0a6b922616"
+      "sha256": "4673aef8c9cc24d9b7a8e6748c87582bb51098533ed2bcefb5299b67ee24ef41"
     },
     {
       "relativePath": "config.toml",
@@ -1256,7 +1241,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "95c4aa89e158a9cab252106fb89f9850607d3c2262bab0b80087ae4447db0e40"
+      "sha256": "bfcd899fda2c20470e9e249aa5b1f4aa1514ced0ea20eba1b74b8a82d2bdd8b9"
     },
     {
       "relativePath": "hooks/activity-audit.json",
@@ -1283,20 +1268,8 @@
       "sha256": "8e42420e8a8d218e746243b3d08a1e120128d6cfe173af570860b2a5b8be133e"
     },
     {
-      "relativePath": "hooks/emergency-guard.json",
-      "sha256": "f3a4bb8ac32be47d3f9204a114a854dfaeb0d88701f1386f598d9ccd2b24d2fd"
-    },
-    {
-      "relativePath": "hooks/emergency-guard.mjs",
-      "sha256": "22e41534a48333b3f8d16b34b44b83049b63a3f64871270ce8501721bf120821"
-    },
-    {
-      "relativePath": "hooks/emergency-policy.mjs",
-      "sha256": "fdf20efa604da6fadf34d04a6ef1d3f43d80b4ec14246784ed917921a684a95c"
-    },
-    {
       "relativePath": "hooks/hooks.json",
-      "sha256": "5d7915c197a06b61e1ddc592bad5af358819ca2555360af875f9206cdb418c4c"
+      "sha256": "b6f5f1bfb5b8e5ea792548c0077c504d45aa9a60a333f5f37ce3926a42070aba"
     },
     {
       "relativePath": "hooks/pre-compact.mjs",
@@ -1633,36 +1606,35 @@
       "phases": {
         "rendered": {
           "status": "pass",
-          "evidence": "Rendered the Codex CLI emergency policy with the portable permission profile."
+          "evidence": "Rendered the Codex CLI permission deny policy with the portable permission profile."
         },
         "validated": {
           "status": "not-run",
-          "evidence": "The rendered deny policy is recorded only; native package validation was not run for this emergency protection record."
+          "evidence": "The rendered deny policy is recorded only; native package validation was not run for this permission protection record."
         },
         "registered": {
           "status": "not-run",
           "evidence": "Codex plugin discovery and registration were not run during rendering."
         },
         "trusted": {
-          "status": "not-run",
-          "evidence": "Codex CLI hook trust was not checked; review and trust the plugin hook in /hooks before relying on it."
+          "status": "not-run-unavailable",
+          "evidence": "The Codex permission deny policy has no native trust concept."
         },
         "active": {
           "status": "not-run",
-          "evidence": "Codex active emergency hook state was not checked in a fresh CLI session."
+          "evidence": "Codex active deny-policy state was not checked in a fresh CLI session."
         },
         "runtimeVerified": {
           "status": "not-run",
-          "evidence": "Codex CLI emergency hook execution was not run in a native session."
+          "evidence": "Codex CLI deny enforcement was not exercised in a native session."
         }
       },
       "sourcePath": "adapters/codex/adapter.mjs",
       "manualSteps": [
         "Register the rendered package through the Codex marketplace and plugin commands.",
-        "Open /hooks and review and trust the emergency hook before relying on its deny output.",
         "Keep the portable permission profile and do not claim full access.",
         "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).",
-        "Start a fresh Codex CLI session before checking active hook behavior."
+        "Start a fresh Codex CLI session before checking active permission behavior."
       ]
     },
     {
@@ -1801,43 +1773,6 @@
       ]
     },
     {
-      "kind": "native-integration",
-      "surface": "codex",
-      "feature": "emergency-guard-hook",
-      "phases": {
-        "rendered": {
-          "status": "pass",
-          "evidence": "Rendered the Codex emergency-guard-hook contract from adapters/codex/templates/hooks/emergency-guard.json."
-        },
-        "validated": {
-          "status": "pass",
-          "evidence": "Adapter validation accepted the Codex emergency-guard-hook contract."
-        },
-        "registered": {
-          "status": "not-run",
-          "evidence": "Native Codex marketplace and plugin registration was not run during rendering."
-        },
-        "trusted": {
-          "status": "not-run",
-          "evidence": "Codex hook trust was not checked; review and trust this plugin hook in /hooks."
-        },
-        "active": {
-          "status": "not-run",
-          "evidence": "Codex active hook state was not checked during rendering."
-        },
-        "runtimeVerified": {
-          "status": "not-run",
-          "evidence": "Codex hook runtime was not verified in a native session."
-        }
-      },
-      "sourcePath": "adapters/codex/templates/hooks/emergency-guard.json",
-      "manualSteps": [
-        "Register the rendered package through the Codex marketplace and plugin commands.",
-        "Open /hooks and review and trust the current plugin hook definition.",
-        "Start a fresh Codex session before checking active hook behavior."
-      ]
-    },
-    {
       "kind": "plugin-marketplace",
       "relativePath": ".agents/plugins/marketplace.json",
       "marketplace": "all-about-agents-dev",
@@ -1912,19 +1847,6 @@
         "state",
         "status"
       ]
-    },
-    {
-      "kind": "emergency-guard",
-      "surface": "codex-cli",
-      "targetRuntime": "cli",
-      "relativePath": "hooks/hooks.json",
-      "event": "PreToolUse",
-      "matcher": ".*",
-      "enabled": false,
-      "automatic": false,
-      "trustRequired": true,
-      "probeRequired": true,
-      "status": "not run"
     },
     {
       "kind": "instructions",

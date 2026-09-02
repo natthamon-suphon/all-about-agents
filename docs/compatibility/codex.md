@@ -56,9 +56,10 @@ codex --profile terra-max
 ```
 
 Full access does not remove the emergency-deny contract. The rendered policy
-keeps denies for destructive erasure, raw-disk operations,
-force-push/history rewrite, discarding uncommitted work, secret access or
-output, and guardrail bypass. Native deny behavior needs a product check.
+keeps denies for `command(rm -rf)`, `command(sudo)`, `write_file(.git/)`, and
+`write_file(/home/user/.ssh)`. These are declarative permission rules; the
+package installs no `PreToolUse` command guard. Native deny behavior needs a
+product check.
 
 ## Registration and trust
 

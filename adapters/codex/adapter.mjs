@@ -4,7 +4,6 @@ import { posix, win32 } from "node:path";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import codexBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
-import codexEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
 import codexActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
 import codexCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
 import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
@@ -20,9 +19,6 @@ const CODEX_SURFACE = "codex";
 const CODEX_TARGET_RUNTIMES = Object.freeze(["cli", "desktop"]);
 const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
 const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.json", import.meta.url), "utf8");
-const EMERGENCY_GUARD_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.mjs", import.meta.url), "utf8");
-const EMERGENCY_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.json", import.meta.url), "utf8");
-const EMERGENCY_POLICY_SOURCE = readFileSync(new URL("../../installers/lib/emergency-policy.mjs", import.meta.url), "utf8");
 const AUDIT_LOG_SOURCE = readFileSync(new URL("../../installers/lib/audit-log.mjs", import.meta.url), "utf8");
 const ACTION_IDS = Object.freeze([
   "aaa:design",
@@ -303,7 +299,7 @@ function targetRuntimeOf(input) {
   return targetRuntime;
 }
 
-function bootstrapHooks(targetRuntime) {
+function bootstrapHooks() {
   const hooks = {
     description: codexBootstrapTemplate.description,
     hooks: {
@@ -335,29 +331,13 @@ function bootstrapHooks(targetRuntime) {
       commandWindows: codexCheckpointTemplate.commandWindows
     }]
   }];
-  if (targetRuntime === "cli") {
-    hooks.hooks[codexEmergencyTemplate.event] = [{
-      matcher: codexEmergencyTemplate.nativeMatcher,
-      hooks: [{
-        type: "command",
-        command: codexEmergencyTemplate.command,
-        commandWindows: codexEmergencyTemplate.commandWindows
-      }]
-    }];
-  }
   return hooks;
-}
-
-function desktopEmergencyContract() {
-  const contract = codexEmergencyTemplate.desktop;
-  if (!contract || contract.automatic !== false || contract.probeRequired !== true || contract.status !== "not run" || typeof contract.reason !== "string" || !Array.isArray(contract.manualSequence)) throw new Error("Codex Desktop emergency template is incomplete");
-  return contract;
 }
 
 function nativeEmergencyRecord(targetRuntime, profile) {
   const desktop = targetRuntime === "desktop";
   const permissionStep = profile.authority === "full"
-    ? "Keep danger-full-access and approvals never bounded by the emergency deny policy."
+    ? "Keep danger-full-access and approvals never bounded by the permission deny policy."
     : "Keep the portable permission profile and do not claim full access.";
   const exactDenyStep = "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).";
   return createNativeIntegrationRecord({
@@ -366,49 +346,45 @@ function nativeEmergencyRecord(targetRuntime, profile) {
     phases: {
       rendered: {
         status: "pass",
-        evidence: `Rendered the Codex ${desktop ? "Desktop" : "CLI"} emergency policy with ${profile.authority === "full" ? "danger-full-access and approvals never" : "the portable permission profile"}.`
+        evidence: `Rendered the Codex ${desktop ? "Desktop" : "CLI"} permission deny policy with ${profile.authority === "full" ? "danger-full-access and approvals never" : "the portable permission profile"}.`
       },
       validated: {
         status: "not-run",
-        evidence: "The rendered deny policy is recorded only; native package validation was not run for this emergency protection record."
+        evidence: "The rendered deny policy is recorded only; native package validation was not run for this permission protection record."
       },
       registered: {
         status: "not-run",
         evidence: desktop
-          ? "Codex Desktop plugin discovery and emergency-control registration were not run; Desktop remains manual/probe-only."
+          ? "Codex Desktop plugin discovery and permission-control registration were not run; Desktop remains manual/probe-only."
           : "Codex plugin discovery and registration were not run during rendering."
       },
       trusted: {
-        status: "not-run",
-        evidence: desktop
-          ? "Codex Desktop hook trust was not observed; perform the documented disposable deny-output probe first."
-          : "Codex CLI hook trust was not checked; review and trust the plugin hook in /hooks before relying on it."
+        status: "not-run-unavailable",
+        evidence: "The Codex permission deny policy has no native trust concept."
       },
       active: {
         status: "not-run",
         evidence: desktop
-          ? "Codex Desktop emergency protection is not active by claim; no Desktop-specific evidence was collected."
-          : "Codex active emergency hook state was not checked in a fresh CLI session."
+          ? "Codex Desktop permission protection is not active by claim; no Desktop-specific evidence was collected."
+          : "Codex active deny-policy state was not checked in a fresh CLI session."
       },
       runtimeVerified: {
         status: "not-run",
         evidence: desktop
-          ? "Codex Desktop emergency deny output was not executed; no runtime handler is emitted for Desktop."
-          : "Codex CLI emergency hook execution was not run in a native session."
+          ? "Codex Desktop deny enforcement was not exercised in a native runtime probe."
+          : "Codex CLI deny enforcement was not exercised in a native session."
       }
     },
     sourcePath: "adapters/codex/adapter.mjs",
     manualSteps: desktop ? [
       "Record the installed Codex Desktop version and platform.",
       permissionStep,
-      exactDenyStep,
-      "On a disposable package, perform the explicit deny-output probe before proposing or trusting a Desktop hook; this render emits no Desktop emergency runtime."
+      exactDenyStep
     ] : [
       "Register the rendered package through the Codex marketplace and plugin commands.",
-      "Open /hooks and review and trust the emergency hook before relying on its deny output.",
       permissionStep,
       exactDenyStep,
-      "Start a fresh Codex CLI session before checking active hook behavior."
+      "Start a fresh Codex CLI session before checking active permission behavior."
     ]
   });
 }
@@ -427,7 +403,7 @@ function desktopInstructions(profile) {
     "# Codex Desktop manual setup",
     "",
     ...modelLines,
-    "The emergency PreToolUse guard is rendered only for the explicit Codex CLI target; registration, trust, active state, and runtime evidence remain manual, while Desktop output stays probe-required and contains no copied emergency runtime.",
+    "Permission deny rules are manual Desktop controls; registration, active state, and runtime evidence remain manual and are not claimed by this render.",
     ""
   ].join("\n"));
 }
@@ -611,11 +587,6 @@ try {
   await appendFile(join(root, "checkpoint.jsonl"), JSON.stringify(checkpoint) + "\\n", { encoding: "utf8", flag: "a" });
 } catch { /* durable checkpoint is fail-open */ }
 `, 0o755);
-  if (targetRuntime === "cli") {
-    addFile(files, "hooks/emergency-guard.json", EMERGENCY_CONFIG_SOURCE);
-    addFile(files, "hooks/emergency-guard.mjs", EMERGENCY_GUARD_SOURCE, 0o755);
-    addFile(files, "hooks/emergency-policy.mjs", EMERGENCY_POLICY_SOURCE, 0o755);
-  }
   addFile(files, "AGENTS.md", renderAgentsDocument(core));
   addFile(files, "docs/manual-desktop.md", desktopInstructions(semanticProfile));
   const skillRecords = new Map(core.skills.map((record) => [record.id || record.name, record]));
@@ -644,28 +615,6 @@ try {
     if (file.relativePath.endsWith(".toml")) parseCodexToml(new TextDecoder().decode(file.content));
   }
   const configRoot = resolveCodexHome(input);
-  const emergencyRegistration = targetRuntime === "cli"
-    ? {
-        kind: "emergency-guard",
-        surface: "codex-cli",
-        targetRuntime,
-        relativePath: "hooks/hooks.json",
-        event: codexEmergencyTemplate.event,
-        matcher: codexEmergencyTemplate.nativeMatcher,
-        enabled: false,
-        automatic: false,
-        trustRequired: true,
-        probeRequired: true,
-        status: "not run"
-      }
-    : {
-        ...desktopEmergencyContract(),
-        kind: "emergency-guard",
-        surface: "codex-desktop",
-        targetRuntime,
-        relativePath: "hooks/hooks.json",
-        enabled: false
-      };
   const result = {
     files,
     registrations: [
@@ -682,32 +631,6 @@ try {
       nativeHookRecord("bootstrap-hook", "adapters/codex/templates/hooks/bootstrap.json"),
       nativeHookRecord("activity-audit-hook", "adapters/codex/templates/hooks/activity-audit.json"),
       nativeHookRecord("checkpoint-hook", "adapters/codex/templates/hooks/checkpoint.json"),
-      nativeHookRecord("emergency-guard-hook", "adapters/codex/templates/hooks/emergency-guard.json", targetRuntime === "desktop" ? {
-        rendered: {
-          status: "not-run-unavailable",
-          evidence: "Codex Desktop emergency guard runtime is not emitted; a manual probe is required."
-        },
-        validated: {
-          status: "not-run-unavailable",
-          evidence: "Codex Desktop emergency guard runtime is not emitted, so its native contract cannot be validated."
-        },
-        registered: {
-          status: "not-run-unavailable",
-          evidence: "Codex Desktop has no emitted emergency guard runtime to register in this render."
-        },
-        trusted: {
-          status: "not-run",
-          evidence: "Codex Desktop hook trust remains a manual step; use /hooks after the manual emergency-guard probe."
-        },
-        active: {
-          status: "not-run-unavailable",
-          evidence: "Codex Desktop emergency guard runtime is not emitted; active state is unavailable until a manual probe establishes support."
-        },
-        runtimeVerified: {
-          status: "not-run-unavailable",
-          evidence: "Codex Desktop emergency guard runtime is not emitted; perform the manual deny-output probe before runtime verification."
-        }
-      } : {}, targetRuntime === "desktop" ? desktopEmergencyContract().manualSequence : undefined),
       {
         kind: "plugin-marketplace",
         relativePath: ".agents/plugins/marketplace.json",
@@ -760,7 +683,6 @@ try {
         failureMode: codexCheckpointTemplate.failureMode,
         recordedFields: [...codexCheckpointTemplate.recordedFields]
       },
-      emergencyRegistration,
       {
         kind: "instructions",
         relativePath: "AGENTS.md",
@@ -821,12 +743,6 @@ try {
       }
     ],
     diagnostics: [
-      ...(targetRuntime === "desktop" ? [{
-        code: "codex-desktop-emergency-guard-probe-required",
-        severity: "warning",
-        message: "Codex Desktop emergency guard output is manual/probe-only because executable package-root resolution is not verified separately from Codex CLI.",
-        sourcePath: "adapters/codex/templates/hooks/emergency-guard.json"
-      }] : []),
       ...nativeScopeDiagnostics(core.roles),
       ...missingSkills.map(({ skill, hasRecord }) => ({
       code: "missing-skill-source",

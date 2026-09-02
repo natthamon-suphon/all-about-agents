@@ -37,7 +37,7 @@ const APPROVED_EMOJI = Object.freeze({
   subagents: Object.freeze({ default: FIXED_SUBAGENT_EMOJI }),
   commands: Object.freeze({ "aaa:design": "🎨", "aaa:build": "🏗️", "aaa:fix": "🔧", "aaa:review": "👀", "aaa:audit": "🔍", "aaa:improve-skill": "✨", "aaa:resume": "▶️", "aaa:verify": "✅" }),
   workflows: Object.freeze({ "design-change": "🎨", "fix-bug": "🐛", "implement-change": "🛠️", "improve-skill": "✨", "release-qualification": "🚦", "review-and-audit": "🔍" }),
-  hooks: Object.freeze({ bootstrap: "🚀", "activity-audit": "🧾", checkpoint: "💾", "emergency-guard": "🛡️" }),
+  hooks: Object.freeze({ bootstrap: "🚀", "activity-audit": "🧾", checkpoint: "💾" }),
   profiles: Object.freeze({ portable: "🧳", template: "⚙️" })
 });
 const APPROVED_PROGRESS_EMOJI = Object.freeze({ pending: "⬜", "in-progress": "🔄", completed: "✅", blocked: "🚧", failed: "❌", "not-run": "⏸️", skipped: "⏭️" });

@@ -64,10 +64,9 @@ test("Codex clean-profile materializes declared destinations and is idempotent",
     assert.match(await readFile(resolve(destination, "terra-max.config.toml"), "utf8"), /gpt-5\.6-terra/u);
     for (const hook of [
       "hooks.json", "bootstrap.json", "bootstrap.mjs", "activity-audit.json",
-      "activity-audit.mjs", "checkpoint.json", "audit-log.mjs", "pre-compact.mjs",
-      "emergency-guard.json", "emergency-guard.mjs", "emergency-policy.mjs"
+      "activity-audit.mjs", "checkpoint.json", "audit-log.mjs", "pre-compact.mjs"
     ]) await access(resolve(destination, "hooks", hook));
-    assert.match(await readFile(resolve(destination, "hooks", "emergency-policy.mjs"), "utf8"), /filesystem-root-erasure/u);
+    assert.equal(JSON.parse(await readFile(resolve(destination, "hooks", "hooks.json"), "utf8")).hooks.PreToolUse, undefined);
 
     const statePath = resolve(destination, ".all-about-agents", "state.json");
     const state = JSON.parse(await readFile(statePath, "utf8"));

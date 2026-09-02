@@ -64,7 +64,7 @@ repository revision under qualification.
 | --- | --- | --- |
 | Inventory, schemas, parsers, manifests, and canonical references load without errors | Must pass | Machine-readable validation report and exact source paths |
 | Surface mappings, model/effort declarations, role/action contracts, and unsupported/manual states are internally consistent | Must pass | Per-surface contract report; unsupported claims remain explicit |
-| Path containment, secret handling, emergency-deny, and read-only role contracts pass | Must pass | Negative and positive contract results with sanitized diagnostics |
+| Path containment, secret redaction, rendered deny-rule, and read-only role contracts pass | Must pass | Negative and positive contract results with sanitized diagnostics |
 | Repeated rendering is deterministic and ownership hashes/snapshots agree | Must pass | Two render results, sorted paths, hashes, and snapshot references |
 
 Any parser, schema, contract, or safety error is a Gate 0 failure. A warning
@@ -211,8 +211,12 @@ waiver is reported separately and earns zero for the waived criterion.
 | Efficiency | 5 | The result avoids needless work or repetition without weakening correctness or evidence |
 | **Total** | **100** | |
 
-Gate 0, Gate 1, and every emergency, secret, containment, and read-only check
-must pass at 100%. Critical behavioral cases require five passes from five
+Gate 0, Gate 1, and every containment and read-only check must pass at 100%.
+The `emergency` and `secret` gates are `NOT_RUN_UNAVAILABLE` since the
+`emergency-guard` hook and its deterministic classifier were removed on
+2026-09-02; no automated pre-execution check replaces them, so a catastrophic
+or secret-exposure claim cannot be scored from package evidence. Critical
+behavioral cases require five passes from five
 runs. Non-critical cases require at least four passes from five runs, a mean
 score of at least 90, and no individual run below 80. Each surface requires a
 mean score of at least 92 and every rubric dimension must earn at least 85% of
@@ -221,9 +225,8 @@ its available points.
 Changed behavior must improve pass rate by at least 20 percentage points over
 the control. The only exceptions are factual/schema-only changes and cases
 where the control is already fully compliant. Any Critical or High finding,
-emergency/secret/containment/read-only miss, missing skill, unresolved active
-unsupported capability, flaky result, or threshold miss fails release
-qualification. A native or behavioral release claim additionally requires
+containment/read-only miss, missing skill, unresolved active unsupported
+capability, flaky result, or threshold miss fails release qualification. A native or behavioral release claim additionally requires
 Gate 2 and Gate 3 to be `PASS` for that surface; `NOT_RUN_UNAVAILABLE` cannot
 be substituted by a score from another surface or by package evidence.
 

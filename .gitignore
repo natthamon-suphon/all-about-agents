@@ -3,6 +3,7 @@
 .claude/
 .all-about-agents/
 .DS_Store
+.idea/
 node_modules/
 inspo
 triage/

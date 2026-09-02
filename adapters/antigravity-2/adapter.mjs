@@ -1,13 +1,11 @@
 import { createHash } from "node:crypto";
 
 import antigravityBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
-import antigravityEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
 import antigravityActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
 import antigravityCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
-import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency-policy.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
@@ -328,7 +326,7 @@ function permissionRule() {
     "- `write_file(.git/)`",
     "- `write_file(/home/user/.ssh)`",
     "",
-    "A documented PreToolUse hook can return `decision: deny` for an emergency match. This package keeps that emergency hook disabled and keeps bootstrap non-automatic until the target-runtime probe verifies command resolution.",
+    "This package installs no PreToolUse deny handler and keeps bootstrap non-automatic until the target-runtime probe verifies command resolution.",
     "There is no documented Desktop panic file or global kill switch; stop the active agent in the UI and add Deny rules manually.",
     ""
   ].join("\n"));
@@ -366,50 +364,25 @@ function nativeEmergencyRecord(profile) {
         evidence: "Desktop plugin discovery and manual permission registration were not run during rendering."
       },
       trusted: {
-        status: "not-run",
-        evidence: "Desktop hook trust was not observed; the emergency hook template remains inert pending a manual probe."
+        status: "not-run-unavailable",
+        evidence: "The Antigravity Desktop permission deny policy has no native trust concept."
       },
       active: {
         status: "not-run",
-        evidence: "Antigravity Desktop emergency protection was not observed in an active native session."
+        evidence: "Antigravity Desktop permission protection was not observed in an active native session."
       },
       runtimeVerified: {
         status: "not-run",
-        evidence: "Antigravity Desktop emergency deny output was not executed in a native runtime probe."
+        evidence: "Antigravity Desktop deny enforcement was not exercised in a native runtime probe."
       }
     },
     sourcePath: "adapters/antigravity-2/adapter.mjs",
     manualSteps: [
       `In Desktop Project security controls, select ${preset} and retain Deny for command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).`,
-      "Keep hooks.json disabled and inert until a disposable Desktop deny-output probe verifies command resolution and failure behavior.",
-      "Do not treat the rendered checklist or hook template as automatic or runtime-verified emergency protection."
+      "Keep hooks.json disabled and inert until a disposable Desktop probe verifies command resolution and failure behavior.",
+      "Do not treat the rendered checklist as automatic or runtime-verified permission protection."
     ]
   });
-}
-
-/** Normalize only the documented Antigravity Desktop PreToolUse fields. */
-export function normalizeAntigravityEmergencyRequest(request) {
-  if (!request || typeof request !== "object" || Array.isArray(request) || !request.toolCall || typeof request.toolCall !== "object" || Array.isArray(request.toolCall)) return null;
-  if (typeof request.toolCall.name !== "string" || !request.toolCall.args || typeof request.toolCall.args !== "object" || Array.isArray(request.toolCall.args)) return null;
-  const name = request.toolCall.name.toLowerCase();
-  const args = request.toolCall.args;
-  return {
-    capability: name.includes("run_command") ? "command-execution" : name.includes("write") || name.includes("edit") ? "filesystem-write" : "filesystem-read",
-    command: typeof args.CommandLine === "string" ? args.CommandLine : "",
-    paths: typeof args.filePath === "string" ? [args.filePath] : [],
-    gitOperation: typeof args.CommandLine === "string" ? args.CommandLine : null,
-    secretOperation: name.includes("read") ? { operation: "read" } : null
-  };
-}
-
-export function mapAntigravityEmergencyDecision(classification) {
-  const reason = classification?.decision === "deny" && Object.hasOwn(REASONS, classification.ruleId) ? REASONS[classification.ruleId] : "";
-  return reason ? { decision: "deny", reason } : {};
-}
-
-export function classifyAntigravityEmergencyRequest(request) {
-  const normalized = normalizeAntigravityEmergencyRequest(request);
-  return normalized ? classifyEmergencyAction(normalized) : { decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." };
 }
 
 /** Render the documented Antigravity 2.0 Desktop package without native settings writes. */
@@ -435,7 +408,6 @@ export function renderAntigravity(input = {}) {
   addFile(files, `${PLUGIN_ROOT}/hooks.json`, renderJson(hooksDocument()));
   addFile(files, `${PLUGIN_ROOT}/hooks/activity-audit.json`, renderJson(antigravityActivityTemplate));
   addFile(files, `${PLUGIN_ROOT}/hooks/checkpoint.json`, renderJson(antigravityCheckpointTemplate));
-  addFile(files, `${PLUGIN_ROOT}/hooks/emergency-guard.json`, renderJson(antigravityEmergencyTemplate));
   addFile(files, `${PLUGIN_ROOT}/rules/AGENTS.md`, consolidatedRules(semanticProfile, input.core.rules, input.core.presentation));
   const opaqueCompanionPaths = new Set();
   for (const skill of skillIds(input.core)) {
@@ -464,12 +436,6 @@ export function renderAntigravity(input = {}) {
       sourcePath: "core/inventory.json"
     });
   }
-  diagnostics.push({
-    code: "desktop-emergency-guard-probe-required",
-    severity: "warning",
-    message: "Desktop emergency guard output is documented but executable package-root resolution remains unverified; automatic hook execution is disabled.",
-    sourcePath: "docs/evaluations/antigravity-contracts-2026-08-31.md"
-  });
   for (const actionId of ACTION_IDS) diagnostics.push({
     code: "desktop-action-unknown",
     severity: "warning",
@@ -555,16 +521,6 @@ export function renderAntigravity(input = {}) {
         durableWorkflow: antigravityCheckpointTemplate.durableWorkflow,
         failureMode: antigravityCheckpointTemplate.failureMode,
         recordedFields: [...antigravityCheckpointTemplate.recordedFields]
-      },
-      {
-        kind: "emergency-guard",
-        surface: DESKTOP_SURFACE,
-        relativePath: `${PLUGIN_ROOT}/hooks/emergency-guard.json`,
-        enabled: false,
-        automatic: false,
-        automaticHookExecution: false,
-        probeRequired: antigravityEmergencyTemplate.probeRequired,
-        status: antigravityEmergencyTemplate.probe.status
       },
       {
         kind: "runtime-prerequisite",

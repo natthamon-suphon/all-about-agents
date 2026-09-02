@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { access, mkdir, readdir, readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { relative, resolve } from "node:path";
 import test from "node:test";
@@ -63,7 +64,7 @@ test("agy clean-profile apply materializes the complete disposable package", asy
     for (const rule of core.rules) await access(resolve(destination, "rules", `${rule.id}.md`));
     for (const path of [
       "plugin.json", "README.md", "hooks.json", "activity-audit.json", "checkpoint.json",
-      "emergency-guard.json", "settings.overlay.json", "statusline/statusline.mjs",
+      "settings.overlay.json", "statusline/statusline.mjs",
       "statusline/statusline.json", "statusline/statusline.ps1", "statusline/statusline.sh", "rules/model-selection.md",
       "rules/permission-safety.md", "rules/hook-contract.md", "rules/settings-overlay.md"
     ]) await access(resolve(destination, path));
@@ -103,9 +104,7 @@ test("agy clean-profile apply materializes the complete disposable package", asy
     assert.equal(hook.automaticHookExecution, false);
     assert.equal(hook.probeRequired, true);
     assert.equal(hook.probe.status, "not run");
-    const emergency = rendered.registrations.find((entry) => entry.kind === "emergency-guard");
-    assert.equal(emergency.automatic, false);
-    assert.equal(emergency.status, "not run");
+    assert.equal(rendered.registrations.some((entry) => entry.kind === "emergency-guard"), false);
     const acceptance = rendered.registrations.find((entry) => entry.kind === "native-acceptance");
     assert.equal(acceptance.status, "partial");
     assert.equal(acceptance.productVersion, "1.1.22");
@@ -116,10 +115,7 @@ test("agy clean-profile apply materializes the complete disposable package", asy
     const hooks = JSON.parse(await readFile(resolve(destination, "hooks.json"), "utf8"));
     assert.equal(hooks["all-about-agents-safety"].enabled, false);
     assert.doesNotMatch(JSON.stringify(hooks), /command|hooks\.mjs/iu);
-    const guard = JSON.parse(await readFile(resolve(destination, "emergency-guard.json"), "utf8"));
-    assert.equal(guard.automatic, false);
-    assert.equal(guard.probeRequired, true);
-    assert.equal(guard.probe.status, "not run");
+    assert.equal(existsSync(resolve(destination, "emergency-guard.json")), false);
 
     const state = JSON.parse(await readFile(resolve(destination, ".all-about-agents", "state.json"), "utf8"));
     assert.deepEqual(state.surfaces, ["agy"]);

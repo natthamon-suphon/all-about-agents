@@ -202,18 +202,18 @@ test("agy statusline registration exposes the native lifecycle record", () => {
   assert.match(record.phases.trusted.evidence, /no native trust/iu);
 });
 
-test("agy emergency protection records the disabled hook and manual deny merge", () => {
+test("agy permission protection records the manual deny merge without a hook claim", () => {
   const result = resultFor("template");
   const record = result.registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
   assert.ok(record);
   assert.deepEqual(
     Object.fromEntries(["rendered", "validated", "registered", "trusted", "active", "runtimeVerified"].map((phase) => [phase, record.phases[phase].status])),
-    { rendered: "pass", validated: "not-run", registered: "not-run", trusted: "not-run", active: "not-run", runtimeVerified: "not-run" }
+    { rendered: "pass", validated: "not-run", registered: "not-run", trusted: "not-run-unavailable", active: "not-run", runtimeVerified: "not-run" }
   );
   assert.match(record.phases.validated.evidence, /only the rendered settings deny overlay/iu);
   assert.match(record.manualSteps.join(" "), /always-proceed/u);
   assert.match(record.manualSteps.join(" "), /command\(rm -rf\).*command\(sudo\).*write_file\(\.git\/\).*write_file\(\/home\/user\/\.ssh\)/u);
-  assert.equal(result.registrations.find((entry) => entry.kind === "emergency-guard").enabled, false);
+  assert.equal(result.registrations.some((entry) => entry.kind === "emergency-guard"), false);
 
   const portable = resultFor("portable").registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
   assert.doesNotMatch(`${portable.phases.rendered.evidence} ${portable.manualSteps.join(" ")}`, /always-proceed|per-run skip/iu);
@@ -275,40 +275,14 @@ test("agy hooks are disabled until the explicit lifecycle probe is complete", ()
   assert.equal(resultFor().registrations.find((entry) => entry.kind === "activity-audit").failureMode, "unknown-disabled");
 });
 
-test("agy emergency guard is consumed as a disabled probe-only native contract", () => {
+test("agy renders no emergency guard artifact, registration, diagnostic, or classifier", () => {
   const result = resultFor();
-  const files = fileMap(result);
-  const guard = JSON.parse(files.get("emergency-guard.json"));
-  assert.equal(guard.event, "PreToolUse");
-  assert.equal(guard.automatic, false);
-  assert.equal(guard.probeRequired, true);
-  assert.equal(guard.probe.status, "not run");
-  assert.doesNotMatch(JSON.stringify(guard), /"command"\s*:|\.\/hooks|\$PLUGIN_ROOT|%PLUGIN_ROOT%/iu);
-  const registration = result.registrations.find((entry) => entry.kind === "emergency-guard");
-  assert.equal(registration.enabled, false);
-  assert.equal(registration.automatic, false);
-  assert.equal(registration.probeRequired, true);
-  assert.ok(result.diagnostics.some((entry) => entry.code === "agy-emergency-guard-probe-required"));
-});
-
-test("agy emergency normalization uses documented toolCall fields and maps only deny", () => {
-  const normalized = adapter.normalizeAgyEmergencyRequest({
-    toolCall: { name: "run_command", args: { CommandLine: "git push origin main --force", Cwd: "C:/disposable" } },
-    stepIdx: 1
-  });
-  assert.deepEqual(normalized, {
-    capability: "command-execution",
-    command: "git push origin main --force",
-    paths: [],
-    gitOperation: "git push origin main --force",
-    secretOperation: null
-  });
-  assert.deepEqual(adapter.mapAgyEmergencyDecision(adapter.classifyAgyEmergencyRequest({
-    toolCall: { name: "run_command", args: { CommandLine: "git push origin main --force" } },
-    stepIdx: 1
-  })), { decision: "deny", reason: "Denied: force-push would rewrite shared Git history." });
-  assert.deepEqual(adapter.mapAgyEmergencyDecision({ decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." }), {});
-  assert.equal(adapter.normalizeAgyEmergencyRequest({ toolCall: { name: "run_command", args: [] } }), null);
+  assert.equal(fileMap(result).has("emergency-guard.json"), false);
+  assert.equal(result.registrations.some((entry) => entry.kind === "emergency-guard"), false);
+  assert.equal(result.diagnostics.some((entry) => entry.code === "agy-emergency-guard-probe-required"), false);
+  for (const name of ["normalizeAgyEmergencyRequest", "mapAgyEmergencyDecision", "classifyAgyEmergencyRequest"]) {
+    assert.equal(Object.hasOwn(adapter, name), false, `${name} must no longer be exported`);
+  }
 });
 
 test("agy settings overlays use only documented sparse keys and preserve emergency denies", () => {

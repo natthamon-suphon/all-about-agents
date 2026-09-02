@@ -38,7 +38,6 @@ const QUICK_CHECKS = Object.freeze([
   ]),
   check("safety-contracts", process.execPath, [
     "--test",
-    "tests/contracts/emergency-guard.test.mjs",
     "tests/contracts/roots.test.mjs",
     "tests/contracts/apply.test.mjs"
   ]),

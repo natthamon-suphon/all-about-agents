@@ -70,8 +70,8 @@ test("Claude model policy uses exact documented template fields", () => {
   assert.deepEqual(CLAUDE_MODEL_POLICY.template, {
     model: "claude-opus-5",
     fallbackModel: ["claude-sonnet-5"],
-    advisorModel: "claude-fable-5",
-    env: { CLAUDE_CODE_EFFORT_LEVEL: "max" }
+    advisorModel: "claude-fable-5-1",
+    env: { CLAUDE_CODE_EFFORT_LEVEL: "xhigh" }
   });
   assert.equal(Object.hasOwn(CLAUDE_MODEL_POLICY.template, "effortLevel"), false);
   assert.equal(CLAUDE_MODEL_POLICY.template.fallbackModel.includes("claude-fable-5"), false);
@@ -155,7 +155,7 @@ test("Claude plugin relies on conventional hook discovery without duplicate mani
   assert.equal(Object.hasOwn(manifest, "hooks"), false);
   assert.ok(files.has("hooks/hooks.json"));
   const hooks = JSON.parse(files.get("hooks/hooks.json")).hooks;
-  assert.ok(hooks.PreToolUse?.[0]?.hooks?.length > 0);
+  assert.ok(hooks.SessionStart?.[0]?.hooks?.length > 0);
 });
 
 test("template Claude render emits full-access settings without unsupported effortLevel", () => {
@@ -163,8 +163,8 @@ test("template Claude render emits full-access settings without unsupported effo
   const settings = JSON.parse(files.get("config/settings.json"));
   assert.equal(settings.model, "claude-opus-5");
   assert.deepEqual(settings.fallbackModel, ["claude-sonnet-5"]);
-  assert.equal(settings.advisorModel, "claude-fable-5");
-  assert.equal(settings.env.CLAUDE_CODE_EFFORT_LEVEL, "max");
+  assert.equal(settings.advisorModel, "claude-fable-5-1");
+  assert.equal(settings.env.CLAUDE_CODE_EFFORT_LEVEL, "xhigh");
   assert.equal(Object.hasOwn(settings, "effortLevel"), false);
   assert.equal(settings.fallbackModel.includes("claude-fable-5"), false);
   assert.equal(settings.permissions.defaultMode, "bypassPermissions");
@@ -311,7 +311,7 @@ test("Claude statusline uses a shared native lifecycle record", () => {
   assert.match(record.phases.trusted.evidence, /no native trust/iu);
 });
 
-test("Claude emergency protection requires strict validation without claiming runtime execution", () => {
+test("Claude permission deny policy requires strict validation without claiming runtime enforcement", () => {
   const record = resultFor("template").registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
   assert.ok(record);
   assert.deepEqual(
@@ -319,7 +319,7 @@ test("Claude emergency protection requires strict validation without claiming ru
     { rendered: "pass", validated: "not-run", registered: "not-run", trusted: "not-run-unavailable", active: "not-run", runtimeVerified: "not-run" }
   );
   assert.match(record.phases.validated.evidence, /strict plugin validation.*not run/iu);
-  assert.match(record.phases.runtimeVerified.evidence, /not run/iu);
+  assert.match(record.phases.runtimeVerified.evidence, /not exercised/iu);
   assert.ok(record.manualSteps.some((step) => step.includes("bypassPermissions")));
 });
 
@@ -338,18 +338,14 @@ test("Claude hooks use exec-form commands with argument arrays and plugin-root p
   }
 });
 
-test("Claude emergency guard uses the canonical policy and documented PreToolUse command", async () => {
+test("Claude renders no PreToolUse hook and no emergency guard runtime", () => {
   const result = resultFor();
   const files = fileMap(result);
   const hooks = JSON.parse(files.get("hooks/hooks.json")).hooks;
-  const guard = hooks.PreToolUse[0].hooks[0];
-  assert.deepEqual(guard.args.slice(1), ["--surface", "claude", "--policy-path", "${CLAUDE_PLUGIN_ROOT}/hooks/emergency-guard.json"]);
-  assert.equal(files.get("hooks/emergency-guard.mjs"), await readFile(resolve(process.cwd(), "core/hooks/emergency-guard.mjs"), "utf8"));
-  assert.equal(files.get("hooks/emergency-policy.mjs"), await readFile(resolve(process.cwd(), "installers/lib/emergency-policy.mjs"), "utf8"));
-  assert.deepEqual(JSON.parse(files.get("hooks/emergency-guard.json")).orderedRuleIds, [
-    "filesystem-root-erasure", "raw-disk-destruction", "git-force-push", "git-history-rewrite",
-    "git-discard-uncommitted", "secret-credential-access", "secret-output-or-transmission", "guardrail-bypass"
-  ]);
+  assert.equal(Object.hasOwn(hooks, "PreToolUse"), false);
+  for (const relativePath of ["hooks/emergency-guard.json", "hooks/emergency-guard.mjs", "hooks/emergency-policy.mjs"]) {
+    assert.equal(files.has(relativePath), false, `${relativePath} must not be rendered`);
+  }
 });
 
 test("Claude startup hook invokes the rendered canonical runtime", async () => {

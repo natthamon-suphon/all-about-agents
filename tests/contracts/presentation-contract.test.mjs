@@ -76,8 +76,7 @@ const expected = {
   hooks: {
     bootstrap: "🚀",
     "activity-audit": "🧾",
-    checkpoint: "💾",
-    "emergency-guard": "🛡️"
+    checkpoint: "💾"
   },
   profiles: { portable: "🧳", template: "⚙️" }
 };
@@ -127,7 +126,7 @@ test("presentation files exist, have the exact approved counts, and validate", a
   const progressContract = JSON.parse(await readFile(resolve(root, "core/presentation/progress-contract.json"), "utf8"));
   assert.deepEqual(emojiRegistry, { schemaVersion: 1, ...registryFromExpected() });
   assert.deepEqual(Object.fromEntries(Object.entries(emojiRegistry).filter(([key]) => key !== "schemaVersion").map(([key, values]) => [key, Object.keys(values).length])), {
-    skills: 28, roles: 7, subagents: 1, commands: 8, workflows: 6, hooks: 4, profiles: 2
+    skills: 28, roles: 7, subagents: 1, commands: 8, workflows: 6, hooks: 3, profiles: 2
   });
   assert.deepEqual(validatePresentationContract({ emojiRegistry, progressContract, canonical: canonicalFromExpected() }), { valid: true, errors: [] });
   const schema = JSON.parse(await readFile(resolve(root, "core/schemas/presentation.schema.json"), "utf8"));

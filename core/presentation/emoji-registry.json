@@ -63,8 +63,7 @@
   "hooks": {
     "bootstrap": { "emoji": "🚀" },
     "activity-audit": { "emoji": "🧾" },
-    "checkpoint": { "emoji": "💾" },
-    "emergency-guard": { "emoji": "🛡️" }
+    "checkpoint": { "emoji": "💾" }
   },
   "profiles": {
     "portable": { "emoji": "🧳" },

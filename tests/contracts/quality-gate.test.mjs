@@ -86,7 +86,7 @@ test("quick gate wires every approved mutation to a failing contract", () => {
     ["remove a required skill artifact", ["focused-contracts", "tests/contracts/skill-validation.test.mjs"]],
     ["switch production rendering to a raw adapter", ["focused-contracts", "tests/contracts/adapter-contract.test.mjs"]],
     ["restore a broad destination root", ["safety-contracts", "tests/contracts/roots.test.mjs"]],
-    ["allow a destructive protected-root move", ["safety-contracts", "tests/contracts/emergency-guard.test.mjs"]],
+    ["overwrite an unowned neighbor during apply", ["safety-contracts", "tests/contracts/apply.test.mjs"]],
     ["break a documented maintenance command", ["documentation-contracts", "tests/static/maintenance-docs.test.mjs"]],
     ["change AGENTS.md back to symlink mode", ["documentation-contracts", "tests/static/contributor-entrypoints.test.mjs"]],
     ["break all-surface preflight", ["installer-contracts", "tests/integration/cli.test.mjs"]],

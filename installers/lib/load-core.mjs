@@ -930,7 +930,7 @@ async function loadGlobalInstructions(repositoryRoot, coreRoot, errors) {
   return { sourcePath, content };
 }
 
-const FIXED_PRESENTATION_HOOKS = Object.freeze(["activity-audit", "bootstrap", "checkpoint", "emergency-guard"]);
+const FIXED_PRESENTATION_HOOKS = Object.freeze(["activity-audit", "bootstrap", "checkpoint"]);
 const FIXED_PRESENTATION_PROFILES = Object.freeze(["portable", "template"]);
 
 async function loadPresentation(repositoryRoot, coreRoot, canonical, errors) {

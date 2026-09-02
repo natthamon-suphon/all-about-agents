@@ -10,7 +10,6 @@
     ".agents/plugins/all-about-agents/hooks.json",
     ".agents/plugins/all-about-agents/hooks/activity-audit.json",
     ".agents/plugins/all-about-agents/hooks/checkpoint.json",
-    ".agents/plugins/all-about-agents/hooks/emergency-guard.json",
     ".agents/plugins/all-about-agents/plugin.json",
     ".agents/plugins/all-about-agents/rules/AGENTS.md",
     ".agents/plugins/all-about-agents/skills/brainstorming/SKILL.md",
@@ -92,7 +91,7 @@
     ".agents/plugins/all-about-agents/skills/zero-downtime-migrations/postgres-expand-contract-examples.md",
     "GEMINI.md"
   ],
-  "fileCount": 91,
+  "fileCount": 90,
   "permission": {
     "kind": "permission-ui",
     "surface": "antigravity-2-desktop",
@@ -171,9 +170,8 @@
     ".agents/plugins/all-about-agents/hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
     ".agents/plugins/all-about-agents/hooks/activity-audit.json": "ca4e1761eb24cf85dbbd71d2b6cb94f4a5d36ca557ccfcfc90498d3a5727bbee",
     ".agents/plugins/all-about-agents/hooks/checkpoint.json": "dc11d6fb23b9399e3920ca887c87afdb3eeb4502ae743af47406fd58be6c7f45",
-    ".agents/plugins/all-about-agents/hooks/emergency-guard.json": "79bf39d3555b77b85068059a72b359f4f27e8ea18c79cc8a276534b76a20d2cb",
     ".agents/plugins/all-about-agents/plugin.json": "6c9c8a61e842f1857dac5ee03a6457ccc84ba5f168a550732e9e9eb0a979c3ed",
-    ".agents/plugins/all-about-agents/rules/AGENTS.md": "b70bfeafd64a200b0137f76388feaf93c140857a82bd295a71ebae25d70f2c2a",
+    ".agents/plugins/all-about-agents/rules/AGENTS.md": "4b2e0286d2542769370ed2331913189b2df45e855f26c93e32952e5f496be3b7",
     ".agents/plugins/all-about-agents/skills/brainstorming/SKILL.md": "94f3e72387873d1ca700c910873c21625110991f8796020e40ef61da57a8adcd",
     ".agents/plugins/all-about-agents/skills/brainstorming/scripts/frame-template.html": "4c3b7d94265cf0f8de437191dcbadccca4106d785591caf89e7c818ff153bc93",
     ".agents/plugins/all-about-agents/skills/brainstorming/scripts/helper.js": "773e549af4413e28ed7d14aea800a39d8dbf9851d3d31d9687b5a8d8a18775a3",
@@ -251,6 +249,6 @@
     ".agents/plugins/all-about-agents/skills/writing-skills/testing-skills-with-subagents.md": "ead5e957ec5350c7619217149b52ca6f24fcfa12b475f026cf4cd17d0f30706c",
     ".agents/plugins/all-about-agents/skills/zero-downtime-migrations/SKILL.md": "6ba9d77a715ffe1e2028a79e8ea778421053d935fc775c3ed892097a9a465c0d",
     ".agents/plugins/all-about-agents/skills/zero-downtime-migrations/postgres-expand-contract-examples.md": "12f867a1228d0468f6c3e2a8740cf24d96bcfcab80930a8fc71a480ac7f8cacb",
-    "GEMINI.md": "96f5540731864d62bc9f294ed9c9f2cf69ddee42d527b4467de3e1e01d73e6a8"
+    "GEMINI.md": "2f350c6ab1dab0b36f40ffeebd0c329925fc3e6b70ee913cec3ae90c5ca4c350"
   }
 }

@@ -59,20 +59,23 @@ The `portable` profile uses Claude's surface default with controlled
 permissions. The `template` profile uses:
 
 - model `claude-opus-5`;
-- `CLAUDE_CODE_EFFORT_LEVEL=max`;
-- server-failure fallback `claude-sonnet-5` at max effort;
-- advisor `claude-fable-5` when the account and product permit it;
+- `CLAUDE_CODE_EFFORT_LEVEL=xhigh`;
+- server-failure fallback `claude-sonnet-5` at the same effort level;
+- advisor `claude-fable-5-1` when the account and product permit it;
 - permission mode `bypassPermissions`.
 
 Fable access depends on account, organization, plan, provider, consent, and
-Claude Code version. The package does not claim Fable access from a rendered
-file. Sonnet is a qualifying server-failure fallback. No permission or policy
-fallback is claimed.
+Claude Code version. Fable 5.1 needs Claude Code v2.1.255 or later. The
+package does not claim Fable access from a rendered file. Sonnet is a
+qualifying server-failure fallback. No permission or policy fallback is
+claimed.
 
 Full access does not remove the emergency denies. The profiles keep denies for
-`rm -rf /`, `rm -rf ~`, force-push, and hard-reset operations. The
-`disableAllHooks` setting disables hooks globally. It does not prove that an
-emergency deny is active, and it does not replace the narrow deny policy.
+`rm -rf /`, `rm -rf ~`, force-push, and hard-reset operations. These are
+declarative `permissions.deny` rules; the package installs no `PreToolUse`
+command guard. The `disableAllHooks` setting disables hooks globally. It does
+not prove that an emergency deny is active, and it does not replace the narrow
+deny policy.
 
 ## Session defaults
 

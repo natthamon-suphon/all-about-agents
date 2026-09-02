@@ -89,7 +89,8 @@ is unsupported for Desktop.
 
 6. Exercise the emergency Deny checklist.
 
-The hook template is disabled and inert. Do not call it active protection.
+The rendered `hooks.json` is disabled and inert, and no command guard is
+packaged. Do not call the Deny checklist active protection.
 The Desktop statusline display name is unavailable because no native Desktop
 statusline contract is established. Do not copy a CLI statusline setting into
 Desktop.

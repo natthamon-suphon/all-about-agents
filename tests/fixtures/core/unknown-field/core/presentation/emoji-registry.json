@@ -2,6 +2,6 @@
   "schemaVersion": 1,
   "skills": { "alpha": { "emoji": "🅰️" } }, "roles": {}, "subagents": { "default": { "emoji": "🤖" } },
   "commands": { "aaa:review": { "emoji": "👀" } }, "workflows": {},
-  "hooks": { "activity-audit": { "emoji": "🧾" }, "bootstrap": { "emoji": "🚀" }, "checkpoint": { "emoji": "💾" }, "emergency-guard": { "emoji": "🛡️" } },
+  "hooks": { "activity-audit": { "emoji": "🧾" }, "bootstrap": { "emoji": "🚀" }, "checkpoint": { "emoji": "💾" } },
   "profiles": { "portable": { "emoji": "🧳" }, "template": { "emoji": "⚙️" } }
 }

@@ -7,7 +7,8 @@
     "implementation-quality/read-contracts: Read the real files, schemas, interfaces, and tests before describing or changing behavior.",
     "implementation-quality/root-cause: Fix the root cause supported by evidence instead of masking symptoms or adding unrelated refactoring.",
     "implementation-quality/smallest-diff: Make the smallest sound change that satisfies the contract and keeps interfaces clear.",
-    "implementation-quality/error-paths: Handle expected errors explicitly, leave no placeholders or dead code, and verify failure paths as well as success."
+    "implementation-quality/error-paths: Handle expected errors explicitly, leave no placeholders or dead code, and verify failure paths as well as success.",
+    "implementation-quality/minimal-comments: Let clear names and small units carry the meaning; add a comment only for non-obvious intent, a real constraint, or a required notice, and delete comments that restate the code."
   ],
   "invariants": [
     "Read real contracts, fix the root cause, keep the smallest sound diff, handle errors, and leave no placeholders."

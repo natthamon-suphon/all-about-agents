@@ -1,5 +1,5 @@
 {
-  "fileCount": 123,
+  "fileCount": 120,
   "paths": [
     ".claude-plugin/marketplace.json",
     ".claude-plugin/plugin.json",
@@ -28,9 +28,6 @@
     "hooks/bootstrap.json",
     "hooks/bootstrap.mjs",
     "hooks/checkpoint.json",
-    "hooks/emergency-guard.json",
-    "hooks/emergency-guard.mjs",
-    "hooks/emergency-policy.mjs",
     "hooks/hooks.json",
     "hooks/pre-compact.mjs",
     "rules/authority-and-scope.md",
@@ -126,11 +123,11 @@
     "statusline/track-tool.mjs"
   ],
   "settings": {
-    "advisorModel": "claude-fable-5",
+    "advisorModel": "claude-fable-5-1",
     "autoDreamEnabled": true,
     "autoMemoryEnabled": true,
     "env": {
-      "CLAUDE_CODE_EFFORT_LEVEL": "max"
+      "CLAUDE_CODE_EFFORT_LEVEL": "xhigh"
     },
     "fallbackModel": [
       "claude-sonnet-5"
@@ -156,13 +153,13 @@
     ".claude-plugin/marketplace.json": "{\n  \"description\": \"Generated local development marketplace for the All About Agents package.\",\n  \"name\": \"all-about-agents-dev\",\n  \"owner\": {\n    \"name\": \"All About Agents\"\n  },\n  \"plugins\": [\n    {\n      \"author\": {\n        \"name\": \"All About Agents\"\n      },\n      \"description\": \"Portable all-about-agents skills, agents, commands, hooks, and rules for Claude Code.\",\n      \"name\": \"all-about-agents\",\n      \"source\": \"./\",\n      \"version\": \"1.0.0\"\n    }\n  ]\n}\n",
     ".claude-plugin/plugin.json": "{\n  \"author\": {\n    \"name\": \"All About Agents\"\n  },\n  \"description\": \"Portable all-about-agents skills, agents, commands, hooks, and rules for Claude Code.\",\n  \"name\": \"all-about-agents\",\n  \"version\": \"1.0.0\"\n}\n",
     "agents/investigator.md": "---\nname: investigator\ndescription: \"Performs read-only forensic investigation and ranks falsifiable root-cause hypotheses.\"\nmodel: inherit\ntools:\n  - Glob\n  - Grep\n  - Read\ndisallowedTools:\n  - Agent\n  - Bash\n  - Edit\n  - Write\n---\n\nInvoking agent **investigator 🕵️** — Use investigator 🕵️ when its role matches the task and scope.\n\nChecklist\n- 🔄 Scope: Delegate the current task to investigator 🕵️\n- ⬜ Execute: investigator 🕵️\n- ⬜ Evidence: record the result for Delegate the current task to investigator 🕵️\n\nReason rule: runtime must provide one short, task-specific reason; blocked, failed, not-run, or skipped items require a short reason.\nChecklist rules: derive 2-7 material steps from the selected skill, workflow, or task; update only when a state changes; allow one in-progress item per sequential checklist and one per parallel owner; complete every item with a terminal state before completion.\n\n# Investigator\n\n## Mission\n\nExplain an internal failure before anyone changes code. Read the complete error, stack, input, and environment evidence; reproduce the behavior when possible; then trace the bad value backward to its origin.\n\n## Boundaries\n\nThis is a forensic role, not an implementation role. Do not edit files, apply a workaround, or turn an untested suspicion into a fix. Do not substitute external research for local reproduction when the failure is inside the repository.\n\n## Working method\n\nRecord observations first, compare a failing path with a known-working path, and rank three or fewer falsifiable hypotheses. For each hypothesis state the prediction, the check that would distinguish it, and the exact source location involved.\n\n## Evidence contract\n\nReport the reproduction command or explain why reproduction was unavailable, include the full evidence chain, label inference explicitly, and end with a handoff that an implementer can test without guessing. Route architecture questions to the architect and fresh black-box checking to the verifier.\n\n\nNative capability diagnostic: Role investigator capability evaluation is unavailable on claude: native mapping Bash is suppressed by the read-only policy. Safe read-only mapping retained: Read. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.\n",
-    "config/settings.json": "{\n  \"advisorModel\": \"claude-fable-5\",\n  \"autoDreamEnabled\": true,\n  \"autoMemoryEnabled\": true,\n  \"env\": {\n    \"CLAUDE_CODE_EFFORT_LEVEL\": \"max\"\n  },\n  \"fallbackModel\": [\n    \"claude-sonnet-5\"\n  ],\n  \"model\": \"claude-opus-5\",\n  \"permissions\": {\n    \"defaultMode\": \"bypassPermissions\",\n    \"deny\": [\n      \"Bash(rm -rf /)\",\n      \"Bash(rm -rf ~)\",\n      \"Bash(git push --force*)\",\n      \"Bash(git reset --hard*)\"\n    ]\n  },\n  \"statusLine\": {\n    \"command\": \"powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwAKACYAIAAnAEMAOgAvAGQAaQBzAHAAbwBzAGEAYgBsAGUALwBjAGwAYQB1AGQAZQAtAGMAbwBuAGYAaQBnAC8AcwB0AGEAdAB1AHMAbABpAG4AZQAvAHMAdABhAHQAdQBzAGwAaQBuAGUALgBwAHMAMQAnAAoAZQB4AGkAdAAgACQATABBAFMAVABFAFgASQBUAEMATwBEAEUACgA=\",\n    \"padding\": 0,\n    \"type\": \"command\"\n  },\n  \"viewMode\": \"focus\"\n}\n",
-    "hooks/hooks.json": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/activity-audit.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          },\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/statusline/track-tool.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreCompact\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/emergency-guard.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--policy-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/emergency-guard.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--skill-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md\",\n              \"--config-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \"startup\"\n      }\n    ]\n  }\n}\n"
+    "config/settings.json": "{\n  \"advisorModel\": \"claude-fable-5-1\",\n  \"autoDreamEnabled\": true,\n  \"autoMemoryEnabled\": true,\n  \"env\": {\n    \"CLAUDE_CODE_EFFORT_LEVEL\": \"xhigh\"\n  },\n  \"fallbackModel\": [\n    \"claude-sonnet-5\"\n  ],\n  \"model\": \"claude-opus-5\",\n  \"permissions\": {\n    \"defaultMode\": \"bypassPermissions\",\n    \"deny\": [\n      \"Bash(rm -rf /)\",\n      \"Bash(rm -rf ~)\",\n      \"Bash(git push --force*)\",\n      \"Bash(git reset --hard*)\"\n    ]\n  },\n  \"statusLine\": {\n    \"command\": \"powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwAKACYAIAAnAEMAOgAvAGQAaQBzAHAAbwBzAGEAYgBsAGUALwBjAGwAYQB1AGQAZQAtAGMAbwBuAGYAaQBnAC8AcwB0AGEAdAB1AHMAbABpAG4AZQAvAHMAdABhAHQAdQBzAGwAaQBuAGUALgBwAHMAMQAnAAoAZQB4AGkAdAAgACQATABBAFMAVABFAFgASQBUAEMATwBEAEUACgA=\",\n    \"padding\": 0,\n    \"type\": \"command\"\n  },\n  \"viewMode\": \"focus\"\n}\n",
+    "hooks/hooks.json": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/activity-audit.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          },\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/statusline/track-tool.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreCompact\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--skill-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md\",\n              \"--config-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \"startup\"\n      }\n    ]\n  }\n}\n"
   },
   "ownershipHashes": {
     ".claude-plugin/marketplace.json": "e2103d9305b1f8ff8e30d4abc4d9bfb85644ea259b6a59e63d0bf5fde2a1d887",
     ".claude-plugin/plugin.json": "195b8fec88065febd380dabf917f575929938be56cc495904216434182fb7134",
-    "CLAUDE.md": "96f5540731864d62bc9f294ed9c9f2cf69ddee42d527b4467de3e1e01d73e6a8",
+    "CLAUDE.md": "2f350c6ab1dab0b36f40ffeebd0c329925fc3e6b70ee913cec3ae90c5ca4c350",
     "agents/architect.md": "ca417f528c98ba5126c9a23d75d92d580ff8b328dadf92b583eb0e370dcb0df0",
     "agents/implementer.md": "e5c47e028ef8f596a8c8e3d4cdcc7443c13960e8e448134cf90000f508ebfabd",
     "agents/investigator.md": "83f139a35ecfcb79fae33f4a65dd11e544b4a9baab40a6bb721055f5845b8daf",
@@ -178,7 +175,7 @@
     "commands/resume.md": "9788349f6e6736cf775a7a025bb8479b965478ecb340ad46f7a6c73f6d201c92",
     "commands/review.md": "09be5e7b9c4a93e21d9b635862912a2c80a9f417626cc65dafa4803bb4033c15",
     "commands/verify.md": "c843d45b8671c71df52c699af7eaa61c3f58908480db37d8ccd16e7c07928783",
-    "config/settings.json": "c27d6a7f7050a9782c469a1ee46836d0520f1596cc1b23999c077ba6d30a06f7",
+    "config/settings.json": "6b37e4a748743efeec584e0bbac777f2f86a8ca92c495d659fc5d667ae7ba2a8",
     "config/statusline.json": "93d4c71fbddf648936df1a555d1919fe9bff5a1e1d278b0dd0acf4fabf6d61ea",
     "docs/semantic-mappings.md": "a3641a47578c6e6610f248833a72738de90e58d44ddc305427f960dcd26403b5",
     "hooks/activity-audit.json": "1f8177e9d48b3e46067736fb4d734a056bb9c0663e7434c14fefca02d341345a",
@@ -187,20 +184,17 @@
     "hooks/bootstrap.json": "75744088db1bf98a66bc3c5e4d94a938a2a81486b01d72b9f90a35075b1595aa",
     "hooks/bootstrap.mjs": "753d71622c3f73f87bc648bed1b0635ff9f80e810670bc3cebb7be82f20a66a8",
     "hooks/checkpoint.json": "8c3968bb7cde354d535f20e99dd22783f06738f9509c0818693ddedc1b832d91",
-    "hooks/emergency-guard.json": "f3a4bb8ac32be47d3f9204a114a854dfaeb0d88701f1386f598d9ccd2b24d2fd",
-    "hooks/emergency-guard.mjs": "22e41534a48333b3f8d16b34b44b83049b63a3f64871270ce8501721bf120821",
-    "hooks/emergency-policy.mjs": "fdf20efa604da6fadf34d04a6ef1d3f43d80b4ec14246784ed917921a684a95c",
-    "hooks/hooks.json": "5559142caa803aed3f5bb7e0556ca3741430c5c66eca35c9e2cfa4b62a9d9160",
+    "hooks/hooks.json": "37be0eb28a90e11c4ca46fa9cd4dd0e8643280a5e1ef7f99af074c73429f53ae",
     "hooks/pre-compact.mjs": "18a76d86ed20459b3a75e881269f2037e34a7ddf7b9d32171b0ee7733bf80988",
     "rules/authority-and-scope.md": "e954e78589912467fcc0f1e273cd7f7028efb014152ec22e9cdd6e99c821764f",
     "rules/cross-platform-execution.md": "b0db23bbbee452ae698d68171bde816bbdc360464d7e8d3105b46eaefa1d8c62",
     "rules/destructive-actions.md": "69f0320c6279e4f2a5b3dc96381c08d80c5d3dc84a5aa34ae2e6e790b4b452f9",
     "rules/evidence-and-truth.md": "6f0155b38cdafb34fd204576ab721db6220a2f117256f30764026d63f01dfcde",
     "rules/git-and-user-work.md": "b65c9ad2095d570a7ad6299e53a5811698cebc9148c7d38e0d9e77d132404872",
-    "rules/implementation-quality.md": "b680c552b63c1b11ae103f96a439e1acceb09ba2deebb728bc5e08bf5177ce15",
+    "rules/implementation-quality.md": "6dbf1f9481442264336f2f489350a1951d382e7e316e6e7e24ffb15396f9b027",
     "rules/long-task-state.md": "62d1c22e14fa00a01136894dad2336e1d3c059b104e3e64eeb2d66bd3755b2af",
     "rules/multi-agent-ownership.md": "b346e37ce93910abc0a4a967190502b223d0ec249095988bf3b42ce14e09c2d5",
-    "rules/presentation.md": "b8dd170724d27c4eae340cf5223b8364a74083d059c218b51700c69711188bd3",
+    "rules/presentation.md": "9ac3ba5a38cb3323f636443b3dd50b07c38e19de191426d63af3f30bf9301160",
     "rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",
     "skills/brainstorming/SKILL.md": "f1abe57a07260f2f2ec4e1453fa2b4fe173417b89c81da9c2c3cb394c6c64c20",
     "skills/brainstorming/scripts/frame-template.html": "4c3b7d94265cf0f8de437191dcbadccca4106d785591caf89e7c818ff153bc93",

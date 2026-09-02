@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { access, mkdir, readdir, readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { relative, resolve } from "node:path";
 import test from "node:test";
@@ -64,7 +65,7 @@ test("Antigravity 2 clean-profile apply materializes the complete disposable pac
     for (const path of [
       `${pluginRoot}/plugin.json`, `${pluginRoot}/hooks.json`,
       `${pluginRoot}/hooks/activity-audit.json`, `${pluginRoot}/hooks/checkpoint.json`,
-      `${pluginRoot}/hooks/emergency-guard.json`, `${pluginRoot}/rules/AGENTS.md`
+      `${pluginRoot}/rules/AGENTS.md`
     ]) await access(resolve(destination, path));
     const generatedRules = (await filesUnder(resolve(destination, pluginRoot, "rules"))).filter((path) => path.endsWith(".md"));
     assert.deepEqual(generatedRules, ["AGENTS.md"]);
@@ -94,18 +95,13 @@ test("Antigravity 2 clean-profile apply materializes the complete disposable pac
     assert.equal(hook.automaticHookExecution, false);
     assert.equal(hook.probeRequired, true);
     assert.equal(hook.probe.status, "not run");
-    const emergency = rendered.registrations.find((entry) => entry.kind === "emergency-guard");
-    assert.equal(emergency.automatic, false);
-    assert.equal(emergency.status, "not run");
+    assert.equal(rendered.registrations.some((entry) => entry.kind === "emergency-guard"), false);
     assert.ok(rendered.diagnostics.filter((entry) => entry.code === "desktop-action-unknown").length >= core.commands.length);
 
     const hooks = JSON.parse(await readFile(resolve(destination, pluginRoot, "hooks.json"), "utf8"));
     assert.equal(hooks["all-about-agents-safety"].enabled, false);
     assert.doesNotMatch(JSON.stringify(hooks), /command|hooks\.mjs/iu);
-    const guard = JSON.parse(await readFile(resolve(destination, pluginRoot, "hooks", "emergency-guard.json"), "utf8"));
-    assert.equal(guard.automatic, false);
-    assert.equal(guard.probeRequired, true);
-    assert.equal(guard.probe.status, "not run");
+    assert.equal(existsSync(resolve(destination, pluginRoot, "hooks", "emergency-guard.json")), false);
 
     const statePath = resolve(destination, ".all-about-agents", "state.json");
     const state = JSON.parse(await readFile(statePath, "utf8"));

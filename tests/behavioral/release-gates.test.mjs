@@ -12,13 +12,10 @@ import { validateRenderResult } from "../../adapters/shared/adapter-contract.mjs
 import { nativeIntegrationStatus } from "../../adapters/shared/native-state.mjs";
 import { routeRole } from "../../core/roles/router.mjs";
 import { CANONICAL_ROLE_IDS, assertNativeRoleSemantics, isRoleReadOnly } from "../../core/roles/contract.mjs";
-import { classifyEmergencyAction } from "../../installers/lib/emergency-policy.mjs";
 import { isContained, assertSafeDestinationRoot } from "../../installers/lib/roots.mjs";
 import { auditPresentationTrace } from "../../core/evals/presentation-trace.mjs";
 import routingFixture from "./roles/routing.json" with { type: "json" };
 import presentationScenarios from "../../core/evals/scenarios/presentation-contract.json" with { type: "json" };
-import emergencyFixture from "../fixtures/emergency-actions.json" with { type: "json" };
-import emergencyPolicy from "../../core/hooks/emergency-guard.json" with { type: "json" };
 import { withTempRoot } from "../helpers/temp-root.mjs";
 import { main } from "../../scripts/aaa.mjs";
 
@@ -171,8 +168,6 @@ test("release rubric has strict weights, status values, and exact release thresh
   assert.deepEqual(rubric.gates, [
     { id: "gate-0-static", requiredPassRate: 100 },
     { id: "gate-1-deterministic", requiredPassRate: 100 },
-    { id: "emergency", requiredPassRate: 100 },
-    { id: "secret", requiredPassRate: 100 },
     { id: "containment", requiredPassRate: 100 },
     { id: "read-only", requiredPassRate: 100 }
   ]);
@@ -188,8 +183,6 @@ test("release rubric has strict weights, status values, and exact release thresh
   assert.deepEqual(rubric.releaseFailureConditions, [
     "Critical",
     "High",
-    "emergency-miss",
-    "secret-miss",
     "containment-miss",
     "read-only-miss",
     "missing-skill",
@@ -239,18 +232,6 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
   }));
   assert.equal(passRate(routingChecks), 100);
   checks.push({ id: "role-routing", status: "PASS", evidence: { cases: routingChecks.length, passRate: passRate(routingChecks) } });
-
-  const emergencyChecks = emergencyFixture.cases.map((entry) => {
-    const result = classifyEmergencyAction({ ...entry.action, policy: emergencyPolicy });
-    const passed = result.decision === entry.expected.decision && result.ruleId === entry.expected.ruleId;
-    return { id: entry.id, status: passed ? "PASS" : "FAIL", evidence: { expectedDecision: entry.expected.decision, actualDecision: result.decision, expectedRule: entry.expected.ruleId, actualRule: result.ruleId } };
-  });
-  assert.equal(passRate(emergencyChecks), 100);
-  checks.push({ id: "emergency", status: "PASS", evidence: { cases: emergencyChecks.length, passRate: passRate(emergencyChecks) } });
-  const secretChecks = emergencyChecks.filter((_, index) => ["secret-credential-access", "secret-output-or-transmission"].includes(emergencyFixture.cases[index].expected.ruleId));
-  assert.ok(secretChecks.length > 0);
-  assert.equal(passRate(secretChecks), 100);
-  checks.push({ id: "secret", status: "PASS", evidence: { cases: secretChecks.length, passRate: passRate(secretChecks) } });
 
   const disposableRoot = resolve(process.cwd(), "tests", ".tmp", "t050-release-gates");
   const pathModule = process.platform === "win32" ? win32 : posix;

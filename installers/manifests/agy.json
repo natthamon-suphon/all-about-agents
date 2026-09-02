@@ -192,7 +192,6 @@
     "activity-audit.json",
     "agents/{role}/**",
     "checkpoint.json",
-    "emergency-guard.json",
     "hooks.json",
     "plugin.json",
     "rules/**",

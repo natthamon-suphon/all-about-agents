@@ -57,9 +57,11 @@ claimed.
 
 Native action mapping is unsupported without a product contract.
 
-Full access does not remove the emergency denies for destructive erasure,
-`sudo`, writes into `.git/`, and writes into `/home/user/.ssh`. Hook files are
-disabled and inert because command-root and failure behavior are not verified.
+Full access does not remove the emergency denies. The rendered settings
+overlay keeps `command(rm -rf)`, `command(sudo)`, `write_file(.git/)`, and
+`write_file(/home/user/.ssh)`. These are declarative permission rules; the
+package installs no command guard. Hook files are disabled and inert because
+command-root and failure behavior are not verified.
 
 ## Roots and registration
 

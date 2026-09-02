@@ -4,7 +4,6 @@ import { homedir } from "node:os";
 import { join, posix } from "node:path";
 
 import claudeBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
-import claudeEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
 import claudeActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
 import claudeCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
 
@@ -26,9 +25,6 @@ const CONTROL_OR_ANSI = /[\u0000-\u001f\u007f]|\u001b\[[0-?]*[ -/]*[@-~]/u;
 const compareCodePoints = (left, right) => left === right ? 0 : left < right ? -1 : 1;
 const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
 const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.json", import.meta.url), "utf8");
-const EMERGENCY_GUARD_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.mjs", import.meta.url), "utf8");
-const EMERGENCY_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/emergency-guard.json", import.meta.url), "utf8");
-const EMERGENCY_POLICY_SOURCE = readFileSync(new URL("../../installers/lib/emergency-policy.mjs", import.meta.url), "utf8");
 const AUDIT_LOG_SOURCE = readFileSync(new URL("../../installers/lib/audit-log.mjs", import.meta.url), "utf8");
 const STATUSLINE_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.mjs", import.meta.url), "utf8");
 const STATUSLINE_TRACK_TOOL_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/track-tool.mjs", import.meta.url), "utf8");
@@ -96,8 +92,8 @@ export const CLAUDE_MODEL_POLICY = Object.freeze({
   template: Object.freeze({
     model: "claude-opus-5",
     fallbackModel: Object.freeze(["claude-sonnet-5"]),
-    advisorModel: "claude-fable-5",
-    env: Object.freeze({ CLAUDE_CODE_EFFORT_LEVEL: "max" })
+    advisorModel: "claude-fable-5-1",
+    env: Object.freeze({ CLAUDE_CODE_EFFORT_LEVEL: "xhigh" })
   })
 });
 
@@ -409,18 +405,6 @@ function hookConfig() {
     ],
     timeout: 10
   };
-  const emergencyCommand = {
-    type: "command",
-    command: "node",
-    args: [
-      `${"${CLAUDE_PLUGIN_ROOT}"}/hooks/emergency-guard.mjs`,
-      "--surface",
-      "claude",
-      "--policy-path",
-      `${"${CLAUDE_PLUGIN_ROOT}"}/hooks/emergency-guard.json`
-    ],
-    timeout: 10
-  };
   const statuslineTrackerCommand = {
     type: "command",
     command: "node",
@@ -429,7 +413,6 @@ function hookConfig() {
   };
   return { hooks: {
     [claudeBootstrapTemplate.event]: [{ matcher: claudeBootstrapTemplate.nativeMatcher, hooks: [bootstrapCommand] }],
-    PreToolUse: [{ matcher: claudeEmergencyTemplate.nativeMatcher, hooks: [emergencyCommand] }],
     [claudeActivityTemplate.event]: [{ matcher: claudeActivityTemplate.nativeMatcher, hooks: [command("activity-audit.mjs"), statuslineTrackerCommand] }],
     [claudeCheckpointTemplate.event]: [{ matcher: claudeCheckpointTemplate.nativeMatcher, hooks: [command("pre-compact.mjs")] }]
   } };
@@ -442,11 +425,11 @@ function nativeEmergencyRecord(profile) {
     phases: {
       rendered: {
         status: "pass",
-        evidence: "Rendered the Claude emergency PreToolUse guard and canonical deny policy."
+        evidence: "Rendered the canonical Claude settings.json permission deny policy."
       },
       validated: {
         status: "not-run",
-        evidence: "Claude strict plugin validation was not run by this render; validation must not imply emergency hook execution."
+        evidence: "Claude strict plugin validation was not run by this render; validation must not imply deny-policy enforcement."
       },
       registered: {
         status: "not-run",
@@ -454,22 +437,22 @@ function nativeEmergencyRecord(profile) {
       },
       trusted: {
         status: "not-run-unavailable",
-        evidence: "This Claude emergency hook feature has no native trust concept."
+        evidence: "This Claude permission deny policy has no native trust concept."
       },
       active: {
         status: "not-run",
-        evidence: "No fresh Claude Code session was opened to observe the emergency hook state."
+        evidence: "No fresh Claude Code session was opened to observe the deny policy state."
       },
       runtimeVerified: {
         status: "not-run",
-        evidence: "Claude emergency hook execution was not run in a native session."
+        evidence: "Claude deny-policy enforcement was not exercised in a native session."
       }
     },
     sourcePath: "adapters/claude/adapter.mjs",
     manualSteps: [
-      "Run claude plugin validate PACKAGE_ROOT --strict to advance package validation; this does not verify emergency hook execution.",
-      "Register the plugin and open a fresh Claude Code session before checking hook behavior.",
-      `Keep the ${profile.authority === "full" ? "bypassPermissions" : "default"} profile's canonical Bash emergency deny rules in settings.json.`
+      "Run claude plugin validate PACKAGE_ROOT --strict to advance package validation; this does not verify deny-policy enforcement.",
+      "Register the plugin and open a fresh Claude Code session before checking permission behavior.",
+      `Keep the ${profile.authority === "full" ? "bypassPermissions" : "default"} profile's canonical Bash deny rules in settings.json.`
     ]
   });
 }
@@ -586,9 +569,6 @@ export function renderClaude(input = {}) {
   addFile(files, "hooks/hooks.json", renderJson(hookConfig()));
   addFile(files, "hooks/bootstrap.json", BOOTSTRAP_CONFIG_SOURCE);
   addFile(files, `hooks/${claudeBootstrapTemplate.module}.mjs`, BOOTSTRAP_SOURCE, 0o755);
-  addFile(files, "hooks/emergency-guard.json", EMERGENCY_CONFIG_SOURCE);
-  addFile(files, "hooks/emergency-guard.mjs", EMERGENCY_GUARD_SOURCE, 0o755);
-  addFile(files, "hooks/emergency-policy.mjs", EMERGENCY_POLICY_SOURCE, 0o755);
   addFile(files, "hooks/activity-audit.json", renderJson(claudeActivityTemplate));
   addFile(files, "hooks/checkpoint.json", renderJson(claudeCheckpointTemplate));
   addFile(files, "hooks/audit-log.mjs", AUDIT_LOG_SOURCE, 0o755);

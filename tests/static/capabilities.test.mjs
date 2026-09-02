@@ -150,7 +150,7 @@ test("Claude Fable advisor wording records current support with access limits", 
   const claude = await loadCapability("claude");
   const advisor = claude.capabilities.find((item) => item.feature === "model.advisor");
   assert.ok(advisor);
-  assert.equal(advisor.value, "claude-fable-5");
+  assert.equal(advisor.value, "claude-fable-5-1");
   assert.notEqual(advisor.stability, "experimental");
   assert.match(advisor.notes, /account|plan|version/iu);
   assert.match(advisor.notes, /access|available|consent|credit/iu);

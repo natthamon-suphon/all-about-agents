@@ -463,12 +463,11 @@ test("Codex plugin hook registrations use the shared native lifecycle and stay u
     "emergency-protection",
     "bootstrap-hook",
     "activity-audit-hook",
-    "checkpoint-hook",
-    "emergency-guard-hook"
+    "checkpoint-hook"
   ]);
   const emergency = records.find((entry) => entry.feature === "emergency-protection");
   assert.deepEqual(NATIVE_PHASES.map((phase) => emergency.phases[phase].status), [
-    "pass", "not-run", "not-run", "not-run", "not-run", "not-run"
+    "pass", "not-run", "not-run", "not-run-unavailable", "not-run", "not-run"
   ]);
   const portable = resultFor("portable").registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
   assert.doesNotMatch(portable.manualSteps.join(" "), /danger-full-access|approvals never|approvals-never/iu);
@@ -500,60 +499,29 @@ test("Codex plugin hooks invoke the rendered runtime and require trust plus Node
   assert.ok(result.registrations.some((entry) => entry.kind === "runtime-prerequisite" && entry.onMissing === "unavailable"));
 });
 
-test("Codex emergency guard uses documented CLI command forms and canonical policy", async () => {
-  const result = resultFor();
-  const files = fileMap(result);
-  const hooks = JSON.parse(files.get("hooks/hooks.json")).hooks;
-  const guard = hooks.PreToolUse[0].hooks[0];
-  assert.ok(guard.command.includes('"$PLUGIN_ROOT/hooks/emergency-guard.mjs" --surface codex'));
-  assert.ok(guard.command.includes('--policy-path "$PLUGIN_ROOT/hooks/emergency-guard.json"'));
-  assert.ok(guard.commandWindows.includes('"%PLUGIN_ROOT%/hooks/emergency-guard.mjs" --surface codex'));
-  assert.equal(files.get("hooks/emergency-guard.mjs"), await readFile(resolve(process.cwd(), "core/hooks/emergency-guard.mjs"), "utf8"));
-  assert.equal(files.get("hooks/emergency-policy.mjs"), await readFile(resolve(process.cwd(), "installers/lib/emergency-policy.mjs"), "utf8"));
-  assert.deepEqual(JSON.parse(files.get("hooks/emergency-guard.json")).orderedRuleIds, [
-    "filesystem-root-erasure", "raw-disk-destruction", "git-force-push", "git-history-rewrite",
-    "git-discard-uncommitted", "secret-credential-access", "secret-output-or-transmission", "guardrail-bypass"
-  ]);
+test("Codex renders no PreToolUse hook and no emergency guard runtime for either target", () => {
+  for (const targetRuntime of ["cli", "desktop"]) {
+    const files = fileMap(resultFor("portable", { targetRuntime }));
+    const hooks = JSON.parse(files.get("hooks/hooks.json")).hooks;
+    assert.equal(hooks.PreToolUse, undefined, `${targetRuntime} must render no PreToolUse hook`);
+    for (const relativePath of ["hooks/emergency-guard.mjs", "hooks/emergency-policy.mjs", "hooks/emergency-guard.json"]) {
+      assert.equal(files.has(relativePath), false, `${targetRuntime} must not render ${relativePath}`);
+    }
+  }
 });
 
-test("Codex target runtime keeps CLI guard unclaimed but makes Desktop probe-only without runtime copies", () => {
+test("Codex target runtime keeps the deny policy manual on Desktop without a guard runtime", () => {
   const cli = resultFor("portable", { targetRuntime: "cli" });
-  const cliFiles = fileMap(cli);
-  const cliHooks = JSON.parse(cliFiles.get("hooks/hooks.json")).hooks;
-  assert.ok(cliHooks.PreToolUse?.[0]?.hooks?.[0]?.command);
-  assert.ok(cliFiles.has("hooks/emergency-guard.mjs"));
-  assert.ok(cliFiles.has("hooks/emergency-policy.mjs"));
-  assert.ok(cliFiles.has("hooks/emergency-guard.json"));
-  assert.ok(cli.registrations.some((entry) => entry.kind === "emergency-guard" && entry.targetRuntime === "cli" && entry.automatic === false && entry.status === "not run"));
+  assert.equal(cli.registrations.some((entry) => entry.kind === "emergency-guard"), false);
 
   const desktop = resultFor("portable", { targetRuntime: "desktop" });
-  const desktopFiles = fileMap(desktop);
-  const desktopHooks = JSON.parse(desktopFiles.get("hooks/hooks.json")).hooks;
-  assert.equal(desktopHooks.PreToolUse, undefined);
-  assert.equal(desktopFiles.has("hooks/emergency-guard.mjs"), false);
-  assert.equal(desktopFiles.has("hooks/emergency-policy.mjs"), false);
-  assert.equal(desktopFiles.has("hooks/emergency-guard.json"), false);
-  const desktopRegistration = desktop.registrations.find((entry) => entry.kind === "emergency-guard");
-  assert.deepEqual({ targetRuntime: desktopRegistration.targetRuntime, automatic: desktopRegistration.automatic, probeRequired: desktopRegistration.probeRequired, status: desktopRegistration.status }, { targetRuntime: "desktop", automatic: false, probeRequired: true, status: "not run" });
+  assert.equal(desktop.registrations.some((entry) => entry.kind === "emergency-guard"), false);
+  assert.equal(desktop.registrations.some((entry) => entry.kind === "native-integration" && entry.feature === "emergency-guard-hook"), false);
   const desktopProtection = desktop.registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
   for (const deny of ["command(rm -rf)", "command(sudo)", "write_file(.git/)", "write_file(/home/user/.ssh)"]) {
     assert.ok(desktopProtection.manualSteps.some((step) => step.includes(deny)), `Codex Desktop must list exact deny ${deny}`);
   }
-  const desktopEmergencyHook = desktop.registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-guard-hook");
-  assert.ok(desktopEmergencyHook);
-  assert.deepEqual(NATIVE_PHASES.map((phase) => desktopEmergencyHook.phases[phase].status), [
-    "not-run-unavailable",
-    "not-run-unavailable",
-    "not-run-unavailable",
-    "not-run",
-    "not-run-unavailable",
-    "not-run-unavailable"
-  ]);
-  assert.match(desktopEmergencyHook.phases.rendered.evidence, /Desktop.*not emitted/u);
-  assert.match(desktopEmergencyHook.phases.trusted.evidence, /manual.*probe|\/hooks/iu);
-  assert.match(desktopEmergencyHook.manualSteps.join(" "), /disposable package.*deny-output probe/iu);
-  assert.doesNotMatch(desktopEmergencyHook.manualSteps.join(" "), /register the rendered package|trust the current plugin hook/iu);
-  assert.ok(desktop.diagnostics.some((entry) => entry.code === "codex-desktop-emergency-guard-probe-required"));
+  assert.equal(desktop.diagnostics.some((entry) => entry.code === "codex-desktop-emergency-guard-probe-required"), false);
   const desktopAgain = resultFor("portable", { targetRuntime: "desktop" });
   const fileProjection = (result) => result.files.map((file) => ({ relativePath: file.relativePath, mode: file.mode, content: [...file.content] }));
   assert.deepEqual(fileProjection(desktop), fileProjection(desktopAgain));

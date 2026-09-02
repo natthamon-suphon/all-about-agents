@@ -17,9 +17,14 @@ and keep unrelated work untouched.
 
 ## Simple language and direct reporting
 
-Use the language of the current session and simple direct wording. Keep
-technical terms when they help. Give the outcome first. Avoid filler and do
-not repeat unchanged status messages.
+Always answer in simple English at CEFR A2 level. Use short sentences, common
+words, and one idea per sentence. Keep the answer short. Give the outcome first,
+then only the detail the reader must act on. Add more detail only when the
+reader asks for it. Keep technical terms, names, paths, and commands unchanged,
+and add a short plain gloss when a term is not obvious. Switch to
+the language of the current session only when the reader asks for that
+language, and keep the same simple level. Avoid filler.
+Do not repeat unchanged status messages.
 
 ## Evidence, assumptions, and primary-source research
 
@@ -47,6 +52,10 @@ Follow the repository style and use the smallest change that solves the task.
 Add a behavior test before production code for a feature or bug fix. Run a
 focused check first, then relevant build, tests, and lint checks. Handle errors
 explicitly. Leave no dead code, empty catches, or placeholder stubs.
+
+Write few comments. Let clear names and small units carry the meaning. Add a
+comment only for non-obvious intent, a real constraint, or a required notice.
+Delete comments that restate the code.
 
 ## Safe file, destructive, external, and Git actions
 

@@ -25,7 +25,9 @@ used `tests/.tmp/native-acceptance-20260831-c/`. All were disposable roots.
   validation did not report.
 - The adapter was corrected to keep the standard hook file while removing only
   the redundant manifest field. The emergency guard and all lifecycle hook
-  registrations remain rendered.
+  registrations remain rendered. Superseded on 2026-09-02: the emergency guard
+  was removed, so only the lifecycle hooks are rendered now. See
+  [known limitations](../limitations/known-limitations.md).
 - A newly rendered package passed `claude plugin validate --strict`, local
   marketplace registration, and plugin installation. `plugin list --json`
   reported `all-about-agents@all-about-agents-dev` version 1.0.0 enabled with no

@@ -2,14 +2,12 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import agyBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
-import agyEmergencyTemplate from "./templates/hooks/emergency-guard.json" with { type: "json" };
 import agyActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
 import agyCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
 
 import { renderJson, renderText } from "../shared/render-utils.mjs";
 import { renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeCapabilityDiagnostics, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
-import { classifyEmergencyAction, REASONS } from "../../installers/lib/emergency-policy.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
@@ -581,31 +579,6 @@ function hookDocument() {
   };
 }
 
-/** Normalize only the documented agy PreToolUse fields. */
-export function normalizeAgyEmergencyRequest(request) {
-  if (!request || typeof request !== "object" || Array.isArray(request) || !request.toolCall || typeof request.toolCall !== "object" || Array.isArray(request.toolCall)) return null;
-  if (typeof request.toolCall.name !== "string" || !request.toolCall.args || typeof request.toolCall.args !== "object" || Array.isArray(request.toolCall.args)) return null;
-  const name = request.toolCall.name.toLowerCase();
-  const args = request.toolCall.args;
-  return {
-    capability: name.includes("run_command") ? "command-execution" : name.includes("write") || name.includes("edit") ? "filesystem-write" : "filesystem-read",
-    command: typeof args.CommandLine === "string" ? args.CommandLine : "",
-    paths: typeof args.filePath === "string" ? [args.filePath] : [],
-    gitOperation: typeof args.CommandLine === "string" ? args.CommandLine : null,
-    secretOperation: name.includes("read") ? { operation: "read" } : null
-  };
-}
-
-export function mapAgyEmergencyDecision(classification) {
-  const reason = classification?.decision === "deny" && Object.hasOwn(REASONS, classification.ruleId) ? REASONS[classification.ruleId] : "";
-  return reason ? { decision: "deny", reason } : {};
-}
-
-export function classifyAgyEmergencyRequest(request) {
-  const normalized = normalizeAgyEmergencyRequest(request);
-  return normalized ? classifyEmergencyAction(normalized) : { decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." };
-}
-
 function validateAgyContent(files, opaqueCompanionPaths = new Set()) {
   const decoder = new TextDecoder("utf-8", { fatal: true });
   for (const file of files) {
@@ -733,7 +706,6 @@ export function renderAgy(input = {}) {
   addFile(files, "hooks.json", renderJson(hookDocument()));
   addFile(files, "activity-audit.json", renderJson(agyActivityTemplate));
   addFile(files, "checkpoint.json", renderJson(agyCheckpointTemplate));
-  addFile(files, "emergency-guard.json", renderJson(agyEmergencyTemplate));
   addFile(files, "settings.overlay.json", renderJson(renderSettingsOverlay(semanticProfile.authority, { statuslineCommand })));
   addFile(files, "statusline/statusline.json", renderJson({ schemaVersion: 1, displayName: statuslineName }));
   addFile(files, "statusline/statusline.mjs", STATUSLINE_SOURCE_TEXT, 0o755);
@@ -781,12 +753,6 @@ export function renderAgy(input = {}) {
       code: "agy-bootstrap-probe-required",
       severity: "warning",
       message: `${agyBootstrapTemplate.probe.reason} Status: ${agyBootstrapTemplate.probe.status}. Manual sequence: ${agyBootstrapTemplate.probe.manualSequence.join(" ")}`,
-      sourcePath: "docs/evaluations/antigravity-contracts-2026-08-31.md"
-    },
-    {
-      code: "agy-emergency-guard-probe-required",
-      severity: "warning",
-      message: "agy emergency guard output is documented but executable package-root resolution remains unverified; automatic hook execution is disabled.",
       sourcePath: "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
@@ -848,16 +814,16 @@ export function renderAgy(input = {}) {
         evidence: "The agy settings deny overlay requires an authorized register --apply or an explicit manual merge; native plugin registration was not run during rendering."
       },
       trusted: {
-        status: "not-run",
-        evidence: "The native agy emergency hook is disabled; hook trust was not established."
+        status: "not-run-unavailable",
+        evidence: "The agy settings deny overlay has no native trust concept."
       },
       active: {
         status: "not-run",
-        evidence: "No fresh agy session was opened to observe emergency protection."
+        evidence: "No fresh agy session was opened to observe permission protection."
       },
       runtimeVerified: {
         status: "not-run",
-        evidence: "agy emergency deny output was not executed in a native runtime probe."
+        evidence: "agy deny enforcement was not exercised in a native runtime probe."
       }
     },
     sourcePath: "adapters/agy/adapter.mjs",
@@ -865,8 +831,7 @@ export function renderAgy(input = {}) {
       `For the ${semanticProfile.authority === "full" ? "always-proceed" : "request-review"} settings overlay, use a reviewed and authorized register --apply or explicitly merge the deny rules before any native run.`,
       semanticProfile.authority === "full"
         ? "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh); the optional per-run skip operation does not remove them."
-        : "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).",
-      "Keep the native emergency hook disabled until a disposable agy deny-output probe verifies hook execution and command resolution."
+        : "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh)."
     ]
   });
   const result = {
@@ -977,16 +942,6 @@ export function renderAgy(input = {}) {
         durableWorkflow: agyCheckpointTemplate.durableWorkflow,
         failureMode: agyCheckpointTemplate.failureMode,
         recordedFields: [...agyCheckpointTemplate.recordedFields]
-      },
-      {
-        kind: "emergency-guard",
-        surface: SURFACE,
-        relativePath: "emergency-guard.json",
-        enabled: false,
-        automatic: false,
-        automaticHookExecution: false,
-        probeRequired: agyEmergencyTemplate.probeRequired,
-        status: agyEmergencyTemplate.probe.status
       },
       {
         kind: "runtime-prerequisite",

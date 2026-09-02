@@ -44,23 +44,23 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-model-policy-claude.md",
-      "checkedAt": "2026-08-31",
-      "productVersion": "2.1.251",
-      "value": "claude-fable-5",
-      "notes": "Documented Fable advisor; account, organization, plan, provider, consent, and product-version access limits may apply."
+      "checkedAt": "2026-09-02",
+      "productVersion": "2.1.258",
+      "value": "claude-fable-5-1",
+      "notes": "Documented Fable 5.1 advisor; it requires Claude Code v2.1.255 or later, and account, organization, plan, provider, consent, and product-version access limits may apply."
     },
     {
-      "feature": "effort.max",
+      "feature": "effort.xhigh",
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-model-policy-claude.md",
-      "checkedAt": "2026-08-31",
-      "productVersion": "2.1.251",
+      "checkedAt": "2026-09-02",
+      "productVersion": "2.1.258",
       "value": {
         "environment": "CLAUDE_CODE_EFFORT_LEVEL",
-        "value": "max"
+        "value": "xhigh"
       },
-      "notes": "Persistent max effort is documented through the environment setting, not effortLevel."
+      "notes": "Persistent xhigh effort is documented through the environment setting, not effortLevel. xhigh is the deepest adaptive-reasoning level, and Opus 5 always uses adaptive reasoning."
     },
     {
       "feature": "agents.discovery",

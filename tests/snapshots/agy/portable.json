@@ -1,5 +1,5 @@
 {
-  "fileCount": 111,
+  "fileCount": 110,
   "paths": [
     "GEMINI.md",
     "README.md",
@@ -12,7 +12,6 @@
     "agents/security-reviewer/agent.md",
     "agents/verifier/agent.md",
     "checkpoint.json",
-    "emergency-guard.json",
     "hooks.json",
     "plugin.json",
     "rules/adapter-capability-guidance.md",
@@ -116,7 +115,7 @@
   "ownership": [
     {
       "relativePath": "GEMINI.md",
-      "sha256": "96f5540731864d62bc9f294ed9c9f2cf69ddee42d527b4467de3e1e01d73e6a8"
+      "sha256": "2f350c6ab1dab0b36f40ffeebd0c329925fc3e6b70ee913cec3ae90c5ca4c350"
     },
     {
       "relativePath": "README.md",
@@ -159,10 +158,6 @@
       "sha256": "3056071e586cfb879c22d8c26e33f016f44d0e2974dc2b627232161678ecaad0"
     },
     {
-      "relativePath": "emergency-guard.json",
-      "sha256": "848b01fe76f388788ddff78ff0b25141daebe1871c6d06ce63b14a9b2bdbd166"
-    },
-    {
       "relativePath": "hooks.json",
       "sha256": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27"
     },
@@ -200,7 +195,7 @@
     },
     {
       "relativePath": "rules/implementation-quality.md",
-      "sha256": "b680c552b63c1b11ae103f96a439e1acceb09ba2deebb728bc5e08bf5177ce15"
+      "sha256": "6dbf1f9481442264336f2f489350a1951d382e7e316e6e7e24ffb15396f9b027"
     },
     {
       "relativePath": "rules/long-task-state.md",
@@ -220,7 +215,7 @@
     },
     {
       "relativePath": "rules/presentation.md",
-      "sha256": "b8dd170724d27c4eae340cf5223b8364a74083d059c218b51700c69711188bd3"
+      "sha256": "9ac3ba5a38cb3323f636443b3dd50b07c38e19de191426d63af3f30bf9301160"
     },
     {
       "relativePath": "rules/secrets-and-untrusted-input.md",
@@ -625,23 +620,22 @@
           "evidence": "The agy settings deny overlay requires an authorized register --apply or an explicit manual merge; native plugin registration was not run during rendering."
         },
         "trusted": {
-          "status": "not-run",
-          "evidence": "The native agy emergency hook is disabled; hook trust was not established."
+          "status": "not-run-unavailable",
+          "evidence": "The agy settings deny overlay has no native trust concept."
         },
         "active": {
           "status": "not-run",
-          "evidence": "No fresh agy session was opened to observe emergency protection."
+          "evidence": "No fresh agy session was opened to observe permission protection."
         },
         "runtimeVerified": {
           "status": "not-run",
-          "evidence": "agy emergency deny output was not executed in a native runtime probe."
+          "evidence": "agy deny enforcement was not exercised in a native runtime probe."
         }
       },
       "sourcePath": "adapters/agy/adapter.mjs",
       "manualSteps": [
         "For the request-review settings overlay, use a reviewed and authorized register --apply or explicitly merge the deny rules before any native run.",
-        "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh).",
-        "Keep the native emergency hook disabled until a disposable agy deny-output probe verifies hook execution and command resolution."
+        "Retain command(rm -rf), command(sudo), write_file(.git/), and write_file(/home/user/.ssh)."
       ]
     },
     {
@@ -748,16 +742,6 @@
         "state",
         "status"
       ]
-    },
-    {
-      "kind": "emergency-guard",
-      "surface": "agy",
-      "relativePath": "emergency-guard.json",
-      "enabled": false,
-      "automatic": false,
-      "automaticHookExecution": false,
-      "probeRequired": true,
-      "status": "not run"
     },
     {
       "kind": "runtime-prerequisite",
@@ -884,12 +868,6 @@
       "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
     },
     {
-      "code": "agy-emergency-guard-probe-required",
-      "severity": "warning",
-      "message": "agy emergency guard output is documented but executable package-root resolution remains unverified; automatic hook execution is disabled.",
-      "sourcePath": "docs/evaluations/antigravity-contracts-2026-08-31.md"
-    },
-    {
       "code": "agy-hook-failure-contract-unverified",
       "severity": "warning",
       "message": "Antigravity documents agy hook events and JSON input/output, but not hook-process failure behavior or portable package-root command resolution; executable hooks remain disabled.",
@@ -999,7 +977,7 @@
     }
   ],
   "contentHashes": {
-    "GEMINI.md": "96f5540731864d62bc9f294ed9c9f2cf69ddee42d527b4467de3e1e01d73e6a8",
+    "GEMINI.md": "2f350c6ab1dab0b36f40ffeebd0c329925fc3e6b70ee913cec3ae90c5ca4c350",
     "README.md": "1187f9bfd8d7af49648a815a0361123958b9d74a317a426643ecf8a24643ed4d",
     "activity-audit.json": "9642d184786a4232588c3d94623d622c068c2bdcc7c6396d6b0aae292a84527d",
     "agents/architect/agent.md": "5f5bcbbe4e29794821b43ee3f729102d609f6f0d0031b9737e50116e15c7e7fd",
@@ -1010,7 +988,6 @@
     "agents/security-reviewer/agent.md": "7020f74f4d0acf1d66b155ac532640875c5eb0dd903d77019032b5bb582f6c2b",
     "agents/verifier/agent.md": "6a997807ad9660f43cd91dcf211074b0dc18f9c0319a33254d002c54897c2fc4",
     "checkpoint.json": "3056071e586cfb879c22d8c26e33f016f44d0e2974dc2b627232161678ecaad0",
-    "emergency-guard.json": "848b01fe76f388788ddff78ff0b25141daebe1871c6d06ce63b14a9b2bdbd166",
     "hooks.json": "853d861f153bf4f53fd309ca77a3699732653ad84e4491bac7c038b574178b27",
     "plugin.json": "756ec24b1703be2d650e94914f6f7668ba98a1dd746cda65a42e8025e2ba6ead",
     "rules/adapter-capability-guidance.md": "cef2902704f243e1d38ab7abd1f122b1a9061069cbd01aa58d5d9c4acfcc5710",
@@ -1020,12 +997,12 @@
     "rules/evidence-and-truth.md": "6f0155b38cdafb34fd204576ab721db6220a2f117256f30764026d63f01dfcde",
     "rules/git-and-user-work.md": "b65c9ad2095d570a7ad6299e53a5811698cebc9148c7d38e0d9e77d132404872",
     "rules/hook-contract.md": "b56183c44264794976d72e0bde522192b4aafa553fcb443ab3ca722402a6e0dd",
-    "rules/implementation-quality.md": "b680c552b63c1b11ae103f96a439e1acceb09ba2deebb728bc5e08bf5177ce15",
+    "rules/implementation-quality.md": "6dbf1f9481442264336f2f489350a1951d382e7e316e6e7e24ffb15396f9b027",
     "rules/long-task-state.md": "62d1c22e14fa00a01136894dad2336e1d3c059b104e3e64eeb2d66bd3755b2af",
     "rules/model-selection.md": "62f1c78be6b051901448c0c48fa286c48e9677e674d391aa8ed4e31fc221296f",
     "rules/multi-agent-ownership.md": "b346e37ce93910abc0a4a967190502b223d0ec249095988bf3b42ce14e09c2d5",
     "rules/permission-safety.md": "4890141c44ace9e7e28de994b69589ffdddfd8ba990ab201738a3503674ff85d",
-    "rules/presentation.md": "b8dd170724d27c4eae340cf5223b8364a74083d059c218b51700c69711188bd3",
+    "rules/presentation.md": "9ac3ba5a38cb3323f636443b3dd50b07c38e19de191426d63af3f30bf9301160",
     "rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",
     "rules/settings-overlay.md": "d6904c71cf2fcdef6f57139a58a9d11f601c93d6979d5239dfcd439f1dbdfa4d",
     "settings.overlay.json": "1796a8dd46bf2912600854d10bae166b2b404d122c4781d4ddf7cdbdc0dab9b9",

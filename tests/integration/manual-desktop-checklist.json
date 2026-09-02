@@ -47,7 +47,7 @@
         { "id": "terra-profile-parse", "status": "pass" },
         { "id": "authenticated-model", "status": "not run" },
         { "id": "skill-agent-discovery", "status": "not run" },
-        { "id": "hook-and-emergency-guard", "status": "not run" },
+        { "id": "hook-registration", "status": "not run" },
         { "id": "desktop-registration", "status": "not run" },
         { "id": "persistence", "status": "not run" }
       ],

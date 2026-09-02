@@ -160,8 +160,8 @@ test("template renders approved native model contracts and Fable only where supp
   const claude = JSON.parse(files(outputs.claude).get("config/settings.json"));
   assert.equal(claude.model, "claude-opus-5");
   assert.deepEqual(claude.fallbackModel, ["claude-sonnet-5"]);
-  assert.equal(claude.advisorModel, "claude-fable-5");
-  assert.equal(claude.env.CLAUDE_CODE_EFFORT_LEVEL, "max");
+  assert.equal(claude.advisorModel, "claude-fable-5-1");
+  assert.equal(claude.env.CLAUDE_CODE_EFFORT_LEVEL, "xhigh");
   assert.match(files(outputs.codex).get("config.toml"), /model = "gpt-5\.6-sol"[\s\S]*model_reasoning_effort = "max"/u);
   assert.match(files(outputs.codex).get("terra-max.config.toml"), /model = "gpt-5\.6-terra"[\s\S]*model_reasoning_effort = "max"/u);
   const desktopModel = outputs["antigravity-2"].registrations.find((entry) => entry.kind === "manual-model-selection");
@@ -183,7 +183,7 @@ test("template full access never removes emergency denies", () => {
   const codexEmergency = outputs.codex.registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
   assert.ok(codexEmergency);
   assert.equal(codexEmergency.phases.rendered.status, "pass");
-  assert.equal(codexEmergency.phases.trusted.status, "not-run");
+  assert.equal(codexEmergency.phases.trusted.status, "not-run-unavailable");
   assert.ok(codexEmergency.manualSteps.some((step) => step.includes("command(rm -rf)") && step.includes("write_file(/home/user/.ssh)")));
   const desktopPermission = outputs["antigravity-2"].registrations.find((entry) => entry.kind === "permission-ui");
   assert.equal(desktopPermission.preset, "Custom");

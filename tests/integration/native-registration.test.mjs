@@ -14,9 +14,9 @@ const REPOSITORY_ROOT = resolve(process.cwd());
 const CLAUDE_FIXTURE = await readFile(resolve(REPOSITORY_ROOT, "tests/fixtures/native-statusline/claude.json"), "utf8");
 const AGY_FIXTURE = await readFile(resolve(REPOSITORY_ROOT, "tests/fixtures/native-statusline/agy.json"), "utf8");
 const CLAUDE_MARKERS = ["CLAUDE.md", ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "statusline/statusline.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", "all-about-agents/statusline.json"];
-const CODEX_MARKERS = [".codex-plugin/plugin.json", ".agents/plugins/marketplace.json", "hooks/hooks.json", "hooks/emergency-guard.mjs"];
+const CODEX_MARKERS = [".codex-plugin/plugin.json", ".agents/plugins/marketplace.json", "hooks/hooks.json", "hooks/bootstrap.mjs"];
 const AGY_MARKERS = ["plugin.json", "settings.overlay.json", "statusline/statusline.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", "statusline/statusline.json"];
-const CODEX_HOOK_FILES = ["hooks/hooks.json", "hooks/bootstrap.mjs", "hooks/activity-audit.mjs", "hooks/emergency-guard.mjs", "hooks/emergency-policy.mjs"];
+const CODEX_HOOK_FILES = ["hooks/hooks.json", "hooks/bootstrap.mjs", "hooks/activity-audit.mjs", "hooks/pre-compact.mjs", "hooks/audit-log.mjs"];
 
 function contained(root, target) {
   const canonicalize = process.platform === "win32" && typeof realpathSync.native === "function" ? realpathSync.native : realpathSync;

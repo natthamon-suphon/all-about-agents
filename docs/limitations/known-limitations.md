@@ -71,30 +71,29 @@ permission blocking, persistence, and Gate 3 remain `NOT_RUN` or
   `%TEMP%`, `$TMPDIR`, or `/tmp` can be removed by routine cleanup, which
   breaks the registration with no error at install time.
 
-## Over-broad emergency-guard matches
+## No automated pre-execution command guard
 
-`installers/lib/emergency-policy.mjs` classifies a command before it runs and
-`core/hooks/emergency-guard.mjs` applies that decision. The classifier fails
-closed, so it denies some read-only commands that are not destructive.
+The `emergency-guard` `PreToolUse` hook and its command classifier were removed
+on 2026-09-02 on operator instruction, because the classifier failed closed and
+denied read-only commands that were not destructive.
 
-Observed on Windows with the installed Claude package on 2026-09-01:
+What remains is declarative only:
 
-| Command shape | Reported reason |
-| --- | --- |
-| `node scripts/aaa.mjs validate --format json` | `guardrail-bypass` |
-| `cp <config file> <scratch directory>` | `raw-disk-destruction` |
-| two chained `ls -a` reads of separate config directories | `secret-output-or-transmission` |
-| `rm -r "<one resolved absolute directory>"` | `filesystem-root-erasure` |
+- the rendered permission deny rules in each profile (Claude `settings.json`
+  `permissions.deny`; the `agy` settings overlay; the Codex and Antigravity
+  Desktop manual Deny checklists);
+- the `destructive-actions` rule and the global operating rules, which are
+  model guidance rather than enforcement.
 
-The same `validate` invocation run through its `npm` script alias was allowed,
-so the trigger is the command text, not the operation.
+No packaged artifact inspects a command before it runs on any surface. Do not
+describe the remaining deny rules as an automated guard, and do not record a
+catastrophic-action or secret-exposure check as `PASS` from a static render.
+For this reason `emergency` and `secret` are no longer release gates in
+`core/evals/rubric.json`. They are recorded there under `qualification` as
+`NOT_RUN_UNAVAILABLE`.
 
-Treat a denial as a classifier result to check, not as proof that the command
-was dangerous. Re-express the work as a single simple command, or use the
-repository's `npm` script aliases. Do not disable the guard to get past a
-denial, and do not weaken a rule without exact authority and a focused
-regression check. Narrowing these patterns is an open change; until it lands,
-the false positives above are expected behavior.
+An already installed package still contains the old hook files. They are
+removed only when the surface is re-registered from a current render.
 
 ## Required next evidence
 

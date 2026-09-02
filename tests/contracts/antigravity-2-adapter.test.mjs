@@ -264,7 +264,7 @@ test("Desktop full-access profile uses Custom instead of Turbo so emergency deni
   assert.ok(templatePermission.deny.includes("command(sudo)"));
   const rule = fileMap(template).get(".agents/plugins/all-about-agents/rules/AGENTS.md");
   assert.match(rule, /Deny > Ask > Allow/u);
-  assert.match(rule, /decision: deny/u);
+  assert.match(rule, /installs no PreToolUse deny handler/u);
   assert.match(rule, /Custom/u);
   assert.match(rule, /Turbo mode.*not selected/iu);
   assert.doesNotMatch(rule, /Unrestricted/u);
@@ -289,49 +289,22 @@ test("Desktop hooks remain probe-required without an automatic command", () => {
   assert.equal(resultFor().registrations.find((entry) => entry.kind === "activity-audit").failureMode, "unknown-disabled");
 });
 
-test("Desktop emergency guard is consumed as a disabled probe-only native contract", () => {
+test("Desktop renders no emergency guard artifact, registration, diagnostic, or classifier", () => {
   const result = resultFor();
-  const files = fileMap(result);
-  const guard = JSON.parse(files.get(".agents/plugins/all-about-agents/hooks/emergency-guard.json"));
-  assert.equal(guard.event, "PreToolUse");
-  assert.equal(guard.automatic, false);
-  assert.equal(guard.probeRequired, true);
-  assert.equal(guard.probe.status, "not run");
-  assert.doesNotMatch(JSON.stringify(guard), /"command"\s*:|\.\/hooks|\$PLUGIN_ROOT|%PLUGIN_ROOT%/iu);
-  const registration = result.registrations.find((entry) => entry.kind === "emergency-guard");
-  assert.equal(registration.enabled, false);
-  assert.equal(registration.automatic, false);
-  assert.equal(registration.probeRequired, true);
-  assert.ok(result.diagnostics.some((entry) => entry.code === "desktop-emergency-guard-probe-required"));
-  const templateNative = resultFor("template").registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
-  const native = templateNative;
+  assert.equal(fileMap(result).has(".agents/plugins/all-about-agents/hooks/emergency-guard.json"), false);
+  assert.equal(result.registrations.some((entry) => entry.kind === "emergency-guard"), false);
+  assert.equal(result.diagnostics.some((entry) => entry.code === "desktop-emergency-guard-probe-required"), false);
+  for (const name of ["normalizeAntigravityEmergencyRequest", "mapAntigravityEmergencyDecision", "classifyAntigravityEmergencyRequest"]) {
+    assert.equal(Object.hasOwn(adapter, name), false, `${name} must no longer be exported`);
+  }
+  const native = resultFor("template").registrations.find((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
   assert.ok(native);
   assert.deepEqual(
     Object.fromEntries(["rendered", "validated", "registered", "trusted", "active", "runtimeVerified"].map((phase) => [phase, native.phases[phase].status])),
-    { rendered: "pass", validated: "not-run", registered: "not-run", trusted: "not-run", active: "not-run", runtimeVerified: "not-run" }
+    { rendered: "pass", validated: "not-run", registered: "not-run", trusted: "not-run-unavailable", active: "not-run", runtimeVerified: "not-run" }
   );
   assert.match(native.manualSteps.join(" "), /Custom.*command\(rm -rf\).*command\(sudo\).*write_file\(\.git\/\).*write_file\(\/home\/user\/\.ssh\)/u);
   assert.doesNotMatch(JSON.stringify(native), /"(?:enabled|automatic|active|ready|trusted|runtimeVerified)"\s*:\s*true/iu);
-});
-
-test("Desktop emergency normalization uses documented toolCall fields and maps only deny", () => {
-  const normalized = adapter.normalizeAntigravityEmergencyRequest({
-    toolCall: { name: "run_command", args: { CommandLine: "git push origin main --force", Cwd: "C:/disposable" } },
-    stepIdx: 1
-  });
-  assert.deepEqual(normalized, {
-    capability: "command-execution",
-    command: "git push origin main --force",
-    paths: [],
-    gitOperation: "git push origin main --force",
-    secretOperation: null
-  });
-  assert.deepEqual(adapter.mapAntigravityEmergencyDecision(adapter.classifyAntigravityEmergencyRequest({
-    toolCall: { name: "run_command", args: { CommandLine: "git push origin main --force" } },
-    stepIdx: 1
-  })), { decision: "deny", reason: "Denied: force-push would rewrite shared Git history." });
-  assert.deepEqual(adapter.mapAntigravityEmergencyDecision({ decision: "allow", ruleId: null, reason: "Allowed: no emergency rule matched." }), {});
-  assert.equal(adapter.normalizeAntigravityEmergencyRequest({ toolCall: { name: "run_command", args: [] } }), null);
 });
 
 test("Desktop manifest documents workspace/global discovery and no serialized settings or CLI registration", async () => {
