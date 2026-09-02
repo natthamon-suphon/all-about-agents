@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
@@ -82,7 +83,9 @@ test("Claude Windows statusline command runs through Git Bash and PowerShell", {
       return lookup.status === 0 ? lookup.stdout.trim().split(/\r?\n/u)[0] : "";
     };
     const gitExecutable = commandPath("git.exe");
-    const gitBash = gitExecutable ? join(dirname(dirname(gitExecutable)), "bin", "bash.exe") : "";
+    // git.exe resolves to either <Git>\bin or <Git>\mingw64\bin; bash.exe lives only in <Git>\bin.
+    const gitRoots = gitExecutable ? [dirname(dirname(gitExecutable)), dirname(dirname(dirname(gitExecutable)))] : [];
+    const gitBash = gitRoots.map((base) => join(base, "bin", "bash.exe")).find((candidate) => existsSync(candidate)) ?? "";
     const routes = [
       { name: "Git Bash", executable: gitBash, args: ["-lc", settings.statusLine.command] },
       { name: "PowerShell", executable: commandPath("powershell.exe"), args: ["-NoProfile", "-Command", settings.statusLine.command] }
