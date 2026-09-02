@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { closeSync, openSync, readSync } from "node:fs";
 import { open } from "node:fs/promises";
@@ -148,14 +149,77 @@ function formatTokens(value) {
   return `${Math.round(tokens)}`;
 }
 
-function formatDuration(value) {
-  const seconds = Math.floor(finiteNonNegative(value) / 1_000);
-  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+function formatResetIn(resetsAt) {
+  const target = Number(resetsAt);
+  if (!Number.isFinite(target)) return "";
+  const diff = Math.floor(target - Date.now() / 1_000);
+  if (diff <= 0) return "";
+  const days = Math.floor(diff / 86_400);
+  const hours = Math.floor((diff % 86_400) / 3_600);
+  const minutes = Math.floor((diff % 3_600) / 60);
+  if (days > 0) return ` resets in ${days}d ${hours}h`;
+  return hours > 0 ? ` resets in ${hours}h ${minutes}m` : ` resets in ${minutes}m`;
 }
 
-function progressBar(percent, width = 15) {
+/**
+ * The renderer's own colors are the only escape sequences it emits: fixed SGR
+ * codes written as source escapes, so no raw control byte enters this file and
+ * every external field still passes through sanitizeTerminalText first.
+ */
+const sgr = (code) => `${String.fromCharCode(27)}[${code}m`;
+
+const STYLE = Object.freeze({
+  reset: sgr(0),
+  model: sgr("1;38;5;213"),
+  effort: sgr("38;5;183"),
+  directory: sgr("1;38;5;39"),
+  branch: sgr("38;5;114"),
+  clean: sgr("1;38;5;82"),
+  dirty: sgr("1;38;5;203"),
+  window: sgr("38;5;208"),
+  weekly: sgr("38;5;147"),
+  muted: sgr("2;38;5;244"),
+  extras: sgr("38;5;245")
+});
+
+const USAGE_TIERS = Object.freeze([
+  { limit: 50, style: sgr("1;38;5;114") },
+  { limit: 70, style: sgr("1;38;5;226") },
+  { limit: 85, style: sgr("1;38;5;214") },
+  { limit: Number.POSITIVE_INFINITY, style: sgr("1;38;5;167") }
+]);
+
+function usageStyle(percent) {
+  return USAGE_TIERS.find((tier) => percent <= tier.limit).style;
+}
+
+function paint(style, text) {
+  return `${style}${text}${STYLE.reset}`;
+}
+
+function progressBar(percent, width = 10) {
   const filled = Math.round((percent / 100) * width);
-  return `${"━".repeat(filled)}${"─".repeat(width - filled)}`;
+  return `${paint(usageStyle(percent), "▰".repeat(filled))}${paint(STYLE.muted, "▱".repeat(width - filled))}`;
+}
+
+function usageLine(icon, label, labelStyle, percent, resetIn) {
+  const meter = `${progressBar(percent)} ${paint(usageStyle(percent), `${percent}%`)}`;
+  return `${icon} ${paint(labelStyle, label)} ${meter}${resetIn ? paint(STYLE.muted, resetIn) : ""}`;
+}
+
+/** Best-effort git dirty check: absent git, non-repo paths, and slow calls all fail open to null (indicator omitted). */
+function gitDirty(cwd) {
+  if (typeof cwd !== "string" || !cwd.trim()) return null;
+  try {
+    const output = execFileSync("git", ["-C", cwd, "status", "--porcelain"], {
+      encoding: "utf8",
+      timeout: 200,
+      stdio: ["ignore", "pipe", "ignore"]
+    });
+    return output.trim().length > 0;
+  } catch {
+    return null;
+  }
 }
 
 async function readLogValues(logRoot, sessionId, kind) {
@@ -171,7 +235,7 @@ async function readLogValues(logRoot, sessionId, kind) {
 }
 
 function emptyRender() {
-  return "📁 unknown 🔀 N/A 🧠 unknown\n────────────────  \n⏳ 0% · ⇣ 0 ⇡ 0 · ⏱ 0m 0s\n.";
+  return "🤖 unknown  ·  📂 unknown  ·  🌳 N/A  ·  🚀 0/0 0%\n🔥 5h ▱▱▱▱▱▱▱▱▱▱ 0%\n🌙 7d ▱▱▱▱▱▱▱▱▱▱ 0%\n.";
 }
 
 /** Render four deterministic lines. Optional reads and malformed fields fail open. */
@@ -188,24 +252,34 @@ export async function renderStatusline(data = {}, options = {}) {
     const repo = repoName(payload.workspace?.project_dir);
     const branch = boundedField(payload.worktree?.branch, "N/A");
     const model = boundedField(payload.model?.display_name, "unknown");
+    const effort = boundedField(payload.effort?.level, "");
+    const dirty = gitDirty(typeof payload.workspace?.current_dir === "string" ? payload.workspace.current_dir : "");
+    const contextPct = clampPercent(payload.context_window?.used_percentage);
+    const inputTokens = formatTokens(payload.context_window?.total_input_tokens);
+    const totalTokens = formatTokens(payload.context_window?.context_window_size);
     const rate5h = clampPercent(payload.rate_limits?.five_hour?.used_percentage);
     const rate7d = clampPercent(payload.rate_limits?.seven_day?.used_percentage);
-    const inputTokens = formatTokens(payload.context_window?.total_input_tokens);
-    const outputTokens = formatTokens(payload.context_window?.total_output_tokens);
-    const duration = formatDuration(payload.cost?.total_duration_ms);
+    const reset5h = formatResetIn(payload.rate_limits?.five_hour?.resets_at);
+    const reset7d = formatResetIn(payload.rate_limits?.seven_day?.resets_at);
     const sessionId = typeof payload.session_id === "string" && payload.session_id ? payload.session_id : "default";
     const [agents, skills] = await Promise.all([
       readLogValues(logRoot, sessionId, "agents"),
       readLogValues(logRoot, sessionId, "skills")
     ]);
-    const line1 = `📁 ${repo} 🔀 ${branch} 🧠 ${model}`;
-    const metrics = [`⏳ ${progressBar(rate5h)} ${rate5h}%`, `🔤 ${inputTokens} ⇣ ${outputTokens} ⇡`, `⏱ ${duration}`];
-    if (agents) metrics.push(`🤖 ${agents}`);
-    if (skills) metrics.push(`⚡ ${skills}`);
-    const line3 = metrics.join(" · ");
-    const barWidth = Math.max(1, Math.max([...line1].length, [...line3].length));
-    const line2 = `${progressBar(rate7d, barWidth)}${displayName ? `   ${displayName}` : ""}`;
-    return `${line1}\n${line2}\n${line3}\n.`;
+
+    const identity = [
+      `🤖 ${paint(STYLE.model, model)}`,
+      effort ? `🎚 ${paint(STYLE.effort, effort)}` : "",
+      `📂 ${paint(STYLE.directory, repo)}`,
+      `🌳 ${paint(STYLE.branch, branch)}${dirty === true ? ` ${paint(STYLE.dirty, "✗")}` : dirty === false ? ` ${paint(STYLE.clean, "✓")}` : ""}`,
+      `🚀 ${paint(usageStyle(contextPct), `${inputTokens}/${totalTokens} ${contextPct}%`)}`
+    ].filter(Boolean);
+    const line1 = identity.join(paint(STYLE.muted, "  ·  "));
+    const line2 = usageLine("🔥", "5h", STYLE.window, rate5h, reset5h);
+    const line3 = usageLine("🌙", "7d", STYLE.weekly, rate7d, reset7d);
+    const extras = [agents ? `🤖 ${agents}` : "", skills ? `⚡ ${skills}` : "", displayName || ""].filter(Boolean);
+    const line4 = extras.length ? paint(STYLE.extras, extras.join(" · ")) : ".";
+    return `${line1}\n${line2}\n${line3}\n${line4}`;
   } catch {
     return emptyRender();
   }

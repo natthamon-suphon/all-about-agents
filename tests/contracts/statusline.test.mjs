@@ -100,7 +100,11 @@ test("renderStatusline always emits deterministic four-line fail-open output", a
     const second = await renderStatusline(data, { configRoot: root, logRoot: join(root, "logs") });
     assert.equal(first, second);
     assert.equal(first.split("\n").length, 4);
-    assert.doesNotMatch(first.replace(/\r?\n/gu, ""), /[\u0000-\u001f\u007f-\u009f\u001b]/u);
+    // The renderer's own colors are the only escapes allowed: every ESC must open a
+    // well-formed SGR sequence, and no control data may survive from an external field.
+    assert.doesNotMatch(first, /\u001b(?!\[[0-9;]+m)/u);
+    assert.doesNotMatch(first.replace(/\u001b\[[0-9;]+m/gu, "").replace(/\r?\n/gu, ""), /[\u0000-\u001f\u007f-\u009f]/u);
+    assert.doesNotMatch(first, /\u001b\[2J|\u001b\]52;|\u0007/u);
     assert.match(first, /0%/u);
     assert.doesNotMatch(first, /Hardcoded User Name/u);
   });
