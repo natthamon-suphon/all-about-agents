@@ -2,6 +2,8 @@
 .private-journal/
 .claude/
 .all-about-agents/
+# Live Antigravity Desktop plugin slot; installed, not authored.
+.agents/plugins/
 .DS_Store
 .idea/
 node_modules/

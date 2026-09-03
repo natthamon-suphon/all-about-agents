@@ -1,5 +1,5 @@
 {
-  "fileCount": 177,
+  "fileCount": 178,
   "files": [
     {
       "relativePath": ".agents/plugins/marketplace.json",
@@ -434,6 +434,11 @@
     {
       "relativePath": ".codex/agents/verifier.toml",
       "sha256": "2de9754a86074a1574000638fe9e9725eef040f50de2e7ad982584ddf4539701",
+      "mode": null
+    },
+    {
+      "relativePath": ".gitattributes",
+      "sha256": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c",
       "mode": null
     },
     {
@@ -1235,6 +1240,10 @@
     {
       "relativePath": ".codex/agents/verifier.toml",
       "sha256": "2de9754a86074a1574000638fe9e9725eef040f50de2e7ad982584ddf4539701"
+    },
+    {
+      "relativePath": ".gitattributes",
+      "sha256": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c"
     },
     {
       "relativePath": "AGENTS.md",

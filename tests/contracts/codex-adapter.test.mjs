@@ -360,6 +360,17 @@ test("Codex maps each canonical role to a documented standalone TOML agent", () 
   assert.ok(result.registrations.some((entry) => entry.kind === "agents" && entry.destination === "agents"));
 });
 
+test("Codex package pins LF endings so a cloned marketplace keeps runnable shebangs", async () => {
+  for (const profile of ["portable", "template"]) {
+    const files = fileMap(resultFor(profile));
+    assert.ok(files.has(".gitattributes"), `${profile} render must ship .gitattributes`);
+    assert.match(files.get(".gitattributes"), /^\* text=auto eol=lf$/mu);
+    for (const [relativePath, content] of files) {
+      assert.ok(!content.includes("\r"), `${relativePath} must be rendered with LF endings`);
+    }
+  }
+});
+
 test("Codex package manifest and Desktop guidance use only documented surfaces", async () => {
   const files = fileMap(resultFor("template"));
   assert.ok(files.has(".codex-plugin/plugin.json"));

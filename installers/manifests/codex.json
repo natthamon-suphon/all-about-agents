@@ -87,6 +87,7 @@
     ".agents/skills/{skill}/SKILL.md",
     ".codex-plugin/plugin.json",
     ".codex/agents/{role}.toml",
+    ".gitattributes",
     "AGENTS.md",
     "agents/{role}.toml",
     "config.toml",

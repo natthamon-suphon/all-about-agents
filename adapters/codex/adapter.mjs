@@ -538,6 +538,10 @@ export function renderCodex(input = {}) {
   });
   const profile = semanticProfile.id;
   const files = [];
+  // Codex clones this package as a local Git marketplace, so a machine with
+  // core.autocrlf=true would otherwise check out CRLF and break the shipped
+  // extension-less bash scripts.
+  addFile(files, ".gitattributes", "* text=auto eol=lf\n");
   addFile(files, ".codex-plugin/plugin.json", renderJson(pluginManifest()));
   addFile(files, ".agents/plugins/marketplace.json", renderJson(marketplaceManifest()));
   addFile(files, "hooks/hooks.json", renderJson(bootstrapHooks(targetRuntime)));
