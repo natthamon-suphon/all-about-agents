@@ -115,7 +115,7 @@
   "ownership": [
     {
       "relativePath": "GEMINI.md",
-      "sha256": "2f350c6ab1dab0b36f40ffeebd0c329925fc3e6b70ee913cec3ae90c5ca4c350"
+      "sha256": "c248deaa81611fff2da879562fe035ff701e3438207abef93153902f55964a65"
     },
     {
       "relativePath": "README.md",
@@ -977,7 +977,7 @@
     }
   ],
   "contentHashes": {
-    "GEMINI.md": "2f350c6ab1dab0b36f40ffeebd0c329925fc3e6b70ee913cec3ae90c5ca4c350",
+    "GEMINI.md": "c248deaa81611fff2da879562fe035ff701e3438207abef93153902f55964a65",
     "README.md": "1187f9bfd8d7af49648a815a0361123958b9d74a317a426643ecf8a24643ed4d",
     "activity-audit.json": "9642d184786a4232588c3d94623d622c068c2bdcc7c6396d6b0aae292a84527d",
     "agents/architect/agent.md": "5f5bcbbe4e29794821b43ee3f729102d609f6f0d0031b9737e50116e15c7e7fd",

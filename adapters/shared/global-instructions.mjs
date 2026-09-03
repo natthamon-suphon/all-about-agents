@@ -56,14 +56,30 @@ function renderCommands(commands, presentation) {
   return lines;
 }
 
-/** Render the shared canonical body for Claude Code. */
-export function renderClaudeGlobalInstructions(core) {
+const CLAUDE_HOUSE_RULES = `
+
+## egroup house rules (coding-guidelines)
+
+The rules above stay authoritative for general behavior. The import below is the
+more specific second layer: egroup stack facts, security and endpoint exposure,
+branching model, and the house rules that the installed skills depend on. Stack
+digests arrive separately through the guideline-dispatch hook.
+
+@~/Workspaces/coding-guidelines/Rules/RULES.md`;
+
+/** Render the canonical body every surface shares. */
+export function renderSharedGlobalInstructions(core) {
   return normalizeBody(globalInstructionContent(ensureCore(core)));
+}
+
+/** Render the shared canonical body plus the Claude-only house rules import. */
+export function renderClaudeGlobalInstructions(core) {
+  return normalizeBody(renderSharedGlobalInstructions(core).trimEnd() + CLAUDE_HOUSE_RULES);
 }
 
 /** Render the shared canonical body for Antigravity Desktop and agy. */
 export function renderGeminiGlobalInstructions(core) {
-  return normalizeBody(globalInstructionContent(ensureCore(core)));
+  return renderSharedGlobalInstructions(core);
 }
 
 /** Render Codex's shared global body followed by its canonical local sections. */
@@ -73,7 +89,7 @@ export function renderCodexGlobalInstructions(core, { canonicalRules, commands }
   const actions = commands === undefined ? loaded.commands : ensureRecords(commands, "commands");
   if (!loaded.presentation || typeof loaded.presentation !== "object") throw new TypeError("core.presentation is required for Codex rendering");
   return normalizeBody([
-    renderClaudeGlobalInstructions(loaded).trimEnd(),
+    renderSharedGlobalInstructions(loaded).trimEnd(),
     "",
     "---",
     "# All About Agents for Codex",

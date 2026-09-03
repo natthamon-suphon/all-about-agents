@@ -22,6 +22,26 @@ Keep these files in the project or plugin layer:
 This is a two-layer model: global behavior first, then project or plugin
 behavior. A project file does not replace the shared source.
 
+## Surface-specific appendices
+
+The shared source reaches every surface. Two appendices are added at render
+time, so a rendered global file is not always byte-identical to the source:
+
+| Section | Surfaces | Defined in |
+| --- | --- | --- |
+| `## RTK house rules (rust-token-killer)` | all four | `core/instructions/global-operating-rules.md` |
+| `## egroup house rules (coding-guidelines)` | Claude Code only | `adapters/shared/global-instructions.mjs` |
+| `# All About Agents for Codex` | Codex only | `adapters/shared/global-instructions.mjs` |
+
+`renderSharedGlobalInstructions` returns the shared body alone. The Codex and
+Gemini renderers build on that function, never on the Claude renderer, so the
+Claude-only appendix cannot reach `AGENTS.md` or `GEMINI.md`. A contract test in
+`tests/contracts/claude-adapter.test.mjs` holds that boundary.
+
+The egroup appendix uses Claude's `@` import syntax and one operator-specific
+path. Other surfaces do not resolve `@` imports, and the path is absent on a
+machine without that checkout, so keep operator content out of the shared body.
+
 ## Native global destinations
 
 The adapters use the following exact destinations:

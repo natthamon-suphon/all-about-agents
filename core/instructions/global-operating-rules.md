@@ -104,3 +104,24 @@ Report what changed, full paths, exact checks and results, branch and commit
 state, native checks not run, assumptions, open questions, and remaining risks.
 Use the lifecycle terms rendered, validated, registered, trusted, active, and
 runtime verified only when that state has real evidence.
+
+## RTK house rules (rust-token-killer)
+
+RTK is an optional local CLI proxy. It trims shell output before that output
+reaches the session context. It is not a repository dependency. A machine
+without it is not run or unavailable, not a failure.
+
+Where a host installs an RTK hook, the hook rewrites a shell command into an
+`rtk` call by itself, so `git status` runs as `rtk git status`. Write the plain
+command and let the hook do the work. Where no hook is installed, put `rtk` in
+front of the command yourself for the same saving. RTK ships hook processors
+for Claude Code, Gemini CLI, Cursor, Copilot, Droid, and Vibe. Codex has none
+today.
+
+Always run the meta commands as `rtk` itself, never through a hook: `rtk gain`
+for measured savings, `rtk discover` for missed chances, and `rtk proxy` to run
+one command unfiltered while debugging.
+
+Check an install with `rtk --version` and `rtk gain`. A failing `rtk gain`
+usually means a different tool named `rtk` resolves first on the path. `rtk rg`
+needs ripgrep on the path.

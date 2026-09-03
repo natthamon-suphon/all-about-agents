@@ -20,6 +20,7 @@ it provides, and record the version you installed. A tool that is absent is
 | `ui-ux-pro-max-cli` | npm CLI | Installs the UI/UX Pro Max skill into supported AI coding assistants. |
 | Ponytail | agent plugin | A "lazy senior developer" ruleset that pushes an agent to write less code. |
 | Context7 | MCP server | Fetches current library documentation into a session instead of relying on model memory. |
+| RTK | CLI proxy | Trims shell output before it reaches the session context, and reports the measured saving. |
 
 ## `uvx`
 
@@ -94,6 +95,31 @@ claude mcp list
 It needs Node.js 18 or newer. Some deployments require an API key; pass it with
 `--api-key` only from your own shell, and never commit it to this repository.
 See the [package page](https://www.npmjs.com/package/@upstash/context7-mcp).
+
+## RTK
+
+RTK, also called `rust-token-killer`, is a local CLI proxy. It filters and
+summarizes shell output before that output reaches the session context. Install
+it from the project's own instructions, then confirm the binary:
+
+```text
+rtk --version
+rtk gain
+```
+
+A failing `rtk gain` usually means a different tool named `rtk` resolves first
+on the path. Check the resolved binary with `where.exe rtk` on Windows or
+`which rtk` on macOS. The `rtk rg` subcommand shells out to ripgrep, so install
+ripgrep as well when you want it.
+
+Hosts pick RTK up through a hook, which rewrites a plain shell command into an
+`rtk` call. Claude Code uses a `PreToolUse` hook that runs `rtk hook claude`,
+and Gemini CLI uses `rtk hook gemini`. Codex has no RTK hook today, so put
+`rtk` in front of the command yourself there.
+
+RTK changes how much command output reaches the model. It is a context-cost
+tool, not a guardrail. It does not replace any check in this repository, and a
+machine without it is `NOT_RUN_UNAVAILABLE`.
 
 ## Recording what you installed
 

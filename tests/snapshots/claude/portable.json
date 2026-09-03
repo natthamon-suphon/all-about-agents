@@ -151,7 +151,7 @@
   "ownershipHashes": {
     ".claude-plugin/marketplace.json": "e2103d9305b1f8ff8e30d4abc4d9bfb85644ea259b6a59e63d0bf5fde2a1d887",
     ".claude-plugin/plugin.json": "195b8fec88065febd380dabf917f575929938be56cc495904216434182fb7134",
-    "CLAUDE.md": "2f350c6ab1dab0b36f40ffeebd0c329925fc3e6b70ee913cec3ae90c5ca4c350",
+    "CLAUDE.md": "c217a27e588a9d1a5bc1ec3bb19a3103e54886110e36ec5f34a4f63b082a9c22",
     "agents/architect.md": "ca417f528c98ba5126c9a23d75d92d580ff8b328dadf92b583eb0e370dcb0df0",
     "agents/implementer.md": "e5c47e028ef8f596a8c8e3d4cdcc7443c13960e8e448134cf90000f508ebfabd",
     "agents/investigator.md": "83f139a35ecfcb79fae33f4a65dd11e544b4a9baab40a6bb721055f5845b8daf",

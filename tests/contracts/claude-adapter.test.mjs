@@ -14,7 +14,7 @@ import {
   resolveClaudeConfigDir
 } from "../../adapters/claude/adapter.mjs";
 import { AdapterContractError } from "../../adapters/shared/adapter-contract.mjs";
-import { renderClaudeGlobalInstructions, renderCodexGlobalInstructions, renderGeminiGlobalInstructions } from "../../adapters/shared/global-instructions.mjs";
+import { renderClaudeGlobalInstructions, renderCodexGlobalInstructions, renderGeminiGlobalInstructions, renderSharedGlobalInstructions } from "../../adapters/shared/global-instructions.mjs";
 
 const requiredOutputs = [
   "adapters/claude/adapter.mjs",
@@ -40,14 +40,29 @@ test("Claude template documentation matches the deferred current core output", a
 
 const core = await loadCore(process.cwd());
 
+function codexBody() {
+  return renderCodexGlobalInstructions(core, { canonicalRules: core.rules.slice(0, 1), commands: core.commands.slice(0, 1) });
+}
+
 test("shared global renderers use the loaded canonical body and normalize only line endings", () => {
-  assert.equal(renderClaudeGlobalInstructions(core), core.globalInstructions.content);
+  assert.equal(renderSharedGlobalInstructions(core), core.globalInstructions.content);
   assert.equal(renderGeminiGlobalInstructions(core), core.globalInstructions.content);
-  const codex = renderCodexGlobalInstructions(core, { canonicalRules: core.rules.slice(0, 1), commands: core.commands.slice(0, 1) });
+  const codex = codexBody();
   assert.match(codex, /^# Global Operating Rules/mu);
   assert.match(codex, /## Canonical repository rules/u);
   assert.match(codex, /## Canonical actions/u);
   assert.equal((codex.match(/# Global Operating Rules/g) || []).length, 1);
+});
+
+test("egroup house rules reach Claude Code only while RTK house rules reach every surface", () => {
+  const claude = renderClaudeGlobalInstructions(core);
+  const gemini = renderGeminiGlobalInstructions(core);
+  const codex = codexBody();
+  assert.match(claude, /^## egroup house rules \(coding-guidelines\)$/mu);
+  assert.match(claude, /^@~\/Workspaces\/coding-guidelines\/Rules\/RULES\.md$/mu);
+  for (const rendered of [gemini, codex]) assert.doesNotMatch(rendered, /egroup house rules/u);
+  for (const rendered of [claude, gemini, codex]) assert.match(rendered, /^## RTK house rules \(rust-token-killer\)$/mu);
+  assert.ok(claude.startsWith(renderSharedGlobalInstructions(core).trimEnd()));
 });
 
 function resultFor(profileId = "portable", overrides = {}) {
@@ -124,7 +139,7 @@ test("portable Claude render contains every native component and all canonical s
 test("Claude render emits the canonical global file and one presentation contract per visible prompt", () => {
   const result = resultFor();
   const files = fileMap(result);
-  assert.equal(files.get("CLAUDE.md"), core.globalInstructions.content);
+  assert.equal(files.get("CLAUDE.md"), renderClaudeGlobalInstructions(core));
   assert.equal(files.get("CLAUDE.md").endsWith("\n"), true);
   const presentationRule = files.get("rules/presentation.md");
   assert.match(presentationRule, /brainstorming 🧠/u);
