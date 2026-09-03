@@ -123,13 +123,13 @@ node scripts/aaa.mjs register --surface claude --profile <PROFILE> --package-roo
 
 Run the same command with `--apply` only after exact authority.
 
-During apply, the installer first overwrites `settings.json`,
-`all-about-agents/statusline.json`, and the four files under `statusline/` in
+During apply, the installer first overwrites
+`all-about-agents/statusline.json` and the four files under `statusline/` in
 `CLAUDE_CONFIG_DIR`: `statusline.mjs`, `track-tool.mjs`, `statusline.ps1`, and
-`statusline.sh`. In the rendered source `settings.json`, it rebases only
-`statusLine.command` to this exact config root and keeps the other rendered
-fields. The existing target `settings.json` is replaced without a backup;
-target-only settings are not preserved. Native marketplace and plugin
+`statusline.sh`. `settings.json` is merged, not replaced: keys the package
+declares win, and every other key already in the file is preserved. In the
+rendered source it rebases only `statusLine.command` to this exact config root
+and keeps the other rendered fields. Native marketplace and plugin
 registration run after those files are present. The package managed state,
 surface, profile, and owned hashes must match before any write.
 

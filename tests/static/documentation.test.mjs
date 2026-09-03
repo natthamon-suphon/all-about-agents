@@ -295,7 +295,7 @@ test("documentation rejects stale native activation and fallback claims", async 
   assert.doesNotMatch(agy, /Plugin registration\s*\|\s*Manual product action/iu);
   const claude = await textAt("docs/compatibility/claude.md");
   const desktopTemplate = await textAt("adapters/antigravity-2/templates/README.md");
-  assert.match(claude, /rendered source[\s\S]{0,160}existing target `settings\.json`[\s\S]{0,120}replaced without a backup/iu);
+  assert.match(claude, /`settings\.json` is merged, not replaced[\s\S]{0,160}every other key already in the file is preserved/iu);
   assert.doesNotMatch(readme, /denies active/iu);
   assert.match(readme, /rendered[\s\S]{0,160}native enforcement is not claimed/iu);
   assert.doesNotMatch(codex, /Hooks\s*\|\s*Automatic/iu);

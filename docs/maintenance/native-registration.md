@@ -166,7 +166,6 @@ The fixed registration plan first overwrites these approved files in
 `CLAUDE_CONFIG_DIR`:
 
 ```text
-settings.json
 all-about-agents/statusline.json
 statusline/statusline.mjs
 statusline/track-tool.mjs
@@ -174,12 +173,15 @@ statusline/statusline.ps1
 statusline/statusline.sh
 ```
 
-During this copy, only `statusLine.command` in the rendered source
-`settings.json` is rebased to the selected `CLAUDE_CONFIG_DIR`; the other
-rendered-source fields stay unchanged. The existing target `settings.json` is
-replaced without a backup, so target-only settings are not preserved. The POSIX
-runtime files keep executable mode. The other approved files are also
-overwritten without a backup, as required by this repository policy.
+`settings.json` is not one of them. It is a shared product file that the user
+and other tools also write, so the plan merges into it instead of replacing it.
+The merge is the same deep merge `agy` uses: keys the package declares win, and
+every other key in the existing file is preserved. Before the merge, only
+`statusLine.command` in the rendered source is rebased to the selected
+`CLAUDE_CONFIG_DIR`; the other rendered-source fields stay unchanged.
+
+The POSIX runtime files keep executable mode. The approved files listed above
+are overwritten without a backup, as required by this repository policy.
 
 It then performs these native actions:
 
@@ -215,10 +217,18 @@ git -C "<PACKAGE_ROOT>" add -A
 git -C "<PACKAGE_ROOT>" -c user.name=all-about-agents -c user.email=all-about-agents@invalid.example commit -m "Prepare local Codex plugin source"
 ```
 
-The registration plan first overwrites `AGENTS.md`, `config.toml`, the
-template-only `terra-max.config.toml`, and all seven `agents/*.toml` files in
-`CODEX_HOME`. It then runs the native commands, so a later config copy cannot
-erase product-written plugin metadata.
+The registration plan first overwrites `AGENTS.md`, the template-only
+`terra-max.config.toml`, and all seven `agents/*.toml` files in `CODEX_HOME`.
+It then runs the native commands, so a later config copy cannot erase
+product-written plugin metadata.
+
+`config.toml` is handled differently. Codex writes its own `[marketplaces.*]`
+and `[plugins.*]` tables there, and users add MCP servers and sandbox settings,
+so the plan refuses to replace an existing file. When `config.toml` is absent
+the managed file is written. When it exists and differs, the step reports
+`manual-required` and names the file: copy the managed `[agents.*]` tables and
+the model keys across by hand. This repository has no TOML writer, so it cannot
+merge that file safely.
 
 The native commands use the current structured CLI forms:
 

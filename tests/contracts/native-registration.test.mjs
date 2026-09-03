@@ -210,6 +210,20 @@ test("planner keeps agy settings on the exact documented destination", async () 
   assert.notEqual(plan.productRoot, plan.instructionRoot);
 });
 
+test("shared product config is merged or refused, never clobbered", async () => {
+  const input = await fixture();
+  const settings = base(input, "claude").actions.find((action) => action.id === "claude-settings-deploy");
+  assert.equal(settings.kind, "settings-overlay");
+  assert.equal(settings.targetPath, resolve(input.productRoot, "settings.json"));
+  assert.equal(settings.overlayPath, resolve(input.packageRoot, "settings.json"));
+  assert.equal(settings.transform, "claude-statusline-product-root");
+  assert.equal(settings.automaticWrite, true);
+
+  const config = base(input, "codex").actions.find((action) => action.id === "codex-config-deploy");
+  assert.equal(config.kind, "file-copy");
+  assert.equal(config.guard, "no-clobber");
+});
+
 test("native instruction roots map to the documented surface roots", async () => {
   const home = process.platform === "win32" ? "C:\\Users\\fixture" : "/Users/fixture";
   assert.equal(resolveNativeInstructionRoot("claude", { env: {}, homeDir: home, platform: process.platform }), process.platform === "win32" ? "C:\\Users\\fixture\\.claude" : "/Users/fixture/.claude");
@@ -235,7 +249,6 @@ test("planner deploys the Claude and Codex runtime config needed by the installe
   const claudeCopies = base(input, "claude").actions.filter((action) => action.kind === "file-copy");
   assert.deepEqual(claudeCopies.map(({ sourcePath, targetPath, mode, transform }) => [relative(input.packageRoot, sourcePath), relative(input.productRoot, targetPath), mode, transform ?? null]), [
     ["CLAUDE.md", "CLAUDE.md", null, null],
-    ["settings.json", "settings.json", null, "claude-statusline-product-root"],
     [join("all-about-agents", "statusline.json"), join("all-about-agents", "statusline.json"), null, null],
     [join("statusline", "statusline.mjs"), join("statusline", "statusline.mjs"), 0o755, null],
     [join("statusline", "track-tool.mjs"), join("statusline", "track-tool.mjs"), 0o755, null],

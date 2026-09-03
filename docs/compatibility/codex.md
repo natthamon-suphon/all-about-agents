@@ -99,10 +99,15 @@ git -C "<PACKAGE_ROOT>" add -A
 git -C "<PACKAGE_ROOT>" -c user.name=all-about-agents -c user.email=all-about-agents@invalid.example commit -m "Prepare local Codex plugin source"
 ```
 
-During apply, the installer first overwrites `AGENTS.md`, `config.toml`,
+During apply, the installer first overwrites `AGENTS.md`,
 `terra-max.config.toml` for the template profile, and the seven `agents/*.toml`
 files in `CODEX_HOME`. Native registration runs after these files are present,
 so product-written plugin metadata is not erased by a later config deployment.
+
+`config.toml` is written only when it is absent. Codex keeps its own
+`[marketplaces.*]` and `[plugins.*]` tables there, and users add MCP servers and
+sandbox settings, so an existing file is never replaced. The step then reports
+`manual-required` and names the file to merge by hand.
 
 The fixed current CLI commands are:
 

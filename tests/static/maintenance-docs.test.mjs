@@ -128,7 +128,8 @@ test("maintenance guides define the complete shared workflow", async () => {
   assert.match(registration, /package rendered by\s+`install --surface all`/u);
   assert.doesNotMatch(registration, /may replace its owned regular files|does not replace unknown files/iu);
   assert.match(registration, /declared destination[\s\S]{0,120}preserves unknown neighboring/iu);
-  assert.match(registration, /rendered source[\s\S]{0,160}existing target `settings\.json`[\s\S]{0,120}replaced without a backup/iu);
+  assert.match(registration, /`settings\.json`[\s\S]{0,200}merges into it instead of replacing it/iu);
+  assert.match(registration, /`config\.toml`[\s\S]{0,320}refuses to replace an existing file/iu);
   assert.match(registration, /CLAUDE_CONFIG_DIR\s*=\s*"<CLAUDE_PRODUCT_ROOT>"/u);
   assert.match(registration, /CODEX_HOME\s*=\s*"<CODEX_PRODUCT_ROOT>"/u);
   assert.doesNotMatch(registration, /(?:--destination-root|--package-root|git -C|claude plugin marketplace add|claude plugin validate|codex plugin marketplace add|agy plugin (?:install|validate))\s+<[^>\r\n]+>/u);

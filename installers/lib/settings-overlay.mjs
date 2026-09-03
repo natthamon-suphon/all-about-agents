@@ -146,7 +146,7 @@ async function readOptional(path, label, fileSystem) {
  * Merge one repository-owned sparse JSON overlay into one documented product
  * settings file. The target is replaced atomically and no backup is created.
  */
-export async function mergeSettingsOverlay({ targetPath, overlayPath, allowedRoot, expectedOverlayHash = null, fileSystem = {} } = {}) {
+export async function mergeSettingsOverlay({ targetPath, overlayPath, allowedRoot, expectedOverlayHash = null, transformOverlay = null, fileSystem = {} } = {}) {
   validatePathInput(allowedRoot, "allowedRoot", "invalid-root");
   validatePathInput(targetPath, "targetPath", "invalid-target-path");
   validatePathInput(overlayPath, "overlayPath", "invalid-overlay-path");
@@ -176,7 +176,12 @@ export async function mergeSettingsOverlay({ targetPath, overlayPath, allowedRoo
     error.code = "overlay-hash-mismatch";
     throw error;
   }
-  const overlayObject = parseJson(overlayBytes, "settings overlay");
+  if (!(transformOverlay === null || typeof transformOverlay === "function")) {
+    throw new TypeError("transformOverlay must be null or a function");
+  }
+  // The overlay is hash-checked as shipped; a transform then rewrites
+  // machine-specific values such as an absolute product root.
+  const overlayObject = parseJson(transformOverlay ? transformOverlay(overlayBytes) : overlayBytes, "settings overlay");
 
   const targetBytes = await readOptional(target, "settings target", fileSystem);
   let targetObject = {};

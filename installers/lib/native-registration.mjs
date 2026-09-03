@@ -181,7 +181,7 @@ function manualAction(id, message) {
   return { id, kind: "manual", mutates: false, required: false, message };
 }
 
-function fileCopyAction(id, packageRoot, destinationRoot, sourceRelativePath, destinationRelativePath, { mode = null, transform = null, expectedSourceHash, allowedRoot = destinationRoot } = {}) {
+function fileCopyAction(id, packageRoot, destinationRoot, sourceRelativePath, destinationRelativePath, { mode = null, transform = null, guard = null, expectedSourceHash, allowedRoot = destinationRoot } = {}) {
   if (!(mode === null || (Number.isInteger(mode) && mode >= 0 && mode <= 0o777))) throw new TypeError("native config copy mode must be null or a Unix mode from 0 through 0777");
   if (!(transform === null || transform === "claude-statusline-product-root")) throw new TypeError("unsupported native config copy transform");
   if (typeof expectedSourceHash !== "string" || !SHA256.test(expectedSourceHash)) throw new TypeError("native config copy requires a managed source hash");
@@ -190,7 +190,8 @@ function fileCopyAction(id, packageRoot, destinationRoot, sourceRelativePath, de
   const suffix = relative(destinationRoot, targetPath);
   if (isAbsolute(suffix) || suffix.split(/[\\/]/u)[0] === "..") throw pathError("destination-escape", "native config destination escapes the selected native root");
   assertSafeDestinationRoot(dirname(targetPath), { allowedProductRoots: [allowedRoot] });
-  return { id, kind: "file-copy", sourcePath, sourceRelativePath, expectedSourceHash, targetPath, destinationRelativePath, allowedRoot, mode, transform, mutates: true, required: true, expectedProbe: "hash-verified-overwrite", automaticWrite: true };
+  if (!(guard === null || guard === "no-clobber")) throw new TypeError("unsupported native config copy guard");
+  return { id, kind: "file-copy", sourcePath, sourceRelativePath, expectedSourceHash, targetPath, destinationRelativePath, allowedRoot, mode, transform, guard, mutates: true, required: true, expectedProbe: guard === "no-clobber" ? "hash-verified-write-or-refuse" : "hash-verified-overwrite", automaticWrite: true };
 }
 
 function lifecycle(surface) {
@@ -246,7 +247,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
 
   if (surface === "claude") {
     actions.push(deployFile("claude-instructions-deploy", "CLAUDE.md", "CLAUDE.md"));
-    actions.push(deployFile("claude-settings-deploy", "settings.json", "settings.json", { transform: "claude-statusline-product-root" }));
+    actions.push({ id: "claude-settings-deploy", kind: "settings-overlay", targetPath: join(product, "settings.json"), overlayPath: join(pkg, "settings.json"), expectedOverlayHash: managedPackage.ownership.get(`${managedPackage.ownershipPrefix}settings.json`), allowedRoot: product, transform: "claude-statusline-product-root", mutates: true, required: true, expectedProbe: "settings-merge", automaticWrite: true });
     actions.push(deployFile("claude-statusline-config-deploy", "all-about-agents/statusline.json", "all-about-agents/statusline.json"));
     actions.push(deployFile("claude-statusline-renderer-deploy", "statusline/statusline.mjs", "statusline/statusline.mjs", { mode: 0o755 }));
     actions.push(deployFile("claude-statusline-tracker-deploy", "statusline/track-tool.mjs", "statusline/track-tool.mjs", { mode: 0o755 }));
@@ -258,7 +259,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push(manualAction("claude-reload", "Restart Claude Code or reload the plugin before checking native behavior."));
   } else if (surface === "codex") {
     actions.push(deployFile("codex-instructions-deploy", "AGENTS.md", "AGENTS.md"));
-    actions.push(deployFile("codex-config-deploy", "config.toml", "config.toml"));
+    actions.push(deployFile("codex-config-deploy", "config.toml", "config.toml", { guard: "no-clobber" }));
     if (profile === "template") actions.push(deployFile("codex-terra-profile-deploy", "terra-max.config.toml", "terra-max.config.toml"));
     for (const role of ["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]) {
       actions.push(deployFile(`codex-agent-${role}-deploy`, `agents/${role}.toml`, `agents/${role}.toml`));
@@ -473,7 +474,8 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
       if (action.kind === "manual") {
         actionReports.push(reportAction(action, "manual-required"));
       } else if (action.kind === "settings-overlay") {
-        overlay = await mergeSettingsOverlay({ targetPath: action.targetPath, overlayPath: action.overlayPath, expectedOverlayHash: action.expectedOverlayHash, allowedRoot: action.allowedRoot, fileSystem });
+        const transformOverlay = action.transform ? (bytes) => transformCopyContent(action, bytes, plan) : null;
+        overlay = await mergeSettingsOverlay({ targetPath: action.targetPath, overlayPath: action.overlayPath, expectedOverlayHash: action.expectedOverlayHash, allowedRoot: action.allowedRoot, transformOverlay, fileSystem });
         actionReports.push(reportAction(action, "complete", { result: { changed: overlay.changed, bytes: overlay.bytes, beforeHash: overlay.beforeHash, afterHash: overlay.afterHash } }));
       } else if (action.kind === "file-copy") {
         const read = typeof fileSystem?.readFile === "function" ? fileSystem.readFile.bind(fileSystem) : defaultReadFile;
@@ -486,6 +488,12 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
         if (existing !== null && hashBytes(existing) === expectedHash) {
           actionReports.push(reportAction(action, "complete", { result: { bytes: content.byteLength, sha256: expectedHash, overwrite: false, changed: false } }));
           completed.push(action);
+          continue;
+        }
+        if (action.guard === "no-clobber" && existing !== null) {
+          // The destination is shared with the product and other tools. Refuse
+          // rather than replace content this package does not own.
+          actionReports.push(reportAction(action, "manual-required", { reason: `${action.destinationRelativePath} already exists and differs from the managed source; merge the managed keys by hand instead of overwriting unowned content` }));
           continue;
         }
         const written = await atomicReplaceFile({ destination: action.targetPath, content, expectedHash, mode: action.mode, allowedProductRoots: [action.allowedRoot], fileSystem });
