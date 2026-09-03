@@ -486,7 +486,7 @@ function pluginManifest() {
 
 function marketplaceManifest(plugin) {
   return {
-    name: "all-about-agents-dev",
+    name: "all-about-agents",
     description: "Generated local development marketplace for the All About Agents package.",
     owner: { name: "All About Agents" },
     plugins: [
@@ -620,9 +620,9 @@ export function renderClaude(input = {}) {
         kind: "plugin-registration",
         relativePath: ".claude-plugin/plugin.json",
         scope: "user",
-        marketplace: "all-about-agents-dev",
+        marketplace: "all-about-agents",
         marketplaceCommand: ["claude", "plugin", "marketplace", "add", "."],
-        command: ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]
+        command: ["claude", "plugin", "install", "all-about-agents@all-about-agents"]
       },
       {
         kind: "runtime-prerequisite",

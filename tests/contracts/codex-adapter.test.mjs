@@ -394,9 +394,9 @@ test("Codex package manifest and Desktop guidance use only documented surfaces",
   assert.equal(manifest.surface, "codex");
   assert.equal(manifest.pluginManifest, ".codex-plugin/plugin.json");
   assert.deepEqual(manifest.pluginRegistration, {
-    marketplace: "all-about-agents-dev",
+    marketplace: "all-about-agents",
     marketplaceArgs: ["plugin", "marketplace", "add", "PACKAGE_ROOT", "--json"],
-    installArgs: ["plugin", "add", "all-about-agents@all-about-agents-dev", "--json"],
+    installArgs: ["plugin", "add", "all-about-agents@all-about-agents", "--json"],
     discoveryArgs: ["plugin", "list", "--available", "--json"]
   });
   assert.equal(manifest.configRoot.environment, "CODEX_HOME");
@@ -428,7 +428,7 @@ test("Codex package renders a validator-compatible marketplace and plugin skill 
   assert.equal(files.has(".codex-plugin/marketplace.json"), false, "marketplace must use the Codex repo location");
   const marketplace = JSON.parse(files.get(".agents/plugins/marketplace.json"));
   assert.deepEqual(marketplace, {
-    name: "all-about-agents-dev",
+    name: "all-about-agents",
     interface: { displayName: "All About Agents Dev" },
     plugins: [{
       name: "all-about-agents",
@@ -451,7 +451,7 @@ test("Codex package renders a validator-compatible marketplace and plugin skill 
   const registration = result.registrations.find((entry) => entry.kind === "plugin-package");
   assert.ok(registration, "Codex package registration metadata is required");
   assert.deepEqual(registration.marketplaceArgs, ["plugin", "marketplace", "add", "PACKAGE_ROOT", "--json"]);
-  assert.deepEqual(registration.installArgs, ["plugin", "add", "all-about-agents@all-about-agents-dev", "--json"]);
+  assert.deepEqual(registration.installArgs, ["plugin", "add", "all-about-agents@all-about-agents", "--json"]);
   assert.deepEqual(registration.discoveryArgs, ["plugin", "list", "--available", "--json"]);
   assert.equal(Object.hasOwn(registration, "command"), false, "native registration must not expose a shell command string");
 });

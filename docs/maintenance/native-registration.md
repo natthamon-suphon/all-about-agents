@@ -185,7 +185,7 @@ It then performs these native actions:
 
 ```text
 claude plugin marketplace add "<PACKAGE_ROOT>" --scope user
-claude plugin install all-about-agents@all-about-agents-dev --scope user
+claude plugin install all-about-agents@all-about-agents --scope user
 claude plugin list --json
 ```
 
@@ -224,7 +224,7 @@ The native commands use the current structured CLI forms:
 
 ```text
 codex plugin marketplace add "<PACKAGE_ROOT>" --json
-codex plugin add all-about-agents@all-about-agents-dev --json
+codex plugin add all-about-agents@all-about-agents --json
 codex plugin list --available --json
 ```
 

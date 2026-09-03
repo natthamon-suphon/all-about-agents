@@ -253,7 +253,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push(deployFile("claude-statusline-windows-launcher-deploy", "statusline/statusline.ps1", "statusline/statusline.ps1"));
     actions.push(deployFile("claude-statusline-posix-launcher-deploy", "statusline/statusline.sh", "statusline/statusline.sh", { mode: 0o755 }));
     actions.push(processAction("claude-marketplace-add", "claude", ["plugin", "marketplace", "add", pkg, "--scope", "user"], pkg, "CLAUDE_CONFIG_DIR", "none"));
-    actions.push(processAction("claude-plugin-install", "claude", ["plugin", "install", "all-about-agents@all-about-agents-dev", "--scope", "user"], pkg, "CLAUDE_CONFIG_DIR", "none"));
+    actions.push(processAction("claude-plugin-install", "claude", ["plugin", "install", "all-about-agents@all-about-agents", "--scope", "user"], pkg, "CLAUDE_CONFIG_DIR", "none"));
     actions.push(processAction("claude-plugin-list", "claude", ["plugin", "list", "--json"], pkg, "CLAUDE_CONFIG_DIR", "json", false));
     actions.push(manualAction("claude-reload", "Restart Claude Code or reload the plugin before checking native behavior."));
   } else if (surface === "codex") {
@@ -264,7 +264,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
       actions.push(deployFile(`codex-agent-${role}-deploy`, `agents/${role}.toml`, `agents/${role}.toml`));
     }
     actions.push(processAction("codex-marketplace-add", "codex", ["plugin", "marketplace", "add", pkg, "--json"], pkg, "CODEX_HOME", "json"));
-    actions.push(processAction("codex-plugin-install", "codex", ["plugin", "add", "all-about-agents@all-about-agents-dev", "--json"], pkg, "CODEX_HOME", "json"));
+    actions.push(processAction("codex-plugin-install", "codex", ["plugin", "add", "all-about-agents@all-about-agents", "--json"], pkg, "CODEX_HOME", "json"));
     actions.push(processAction("codex-plugin-list", "codex", ["plugin", "list", "--available", "--json"], pkg, "CODEX_HOME", "json", false));
     actions.push(manualAction("codex-hooks-trust", "Open `/hooks` in Codex and review/trust the registered hook only if the product presents that step."));
   } else if (surface === "agy") {

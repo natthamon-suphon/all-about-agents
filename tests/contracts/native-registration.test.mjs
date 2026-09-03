@@ -180,14 +180,14 @@ test("planner emits exact structured argv and ignores rendered executable metada
   const codex = base(input, "codex");
   assert.deepEqual(codex.actions.filter((action) => action.kind === "process").map(({ executable, args, cwd, environmentKeys }) => ({ executable, args, cwd, environmentKeys })), [
     { executable: "codex", args: ["plugin", "marketplace", "add", input.packageRoot, "--json"], cwd: input.packageRoot, environmentKeys: ["CODEX_HOME"] },
-    { executable: "codex", args: ["plugin", "add", "all-about-agents@all-about-agents-dev", "--json"], cwd: input.packageRoot, environmentKeys: ["CODEX_HOME"] },
+    { executable: "codex", args: ["plugin", "add", "all-about-agents@all-about-agents", "--json"], cwd: input.packageRoot, environmentKeys: ["CODEX_HOME"] },
     { executable: "codex", args: ["plugin", "list", "--available", "--json"], cwd: input.packageRoot, environmentKeys: ["CODEX_HOME"] }
   ]);
   assert.equal(codex.actions.some((action) => action.executable === "rm"), false);
   const claude = base(input, "claude");
   assert.deepEqual(claude.actions.filter((action) => action.kind === "process").map((action) => action.args), [
     ["plugin", "marketplace", "add", input.packageRoot, "--scope", "user"],
-    ["plugin", "install", "all-about-agents@all-about-agents-dev", "--scope", "user"],
+    ["plugin", "install", "all-about-agents@all-about-agents", "--scope", "user"],
     ["plugin", "list", "--json"]
   ]);
 });

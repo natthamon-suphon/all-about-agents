@@ -6,9 +6,9 @@
   "package": "all-about-agents",
   "pluginManifest": ".claude-plugin/plugin.json",
   "pluginRegistration": {
-    "marketplace": "all-about-agents-dev",
+    "marketplace": "all-about-agents",
     "marketplaceCommand": ["claude", "plugin", "marketplace", "add", "."],
-    "command": ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]
+    "command": ["claude", "plugin", "install", "all-about-agents@all-about-agents"]
   },
   "configRoot": {
     "environment": "CLAUDE_CONFIG_DIR",

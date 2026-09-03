@@ -3,7 +3,7 @@
   "files": [
     {
       "relativePath": ".agents/plugins/marketplace.json",
-      "sha256": "38fc4aaed410bf1b55d91f749f125e7293d9b51df846be22f176bb7496b64ea4",
+      "sha256": "9af44f4ffd6b55e19043bd904b208c44badb559615e81fd6681ff4828d98b3a7",
       "mode": null
     },
     {
@@ -890,7 +890,7 @@
   "ownership": [
     {
       "relativePath": ".agents/plugins/marketplace.json",
-      "sha256": "38fc4aaed410bf1b55d91f749f125e7293d9b51df846be22f176bb7496b64ea4"
+      "sha256": "9af44f4ffd6b55e19043bd904b208c44badb559615e81fd6681ff4828d98b3a7"
     },
     {
       "relativePath": ".agents/skills/brainstorming/SKILL.md",
@@ -1660,7 +1660,7 @@
       "installArgs": [
         "plugin",
         "add",
-        "all-about-agents@all-about-agents-dev",
+        "all-about-agents@all-about-agents",
         "--json"
       ],
       "discoveryArgs": [
@@ -1784,7 +1784,7 @@
     {
       "kind": "plugin-marketplace",
       "relativePath": ".agents/plugins/marketplace.json",
-      "marketplace": "all-about-agents-dev",
+      "marketplace": "all-about-agents",
       "source": {
         "source": "url",
         "url": "./"

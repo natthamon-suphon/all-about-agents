@@ -234,7 +234,7 @@ function pluginManifest() {
 
 function marketplaceManifest() {
   return {
-    name: "all-about-agents-dev",
+    name: "all-about-agents",
     interface: {
       displayName: "All About Agents Dev"
     },
@@ -625,7 +625,7 @@ try {
         relativePath: ".codex-plugin/plugin.json",
         packageRoot: ".",
         marketplaceArgs: ["plugin", "marketplace", "add", "PACKAGE_ROOT", "--json"],
-        installArgs: ["plugin", "add", "all-about-agents@all-about-agents-dev", "--json"],
+        installArgs: ["plugin", "add", "all-about-agents@all-about-agents", "--json"],
         discoveryArgs: ["plugin", "list", "--available", "--json"]
       },
       nativeHookRecord("bootstrap-hook", "adapters/codex/templates/hooks/bootstrap.json"),
@@ -634,7 +634,7 @@ try {
       {
         kind: "plugin-marketplace",
         relativePath: ".agents/plugins/marketplace.json",
-        marketplace: "all-about-agents-dev",
+        marketplace: "all-about-agents",
         source: { source: "url", url: "./" }
       },
       {

@@ -155,7 +155,7 @@ event is proved by package output.
 
 3. Run `codex plugin marketplace add "<PACKAGE_ROOT>" --json`.
 
-4. Run `codex plugin add all-about-agents@all-about-agents-dev --json`.
+4. Run `codex plugin add all-about-agents@all-about-agents --json`.
 
 5. Record `codex plugin list --available --json`.
 

@@ -108,7 +108,7 @@ The fixed current CLI commands are:
 
 ```text
 codex plugin marketplace add "<PACKAGE_ROOT>" --json
-codex plugin add all-about-agents@all-about-agents-dev --json
+codex plugin add all-about-agents@all-about-agents --json
 codex plugin list --available --json
 ```
 

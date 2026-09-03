@@ -10,7 +10,7 @@ instruction source. Registration deploys that file to the selected
 `CLAUDE_CONFIG_DIR`; plugin rules remain separate. The `portable` and
 `template` profiles differ only in their settings overlay.
 
-The generated package is a self-contained `all-about-agents-dev` local
+The generated package is a self-contained `all-about-agents` local
 marketplace. From its root, add the marketplace before installing the named
 plugin; neither step is automatic. Hook and statusline entrypoints use exec-form `node` commands;
 the manifest preflight rejects hosts without Node.js 22.12.0 or newer. Missing

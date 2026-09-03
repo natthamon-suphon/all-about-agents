@@ -214,7 +214,7 @@ function authRequired(result) {
     && /(?:authenticate|authentication|login|credential|unauthori[sz]ed|sign[ -]?in)/iu.test(`${result.stdout}\n${result.stderr}`);
 }
 
-const PLUGIN_SELECTOR = "all-about-agents@all-about-agents-dev";
+const PLUGIN_SELECTOR = "all-about-agents@all-about-agents";
 
 function parseInstalledPluginList(stdout, product) {
   let payload;
@@ -501,7 +501,7 @@ test("T07 helper treats authentication as unavailable only after a failed comman
 });
 
 test("T07 helper does not accept a lookalike plugin as an exact discovery result", () => {
-  assert.equal(parseInstalledPluginList(JSON.stringify([{ id: "all-about-agents-extra@all-about-agents-dev", scope: "user", enabled: true, installPath: "C:/tmp/lookalike" }]), "claude"), null);
+  assert.equal(parseInstalledPluginList(JSON.stringify([{ id: "all-about-agents-extra@all-about-agents", scope: "user", enabled: true, installPath: "C:/tmp/lookalike" }]), "claude"), null);
   assert.equal(parseInstalledPluginList(JSON.stringify({ installed: [], available: [{ pluginId: PLUGIN_SELECTOR, name: "all-about-agents", installed: true, enabled: true }] }), "codex"), null);
   assert.equal(parseInstalledPluginList(JSON.stringify({ installed: [{ pluginId: PLUGIN_SELECTOR, name: "all-about-agents", installed: false, enabled: false }] }), "codex"), null);
 });

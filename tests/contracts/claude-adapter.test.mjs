@@ -408,15 +408,15 @@ test("Claude package renders a self-contained development marketplace and two-st
   const files = fileMap(result);
   const plugin = JSON.parse(files.get(".claude-plugin/plugin.json"));
   const marketplace = JSON.parse(files.get(".claude-plugin/marketplace.json"));
-  assert.equal(marketplace.name, "all-about-agents-dev");
+  assert.equal(marketplace.name, "all-about-agents");
   assert.equal(marketplace.plugins.length, 1);
   assert.equal(marketplace.plugins[0].name, plugin.name);
   assert.equal(marketplace.plugins[0].source, "./");
   assert.equal(marketplace.plugins[0].version, plugin.version);
   const registration = result.registrations.find((entry) => entry.kind === "plugin-registration");
   assert.deepEqual(registration.marketplaceCommand, ["claude", "plugin", "marketplace", "add", "."]);
-  assert.deepEqual(registration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]);
-  assert.equal(registration.command.join(" "), "claude plugin install all-about-agents@all-about-agents-dev");
+  assert.deepEqual(registration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents"]);
+  assert.equal(registration.command.join(" "), "claude plugin install all-about-agents@all-about-agents");
 });
 
 test("Claude hook prerequisites reject a clean host without Node.js", () => {
@@ -504,7 +504,7 @@ test("Claude ownership manifest documents roots, mappings, and native validation
   assert.deepEqual(manifest.actions["aaa:design"], "commands/design.md");
   assert.deepEqual(manifest.nativeValidation.command, ["claude", "plugin", "validate", ".", "--strict"]);
   assert.deepEqual(manifest.pluginRegistration.marketplaceCommand, ["claude", "plugin", "marketplace", "add", "."]);
-  assert.deepEqual(manifest.pluginRegistration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents-dev"]);
+  assert.deepEqual(manifest.pluginRegistration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents"]);
   assert.ok(manifest.ownedPaths.includes(".claude-plugin/marketplace.json"));
   assert.ok(manifest.ownedPaths.includes("CLAUDE.md"));
   assert.deepEqual(manifest.preflight, CLAUDE_PREREQUISITES);

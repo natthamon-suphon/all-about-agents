@@ -6,9 +6,9 @@
   "package": "all-about-agents",
   "pluginManifest": ".codex-plugin/plugin.json",
   "pluginRegistration": {
-    "marketplace": "all-about-agents-dev",
+    "marketplace": "all-about-agents",
     "marketplaceArgs": ["plugin", "marketplace", "add", "PACKAGE_ROOT", "--json"],
-    "installArgs": ["plugin", "add", "all-about-agents@all-about-agents-dev", "--json"],
+    "installArgs": ["plugin", "add", "all-about-agents@all-about-agents", "--json"],
     "discoveryArgs": ["plugin", "list", "--available", "--json"]
   },
   "configRoot": {

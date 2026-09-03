@@ -137,7 +137,7 @@ The fixed native commands are:
 
 ```text
 claude plugin marketplace add "<PACKAGE_ROOT>" --scope user
-claude plugin install all-about-agents@all-about-agents-dev --scope user
+claude plugin install all-about-agents@all-about-agents --scope user
 claude plugin list --json
 claude plugin validate "<PACKAGE_ROOT>" --strict
 ```
