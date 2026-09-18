@@ -1,6 +1,6 @@
-const CATEGORIES = Object.freeze(["skills", "roles", "subagents", "commands", "workflows", "hooks", "profiles"]);
-const CANONICAL_CATEGORIES = Object.freeze(["skills", "roles", "commands", "workflows", "hooks", "profiles"]);
-const KINDS = Object.freeze({ skill: "skills", role: "roles", subagent: "subagents", command: "commands", workflow: "workflows", hook: "hooks", profile: "profiles" });
+const CATEGORIES = Object.freeze(["skills", "roles", "subagents", "hooks", "profiles"]);
+const CANONICAL_CATEGORIES = Object.freeze(["skills", "roles", "hooks", "profiles"]);
+const KINDS = Object.freeze({ skill: "skills", role: "roles", subagent: "subagents", hook: "hooks", profile: "profiles" });
 const FIXED_SUBAGENT_EMOJI = "🤖";
 const APPROVED_EMOJI = Object.freeze({
   skills: Object.freeze({
@@ -35,8 +35,6 @@ const APPROVED_EMOJI = Object.freeze({
   }),
   roles: Object.freeze({ architect: "🏛️", implementer: "🛠️", investigator: "🕵️", researcher: "🔎", reviewer: "👀", "security-reviewer": "🛡️", verifier: "✅" }),
   subagents: Object.freeze({ default: FIXED_SUBAGENT_EMOJI }),
-  commands: Object.freeze({ "aaa:design": "🎨", "aaa:build": "🏗️", "aaa:fix": "🔧", "aaa:review": "👀", "aaa:audit": "🔍", "aaa:improve-skill": "✨", "aaa:resume": "▶️", "aaa:verify": "✅" }),
-  workflows: Object.freeze({ "design-change": "🎨", "fix-bug": "🐛", "implement-change": "🛠️", "improve-skill": "✨", "release-qualification": "🚦", "review-and-audit": "🔍" }),
   hooks: Object.freeze({ bootstrap: "🚀", "activity-audit": "🧾", checkpoint: "💾" }),
   profiles: Object.freeze({ portable: "🧳", template: "⚙️" })
 });
@@ -164,24 +162,22 @@ export function displayLabel(presentation, kind, id) {
   return `${id} ${lookup(presentation, kind, id).emoji}`;
 }
 
-function invocationVerb(kind) { return { skill: "Using skill", role: "Invoking agent", subagent: "Invoking subagent", command: "Running command", workflow: "Starting workflow", hook: "Reporting hook", profile: "Using profile" }[kind]; }
+function invocationVerb(kind) { return { skill: "Using skill", role: "Invoking agent", subagent: "Invoking subagent", hook: "Reporting hook", profile: "Using profile" }[kind]; }
 
 /** Render one announcement and the portable checklist guidance. */
-export function renderInvocationGuidance(presentation, { kind, id, workflowId = null, task = null, reason = null } = {}) {
+export function renderInvocationGuidance(presentation, { kind, id, task = null, reason = null } = {}) {
   const progressContract = assertValidProgressContract(presentation?.progressContract);
   const label = displayLabel(presentation, kind, id);
-  const workflowLabel = workflowId === null ? null : displayLabel(presentation, "workflow", workflowId);
   if (reason !== null && (typeof reason !== "string" || reason.trim() === "" || reason.includes("\n") || containsUnsafeText(reason))) throw new TypeError("invocation reason must be one safe short sentence");
   if (task !== null && (typeof task !== "string" || task.trim() === "" || task.includes("\n") || containsUnsafeText(task))) throw new TypeError("invocation task must be one safe task description");
   const taskText = typeof task === "string" && task.trim() !== "" ? task.trim() : `${kind} ${id}`;
   const reasonText = reason === null ? `Provide one short, task-specific reason for invoking ${label}.` : reason.trim();
   const steps = [
     `Scope: ${taskText}`,
-    `Execute: ${label}${workflowLabel ? ` through ${workflowLabel}` : ""}`,
+    `Execute: ${label}`,
     `Evidence: record the result for ${taskText}`
   ];
   const lines = [`${invocationVerb(kind)} **${label}** — ${reasonText}`, "", "Checklist", `- ${progressContract.states["in-progress"].emoji} ${steps[0]}`, `- ${progressContract.states.pending.emoji} ${steps[1]}`, `- ${progressContract.states.pending.emoji} ${steps[2]}`, "", "Reason rule: runtime must provide one short, task-specific reason; blocked, failed, not-run, or skipped items require a short reason.", "Checklist rules: derive 2-7 material steps from the selected skill, workflow, or task; update only when a state changes; allow one in-progress item per sequential checklist and one per parallel owner; complete every item with a terminal state before completion."];
-  if (workflowLabel) lines.push(`Command/workflow rule: point to the workflow-owned checklist (${workflowLabel}); do not create a duplicate second checklist.`);
   return lines.join("\n");
 }
 

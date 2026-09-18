@@ -27,11 +27,10 @@ Package apply and native registration are separate explicit actions.
 Managed global files are separate
 from Git pull. An authorized native apply may overwrite them without a backup.
 
-The global destinations are `<CLAUDE_CONFIG_DIR>/CLAUDE.md`,
-`<CODEX_HOME>/AGENTS.md`, and `~/.gemini/GEMINI.md` for both Desktop and
-`agy`. Project instruction files and plugin rules remain the more specific
-second layer. Read [global instructions](global-instructions.md) for the
-complete model.
+The global destinations are `<CLAUDE_CONFIG_DIR>/CLAUDE.md` and
+`<CODEX_HOME>/AGENTS.md`. Project instruction files and plugin rules remain
+the more specific second layer. Read
+[global instructions](global-instructions.md) for the complete model.
 
 ## Source machine (author machine)
 
@@ -239,9 +238,9 @@ Use it only with exact authority and a reviewed dry-run report.
 
 19. Run [native verification](native-verification.md).
 
-Use [native registration](native-registration.md) for the fixed Claude, Codex,
-`agy`, and Desktop actions. Desktop registration remains manual. Missing
-products, credentials, or macOS are `NOT_RUN_UNAVAILABLE`.
+Use [native registration](native-registration.md) for the fixed Claude and
+Codex actions. Missing products, credentials, or macOS are
+`NOT_RUN_UNAVAILABLE`.
 Trust that is available but not exercised is `NOT_RUN`.
 
 ## Stop conditions

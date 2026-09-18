@@ -16,13 +16,10 @@ const requiredOutputs = [
   "docs/maintenance/global-instructions.md",
   "docs/compatibility/claude.md",
   "docs/compatibility/codex.md",
-"docs/compatibility/antigravity-2.md",
-"docs/compatibility/agy.md",
-"docs/evaluations/native-windows-2026-08-31.md",
+  "docs/evaluations/native-windows-2026-08-31.md",
   "docs/limitations/known-limitations.md",
   "docs/maintenance/native-registration.md",
   "docs/maintenance/native-verification.md",
-  "quarantine/README.md",
   "tests/static/documentation.test.mjs"
 ];
 
@@ -31,8 +28,7 @@ const documentationFiles = [
   "CONTRIBUTING.md",
   "AGENTS.md",
   "CLAUDE.md",
-  ".agents/rules/all-about-agents.md",
-  ...requiredOutputs.filter((path) => path.startsWith("docs/") || path === "quarantine/README.md")
+  ...requiredOutputs.filter((path) => path.startsWith("docs/"))
 ];
 
 const legacyRoots = ["agents", "configs", "hooks", "setup", "statusline", "skills", ".claude-plugin"];
@@ -44,7 +40,6 @@ const canonicalPrefixes = [
   "scripts/",
   "tests/",
   "docs/",
-  "quarantine/",
   "README.md",
   "AGENTS.md",
   "CLAUDE.md",
@@ -55,13 +50,11 @@ const canonicalPrefixes = [
   ".pre-commit-config.yaml",
   ".idea/"
 ];
-const coreRelativePrefixes = ["skills/", "roles/", "rules/", "workflows/", "commands/", "hooks/", "evals/"];
+const coreRelativePrefixes = ["skills/", "roles/", "rules/", "hooks/", "evals/"];
 
 const surfaces = [
   { id: "claude", options: { env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude" } } },
-  { id: "codex", options: { env: { CODEX_HOME: "C:/disposable/codex" }, targetRuntime: "cli" } },
-  { id: "antigravity-2", options: {} },
-  { id: "agy", options: {} }
+  { id: "codex", options: { env: { CODEX_HOME: "C:/disposable/codex" }, targetRuntime: "cli" } }
 ];
 
 function sha256(bytes) {
@@ -111,12 +104,7 @@ function inventoryPaths(inventory) {
       [entry.source, "skillSources.source"],
       ...entry.assets.map((path) => [path, "skillSources.assets"]),
       ...entry.scripts.map((path) => [path, "skillSources.scripts"])
-    ]),
-    ...inventory.legacyRoles.flatMap((entry) => entry.files.map((path) => [path, "legacyRoles.files"])),
-    ...inventory.hooks.map((entry) => [entry.path, "hooks"]),
-    ...inventory.configs.map((entry) => [entry.path, "configs"]),
-    ...inventory.statusline.map((entry) => [entry.path, "statusline"]),
-    ...inventory.setupScripts.map((entry) => [entry.path, "setupScripts"])
+    ])
   ];
 }
 
@@ -156,14 +144,13 @@ test("T09 documents the dual layer, exact destinations, and receiving-machine or
   const readme = await textAt("README.md");
 
   assert.match(global, /one canonical source/iu);
-  for (const destination of ["CLAUDE.md", "AGENTS.md", "GEMINI.md"]) assert.ok(global.includes(destination), `global guide omits ${destination}`);
+  for (const destination of ["CLAUDE.md", "AGENTS.md"]) assert.ok(global.includes(destination), `global guide omits ${destination}`);
   assert.match(global, /global layer/iu);
   assert.match(global, /project and plugin layer/iu);
   assert.match(global, /more specific second layer/iu);
   assert.match(global, /core\/instructions\/global-operating-rules\.md/u);
-  assert.match(global, /CLAUDE_CONFIG_DIR.*CLAUDE\.md[\s\S]{0,160}CODEX_HOME.*AGENTS\.md[\s\S]{0,220}~\/\.gemini\/GEMINI\.md/iu);
+  assert.match(global, /CLAUDE_CONFIG_DIR.*CLAUDE\.md[\s\S]{0,160}CODEX_HOME.*AGENTS\.md/iu);
   assert.match(global, /CLAUDE\.local\.md[\s\S]{0,120}(?:private|project)[\s\S]{0,120}(?:not|never)[\s\S]{0,120}global/iu);
-  assert.match(global, /GEMINI\.local\.md[\s\S]{0,120}(?:not|never)[\s\S]{0,120}global/iu);
   assert.match(global, /Using skill \*\*brainstorming 🧠\*\*/u);
   assert.match(global, /reason is one short sentence/iu);
   assert.match(global, /checklist[\s\S]{0,300}(?:pending|in progress|completed)/iu);
@@ -241,9 +228,7 @@ test("compatibility documentation records automatic, manual, unsupported, and mo
   ];
   for (const relativePath of [
     "docs/compatibility/claude.md",
-    "docs/compatibility/codex.md",
-    "docs/compatibility/antigravity-2.md",
-    "docs/compatibility/agy.md"
+    "docs/compatibility/codex.md"
   ]) {
     const text = await textAt(relativePath);
     for (const [pattern, label] of requirements) assert.match(text, pattern, `${relativePath} omits ${label}`);
@@ -254,9 +239,7 @@ test("cross-machine documentation records separate repository and native lifecyc
   const lifecycleTerms = ["rendered", "validated", "registered", "trusted", "active", "runtime verified"];
   const compatibility = [
     "docs/compatibility/claude.md",
-    "docs/compatibility/codex.md",
-    "docs/compatibility/antigravity-2.md",
-    "docs/compatibility/agy.md"
+    "docs/compatibility/codex.md"
   ];
   for (const relativePath of compatibility) {
     const body = await textAt(relativePath);
@@ -266,7 +249,6 @@ test("cross-machine documentation records separate repository and native lifecyc
 
   const registration = await textAt("docs/maintenance/native-registration.md");
   const verification = await textAt("docs/maintenance/native-verification.md");
-  const antigravity = await textAt("docs/compatibility/antigravity-2.md");
   for (const body of [registration, verification]) {
     for (const term of lifecycleTerms) assert.match(body, new RegExp(`\\b${term}\\b`, "iu"), `native guide omits lifecycle term ${term}`);
     assert.match(body, /register --dry-run/iu);
@@ -277,9 +259,6 @@ test("cross-machine documentation records separate repository and native lifecyc
   assert.match(registration, /plugin marketplace add/iu);
   assert.match(registration, /plugin add/iu);
   assert.match(registration, /hooks/iu);
-  assert.match(registration, /sparse overlay/iu);
-  assert.match(antigravity, /statusline[\s\S]{0,300}unavailable/iu);
-  assert.match(antigravity, /display name[\s\S]{0,300}unavailable/iu);
   assert.match(verification, /node --test tests\/integration\/native-registration\.test\.mjs/u);
   assert.match(verification, /authenticated model|credentials/iu);
 });
@@ -290,11 +269,7 @@ test("documentation rejects stale native activation and fallback claims", async 
   const readmeApplyWarning = readme.indexOf("Warning: `--apply`");
   assert.ok(readmeApplyWarning >= 0 && readmeApplyWarning < readmeApplyCommand, "README warning must precede its write command");
   const codex = await textAt("docs/compatibility/codex.md");
-  const agy = await textAt("docs/compatibility/agy.md");
-  assert.match(agy, /Plugin registration[\s\S]{0,240}register --apply[\s\S]{0,240}(?:reload|runtime)/iu);
-  assert.doesNotMatch(agy, /Plugin registration\s*\|\s*Manual product action/iu);
   const claude = await textAt("docs/compatibility/claude.md");
-  const desktopTemplate = await textAt("adapters/antigravity-2/templates/README.md");
   assert.match(claude, /`settings\.json` is merged, not replaced[\s\S]{0,160}every other key already in the file is preserved/iu);
   assert.doesNotMatch(readme, /denies active/iu);
   assert.match(readme, /rendered[\s\S]{0,160}native enforcement is not claimed/iu);
@@ -302,20 +277,13 @@ test("documentation rejects stale native activation and fallback claims", async 
   assert.match(codex, /Hook trust[^\r\n]*`NOT_RUN`/iu);
   assert.doesNotMatch(codex, /Hook trust remains `NOT_RUN_UNAVAILABLE`/iu);
   assert.doesNotMatch(codex, /(?:automatically\s+(?:uses|selects|falls back)|automatic fallback\s+(?:is enabled|is used|is supported))/iu);
-  assert.doesNotMatch(agy, /Statusline[^|]*\|\s*(?:Unknown|Unsupported)/iu);
   assert.doesNotMatch(claude, /Statusline[^|]*\|\s*Unsupported/iu);
-  assert.doesNotMatch(agy, new RegExp("~/(?:config|\\.config|Library)\\S*settings\\.json", "iu"));
   assert.match(claude, /trusted[\s\S]{0,160}(?:not-run-unavailable|NOT_RUN_UNAVAILABLE|no native trust step)/iu);
   assert.doesNotMatch(claude, /package list[\s\S]{0,80}trusted hook/iu);
   assert.match(codex, /codex --profile terra-max/u);
   assert.doesNotMatch(claude, /^\s*CLAUDE_CONFIG_DIR=<PRODUCT_ROOT>\s+node/mu);
   assert.doesNotMatch(codex, /^\s*CODEX_HOME=<PRODUCT_ROOT>\s+node/mu);
 
-  const desktop = await textAt("docs/compatibility/antigravity-2.md");
-  assert.match(desktop, /native Desktop `validated`[\s\S]{0,120}(?:not run|`NOT_RUN`)/iu);
-  assert.match(desktop, /"<PACKAGE_ROOT>\/\.agents\/plugins\/all-about-agents\/"[\s\S]{0,320}\.agents\/plugins\/all-about-agents\//u);
-  assert.match(desktopTemplate, /hooks\.json[\s\S]{0,120}(?:present|disabled|inert)/iu);
-  assert.doesNotMatch(desktopTemplate, /confirm[^.\r\n]*hooks\.json[^.\r\n]*load/iu);
   const method = await textAt("docs/evaluations/method.md");
   assert.doesNotMatch(method, /Both statusline launchers run/iu);
   assert.match(method, /Windows statusline command[\s\S]{0,100}both profiles/iu);
@@ -326,25 +294,8 @@ test("documentation rejects stale native activation and fallback claims", async 
   const codexGitCommand = codex.indexOf("git -C \"<PACKAGE_ROOT>\" init");
   const codexGitWarning = codex.indexOf("Warning: the following Git commands");
   assert.ok(codexGitWarning >= 0 && codexGitWarning < codexGitCommand, "Codex Git warning must precede its mutation commands");
-  for (const [label, body] of [["Claude", claude], ["Codex", codex], ["agy", agy]]) {
-    assert.doesNotMatch(body, /(?:--destination-root|--package-root|git -C|claude plugin marketplace add|claude plugin validate|codex plugin marketplace add|agy plugin (?:install|validate))\s+<[^>\r\n]+>/u, `${label} compatibility guide has an unquoted path placeholder`);
-  }
-});
-
-test("quarantine records each legacy disposition with evidence and a real named target", async () => {
-  const text = await textAt("quarantine/README.md");
-  for (const heading of ["original path", "replacement path", "failed legacy behavior", "replacement evidence", "removal eligibility"]) {
-    assert.match(text, new RegExp(heading, "iu"), `quarantine README omits ${heading}`);
-  }
-  const rows = text.split(/\r?\n/u).filter((line) => /^\s*\|/u.test(line) && !/^\s*\|\s*:?-{3,}/u.test(line));
-  assert.ok(rows.length >= legacyRoots.length, "quarantine README needs one disposition row per legacy root");
-  for (const legacyRoot of legacyRoots) {
-    const escaped = legacyRoot.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-    const row = rows.find((line) => new RegExp(`(?:^|[|\\s\x60])${escaped}(?:[/|\\s\x60]|$)`, "u").test(line));
-    assert.ok(row, `quarantine README omits ${legacyRoot}`);
-    const replacement = /quarantine\/[A-Za-z0-9._/-]+/u.exec(row)?.[0]?.replace(/[.,;:`)]+$/u, "").replace(/\/$/u, "");
-    assert.ok(replacement, `${legacyRoot} has no named quarantine replacement path`);
-    assert.ok(await exists(replacement), `${legacyRoot} replacement path does not exist: ${replacement}`);
+  for (const [label, body] of [["Claude", claude], ["Codex", codex]]) {
+    assert.doesNotMatch(body, /(?:--destination-root|--package-root|git -C|claude plugin marketplace add|claude plugin validate|codex plugin marketplace add)\s+<[^>\r\n]+>/u, `${label} compatibility guide has an unquoted path placeholder`);
   }
 });
 

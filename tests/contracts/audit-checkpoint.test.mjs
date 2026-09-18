@@ -10,8 +10,6 @@ import { withTempRoot } from "../helpers/temp-root.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
-import { renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
-import { renderAgy } from "../../adapters/agy/adapter.mjs";
 
 const requiredOutputs = [
   "core/hooks/activity-audit.json",
@@ -21,10 +19,6 @@ const requiredOutputs = [
   "adapters/claude/templates/hooks/checkpoint.json",
   "adapters/codex/templates/hooks/activity-audit.json",
   "adapters/codex/templates/hooks/checkpoint.json",
-  "adapters/antigravity-2/templates/hooks/activity-audit.json",
-  "adapters/antigravity-2/templates/hooks/checkpoint.json",
-  "adapters/agy/templates/hooks/activity-audit.json",
-  "adapters/agy/templates/hooks/checkpoint.json",
   "tests/contracts/audit-checkpoint.test.mjs"
 ];
 
@@ -46,7 +40,7 @@ test("safeLogKey rejects path traversal and terminal control data", () => {
 const validEvent = Object.freeze({
   timestamp: "2026-08-30T00:00:00.000Z",
   surface: "Claude",
-  actionId: " AAA:Design ",
+  actionId: " TOOL:Design ",
   outcome: " Success ",
   sessionKey: "session/one"
 });
@@ -85,7 +79,7 @@ test("appendAuditEvent writes only normalized, hashed audit fields", async () =>
     assert.deepEqual(JSON.parse(line), {
       timestamp: "2026-08-30T00:00:00.000Z",
       surface: "claude",
-      actionId: "aaa:design",
+      actionId: "tool:design",
       outcome: "success",
       sessionKeyHash: createHash("sha256").update("session/one").digest("hex")
     });
@@ -116,7 +110,7 @@ test("appendAuditEvent rotates and retains at most the configured files and byte
   await withTempRoot(async (root) => {
     const smallLimits = { maxBytes: 220, maxFiles: 2 };
     for (let index = 0; index < 10; index += 1) {
-      const result = await appendAuditEvent(root, { ...validEvent, actionId: `aaa:design-${index}` }, smallLimits);
+      const result = await appendAuditEvent(root, { ...validEvent, actionId: `tool:design-${index}` }, smallLimits);
       assert.equal(result.status, "written");
     }
     const files = await logFiles(root);
@@ -199,22 +193,6 @@ test("every adapter production render consumes the audit and checkpoint contract
       checkpointPath: "hooks/checkpoint.json",
       hooksPath: "hooks/hooks.json",
       registrationKinds: ["activity-audit", "checkpoint"]
-    },
-    {
-      surface: "antigravity-2",
-      result: renderAntigravity({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
-      auditPath: ".agents/plugins/all-about-agents/hooks/activity-audit.json",
-      checkpointPath: ".agents/plugins/all-about-agents/hooks/checkpoint.json",
-      hooksPath: ".agents/plugins/all-about-agents/hooks.json",
-      registrationKinds: ["activity-audit", "checkpoint"]
-    },
-    {
-      surface: "agy",
-      result: renderAgy({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
-      auditPath: "activity-audit.json",
-      checkpointPath: "checkpoint.json",
-      hooksPath: "hooks.json",
-      registrationKinds: ["activity-audit", "checkpoint"]
     }
   ];
 
@@ -228,18 +206,12 @@ test("every adapter production render consumes the audit and checkpoint contract
     assert.deepEqual(renderedCheckpoint.recordedFields, JSON.parse(canonicalCheckpoint).recordedFields);
     assert.equal(renderedAudit.surface, packageSpec.surface);
     assert.equal(renderedAudit.event, "PostToolUse");
-    if (packageSpec.surface === "claude" || packageSpec.surface === "codex") assert.equal(renderedCheckpoint.event, "PreCompact");
-    else {
-      assert.equal(renderedCheckpoint.nativeHookEquivalent, false);
-      assert.equal(renderedCheckpoint.durableWorkflow, "explicit");
-    }
+    assert.equal(renderedCheckpoint.event, "PreCompact");
     for (const kind of packageSpec.registrationKinds) assert.ok(packageSpec.result.registrations.some((entry) => entry.kind === kind), `${packageSpec.surface} must register ${kind}`);
     assert.ok(files.has(packageSpec.hooksPath), `${packageSpec.surface} must render its hook registry`);
-    if (packageSpec.surface === "claude" || packageSpec.surface === "codex") {
-      assert.ok(files.has("hooks/audit-log.mjs"), `${packageSpec.surface} must render the audit-log seam`);
-      assert.doesNotMatch(files.get("hooks/activity-audit.mjs"), /intentionally emits no arguments or results/iu, `${packageSpec.surface} must render a consuming activity audit hook`);
-      assert.doesNotMatch(files.get("hooks/pre-compact.mjs"), /does not rewrite user files/iu, `${packageSpec.surface} must render a consuming checkpoint hook`);
-    }
+    assert.ok(files.has("hooks/audit-log.mjs"), `${packageSpec.surface} must render the audit-log seam`);
+    assert.doesNotMatch(files.get("hooks/activity-audit.mjs"), /intentionally emits no arguments or results/iu, `${packageSpec.surface} must render a consuming activity audit hook`);
+    assert.doesNotMatch(files.get("hooks/pre-compact.mjs"), /does not rewrite user files/iu, `${packageSpec.surface} must render a consuming checkpoint hook`);
   }
 });
 
@@ -256,7 +228,7 @@ test("Claude and Codex activity/checkpoint wrappers fail open on oversized stdin
         await mkdir(resolve(target, ".."), { recursive: true });
         await writeFile(target, file.content);
       }
-      const oversized = JSON.stringify({ actionId: "aaa:review", outcome: "success", session_id: "bounded", padding: "x".repeat(70_000) });
+      const oversized = JSON.stringify({ actionId: "tool:review", outcome: "success", session_id: "bounded", padding: "x".repeat(70_000) });
       for (const name of ["activity-audit.mjs", "pre-compact.mjs"]) {
         const result = spawnSync(process.execPath, [join(root, "hooks", name)], { input: oversized, encoding: "utf8" });
         assert.equal(result.status, 0, `${item.surface}/${name}: ${result.stderr}`);
@@ -280,12 +252,12 @@ test("audit and checkpoint templates keep native mappings explicit", async () =>
   assert.equal(Object.hasOwn(audit, "surface"), false);
   assert.equal(Object.hasOwn(checkpoint, "event"), false);
 
-  for (const surface of ["claude", "codex", "antigravity-2", "agy"]) {
+  for (const surface of ["claude", "codex"]) {
     const activity = await json(`adapters/${surface}/templates/hooks/activity-audit.json`);
     assert.equal(activity.surface, surface);
     assert.equal(activity.event, "PostToolUse");
     assert.equal(activity.optional, true);
-    assert.equal(activity.failureMode, surface === "claude" || surface === "codex" ? "fail-open" : "unknown-disabled");
+    assert.equal(activity.failureMode, "fail-open");
     assert.deepEqual(activity.recordedFields, audit.recordedFields);
   }
   const claudeCheckpoint = await json("adapters/claude/templates/hooks/checkpoint.json");
@@ -302,12 +274,4 @@ test("audit and checkpoint templates keep native mappings explicit", async () =>
   assert.equal(codexCheckpoint.trustRequired, true);
   assert.equal(codexCheckpoint.status, "not run");
   assert.equal(codexCheckpoint.failureMode, "fail-open");
-  for (const surface of ["antigravity-2", "agy"]) {
-    const native = await json(`adapters/${surface}/templates/hooks/checkpoint.json`);
-    assert.equal(native.surface, surface);
-    assert.equal(native.nativeHookEquivalent, false);
-    assert.equal(native.durableWorkflow, "explicit");
-    assert.match(native.documentation, /no native checkpoint hook equivalent/iu);
-    assert.equal(native.failureMode, "fail-open");
-  }
 });

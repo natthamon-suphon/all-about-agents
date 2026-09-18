@@ -68,7 +68,7 @@ test("quality gate selects a stable quick subset, full superset, and focused ski
   ]);
   assert.deepEqual(full.slice(0, quick.length), quick);
   assert.ok(full.some((entry) => entry.id === "full-test-suite"));
-  assert.ok(full.some((entry) => entry.id === "native-agy-version" && entry.required === false));
+  assert.ok(full.some((entry) => entry.id === "native-codex-version" && entry.required === false));
   assert.deepEqual(skill.map((entry) => entry.id), ["skill-artifacts", "skill-behavior"]);
   assert.ok(skill[0].args.includes("alpha"));
   assert.ok(skill[1].args.includes("tests/behavioral/skills/alpha.test.mjs"));
@@ -151,11 +151,11 @@ test("every quick mutation gate can fail the report without hiding later results
 });
 
 test("quality gate marks an unavailable optional native check without failing full mode", async () => {
-  const fixture = runner({ unavailableCheck: "native-agy-version" });
+  const fixture = runner({ unavailableCheck: "native-codex-version" });
   const report = await qualityModule.runQualityGate({ mode: "full", repositoryRoot: process.cwd(), run: fixture.run, clock: fixedClock });
 
   assert.equal(report.status, "PASS");
-  const check = report.checks.find((entry) => entry.id === "native-agy-version");
+  const check = report.checks.find((entry) => entry.id === "native-codex-version");
   assert.equal(check.required, false);
   assert.equal(check.status, "NOT_RUN_UNAVAILABLE");
   assert.doesNotMatch(JSON.stringify(check), /TOKEN=hidden/u);

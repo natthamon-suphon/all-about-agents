@@ -1,9 +1,0 @@
-{
-  "id": "native-names",
-  "actionId": "aaa:review",
-  "workflowId": "unknown-workflow",
-  "arguments": {
-    "nested": ["MultiEdit", "Agent", "Skill", "TodoWrite", "PowerShell"]
-  },
-  "result": {}
-}

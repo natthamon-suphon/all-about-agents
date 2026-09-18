@@ -13,11 +13,8 @@ const requiredOutputs = [
   ".github/workflows/installer-matrix.yml",
   "tests/integration/claude-install.test.mjs",
   "tests/integration/codex-install.test.mjs",
-  "tests/integration/antigravity-2-install.test.mjs",
-  "tests/integration/agy-install.test.mjs",
   "tests/integration/all-surfaces.test.mjs",
-  "tests/fixtures/user-profiles/",
-  "tests/integration/manual-desktop-checklist.json"
+  "tests/fixtures/user-profiles/"
 ];
 
 test("T049 creates every owned artifact", async () => {

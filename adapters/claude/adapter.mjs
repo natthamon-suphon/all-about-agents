@@ -75,17 +75,6 @@ export const CLAUDE_SEMANTIC_MAPPINGS = Object.freeze({
   "native-rendering": Object.freeze(["Skill"])
 });
 
-export const CLAUDE_ACTION_MAPPINGS = Object.freeze({
-  "aaa:design": Object.freeze({ supported: true, native: "commands/design.md" }),
-  "aaa:build": Object.freeze({ supported: true, native: "commands/build.md" }),
-  "aaa:fix": Object.freeze({ supported: true, native: "commands/fix.md" }),
-  "aaa:review": Object.freeze({ supported: true, native: "commands/review.md" }),
-  "aaa:audit": Object.freeze({ supported: true, native: "commands/audit.md" }),
-  "aaa:improve-skill": Object.freeze({ supported: true, native: "commands/improve-skill.md" }),
-  "aaa:resume": Object.freeze({ supported: true, native: "commands/resume.md" }),
-  "aaa:verify": Object.freeze({ supported: true, native: "commands/verify.md" })
-});
-
 /** Exact settings policy approved for Claude Code and Claude Desktop local Code. */
 export const CLAUDE_MODEL_POLICY = Object.freeze({
   portable: Object.freeze({}),
@@ -191,7 +180,6 @@ try {
   const payload = JSON.parse(rawInput || "{}");
   const checkpoint = {
     timestamp: new Date().toISOString(),
-    workflowId: safe(payload.workflowId, "claude-hook"),
     taskId: safe(payload.taskId, "pre-compact"),
     state: safe(payload.state, "compacting"),
     status: safe(payload.status, "checkpointed")
@@ -371,19 +359,6 @@ function renderAgent(name, role, presentation) {
   return ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\nmodel: inherit\ntools:\n${allowedTools.map((tool) => `  - ${tool}`).join("\n")}\n${restriction}---\n\n${body}`);
 }
 
-function renderCommand(command, presentation) {
-  const description = command.presentation?.help || `Dispatch ${command.actionId}.`;
-  const guidance = renderInvocationGuidance(presentation, {
-    kind: "command",
-    id: command.actionId,
-    workflowId: command.workflowId,
-    task: `Run ${displayLabel(presentation, "command", command.actionId)} for the requested workflow`,
-    reason: `Run ${displayLabel(presentation, "command", command.actionId)} for the requested workflow.`
-  });
-  const workflowLabel = displayLabel(presentation, "workflow", command.workflowId);
-  return ensureText(`---\ndescription: ${quoteFrontmatter(description)}\n---\n\nDispatch canonical action \`${command.actionId}\` through workflow \`${workflowLabel}\`.\n\n${guidance}\n`);
-}
-
 function hookConfig() {
   const command = (fileName) => ({
     type: "command",
@@ -542,7 +517,7 @@ export function renderClaude(input = {}) {
   assertUnifiedSkillPortfolio(input);
   const core = input.core;
   if (!core || typeof core !== "object") throw new TypeError("core is required");
-  for (const collection of ["rules", "skills", "workflows", "commands"]) {
+  for (const collection of ["rules", "skills"]) {
     if (!Array.isArray(core[collection])) throw new TypeError(`core.${collection} must be an array`);
   }
   assertNativeRoleRecords(core.roles);
@@ -590,7 +565,6 @@ export function renderClaude(input = {}) {
 
   const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort();
   for (const roleName of roleNames) addFile(files, `agents/${roleName}.md`, renderAgent(roleName, roleRecords.get(roleName), core.presentation));
-  for (const command of [...core.commands].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `commands/${command.id}.md`, renderCommand(command, core.presentation));
 
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   const nativeStatusline = createNativeIntegrationRecord({
@@ -708,12 +682,10 @@ export function renderClaude(input = {}) {
   return result;
 }
 
-/** Apply the shared adapter seam and its required canonical action mappings. */
+/** Apply the shared adapter seam. */
 export function renderSurface(input = {}) {
   const capabilityRecord = {
     surface: CLAUDE_SURFACE,
-    requiredMappings: Object.keys(CLAUDE_ACTION_MAPPINGS),
-    actionMappings: CLAUDE_ACTION_MAPPINGS,
     render: () => renderClaude(input)
   };
   return validateSurface({ ...input, surface: CLAUDE_SURFACE, capabilityRecord: { ...capabilityRecord, ...input.capabilityRecord } });
@@ -722,8 +694,6 @@ export function renderSurface(input = {}) {
 export const render = renderClaude;
 export const CLAUDE_CAPABILITY_RECORD = Object.freeze({
   surface: CLAUDE_SURFACE,
-  requiredMappings: Object.freeze(Object.keys(CLAUDE_ACTION_MAPPINGS)),
-  actionMappings: CLAUDE_ACTION_MAPPINGS,
   semanticMappings: CLAUDE_SEMANTIC_MAPPINGS
 });
 export const sanitizeStatuslineName = validStatuslineName;

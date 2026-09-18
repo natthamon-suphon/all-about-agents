@@ -7,17 +7,13 @@ import test from "node:test";
 
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
-import { renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
-import { renderAgy } from "../../adapters/agy/adapter.mjs";
 import { assertUnifiedSkillPortfolio, loadCore } from "../../installers/lib/load-core.mjs";
 
 const requiredOutputs = [
   "tests/contracts/complete-skill-manifest.test.mjs",
   "tests/behavioral/skill-collisions.test.mjs",
   "tests/snapshots/claude/skills-manifest.json",
-  "tests/snapshots/codex/skills-manifest.json",
-  "tests/snapshots/antigravity-2/skills-manifest.json",
-  "tests/snapshots/agy/skills-manifest.json"
+  "tests/snapshots/codex/skills-manifest.json"
 ];
 
 test("T044 creates every owned artifact", async () => {
@@ -27,9 +23,7 @@ test("T044 creates every owned artifact", async () => {
 
 const surfaceSpecs = [
   { id: "claude", prefix: "skills", render: (core) => renderClaude({ core, profile: { id: "portable" }, statuslineName: "" }) },
-  { id: "codex", prefix: ".agents/skills", render: (core) => renderCodex({ core, profile: { id: "portable" }, targetRuntime: "cli" }) },
-  { id: "antigravity-2", prefix: ".agents/plugins/all-about-agents/skills", render: (core) => renderAntigravity({ core, profile: { id: "portable" }, statuslineName: "" }) },
-  { id: "agy", prefix: "skills", render: (core) => renderAgy({ core, profile: { id: "portable" }, statuslineName: "" }) }
+  { id: "codex", prefix: ".agents/skills", render: (core) => renderCodex({ core, profile: { id: "portable" }, targetRuntime: "cli" }) }
 ];
 
 function normalized(value) {
@@ -91,7 +85,7 @@ test("loader exposes every declared companion as contained normalized UTF-8 cont
   }
 });
 
-test("all four surfaces render every companion once beside its owning skill", async () => {
+test("both surfaces render every companion once beside its owning skill", async () => {
   const core = await loadCore(process.cwd());
   const records = new Map(core.skills.map((record) => [record.id, record]));
   for (const surface of surfaceSpecs) {
@@ -116,9 +110,7 @@ test("all four surfaces render every companion once beside its owning skill", as
 test("all package manifests declare the rendered global file and complete skill roots", async () => {
   const expectedGlobal = new Map([
     ["claude", "CLAUDE.md"],
-    ["codex", "AGENTS.md"],
-    ["antigravity-2", "GEMINI.md"],
-    ["agy", "GEMINI.md"]
+    ["codex", "AGENTS.md"]
   ]);
   for (const [surface, globalName] of expectedGlobal) {
     const manifest = JSON.parse(await readFile(resolve(process.cwd(), `installers/manifests/${surface}.json`), "utf8"));
@@ -127,17 +119,6 @@ test("all package manifests declare the rendered global file and complete skill 
     assert.ok(manifest.ownedPaths.includes(globalName), `${surface} manifest must own ${globalName}`);
     assert.equal(new Set(manifest.ownedPaths).size, manifest.ownedPaths.length, `${surface} manifest ownership must be unique`);
   }
-});
-
-test("opaque companion flags do not weaken generated-instruction leakage checks", async () => {
-  const core = await loadCore(process.cwd());
-  const poisoned = structuredClone(core);
-  const image = poisoned.skills.find((record) => record.id === "nano-image-generator");
-  image.companions[0].content += "\nopaque example: --model --effort\n";
-  assert.doesNotThrow(() => renderAntigravity({ core: poisoned, profile: { id: "portable" }, statuslineName: "" }));
-  assert.doesNotThrow(() => renderAgy({ core: poisoned, profile: { id: "portable" }, statuslineName: "" }));
-  image.content += "\nGenerated instruction leak: --effort high\n";
-  assert.throws(() => renderAntigravity({ core: poisoned, profile: { id: "portable" }, statuslineName: "" }), /forbidden Desktop content/iu);
 });
 
 test("pack selection is rejected at loader, adapter, and profile argument seams", async () => {
@@ -151,7 +132,7 @@ test("pack selection is rejected at loader, adapter, and profile argument seams"
   const core = await loadCore(process.cwd());
   for (const surface of surfaceSpecs) {
     const options = { core, profile: { id: "portable", skillPack: "core" }, statuslineName: "", targetRuntime: "cli" };
-    assert.throws(() => surface.id === "claude" ? renderClaude(options) : surface.id === "codex" ? renderCodex(options) : surface.id === "antigravity-2" ? renderAntigravity(options) : renderAgy(options), /complete skill portfolio|pack selection/iu);
+    assert.throws(() => surface.id === "claude" ? renderClaude(options) : renderCodex(options), /complete skill portfolio|pack selection/iu);
   }
 });
 

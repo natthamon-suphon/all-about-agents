@@ -7,8 +7,6 @@
   "advisor": "fable",
   "modelPolicies": {
     "claude": "approved-opus-sonnet",
-    "codex": "approved-sol-terra",
-    "antigravity-2": "approved-desktop-flash",
-    "agy": "approved-cli-flash"
+    "codex": "approved-sol-terra"
   }
 }

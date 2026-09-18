@@ -1,7 +1,0 @@
-{
-  "id": "unknown-command",
-  "actionId": "aaa:review",
-  "workflowId": "unknown-workflow",
-  "arguments": { "operation": "write_to_file" },
-  "result": {}
-}

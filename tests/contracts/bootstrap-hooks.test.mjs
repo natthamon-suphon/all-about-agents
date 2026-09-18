@@ -8,8 +8,6 @@ import test from "node:test";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
-import { renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
-import { renderAgy } from "../../adapters/agy/adapter.mjs";
 import { MAX_STDIN_BYTES, runBootstrap } from "../../core/hooks/bootstrap.mjs";
 import { NATIVE_PHASES } from "../../adapters/shared/native-state.mjs";
 
@@ -18,8 +16,6 @@ const requiredOutputs = [
   "core/hooks/bootstrap.mjs",
   "adapters/claude/templates/hooks/bootstrap.json",
   "adapters/codex/templates/hooks/bootstrap.json",
-  "adapters/antigravity-2/templates/hooks/bootstrap.json",
-  "adapters/agy/templates/hooks/bootstrap.json",
   "tests/contracts/bootstrap-hooks.test.mjs"
 ];
 
@@ -100,9 +96,7 @@ test("rendered executable packages invoke the production bootstrap handler", asy
     const files = fileMap(packageSpec.result);
     assert.equal(files.get(packageSpec.runtimePath), await readFile(root("core/hooks/bootstrap.mjs"), "utf8"), `${packageSpec.surface} must copy the canonical runtime`);
     const canonical = files.get(packageSpec.skillPath);
-    const expected = packageSpec.surface === "antigravity-2"
-      ? { injectSteps: [{ ephemeralMessage: canonical }] }
-      : { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: canonical } };
+    const expected = { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: canonical } };
     assert.deepEqual(await executeRendered(packageSpec.result, packageSpec), expected, `${packageSpec.surface} must execute the rendered handler`);
   }
 });
@@ -130,38 +124,6 @@ test("automatic renderers consume the canonical core bootstrap contract", async 
     const command = hooks.hooks.SessionStart[0].hooks[0];
     const commandText = command.args ? command.args.join(" ") : `${command.command} ${command.commandWindows || ""}`;
     assert.match(commandText, /--config-path/u, "the rendered handler must receive the canonical contract path");
-  }
-});
-
-test("unverified renderers stay probe-only without commands or relative handler paths", async () => {
-  const core = await loadCore(process.cwd());
-  const packages = [
-    {
-      templatePath: "adapters/antigravity-2/templates/hooks/bootstrap.json",
-      result: renderAntigravity({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
-      hooksPath: ".agents/plugins/all-about-agents/hooks.json"
-    },
-    {
-      templatePath: "adapters/agy/templates/hooks/bootstrap.json",
-      result: renderAgy({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
-      hooksPath: "hooks.json"
-    }
-  ];
-
-  for (const packageSpec of packages) {
-    const template = await readJson(packageSpec.templatePath);
-    assert.equal(template.automatic, false);
-    assert.equal(template.probeRequired, true);
-    assert.equal(template.probe.status, "not run");
-    assert.ok(template.probe.manualSequence.length >= 2);
-    assert.doesNotMatch(JSON.stringify(template), /"command"\s*:|\.\/hooks|\.\/skills/iu);
-    const hooks = fileMap(packageSpec.result).get(packageSpec.hooksPath);
-    assert.doesNotMatch(hooks, /"command"\s*:|\.\/hooks|\.\/skills/iu);
-    assert.doesNotMatch(hooks, /"enabled"\s*:\s*true/iu);
-    const registration = packageSpec.result.registrations.find((entry) => entry.kind === "hook-contract");
-    assert.equal(registration.enabled, false);
-    assert.equal(registration.automaticHookExecution, false);
-    assert.equal(registration.probeRequired, true);
   }
 });
 
@@ -214,20 +176,6 @@ test("bootstrap helper also bounds explicitly supplied raw input", async () => {
   ], rawInput)), {});
 });
 
-test("agy renders a visible probe-required diagnostic without an automatic command", async () => {
-  const core = await loadCore(process.cwd());
-  const result = renderAgy({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" });
-  const files = fileMap(result);
-  const hooks = JSON.parse(files.get("hooks.json"));
-  assert.equal(hooks["all-about-agents-safety"].enabled, false);
-  assert.doesNotMatch(JSON.stringify(hooks), /command/iu);
-  const registration = result.registrations.find((entry) => entry.kind === "hook-contract");
-  assert.equal(registration.enabled, false);
-  assert.equal(registration.automaticHookExecution, false);
-  assert.equal(registration.probeRequired, true);
-  assert.ok(result.diagnostics.some((entry) => entry.code === "agy-bootstrap-probe-required" && /Status: not run/iu.test(entry.message)));
-});
-
 test("canonical behavior is vendor-neutral while each template owns its native contract", async () => {
   const bootstrap = await readJson("core/hooks/bootstrap.json");
   assert.equal(bootstrap.id, "bootstrap");
@@ -238,9 +186,7 @@ test("canonical behavior is vendor-neutral while each template owns its native c
 
   const templates = [
     "adapters/claude/templates/hooks/bootstrap.json",
-    "adapters/codex/templates/hooks/bootstrap.json",
-    "adapters/antigravity-2/templates/hooks/bootstrap.json",
-    "adapters/agy/templates/hooks/bootstrap.json"
+    "adapters/codex/templates/hooks/bootstrap.json"
   ];
   for (const templatePath of templates) {
     const template = await readJson(templatePath);
@@ -262,11 +208,6 @@ test("rendered hook configs consume their parsed native templates and declare ru
   assert.equal(codexHooks.hooks.SessionStart[0].matcher, "^startup$");
   assert.match(codexHooks.hooks.SessionStart[0].hooks[0].command, /\$PLUGIN_ROOT\/hooks\/bootstrap\.mjs/u);
   assert.ok(codex.registrations.some((entry) => entry.kind === "runtime-prerequisite" && entry.onMissing === "unavailable"));
-  const antigravity = renderAntigravity({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" });
-  const antigravityHooks = JSON.parse(fileMap(antigravity).get(".agents/plugins/all-about-agents/hooks.json"));
-  assert.equal(antigravityHooks["all-about-agents-safety"].enabled, false);
-  assert.doesNotMatch(JSON.stringify(antigravityHooks), /command|\.\//iu);
-  assert.ok(antigravity.registrations.some((entry) => entry.kind === "runtime-prerequisite" && entry.onMissing === "unavailable"));
 });
 
 test("Codex hook templates and rendered records remain manual until registration and trust evidence", async () => {

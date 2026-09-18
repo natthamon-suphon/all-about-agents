@@ -12,17 +12,16 @@ const activeTopLevelDirectories = [
   "docs",
   "installers",
   "profiles",
-  "quarantine",
   "scripts",
   "tests"
 ];
 
 test("canonical directories replace active legacy top-level sources", async () => {
-  for (const relativePath of [...activeTopLevelDirectories, "tests/helpers", "tests/static", "quarantine/legacy"]) {
+  for (const relativePath of [...activeTopLevelDirectories, "tests/helpers", "tests/static"]) {
     const details = await stat(resolve(process.cwd(), relativePath));
     assert.ok(details.isDirectory(), `${relativePath} must remain a directory`);
   }
-  for (const relativePath of ["agents", "configs", "hooks", "setup", "skills", "statusline", ".claude-plugin"]) {
+  for (const relativePath of ["agents", "configs", "hooks", "setup", "skills", "statusline", ".claude-plugin", "quarantine"]) {
     await assert.rejects(stat(resolve(process.cwd(), relativePath)), (error) => error?.code === "ENOENT");
   }
 });
@@ -41,7 +40,7 @@ test("disposable evaluation paths are ignored and contain no tracked artifacts",
 });
 
 test("all supported surfaces retain their package manifest and global output contract", async () => {
-  for (const surface of ["claude", "codex", "antigravity-2", "agy"]) {
+  for (const surface of ["claude", "codex"]) {
     const manifestPath = resolve(process.cwd(), `installers/manifests/${surface}.json`);
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     assert.equal(manifest.surface, surface);
@@ -49,6 +48,6 @@ test("all supported surfaces retain their package manifest and global output con
     assert.ok(manifest.ownedPaths.length > 0, `${surface} manifest ownership cannot be empty`);
     const output = manifest.components.globalInstructions;
     const packageName = typeof output === "string" ? output : output?.package;
-    assert.equal(packageName, surface === "claude" ? "CLAUDE.md" : surface === "codex" ? "AGENTS.md" : "GEMINI.md");
+    assert.equal(packageName, surface === "claude" ? "CLAUDE.md" : "AGENTS.md");
   }
 });

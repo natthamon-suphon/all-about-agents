@@ -7,7 +7,7 @@ import codexBootstrapTemplate from "./templates/hooks/bootstrap.json" with { typ
 import codexActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
 import codexCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
 import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
-import { AdapterContractError, renderSurface as validateSurface, validateCommandRecords, validateRenderResult } from "../shared/adapter-contract.mjs";
+import { AdapterContractError, renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, hasScopedMutation, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
@@ -20,22 +20,6 @@ const CODEX_TARGET_RUNTIMES = Object.freeze(["cli", "desktop"]);
 const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
 const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.json", import.meta.url), "utf8");
 const AUDIT_LOG_SOURCE = readFileSync(new URL("../../installers/lib/audit-log.mjs", import.meta.url), "utf8");
-const ACTION_IDS = Object.freeze([
-  "aaa:design",
-  "aaa:build",
-  "aaa:fix",
-  "aaa:review",
-  "aaa:audit",
-  "aaa:improve-skill",
-  "aaa:resume",
-  "aaa:verify"
-]);
-
-const CODEX_ACTION_MAPPINGS = Object.freeze(Object.fromEntries(ACTION_IDS.map((actionId) => [
-  actionId,
-  Object.freeze({ supported: true, native: "AGENTS.md" })
-])));
-
 const CODEX_SEMANTIC_MAPPINGS = Object.freeze({
   "repository-read": Object.freeze(["AGENTS.md"]),
   "repository-write": Object.freeze(["AGENTS.md"]),
@@ -461,36 +445,7 @@ export function parseCodexToml(value) {
 }
 
 function renderAgentsDocument(core) {
-  return renderCodexGlobalInstructions(core, {
-    canonicalRules: core.rules,
-    commands: core.commands
-  });
-}
-
-function validateCommandPresentation(commands) {
-  const errors = [];
-  commands.forEach((command, index) => {
-    const path = `/commands/${index}/presentation`;
-    const presentation = command.presentation;
-    if (presentation === null || typeof presentation !== "object" || Array.isArray(presentation)) {
-      errors.push({
-        code: "invalid-command-presentation",
-        message: "presentation must be an object",
-        path
-      });
-      return;
-    }
-    for (const field of ["label", "help"]) {
-      if (typeof presentation[field] !== "string" || presentation[field].trim().length === 0) {
-        errors.push({
-          code: "invalid-command-presentation",
-          message: `presentation.${field} must be a non-empty string`,
-          path: `${path}/${field}`
-        });
-      }
-    }
-  });
-  if (errors.length > 0) throw new AdapterContractError(errors);
+  return renderCodexGlobalInstructions(core, { canonicalRules: core.rules });
 }
 
 function capabilityGuidance(profile) {
@@ -503,7 +458,7 @@ function capabilityGuidance(profile) {
     "This package is the Codex adapter's documented surface map.",
     "",
     "- `CODEX_HOME` selects the shared Codex CLI/Desktop configuration root; the fallback is the user's `.codex` directory.",
-    "- `AGENTS.md` is rendered as a regular instruction file for the canonical rules and action-to-workflow mappings.",
+    "- `AGENTS.md` is rendered as a regular instruction file for the canonical rules and presentation catalog.",
     "- Skills are packaged under `skills/<skill>/SKILL.md` for plugin discovery and mirrored under `.agents/skills/<skill>/SKILL.md` for direct/global installation; missing canonical sources remain marked `DEFERRED`.",
     "- Custom roles are standalone custom-agent TOML files under `.codex/agents/<role>.toml`.",
     "- Each canonical `[agents.<role>]` registration points `config_file` at the delivered `agents/<role>.toml` role layer. That standalone file contains `developer_instructions` and top-level `sandbox_mode` (`read-only` for read-only roles and `workspace-write` only for the implementer). Relative `config_file` paths resolve from the declaring `config.toml`.",
@@ -524,14 +479,11 @@ export function renderCodex(input = {}) {
   const targetRuntime = targetRuntimeOf(input);
   const core = input.core;
   if (!core || typeof core !== "object") throw new TypeError("core is required");
-  for (const collection of ["rules", "skills", "workflows", "commands"]) {
+  for (const collection of ["rules", "skills"]) {
     if (!Array.isArray(core[collection])) throw new TypeError(`core.${collection} must be an array`);
   }
   assertNativeRoleRecords(core.roles);
   assertNativeRoleSemantics(core.roles);
-  const commandValidation = validateCommandRecords(core.commands, core.workflows);
-  if (!commandValidation.valid) throw new AdapterContractError(commandValidation.errors);
-  validateCommandPresentation(core.commands);
   const semanticProfile = resolveProfile(input.profile ?? "portable", {
     surface: CODEX_SURFACE,
     modelPolicyRefs: ["surface-default", "approved-sol-terra"]
@@ -581,7 +533,6 @@ try {
   const payload = JSON.parse(rawInput || "{}");
   const checkpoint = {
     timestamp: new Date().toISOString(),
-    workflowId: safe(payload.workflowId, "codex-hook"),
     taskId: safe(payload.taskId, "pre-compact"),
     state: safe(payload.state, "compacting"),
     status: safe(payload.status, "checkpointed")
@@ -762,12 +713,10 @@ try {
   return result;
 }
 
-/** Apply the shared adapter seam and its required canonical action mappings. */
+/** Apply the shared adapter seam. */
 export function renderSurface(input = {}) {
   const capabilityRecord = {
     surface: CODEX_SURFACE,
-    requiredMappings: Object.keys(CODEX_ACTION_MAPPINGS),
-    actionMappings: CODEX_ACTION_MAPPINGS,
     render: () => renderCodex(input)
   };
   return validateSurface({
@@ -780,8 +729,6 @@ export function renderSurface(input = {}) {
 export const render = renderCodex;
 export const CODEX_CAPABILITY_RECORD = Object.freeze({
   surface: CODEX_SURFACE,
-  requiredMappings: Object.freeze(Object.keys(CODEX_ACTION_MAPPINGS)),
-  actionMappings: CODEX_ACTION_MAPPINGS,
   semanticMappings: CODEX_SEMANTIC_MAPPINGS
 });
-export { CODEX_ACTION_MAPPINGS, CODEX_SEMANTIC_MAPPINGS };
+export { CODEX_SEMANTIC_MAPPINGS };

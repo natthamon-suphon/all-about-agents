@@ -5,7 +5,6 @@ import test from "node:test";
 import {
   AdapterContractError,
   renderSurface,
-  validateNativeMappings,
   validateRenderResult
 } from "../../adapters/shared/adapter-contract.mjs";
 import {
@@ -15,59 +14,7 @@ import {
   renderText,
   renderToml
 } from "../../adapters/shared/render-utils.mjs";
-import { renderForSurface, renderPayload } from "../../installers/lib/render.mjs";
-
-const actionIds = [
-  "aaa:design",
-  "aaa:build",
-  "aaa:fix",
-  "aaa:review",
-  "aaa:audit",
-  "aaa:improve-skill",
-  "aaa:resume",
-  "aaa:verify"
-];
-
-const actionWorkflows = {
-  "aaa:design": "design-change",
-  "aaa:build": "implement-change",
-  "aaa:fix": "fix-bug",
-  "aaa:review": "review-and-audit",
-  "aaa:audit": "review-and-audit",
-  "aaa:improve-skill": "improve-skill",
-  "aaa:resume": "implement-change",
-  "aaa:verify": "release-qualification"
-};
-
-function mappings() {
-  return Object.fromEntries(actionIds.map((actionId) => [actionId, {
-    required: true,
-    supported: true,
-    native: `native-${actionId.slice(4)}`
-  }]));
-}
-
-function explicitlyUnsupportedMappings() {
-  return Object.fromEntries(actionIds.map((actionId) => [actionId, {
-    required: true,
-    supported: false,
-    support: "manual-unknown",
-    source: "research-primary.md",
-    reason: `No documented native mapping for ${actionId}.`,
-    manualStep: `Use a manual prompt for ${actionId} after native verification.`
-  }]));
-}
-
-function commands() {
-  return actionIds.map((actionId) => ({
-    id: actionId.slice(4),
-    actionId,
-    workflowId: actionWorkflows[actionId],
-    arguments: { type: "object", properties: {}, required: [], additionalProperties: false },
-    result: { type: "object", properties: {}, required: [], additionalProperties: false },
-    presentation: { label: actionId, help: actionId }
-  }));
-}
+import { renderPayload } from "../../installers/lib/render.mjs";
 
 function input(overrides = {}) {
   return {
@@ -81,14 +28,12 @@ function input(overrides = {}) {
       rules: [],
       roles: [],
       skills: [],
-      workflows: Object.values(actionWorkflows).filter((id, index, values) => values.indexOf(id) === index),
-      commands: commands(),
       evals: []
     },
     profile: { id: "portable" },
     surface: "claude",
     statuslineName: "Agent",
-    capabilityRecord: { surface: "claude", actionMappings: mappings() },
+    capabilityRecord: { surface: "claude" },
     ...overrides
   };
 }
@@ -104,7 +49,7 @@ function ownership(relativePath, content) {
   };
 }
 
-test("renderSurface returns a validated RenderResult for complete required mappings", () => {
+test("renderSurface returns a validated RenderResult for a complete core", () => {
   const result = renderSurface(input());
   assert.deepEqual(result.files, []);
   assert.deepEqual(result.registrations, []);
@@ -126,118 +71,11 @@ test("renderSurface requires a complete canonical global instructions object", (
   }
 });
 
-test("renderSurface rejects an empty core command list", () => {
-  const completeInput = input();
-  assert.throws(
-    () => renderSurface({ ...completeInput, core: { ...completeInput.core, commands: [] } }),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "missing-action")
-  );
-});
-
-test("renderSurface rejects an empty required mapping subset", () => {
-  assert.throws(
-    () => renderSurface(input({ capabilityRecord: { surface: "claude", actionMappings: mappings(), requiredMappings: [] } })),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "invalid-required-mappings")
-  );
-});
-
-test("renderSurface rejects a malformed required mapping declaration", () => {
-  assert.throws(
-    () => renderSurface(input({ capabilityRecord: { surface: "claude", actionMappings: mappings(), requiredMappings: null } })),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "invalid-required-mappings")
-  );
-});
-
-test("renderSurface reports omitted canonical mappings for an approved subset", () => {
-  const result = renderSurface(input({
-    capabilityRecord: {
-      surface: "claude",
-      actionMappings: mappings(),
-      requiredMappings: ["aaa:design"]
-    }
-  }));
-  assert.equal(result.diagnostics.length, actionIds.length - 1);
-  assert.ok(result.diagnostics.every((diagnostic) => diagnostic.code === "native-mapping-not-required"));
-  assert.ok(result.diagnostics.every((diagnostic) => diagnostic.sourcePath === null));
-});
-
-test("renderSurface rejects a missing required native mapping", () => {
-  const nativeMappings = mappings();
-  delete nativeMappings["aaa:review"];
-  assert.throws(
-    () => renderSurface(input({ capabilityRecord: { surface: "claude", actionMappings: nativeMappings } })),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "missing-native-mapping")
-  );
-});
-
-test("renderSurface rejects an unsupported required native mapping", () => {
-  const nativeMappings = mappings();
-  nativeMappings["aaa:audit"] = { required: true, supported: false, reason: "not documented" };
-  assert.throws(
-    () => renderSurface(input({ capabilityRecord: { surface: "claude", actionMappings: nativeMappings } })),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "unsupported-native-mapping")
-  );
-});
-
-test("native mapping validation accepts only complete explicit unsupported evidence when opted in", () => {
-  const records = explicitlyUnsupportedMappings();
-  const accepted = validateNativeMappings(
-    { surface: "agy", actionMappings: records },
-    actionIds,
-    { allowExplicitUnsupported: true }
-  );
-  assert.equal(accepted.valid, true);
-  assert.equal(accepted.errors.length, 0);
-  assert.equal(accepted.diagnostics.length, actionIds.length);
-  assert.ok(accepted.diagnostics.every((entry) => entry.code === "native-mapping-explicitly-unsupported"));
-
-  delete records["aaa:audit"].manualStep;
-  const incomplete = validateNativeMappings(
-    { surface: "agy", actionMappings: records },
-    actionIds,
-    { allowExplicitUnsupported: true }
-  );
-  assert.equal(incomplete.valid, false);
-  assert.ok(incomplete.errors.some((entry) => entry.code === "incomplete-unsupported-native-mapping"));
-});
-
-test("production rendering cannot bypass the public adapter contract", async () => {
-  await assert.rejects(
-    () => renderForSurface({
-      repositoryRoot: process.cwd(),
-      surface: "claude",
-      profile: "portable",
-      platform: "win32",
-      capabilityRecord: { actionMappings: {} }
-    }),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "missing-native-mapping")
-  );
-});
-
-test("renderSurface rejects an empty native target", () => {
-  const nativeMappings = mappings();
-  nativeMappings["aaa:design"] = { required: true, supported: true, native: "" };
-  assert.throws(
-    () => renderSurface(input({ capabilityRecord: { surface: "claude", actionMappings: nativeMappings } })),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "invalid-native-target")
-  );
-});
-
-test("renderSurface does not allow required canonical mappings to opt out", () => {
-  const nativeMappings = mappings();
-  nativeMappings["aaa:design"] = { required: false, supported: true, native: "" };
-  assert.throws(
-    () => renderSurface(input({ capabilityRecord: { surface: "claude", actionMappings: nativeMappings } })),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "invalid-native-target")
-  );
-});
-
 test("renderSurface validates the synchronous adapter result", () => {
   const content = bytes("rendered\n");
   const result = renderSurface(input({
     capabilityRecord: {
       surface: "claude",
-      actionMappings: mappings(),
       render: () => ({
         files: [{ relativePath: "native/output.txt", content, mode: null }],
         registrations: [],
@@ -317,7 +155,6 @@ test("renderSurface produces byte-identical complete outputs for identical input
   const completeInput = input({
     capabilityRecord: {
       surface: "claude",
-      actionMappings: mappings(),
       renderResult: {
         files: [{ relativePath: "native/output.txt", content, mode: null }],
         registrations: [{ id: "native" }],
@@ -338,26 +175,21 @@ test("renderSurface produces byte-identical complete outputs for identical input
 });
 
 test("renderPayload dispatches selected surfaces in canonical order", async () => {
-  const results = await renderPayload({ surfaces: ["agy", "claude", "codex", "antigravity-2"], profile: "portable", platform: "win32" });
-  assert.deepEqual(results.map((result) => result.registrations.find((entry) => entry.kind === "profile-translation")?.surface), ["claude", "codex", "antigravity-2", "agy"]);
+  const results = await renderPayload({ surfaces: ["codex", "claude"], profile: "portable", platform: "win32" });
+  assert.deepEqual(results.map((result) => result.registrations.find((entry) => entry.kind === "profile-translation")?.surface), ["claude", "codex"]);
 });
 
 test("production rendering validates both profiles and all surfaces through the public seam", async () => {
   for (const profile of ["portable", "template"]) {
-    const results = await renderPayload({ surfaces: ["agy", "claude", "codex", "antigravity-2"], profile, platform: "win32" });
-    assert.equal(results.length, 4);
+    const results = await renderPayload({ surfaces: ["claude", "codex"], profile, platform: "win32" });
+    assert.equal(results.length, 2);
     for (const result of results) assert.equal(validateRenderResult(result).valid, true);
-    for (const surface of ["antigravity-2", "agy"]) {
-      const result = results.find((entry) => entry.registrations.some((registration) => registration.surface === surface || registration.surface === `${surface}-desktop`));
-      assert.ok(result);
-      assert.equal(result.diagnostics.filter((entry) => entry.code === "native-mapping-explicitly-unsupported").length, actionIds.length);
-    }
   }
 });
 
 test("all surface ownership arrays are complete, sorted, unique, and hash-correct for both profiles", async () => {
   for (const profile of ["portable", "template"]) {
-    const results = await renderPayload({ surfaces: ["agy", "claude", "codex", "antigravity-2"], profile, platform: "win32" });
+    const results = await renderPayload({ surfaces: ["claude", "codex"], profile, platform: "win32" });
     for (const result of results) {
       assert.deepEqual(result.ownership.map((entry) => entry.relativePath), result.files.map((file) => file.relativePath), `${result.registrations[0]?.surface}/${profile} ownership order drift`);
       assert.equal(new Set(result.ownership.map((entry) => entry.relativePath)).size, result.ownership.length, `${result.registrations[0]?.surface}/${profile} ownership paths are not unique`);

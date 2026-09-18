@@ -5,7 +5,7 @@ import { dirname, resolve } from "node:path";
 import test from "node:test";
 
 const root = process.cwd();
-const entrypoints = ["AGENTS.md", "CLAUDE.md", ".agents/rules/all-about-agents.md"];
+const entrypoints = ["AGENTS.md", "CLAUDE.md"];
 const allDocs = ["CONTRIBUTING.md", ...entrypoints];
 const requiredHeadings = [
   "Before You Start",

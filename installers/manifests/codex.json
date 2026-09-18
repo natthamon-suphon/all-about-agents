@@ -7,14 +7,33 @@
   "pluginManifest": ".codex-plugin/plugin.json",
   "pluginRegistration": {
     "marketplace": "all-about-agents",
-    "marketplaceArgs": ["plugin", "marketplace", "add", "PACKAGE_ROOT", "--json"],
-    "installArgs": ["plugin", "add", "all-about-agents@all-about-agents", "--json"],
-    "discoveryArgs": ["plugin", "list", "--available", "--json"]
+    "marketplaceArgs": [
+      "plugin",
+      "marketplace",
+      "add",
+      "PACKAGE_ROOT",
+      "--json"
+    ],
+    "installArgs": [
+      "plugin",
+      "add",
+      "all-about-agents@all-about-agents",
+      "--json"
+    ],
+    "discoveryArgs": [
+      "plugin",
+      "list",
+      "--available",
+      "--json"
+    ]
   },
   "configRoot": {
     "environment": "CODEX_HOME",
     "fallback": "~/.codex",
-    "sharedBy": ["codex-cli", "codex-desktop"]
+    "sharedBy": [
+      "codex-cli",
+      "codex-desktop"
+    ]
   },
   "components": {
     "pluginManifest": ".codex-plugin/plugin.json",
@@ -30,7 +49,10 @@
   },
   "profileContract": {
     "source": "profiles/{profile}/profile.json",
-    "modelPolicyRefs": ["surface-default", "approved-sol-terra"]
+    "modelPolicyRefs": [
+      "surface-default",
+      "approved-sol-terra"
+    ]
   },
   "profiles": {
     "portable": {
@@ -54,32 +76,54 @@
     }
   },
   "semanticCapabilities": {
-    "repository-read": ["AGENTS.md"],
-    "repository-write": ["AGENTS.md"],
-    "web-primary-sources": ["web_search"],
-    "isolated-write": ["workspace-write"],
-    "command-execution": ["shell"],
-    "filesystem-read": ["AGENTS.md"],
-    "filesystem-write": ["workspace-write"],
-    "git-read": ["git"],
-    "git-write": ["git"],
-    "test-execution": ["shell"],
-    "external-research": ["web_search"],
-    "evaluation": ["shell"],
-    "role-dispatch": ["agents"],
-    "workflow-state": ["AGENTS.md"],
-    "schema-validation": ["shell"],
-    "native-rendering": ["plugin"]
-  },
-  "actions": {
-    "aaa:design": "AGENTS.md",
-    "aaa:build": "AGENTS.md",
-    "aaa:fix": "AGENTS.md",
-    "aaa:review": "AGENTS.md",
-    "aaa:audit": "AGENTS.md",
-    "aaa:improve-skill": "AGENTS.md",
-    "aaa:resume": "AGENTS.md",
-    "aaa:verify": "AGENTS.md"
+    "repository-read": [
+      "AGENTS.md"
+    ],
+    "repository-write": [
+      "AGENTS.md"
+    ],
+    "web-primary-sources": [
+      "web_search"
+    ],
+    "isolated-write": [
+      "workspace-write"
+    ],
+    "command-execution": [
+      "shell"
+    ],
+    "filesystem-read": [
+      "AGENTS.md"
+    ],
+    "filesystem-write": [
+      "workspace-write"
+    ],
+    "git-read": [
+      "git"
+    ],
+    "git-write": [
+      "git"
+    ],
+    "test-execution": [
+      "shell"
+    ],
+    "external-research": [
+      "web_search"
+    ],
+    "evaluation": [
+      "shell"
+    ],
+    "role-dispatch": [
+      "agents"
+    ],
+    "schema-validation": [
+      "shell"
+    ],
+    "native-rendering": [
+      "plugin"
+    ],
+    "workflow-state": [
+      "AGENTS.md"
+    ]
   },
   "ownedPaths": [
     ".agents/plugins/marketplace.json",
@@ -107,7 +151,12 @@
   },
   "rootInstructionContext": "AGENTS.md is emitted with the canonical global body first, followed by Codex rules, presentation labels, and action-to-workflow mappings; project AGENTS.md remains the more specific layer",
   "nativeValidation": {
-    "command": ["codex", "doctor", "--json", "--no-color"],
+    "command": [
+      "codex",
+      "doctor",
+      "--json",
+      "--no-color"
+    ],
     "requiredWhenAvailable": true
   },
   "capabilityEvidence": {

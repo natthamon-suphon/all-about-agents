@@ -1,7 +1,7 @@
 # Session prompt for the same quality
 
-Copy the prompt below into a new Claude Code, Codex, Antigravity Desktop, or
-`agy` session. Replace the values inside angle brackets.
+Copy the prompt below into a new Claude Code or Codex session. Replace the
+values inside angle brackets.
 
 ````text
 Work in this repository: <FULL_REPOSITORY_PATH>
@@ -39,8 +39,8 @@ The receiving-machine order is also written as:
 pull -> validate -> render -> dry-run -> apply package -> dry-run registration -> explicit registration apply -> restart -> verify loaded instructions
 ```
 
-Use the registered emoji after each visible skill, agent, subagent, command,
-or workflow name. Add a short reason and a 2-to-7 item checklist. Update the
+Use the registered emoji after each visible skill, agent, subagent, or hook
+name. Add a short reason and a 2-to-7 item checklist. Update the
 checklist only when a state changes. This prompt improves model guidance; it
 does not guarantee a vendor UI presentation.
 

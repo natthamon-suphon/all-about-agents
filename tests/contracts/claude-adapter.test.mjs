@@ -13,8 +13,7 @@ import {
   renderClaude,
   resolveClaudeConfigDir
 } from "../../adapters/claude/adapter.mjs";
-import { AdapterContractError } from "../../adapters/shared/adapter-contract.mjs";
-import { renderClaudeGlobalInstructions, renderCodexGlobalInstructions, renderGeminiGlobalInstructions, renderSharedGlobalInstructions } from "../../adapters/shared/global-instructions.mjs";
+import { renderClaudeGlobalInstructions, renderCodexGlobalInstructions, renderSharedGlobalInstructions } from "../../adapters/shared/global-instructions.mjs";
 
 const requiredOutputs = [
   "adapters/claude/adapter.mjs",
@@ -41,27 +40,24 @@ test("Claude template documentation matches the deferred current core output", a
 const core = await loadCore(process.cwd());
 
 function codexBody() {
-  return renderCodexGlobalInstructions(core, { canonicalRules: core.rules.slice(0, 1), commands: core.commands.slice(0, 1) });
+  return renderCodexGlobalInstructions(core, { canonicalRules: core.rules.slice(0, 1) });
 }
 
 test("shared global renderers use the loaded canonical body and normalize only line endings", () => {
   assert.equal(renderSharedGlobalInstructions(core), core.globalInstructions.content);
-  assert.equal(renderGeminiGlobalInstructions(core), core.globalInstructions.content);
   const codex = codexBody();
   assert.match(codex, /^# Global Operating Rules/mu);
   assert.match(codex, /## Canonical repository rules/u);
-  assert.match(codex, /## Canonical actions/u);
   assert.equal((codex.match(/# Global Operating Rules/g) || []).length, 1);
 });
 
 test("egroup house rules reach Claude Code only while RTK house rules reach every surface", () => {
   const claude = renderClaudeGlobalInstructions(core);
-  const gemini = renderGeminiGlobalInstructions(core);
   const codex = codexBody();
   assert.match(claude, /^## egroup house rules \(coding-guidelines\)$/mu);
   assert.match(claude, /^@~\/Workspaces\/coding-guidelines\/Rules\/RULES\.md$/mu);
-  for (const rendered of [gemini, codex]) assert.doesNotMatch(rendered, /egroup house rules/u);
-  for (const rendered of [claude, gemini, codex]) assert.match(rendered, /^## RTK house rules \(rust-token-killer\)$/mu);
+  assert.doesNotMatch(codex, /egroup house rules/u);
+  for (const rendered of [claude, codex]) assert.match(rendered, /^## RTK house rules \(rust-token-killer\)$/mu);
   assert.ok(claude.startsWith(renderSharedGlobalInstructions(core).trimEnd()));
 });
 
@@ -123,7 +119,6 @@ test("portable Claude render contains every native component and all canonical s
   assert.ok(files.has("rules/authority-and-scope.md"));
   assert.ok(files.has("hooks/hooks.json"));
   assert.ok(files.has("statusline/statusline.mjs"));
-  assert.ok(files.has("commands/design.md"));
   for (const role of ["researcher", "investigator", "architect", "implementer", "verifier", "reviewer", "security-reviewer"]) {
     assert.ok(files.has(`agents/${role}.md`), `missing native agent ${role}`);
   }
@@ -144,8 +139,6 @@ test("Claude render emits the canonical global file and one presentation contrac
   const presentationRule = files.get("rules/presentation.md");
   assert.match(presentationRule, /brainstorming 🧠/u);
   assert.match(presentationRule, /architect 🏛️/u);
-  assert.match(presentationRule, /aaa:build 🏗️/u);
-  assert.match(presentationRule, /implement-change 🛠️/u);
   assert.equal((presentationRule.match(/brainstorming 🧠/gu) || []).length, 1);
 
   const skill = files.get("skills/brainstorming/SKILL.md");
@@ -157,11 +150,6 @@ test("Claude render emits the canonical global file and one presentation contrac
   assert.match(agent, /^name: architect$/mu);
   assert.match(agent, /Invoking agent \*\*architect 🏛️\*\*/u);
   assert.match(agent, /Checklist/u);
-
-  const command = files.get("commands/build.md");
-  assert.match(command, /aaa:build 🏗️/u);
-  assert.match(command, /implement-change 🛠️/u);
-  assert.equal((command.match(/^Checklist$/gmu) || []).length, 1);
 });
 
 test("Claude plugin relies on conventional hook discovery without duplicate manifest registration", () => {
@@ -475,18 +463,6 @@ test("Claude adapter satisfies the shared renderSurface action contract", () => 
   assert.ok(result.registrations.some((entry) => entry.kind === "plugin-registration"));
 });
 
-test("Claude adapter rejects an incomplete native action mapping", () => {
-  assert.throws(
-    () => renderSurface({
-      core,
-      profile: { id: "portable" },
-      statuslineName: "",
-      capabilityRecord: { actionMappings: {} }
-    }),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "missing-native-mapping")
-  );
-});
-
 test("Claude adapter rejects unsafe statusline display names", () => {
   assert.throws(() => resultFor("portable", { statuslineName: `${"a".repeat(65)}` }), /64 Unicode code points/u);
   assert.throws(() => resultFor("portable", { statuslineName: "ok\u001b[31m" }), /control or ANSI/u);
@@ -501,7 +477,6 @@ test("Claude ownership manifest documents roots, mappings, and native validation
   assert.deepEqual(manifest.configRoot.sharedBy, ["claude-code-cli", "claude-desktop-local-code"]);
   assert.deepEqual(manifest.semanticCapabilities["web-primary-sources"], ["WebSearch", "WebFetch"]);
   assert.deepEqual([...manifest.readOnlyRoles.roles].sort(), ["architect", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]);
-  assert.deepEqual(manifest.actions["aaa:design"], "commands/design.md");
   assert.deepEqual(manifest.nativeValidation.command, ["claude", "plugin", "validate", ".", "--strict"]);
   assert.deepEqual(manifest.pluginRegistration.marketplaceCommand, ["claude", "plugin", "marketplace", "add", "."]);
   assert.deepEqual(manifest.pluginRegistration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents"]);

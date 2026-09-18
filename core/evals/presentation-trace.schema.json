@@ -3,9 +3,17 @@
   "title": "Structured presentation trace",
   "type": "object",
   "additionalProperties": false,
-  "required": ["invocationId", "events"],
+  "required": [
+    "invocationId",
+    "events"
+  ],
   "properties": {
-    "invocationId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$", "minLength": 1, "maxLength": 128 },
+    "invocationId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$",
+      "minLength": 1,
+      "maxLength": 128
+    },
     "events": {
       "type": "array",
       "minItems": 2,
@@ -15,24 +23,67 @@
           {
             "type": "object",
             "additionalProperties": false,
-            "required": ["type", "kind", "id", "label", "reason"],
+            "required": [
+              "type",
+              "kind",
+              "id",
+              "label",
+              "reason"
+            ],
             "properties": {
-              "type": { "const": "announcement" },
-              "kind": { "enum": ["skill", "role", "subagent", "command", "workflow", "hook", "profile"] },
-              "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$", "minLength": 1, "maxLength": 128 },
-              "label": { "type": "string", "minLength": 1, "maxLength": 160 },
-              "reason": { "type": "string", "minLength": 1, "maxLength": 160 },
-              "workflowId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$", "minLength": 1, "maxLength": 128 }
+              "type": {
+                "const": "announcement"
+              },
+              "kind": {
+                "enum": [
+                  "skill",
+                  "role",
+                  "subagent",
+                  "hook",
+                  "profile"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              }
             }
           },
           {
             "type": "object",
             "additionalProperties": false,
-            "required": ["type", "revision", "owner", "items"],
+            "required": [
+              "type",
+              "revision",
+              "owner",
+              "items"
+            ],
             "properties": {
-              "type": { "const": "checklist" },
-              "revision": { "type": "integer", "minimum": 1 },
-              "owner": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$", "minLength": 1, "maxLength": 128 },
+              "type": {
+                "const": "checklist"
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "owner": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$",
+                "minLength": 1,
+                "maxLength": 128
+              },
               "items": {
                 "type": "array",
                 "minItems": 2,
@@ -40,13 +91,45 @@
                 "items": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["id", "text", "status"],
+                  "required": [
+                    "id",
+                    "text",
+                    "status"
+                  ],
                   "properties": {
-                    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$", "minLength": 1, "maxLength": 128 },
-                    "text": { "type": "string", "minLength": 1, "maxLength": 240 },
-                    "status": { "enum": ["pending", "in-progress", "completed", "blocked", "failed", "not-run", "skipped"] },
-                    "owner": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$", "minLength": 1, "maxLength": 128 },
-                    "reason": { "type": "string", "minLength": 1, "maxLength": 160 }
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "text": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 240
+                    },
+                    "status": {
+                      "enum": [
+                        "pending",
+                        "in-progress",
+                        "completed",
+                        "blocked",
+                        "failed",
+                        "not-run",
+                        "skipped"
+                      ]
+                    },
+                    "owner": {
+                      "type": "string",
+                      "pattern": "^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
                   }
                 }
               }
@@ -55,9 +138,13 @@
           {
             "type": "object",
             "additionalProperties": false,
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
-              "type": { "const": "completion" }
+              "type": {
+                "const": "completion"
+              }
             }
           }
         ]

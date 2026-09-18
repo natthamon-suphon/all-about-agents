@@ -55,24 +55,6 @@ const expected = {
     verifier: "✅"
   },
   subagents: { default: "🤖" },
-  commands: {
-    "aaa:design": "🎨",
-    "aaa:build": "🏗️",
-    "aaa:fix": "🔧",
-    "aaa:review": "👀",
-    "aaa:audit": "🔍",
-    "aaa:improve-skill": "✨",
-    "aaa:resume": "▶️",
-    "aaa:verify": "✅"
-  },
-  workflows: {
-    "design-change": "🎨",
-    "fix-bug": "🐛",
-    "implement-change": "🛠️",
-    "improve-skill": "✨",
-    "release-qualification": "🚦",
-    "review-and-audit": "🔍"
-  },
   hooks: {
     bootstrap: "🚀",
     "activity-audit": "🧾",
@@ -126,7 +108,7 @@ test("presentation files exist, have the exact approved counts, and validate", a
   const progressContract = JSON.parse(await readFile(resolve(root, "core/presentation/progress-contract.json"), "utf8"));
   assert.deepEqual(emojiRegistry, { schemaVersion: 1, ...registryFromExpected() });
   assert.deepEqual(Object.fromEntries(Object.entries(emojiRegistry).filter(([key]) => key !== "schemaVersion").map(([key, values]) => [key, Object.keys(values).length])), {
-    skills: 28, roles: 7, subagents: 1, commands: 8, workflows: 6, hooks: 3, profiles: 2
+    skills: 28, roles: 7, subagents: 1, hooks: 3, profiles: 2
   });
   assert.deepEqual(validatePresentationContract({ emojiRegistry, progressContract, canonical: canonicalFromExpected() }), { valid: true, errors: [] });
   const schema = JSON.parse(await readFile(resolve(root, "core/schemas/presentation.schema.json"), "utf8"));
@@ -201,17 +183,16 @@ test("display labels fail closed when an approved entity mapping is changed", ()
   assert.throws(() => displayLabel(presentation, "skill", "brainstorming"), /approved|mapping/iu);
 });
 
-test("invocation guidance includes one announcement, bounded checklist, state transitions, terminal completion, and de-duplication", () => {
+test("invocation guidance includes one announcement, bounded checklist, state transitions, and terminal completion", () => {
   const progressContract = validProgressContract();
   const presentation = { emojiRegistry: { schemaVersion: 1, ...registryFromExpected() }, progressContract };
   const guidance = renderInvocationGuidance(presentation, {
-    kind: "command",
-    id: "aaa:verify",
-    workflowId: "release-qualification",
+    kind: "skill",
+    id: "verification-before-completion",
     task: "Verify the release evidence",
     reason: "Verify the release evidence before handoff."
   });
-  assert.match(guidance, /Running command \*\*aaa:verify ✅\*\*/u);
+  assert.match(guidance, /Using skill \*\*verification-before-completion ✅\*\*/u);
   assert.match(guidance, /Verify the release evidence before handoff\./u);
   assert.match(guidance, /one short, task-specific reason/iu);
   assert.match(guidance, /Checklist/u);
@@ -219,13 +200,11 @@ test("invocation guidance includes one announcement, bounded checklist, state tr
   assert.match(guidance, /state change|only when .*change/iu);
   assert.match(guidance, /terminal|completed/iu);
   assert.match(guidance, /parallel owner/iu);
-  assert.match(guidance, /workflow-owned|duplicate checklist|second checklist/iu);
   assert.equal((guidance.match(/^Checklist$/gmu) ?? []).length, 1);
   assert.match(guidance, /⬜/u);
   assert.match(guidance, /task-specific|derive .*steps/iu);
   assert.doesNotMatch(guidance, /Understand the requirement|Complete the scoped work|Verify the result/u);
-  assert.match(guidance, /aaa:verify ✅/u);
-  assert.match(guidance, /release-qualification 🚦/u);
+  assert.match(guidance, /verification-before-completion ✅/u);
 });
 
 test("invocation guidance rejects a changed checklist marker", () => {
@@ -265,5 +244,4 @@ test("loadCore exposes the shared presentation contract", async () => {
   assert.equal(core.presentation.emojiRegistry.schemaVersion, 1);
   assert.equal(Object.keys(core.presentation.emojiRegistry.skills).length, 28);
   assert.equal(Object.keys(core.presentation.emojiRegistry.roles).length, 7);
-  assert.equal(Object.keys(core.presentation.emojiRegistry.commands).length, 8);
 });

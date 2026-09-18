@@ -8,8 +8,6 @@ import test from "node:test";
 import { loadCore, resolveWorkspaceScopePath, VENDOR_NATIVE_TOOL_NAMES } from "../../installers/lib/load-core.mjs";
 import { CLAUDE_SEMANTIC_MAPPINGS, renderClaude } from "../../adapters/claude/adapter.mjs";
 import { parseCodexToml, renderCodex } from "../../adapters/codex/adapter.mjs";
-import { ANTIGRAVITY_SEMANTIC_MAPPINGS, renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
-import { AGY_SEMANTIC_MAPPINGS, renderAgy } from "../../adapters/agy/adapter.mjs";
 import { CANONICAL_ROLE_CAPABILITIES } from "../../core/roles/contract.mjs";
 
 const ROLE_IDS = [
@@ -25,9 +23,7 @@ const ROLE_IDS = [
 const ROLE_ROOT = resolve(process.cwd(), "core/roles");
 const EMITTED_NATIVE_TOOL_VOCABULARY = Object.freeze({
   claude: new Set(Object.values(CLAUDE_SEMANTIC_MAPPINGS).flat()),
-  codex: new Set(["read-only", "workspace-write", "danger-full-access"]),
-  "antigravity-2": new Set(Object.values(ANTIGRAVITY_SEMANTIC_MAPPINGS).flat()),
-  agy: new Set(Object.values(AGY_SEMANTIC_MAPPINGS).flat())
+  codex: new Set(["read-only", "workspace-write", "danger-full-access"])
 });
 
 async function mutateRole(root, roleId, mutate) {
@@ -81,11 +77,7 @@ function textFiles(result) {
 function roleFilePath(surface, roleId) {
   return surface === "claude"
     ? `agents/${roleId}.md`
-    : surface === "codex"
-      ? `.codex/agents/${roleId}.toml`
-      : surface === "antigravity-2"
-        ? `.agents/plugins/all-about-agents/agents/${roleId}.md`
-        : `agents/${roleId}/agent.md`;
+    : `.codex/agents/${roleId}.toml`;
 }
 
 function parseNativeArtifact(surface, content) {
@@ -93,12 +85,6 @@ function parseNativeArtifact(surface, content) {
     const tools = content.match(/^tools:\n([\s\S]*?)(?:^disallowedTools:|^---$)/mu)?.[1] || "";
     const parsedTools = [...tools.matchAll(/(?:^|\n)[ \t]*- ([A-Za-z][A-Za-z0-9]*)\b/gu)].map((match) => match[1]);
     return { tools: parsedTools, writeTools: parsedTools.filter((tool) => ["Bash", "Write", "Edit"].includes(tool)), dispatchTools: parsedTools.filter((tool) => tool === "Agent") };
-  }
-  if (surface === "antigravity-2" || surface === "agy") {
-    const toolsLine = content.match(/^tools:\s*\[(.*?)\]$/mu)?.[1] || "";
-    const tools = [...toolsLine.matchAll(/"([^"]+)"/gu)].map((match) => match[1]);
-    const commandExecution = /^commandExecutionPolicy:\s*(\w+)$/mu.exec(content)?.[1] || "off";
-    return { tools, writeTools: tools.filter((tool) => ["write_to_file", "replace_file_content", "multi_replace_file_content"].includes(tool)), dispatchTools: tools.filter((tool) => ["invoke_subagent", "define_subagent", "manage_subagents"].includes(tool)), commandExecution };
   }
   const parsed = parseCodexToml(content);
   return { tools: parsed.sandbox_mode ? [parsed.sandbox_mode] : [], writeTools: parsed.sandbox_mode === "workspace-write" || parsed.sandbox_mode === "danger-full-access" ? [parsed.sandbox_mode] : [], dispatchTools: [] };
@@ -122,9 +108,7 @@ test("rendered role artifacts drive the write trap, including a negative mutable
   const core = await loadCore(process.cwd());
   const renders = [
     ["claude", renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
-    ["agy", renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   const temp = await mkdtemp(resolve(tmpdir(), "aaa-t012-artifact-executor-"));
   const writeTrap = {
@@ -158,7 +142,7 @@ test("rendered role artifacts drive the write trap, including a negative mutable
   assert.ok(await access(writeTrap.calls[0].target).then(() => true).catch(() => false), "artifact executor must attempt a real temporary filesystem write");
   const negativeTrap = { calls: [], writeFile(path, operation) { this.calls.push({ path, operation }); throw new Error("write-trapped"); }, invokeSubagent(path, operation) { this.calls.push({ path, operation }); throw new Error("dispatch-trapped"); } };
   assert.throws(() => executeNativeArtifact("claude", "---\ntools:\n  - Write\n---\n", negativeTrap), /write-trapped/u);
-  assert.throws(() => executeNativeArtifact("antigravity-2", "---\ntools: [\"invoke_subagent\"]\n---\n", negativeTrap), /dispatch-trapped/u);
+  assert.throws(() => executeNativeArtifact("claude", "---\ntools:\n  - Agent\n---\n", negativeTrap), /dispatch-trapped/u);
   assert.equal(negativeTrap.calls.length, 2, "negative controls must prove write and dispatch traps are live");
   } finally {
     await rm(temp, { recursive: true, force: true });
@@ -255,7 +239,7 @@ test("role loading rejects vendor-native mutable instructions in an actual read-
   }
 });
 
-test("read-only prompt validation covers Claude and Antigravity mutable token forms", async () => {
+test("read-only prompt validation covers Claude and legacy vendor mutable token forms", async () => {
   for (const [index, prompt] of [
     "Use bash to inspect the repository.\n## Evidence contract\nreport only.\n",
     "Claude Edit and Write tools are forbidden here.\n## Evidence contract\nreport only.\n",
@@ -456,20 +440,6 @@ test("role loading rejects duplicate prompt bodies", async () => {
   }
 });
 
-test("legacy generalist is quarantined from canonical role routing", async () => {
-  const routing = JSON.parse(await readFile(resolve(process.cwd(), "tests/behavioral/roles/routing.json"), "utf8"));
-  assert.ok(routing.quarantinedLegacyRoles.includes("generalist"));
-  assert.equal(routing.quarantinedLegacyRoles.includes("implementer"), false);
-  assert.ok(routing.scenarios.filter((scenario) => scenario.critical === true).length >= 5);
-  for (const scenario of routing.scenarios.filter((entry) => entry.critical === true)) {
-    assert.equal(scenario.cases.length, 5);
-    assert.equal(scenario.cases.filter((entry) => entry.expectedRole).length, 5);
-  }
-  const edgeCases = routing.scenarios.find((scenario) => scenario.id === "routing-edge-cases");
-  assert.ok(edgeCases.cases.some((entry) => entry.expectedStatus === "ambiguous"));
-  assert.ok(edgeCases.cases.some((entry) => entry.expectedStatus === "no-route" && entry.expectedRole === null));
-});
-
 test("native mutation policy is derived from implementer metadata rather than a role-name default", async () => {
   const core = await loadCore(process.cwd());
   const minimalImplementer = cloneCoreWithRole(core, "implementer", (role) => ({
@@ -477,12 +447,8 @@ test("native mutation policy is derived from implementer metadata rather than a 
     mutationScope: { paths: ["workspace/docs/**"], operations: ["modify"] }
   }));
   const claude = textFiles(renderClaude({ core: minimalImplementer, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })).get("agents/implementer.md");
-  const antigravity = textFiles(renderAntigravity({ core: minimalImplementer, profile: "portable", statuslineName: "roles" })).get(".agents/plugins/all-about-agents/agents/implementer.md");
   assert.match(claude, /(?:^|\n)\s+- (?:Write|Edit)\b/u);
   assert.match(claude, /(?:^|\n)\s+- Bash\b/u);
-  assert.match(antigravity, /(?:write_to_file|replace_file_content)/u);
-  assert.match(antigravity, /(?:^|\n)tools: \[[^\]]*run_command/u);
-  assert.doesNotMatch(antigravity, /(?:invoke_subagent)/u);
 });
 
 test("Codex registers every role with a role-specific effective sandbox config", async () => {
@@ -531,9 +497,7 @@ test("renderers fail closed for an unknown role instead of making it editable", 
   const core = { ...base, roles: [role] };
   const renders = [
     ["claude", () => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", () => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", () => renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
-    ["agy", () => renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", () => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   for (const [surface, render] of renders) assert.throws(render, (error) => error.name === "CanonicalRoleContractError" && error.errors.some((entry) => entry.code === "canonical-role"), surface);
 });
@@ -543,9 +507,7 @@ test("all renderers reject an incomplete canonical role collection deterministic
   const core = { ...base, roles: [base.roles[0]] };
   const renderers = [
     ["claude", () => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", () => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", () => renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
-    ["agy", () => renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", () => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   const expectedMissing = ROLE_IDS.filter((roleId) => roleId !== base.roles[0].id).sort();
   for (const [surface, render] of renderers) {
@@ -596,9 +558,7 @@ test("all renderers reject forged canonical mutation semantics at the native bou
   ];
   const renderers = [
     ["claude", (core) => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", (core) => renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
-    ["agy", (core) => renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   for (const [caseName, core, code] of cases) {
     for (const [surface, render] of renderers) {
@@ -617,9 +577,7 @@ test("all renderers reject malformed canonical prompt and evidence contracts bef
   }));
   const renderers = [
     ["claude", (core) => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", (core) => renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
-    ["agy", (core) => renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   for (const [surface, render] of renderers) {
     assert.throws(() => render(malformed), (error) => error.name === "CanonicalRoleContractError" && error.errors.some((entry) => ["prompt", "evidence-contract", "output-contract"].includes(entry.code)), surface);
@@ -630,9 +588,7 @@ test("native boundary rejects malformed prompt documents and explicit native too
   const base = await loadCore(process.cwd());
   const renderers = [
     ["claude", (core) => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", (core) => renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
-    ["agy", (core) => renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   for (const prompt of [
     "---\nname: reviewer\n---\n## Evidence contract\nreport only.\n",
@@ -694,9 +650,7 @@ test("all renderers reject a forged vendor-native prompt before artifact creatio
   }));
   const renderers = [
     ["claude", (core) => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", (core) => renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
-    ["agy", (core) => renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   for (const [surface, render] of renderers) {
     assert.throws(() => render(forgedPrompt), (error) => error.name === "CanonicalRoleContractError" && error.errors.some((entry) => entry.code === "prompt-safety"), surface);
@@ -713,9 +667,7 @@ test("all renderers reject canonical roles missing portable input and routing co
   });
   const renderers = [
     ["claude", (core) => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", (core) => renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
-    ["agy", (core) => renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   for (const [surface, render] of renderers) {
     assert.throws(() => render(malformed), (error) => error.name === "CanonicalRoleContractError" && error.errors.some((entry) => ["input-contract", "routing-keywords"].includes(entry.code)), surface);
@@ -726,9 +678,7 @@ test("native adapters disclose only narrower implementer scopes instead of claim
   const core = await loadCore(process.cwd());
   const canonicalRenders = [
     ["claude", renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
-    ["agy", renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   for (const [surface, result] of canonicalRenders) {
     assert.equal(result.diagnostics.some((entry) => entry.code === "native-scope-not-enforced"), false, `${surface} must not warn when native workspace scope matches workspace/**`);
@@ -741,9 +691,7 @@ test("native adapters disclose only narrower implementer scopes instead of claim
   }));
   const narrowedRenders = [
     ["claude", renderClaude({ core: narrowedCore, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", renderCodex({ core: narrowedCore, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", renderAntigravity({ core: narrowedCore, profile: "portable", statuslineName: "roles" })],
-    ["agy", renderAgy({ core: narrowedCore, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", renderCodex({ core: narrowedCore, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   for (const [surface, result] of narrowedRenders) {
     const warning = result.diagnostics.find((entry) => entry.code === "native-scope-not-enforced");
@@ -758,9 +706,7 @@ test("native adapters report every suppressed or undocumented role capability", 
   const core = await loadCore(process.cwd());
   const renders = [
     ["claude", renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
-    ["agy", renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   for (const [surface, result] of renders) {
     const diagnostics = result.diagnostics.filter((entry) => entry.code === "role-capability-unavailable");
@@ -772,21 +718,7 @@ test("native adapters report every suppressed or undocumented role capability", 
     assert.ok(diagnostics.some((entry) => /Role verifier capability evaluation is unavailable/iu.test(entry.message)), `${surface} verifier evaluation omission must be explicit`);
     assert.ok(diagnostics.every((entry) => /manual|fail-closed/iu.test(entry.message)), `${surface} diagnostics need manual/fail-closed guidance`);
     assert.ok(diagnostics.every((entry) => /^core\/roles\/[a-z0-9-]+\/role\.json$/u.test(entry.sourcePath)), `${surface} diagnostics need an owning role source`);
-    if (surface === "agy") {
-      const implementer = core.roles.find((role) => role.id === "implementer");
-      const artifact = parseNativeArtifact(surface, textFiles(result).get(roleFilePath(surface, "implementer")));
-      for (const capability of implementer.capabilities) {
-        const mappedTools = AGY_SEMANTIC_MAPPINGS[capability] ?? [];
-        assert.ok(mappedTools.length > 0, `agy implementer capability ${capability} needs a documented mapping or diagnostic`);
-        assert.ok(mappedTools.some((tool) => artifact.tools.includes(tool)), `agy implementer capability ${capability} is silently omitted`);
-      }
-      assert.equal(diagnostics.some((entry) => /Role implementer capability repository-write is unavailable/iu.test(entry.message)), false, "agy must not call a documented write mapping unavailable");
-    }
-    const verifierPath = surface === "claude"
-      ? "agents/verifier.md"
-      : surface === "antigravity-2"
-        ? ".agents/plugins/all-about-agents/agents/verifier.md"
-        : "agents/verifier/agent.md";
+    const verifierPath = "agents/verifier.md";
     assert.match(new TextDecoder().decode(result.files.find((file) => file.relativePath === verifierPath).content), /Role verifier capability test-execution is unavailable/iu, `${surface} verifier guidance must disclose the suppressed capability`);
   }
 });
@@ -795,36 +727,26 @@ test("all native surfaces consume canonical role semantics with read-only safety
   const core = await loadCore(process.cwd());
   const renders = [
     ["claude", renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["antigravity-2", renderAntigravity({ core, profile: "portable", statuslineName: "roles" })],
-    ["agy", renderAgy({ core, profile: "portable", statuslineName: "roles", platform: "win32" })]
+    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
   for (const [surface, result] of renders) {
     const files = textFiles(result);
     for (const roleId of ROLE_IDS) {
-      const path = surface === "claude"
-        ? `agents/${roleId}.md`
-        : surface === "codex"
-          ? `.codex/agents/${roleId}.toml`
-          : surface === "antigravity-2"
-            ? `.agents/plugins/all-about-agents/agents/${roleId}.md`
-            : `agents/${roleId}/agent.md`;
+      const path = roleFilePath(surface, roleId);
       assert.ok(files.has(path), `${surface} missing ${roleId}`);
       const content = files.get(path);
       if (surface === "codex") assert.equal(parseCodexToml(content).name, roleId);
       else assert.match(content, new RegExp(`name: [\"']?${roleId}[\"']?`, "u"));
       if (surface === "claude") assert.doesNotMatch(content, /(?:sandbox_mode|commandExecutionPolicy|write_to_file)/u);
-      if (surface === "antigravity-2" || surface === "agy") assert.doesNotMatch(content, /(?:disallowedTools|sandbox_mode)/u);
       if (surface === "codex") assert.doesNotMatch(content, /(?:commandExecutionPolicy|write_to_file|replace_file_content)/u);
       if (roleId !== "implementer") {
         const toolDeclaration = surface === "claude"
           ? content.match(/^tools:\n([\s\S]*?)(?:^disallowedTools:|^---$)/mu)?.[1] || ""
           : content.match(/^(?:tools:|developer_instructions\s*=)[\s\S]*?(?:^---$|\n\n|$)/mu)?.[0] || content;
         assert.doesNotMatch(toolDeclaration, /(?:run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|define_subagent|manage_subagents|(?:^|\s)(?:Agent|Bash|Write|Edit)(?:\s|$))/u, `${surface}/${roleId} exposes a mutation, command, or dispatch tool`);
-        if (surface === "antigravity-2" || surface === "agy") assert.match(content, /^commandExecutionPolicy: off$/mu);
       }
     }
-    const implementer = files.get(surface === "claude" ? "agents/implementer.md" : surface === "codex" ? ".codex/agents/implementer.toml" : surface === "antigravity-2" ? ".agents/plugins/all-about-agents/agents/implementer.md" : "agents/implementer/agent.md");
+    const implementer = files.get(roleFilePath(surface, "implementer"));
     assert.match(implementer, /approved|scoped|workspace/u, `${surface} lost implementer scope semantics`);
   }
 });

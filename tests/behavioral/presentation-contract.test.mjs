@@ -78,16 +78,6 @@ test("one dynamic subagent invocation uses the registered default emoji", () => 
   assert.equal(result.summary.announcement.label, "worker-alpha 🤖");
 });
 
-test("a command starts one workflow-owned checklist without a duplicate workflow checklist", () => {
-  const result = assertScenario("command-workflow", true);
-  assert.equal(result.summary.announcement.workflowId, "design-change");
-  assert.equal(result.summary.checklistOwners[0], "workflow-design-change");
-  const duplicateStream = structuredClone(auditCase("command-workflow").trace);
-  duplicateStream.events[1].owner = "workflow-other";
-  const duplicateResult = auditPresentationTrace({ trace: duplicateStream });
-  assert.ok(duplicateResult.errors.some((error) => error.code === "command-checklist-owner"));
-});
-
 test("parallel work has one named owner for each in-progress item", () => {
   assertScenario("parallel-owners", true);
 });
@@ -186,10 +176,6 @@ test("trace auditing rejects C1 and Unicode format controls without copying them
   hostileHtmlField.events[0]["<style>"] = true;
   cases.push(hostileHtmlField);
 
-  const hostileWorkflow = structuredClone(auditCase("command-workflow").trace);
-  hostileWorkflow.events[0].workflowId = "design-change\u202e";
-  cases.push(hostileWorkflow);
-
   for (const trace of cases) {
     const result = auditPresentationTrace({ trace });
     assert.equal(result.valid, false);
@@ -240,10 +226,10 @@ test("emoji-before-name and unknown emoji labels are rejected", () => {
   assertScenario("emoji-order-and-unknown", false, 1);
 });
 
-test("all four surfaces use the same normative presentation clauses and native label placements", async () => {
+test("both surfaces use the same normative presentation clauses and native label placements", async () => {
   const core = await loadCore(process.cwd());
   const renders = new Map();
-  for (const surface of ["claude", "codex", "antigravity-2", "agy"]) {
+  for (const surface of ["claude", "codex"]) {
     const result = await renderForSurface({
       repositoryRoot: process.cwd(),
       core,
@@ -257,10 +243,8 @@ test("all four surfaces use the same normative presentation clauses and native l
   }
 
   const placements = {
-    claude: ["skills/brainstorming/SKILL.md", "agents/architect.md", "commands/design.md", "rules/presentation.md"],
-    codex: [".agents/skills/brainstorming/SKILL.md", ".codex/agents/architect.toml", "AGENTS.md"],
-    "antigravity-2": [".agents/plugins/all-about-agents/skills/brainstorming/SKILL.md", ".agents/plugins/all-about-agents/agents/architect.md", ".agents/plugins/all-about-agents/rules/AGENTS.md"],
-    agy: ["skills/brainstorming/SKILL.md", "agents/architect/agent.md", "rules/presentation.md"]
+    claude: ["skills/brainstorming/SKILL.md", "agents/architect.md", "rules/presentation.md"],
+    codex: [".agents/skills/brainstorming/SKILL.md", ".codex/agents/architect.toml", "AGENTS.md"]
   };
   const clauses = [
     "one short, task-specific reason",
@@ -272,7 +256,7 @@ test("all four surfaces use the same normative presentation clauses and native l
   for (const [surface, files] of renders) {
     const selectedText = placements[surface].map((path) => files.get(path) ?? "").join("\n");
     for (const clause of clauses) assert.match(selectedText, new RegExp(clause.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "iu"), `${surface}: ${clause}`);
-    for (const [kind, id] of [["skill", "brainstorming"], ["role", "architect"], ["command", "aaa:design"], ["workflow", "design-change"]]) {
+    for (const [kind, id] of [["skill", "brainstorming"], ["role", "architect"]]) {
       assert.match(selectedText, new RegExp(displayLabel(core.presentation, kind, id).replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"), `${surface}: exact ${kind}/${id}`);
     }
   }
@@ -283,7 +267,6 @@ test("scenario fixture names every required presentation behavior family", () =>
     "one-skill",
     "one-role",
     "one-subagent",
-    "command-workflow",
     "parallel-owners",
     "exceptional-terminal-reasons",
     "resumed-work",

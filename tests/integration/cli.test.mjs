@@ -67,9 +67,6 @@ test("register binds real single-surface and namespaced multi-surface packages t
     assert.equal(singleInstall.code, 0, singleInstall.stderr);
     const productRoot = resolve(root, "product");
     await mkdir(productRoot, { recursive: true });
-    const agyInstructionRoot = resolve(root, "gemini");
-    const agyProductRoot = resolve(agyInstructionRoot, "antigravity-cli");
-    await mkdir(agyProductRoot, { recursive: true });
     const singleRegister = await capture(["register", "--surface", "claude", "--profile", "template", "--package-root", singlePackage, "--format", "json"], { productRoot });
     assert.equal(singleRegister.code, 0, singleRegister.stderr);
     assert.equal(jsonOutput(singleRegister).mode, "dry-run");
@@ -78,22 +75,11 @@ test("register binds real single-surface and namespaced multi-surface packages t
     const aggregateRoot = resolve(root, "aggregate");
     const aggregateInstall = await capture(["install", "--surface", "all", "--profile", "template", "--statusline-name", "State binding", "--destination-root", aggregateRoot, "--apply", "--format", "json"]);
     assert.equal(aggregateInstall.code, 0, aggregateInstall.stderr);
-    for (const surface of ["claude", "codex", "agy", "antigravity-2"]) {
-      const runtime = surface === "antigravity-2"
-        ? { productRoot: null, instructionRoot: null }
-        : surface === "agy"
-          ? { productRoot: agyProductRoot, instructionRoot: agyInstructionRoot }
-          : { productRoot };
-      const result = await capture(["register", "--surface", surface, "--profile", "template", "--package-root", resolve(aggregateRoot, surface), "--format", "json"], runtime);
+    for (const surface of ["claude", "codex"]) {
+      const result = await capture(["register", "--surface", surface, "--profile", "template", "--package-root", resolve(aggregateRoot, surface), "--format", "json"], { productRoot });
       assert.equal(result.code, 0, `${surface}: ${result.stderr}`);
       const report = jsonOutput(result);
       assert.equal(report.status, "dry-run");
-      if (surface === "agy") {
-        assert.equal(report.productRoot, "<PRODUCT_ROOT>");
-        assert.equal(report.instructionRoot, "<INSTRUCTION_ROOT>");
-        assert.equal(report.actions[0].id, "gemini-instructions-deploy");
-        assert.match(report.actions[0].targetPath, /^<INSTRUCTION_ROOT>[\\/]GEMINI\.md$/u);
-      }
     }
   });
 });
@@ -197,16 +183,8 @@ test("validate all reports both profiles and all public adapter surfaces", async
   assert.equal(result.code, 0, result.stderr);
   const report = jsonOutput(result);
   assert.deepEqual(report.profiles, ["portable", "template"]);
-  assert.deepEqual(report.surfaces, ["claude", "codex", "antigravity-2", "agy"]);
+  assert.deepEqual(report.surfaces, ["claude", "codex"]);
   assert.equal(report.status, "pass");
-});
-
-test("all-surface automatic discovery fails closed before mutation", async () => {
-  const result = await capture(["install", "--surface", "all", "--apply", "--format", "json"]);
-  assert.equal(result.code, 1);
-  const report = jsonOutput(result);
-  assert.equal(report.status, "fail");
-  assert.match(report.error.message, /manual|root|discovery/iu);
 });
 
 test("two-surface production plans preflight completely before any write", async () => {
@@ -260,14 +238,14 @@ test("all-surface atomic preflight attributes a late namespaced failure without 
       action: "install",
       mode: "apply",
       profile: "portable",
-      surfaces: ["claude", "codex", "antigravity-2", "agy"],
+      surfaces: ["claude", "codex"],
       destinationRoot: root,
       statuslineName: "preflight",
       format: "json"
     }, process.cwd());
     assert.equal(entries.length, 1, "an explicit shared root must use one atomic namespaced plan");
     const [entry] = entries;
-    const invalid = [...entry.plan.actions].reverse().find((action) => action.relativePath.startsWith("agy/") && ["create", "replace", "unchanged"].includes(action.kind));
+    const invalid = [...entry.plan.actions].reverse().find((action) => action.relativePath.startsWith("codex/") && ["create", "replace", "unchanged"].includes(action.kind));
     assert.ok(invalid);
     entry.contents.delete(invalid.relativePath);
     let writes = 0;
@@ -282,7 +260,7 @@ test("all-surface atomic preflight attributes a late namespaced failure without 
     const result = await preflightOperation({ entries, fileSystemByRoot });
     assert.equal(result.valid, false);
     assert.deepEqual(result.prepared, []);
-    assert.equal(result.errors[0].surface, "agy");
+    assert.equal(result.errors[0].surface, "codex");
     assert.equal(result.errors[0].relativePath, invalid.relativePath);
     assert.equal(writes, 0);
     for (const surface of entry.selectedSurfaces) {

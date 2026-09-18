@@ -4,7 +4,7 @@ import { join, posix, win32 } from "node:path";
 import test from "node:test";
 
 import { withTempRoot } from "../helpers/temp-root.mjs";
-import { assertSafeDestinationRoot, RootResolutionError, resolveDestinationRoot, resolveGeminiHome } from "../../installers/lib/roots.mjs";
+import { assertSafeDestinationRoot, RootResolutionError, resolveDestinationRoot } from "../../installers/lib/roots.mjs";
 
 test("destination safety rejects filesystem, account-container, and home roots", () => {
   const cases = [
@@ -52,42 +52,6 @@ test("explicit roots take precedence and Windows containment comparison is case-
   assert.equal(resolveDestinationRoot({ surface: "claude", override: "C:\\Temp\\AAA", env: { CLAUDE_CONFIG_DIR: "C:\\Wrong" }, platform: "win32", homeDir: "C:\\Users\\Test" }), "C:\\Temp\\AAA");
   assert.equal(resolveDestinationRoot({ surface: "claude", override: "C:\\Users\\TEST\\fixture", env: {}, platform: "win32", homeDir: "C:\\Users\\Test" }), "C:\\Users\\TEST\\fixture");
   assert.equal(resolveDestinationRoot({ surface: "claude", override: "//SERVER/Share/配置", env: {}, platform: "win32", homeDir: "C:\\Users\\Test" }), "\\\\SERVER\\Share\\配置");
-});
-
-test("Antigravity Desktop and agy require explicit roots because no verified persistent root exists", () => {
-  for (const surface of ["antigravity-2", "agy"]) {
-    assert.throws(() => resolveDestinationRoot({ surface, override: null, env: {}, platform: "darwin", homeDir: "/Users/tester" }), /manual|explicit|root/iu);
-    assert.equal(resolveDestinationRoot({ surface, override: "/tmp/配置", env: {}, platform: "darwin", homeDir: "/Users/tester" }), "/tmp/配置");
-  }
-});
-
-test("resolveGeminiHome uses the native shared .gemini home on Windows and macOS", () => {
-  assert.equal(resolveGeminiHome({ homeDir: "C:\\Users\\tester", platform: "win32" }), "C:\\Users\\tester\\.gemini");
-  assert.equal(resolveGeminiHome({ homeDir: "/Users/tester", platform: "darwin" }), "/Users/tester/.gemini");
-  assert.equal(resolveGeminiHome({ override: "C:\\Temp\\gemini-fixture", homeDir: "C:\\Users\\tester", platform: "win32" }), "C:\\Temp\\gemini-fixture");
-  assert.equal(resolveGeminiHome({ override: "/tmp/gemini-fixture", homeDir: "/Users/tester", platform: "darwin" }), "/tmp/gemini-fixture");
-});
-
-test("resolveGeminiHome rejects broad, traversal, NUL, unsupported, and unsafe roots", async () => {
-  for (const entry of [
-    { override: "C:\\", homeDir: "C:\\Users\\tester", platform: "win32" },
-    { override: "C:\\Users\\tester", homeDir: "C:\\Users\\tester", platform: "win32" },
-    { override: "../escape", homeDir: "C:\\Users\\tester", platform: "win32" },
-    { override: "C:\\Users\\tester\\..\\escape", homeDir: "C:\\Users\\tester", platform: "win32" },
-    { override: "/Users/tester/../escape", homeDir: "/Users/tester", platform: "darwin" },
-    { override: "/tmp/unsafe\u0000root", homeDir: "/Users/tester", platform: "darwin" },
-    { homeDir: "/Users/tester", platform: "linux" }
-  ]) assert.throws(() => resolveGeminiHome(entry), RootResolutionError);
-
-  await withTempRoot(async (root) => {
-    const target = join(root, "target");
-    const link = join(root, "link");
-    await mkdir(target);
-    try { await symlink(target, link, "junction"); } catch { return; }
-    await lstat(link);
-    const platform = process.platform === "win32" ? "win32" : "darwin";
-    assert.throws(() => resolveGeminiHome({ override: join(link, "child"), homeDir: platform === "win32" ? win32.parse(root).root : posix.parse(root).root, platform }), /symlink|junction|unsafe/u);
-  });
 });
 
 test("root resolution rejects traversal, malformed bases, unsupported platforms, and unsafe existing roots", async () => {

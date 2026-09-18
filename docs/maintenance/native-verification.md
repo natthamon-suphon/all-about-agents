@@ -1,8 +1,7 @@
 # Native verification
 
-Use this guide after registration or after a manual Desktop setup. It records
-what a product actually observed. Package files and static tests are not native
-proof.
+Use this guide after registration. It records what a product actually
+observed. Package files and static tests are not native proof.
 Use `register --dry-run` before any authorized native apply. Use
 `register --apply` only after the dry-run is reviewed and authority is recorded.
 This guide covers the cross-machine receiving machine check.
@@ -41,15 +40,12 @@ node --test tests/static/documentation.test.mjs tests/static/maintenance-docs.te
 The native harness uses fresh temporary roots. It checks Claude validation,
 marketplace registration, plugin discovery, and both statusline profiles. It
 checks Codex marketplace and plugin discovery and hook file presence. Codex
-hook trust is not run. It checks `agy` validation, 28 skills, 7 agents, 1 hook,
-both statusline profiles, and the exact model slug. Desktop checks remain
-manual.
+hook trust is not run.
 
 Run a product validator only against a disposable package root:
 
 ```text
 claude plugin validate "<PACKAGE_ROOT>" --strict
-agy plugin validate "<PACKAGE_ROOT>"
 ```
 
 A validator result is `validated`. It does not by itself prove `registered`,
@@ -165,49 +161,6 @@ event is proved by package output.
 
 8. Record `gpt-5.6-sol` with `max` as primary or the explicit `terra-max`
    recovery choice. Do not record automatic fallback.
-
-### `agy` CLI
-
-1. Record `agy --version`.
-
-2. Run `agy models` and confirm `gemini-3.7-flash-high`.
-
-3. Run `agy --help` and confirm `--effort high`.
-
-4. Validate the package with `agy plugin validate "<PACKAGE_ROOT>"`.
-
-5. Run the generated statusline with documented JSON stdin.
-
-6. Inspect the sparse overlay before any settings merge.
-
-7. Use the structured headless argument vector:
-
-   ```text
-   agy -p <PROMPT> --model gemini-3.7-flash-high --effort high --dangerously-skip-permissions
-   ```
-
-The prompt is one argument. Do not rebuild it as a shell command string.
-Full access is per run. Disabled hook templates are not active protection.
-
-### Antigravity Desktop
-
-1. Record the Desktop version and operating system.
-
-2. Open a disposable workspace with the documented plugin path.
-
-3. Reload Desktop and record plugin, rule, skill, and agent discovery.
-
-4. Select `Gemini 3.7 Flash High` and record the conversation-local result.
-
-5. Select `Custom`, keep `Turbo mode` off, and inspect the Deny rules.
-
-6. Exercise each emergency Deny rule only in the disposable workspace.
-
-7. Leave hook templates disabled and inert until failure and blocking behavior
-   have a documented product contract.
-
-The Desktop statusline display name is unavailable because no native Desktop
-statusline contract is established. Do not infer it from the CLI package.
 
 ## Evidence record
 

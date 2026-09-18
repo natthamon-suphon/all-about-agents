@@ -4,7 +4,7 @@ import { hashBytes, SHA256_HEX } from "./hash.mjs";
 import { assertSafeDestinationRoot } from "./roots.mjs";
 import { parseManagedState } from "./state.mjs";
 
-const SURFACES = new Set(["claude", "codex", "antigravity-2", "agy"]);
+const SURFACES = new Set(["claude", "codex"]);
 const ACTION_KINDS = new Set(["create", "replace", "unchanged", "prune", "reject"]);
 const DEFAULT_FILE_MODE = 0o600;
 

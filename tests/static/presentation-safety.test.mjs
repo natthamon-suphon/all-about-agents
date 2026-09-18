@@ -7,7 +7,7 @@ import test from "node:test";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { materializeRenderResult, renderForSurface } from "../../installers/lib/render.mjs";
 
-const SURFACES = ["claude", "codex", "antigravity-2", "agy"];
+const SURFACES = ["claude", "codex"];
 const PROFILES = ["portable", "template"];
 const EMOJI = /\p{Extended_Pictographic}/u;
 const RAW_ESCAPE = /\u001B|\x1B/u;
@@ -53,7 +53,7 @@ function scanMachineValue(label, value) {
 const MACHINE_JSON_KEYS = new Set([
   "id", "name", "surface", "profile", "state", "status", "kind", "event", "feature", "source", "destination",
   "relativePath", "relativeDirectory", "sourcePath", "targetPath", "rootEnv", "model", "effort", "command", "actionId",
-  "workflowId", "taskId", "pluginManifest", "packageRoot", "installedPluginRoot"
+  "taskId", "pluginManifest", "packageRoot", "installedPluginRoot"
 ]);
 
 function scanJsonMachineFields(label, value, path = label) {
@@ -97,9 +97,7 @@ function isOpaqueCompanion(surface, relativePath, core) {
     ? ["skills/"]
     : surface === "codex"
       ? ["skills/", ".agents/skills/"]
-      : surface === "antigravity-2"
-        ? [".agents/plugins/all-about-agents/skills/"]
-        : ["skills/"];
+      : ["skills/"];
   return prefixes.some((prefix) => {
     const tail = relativePath.startsWith(prefix) ? relativePath.slice(prefix.length) : null;
     if (!tail) return false;
@@ -128,7 +126,7 @@ function assertSafePackage({ surface, profile, result, core }) {
         else machineId(`${surface}/${profile} registration candidate`, value);
       }
     }
-    for (const key of ["status", "kind", "surface", "profile", "event", "feature", "actionId", "workflowId", "taskId"]) {
+    for (const key of ["status", "kind", "surface", "profile", "event", "feature", "taskId"]) {
       if (typeof registration?.[key] === "string") machineId(`${surface}/${profile} registration ${key}`, registration[key]);
     }
   }
@@ -152,7 +150,7 @@ function assertSafePackage({ surface, profile, result, core }) {
 test("loaded core machine identifiers and presentation data keep emoji separated", async () => {
   const core = await loadCore(process.cwd());
   scanMachineValue("inventory", core.inventory);
-  for (const collection of ["rules", "roles", "skills", "commands", "workflows", "evals"]) {
+  for (const collection of ["rules", "roles", "skills", "evals"]) {
     for (const entry of core[collection]) machineId(`${collection} id`, entry.id ?? entry.name);
   }
   for (const [kind, records] of Object.entries(core.presentation.emojiRegistry)) {

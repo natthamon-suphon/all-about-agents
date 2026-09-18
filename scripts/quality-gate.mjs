@@ -48,8 +48,7 @@ const QUICK_CHECKS = Object.freeze([
 const FULL_ONLY_CHECKS = Object.freeze([
   check("full-test-suite", process.execPath, ["--test"], { timeoutMs: FULL_TIMEOUT_MS }),
   check("native-claude-version", "claude", ["--version"], { required: false }),
-  check("native-codex-version", "codex", ["--version"], { required: false }),
-  check("native-agy-version", "agy", ["--version"], { required: false })
+  check("native-codex-version", "codex", ["--version"], { required: false })
 ]);
 
 function copyChecks(checks) {

@@ -4,7 +4,6 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 import { ArgumentError, parseArgs, validateStatuslineName } from "../../installers/lib/args.mjs";
-import * as agyAdapter from "../../adapters/agy/adapter.mjs";
 
 const requiredOutputs = [
   "installers/lib/args.mjs",
@@ -28,7 +27,7 @@ test("T046 creates every owned artifact", async () => {
 test("parseArgs selects install, all surfaces, portable profile, and dry-run by default", () => {
   assert.deepEqual(parseArgs([]), {
     action: "install",
-    surfaces: ["claude", "codex", "antigravity-2", "agy"],
+    surfaces: ["claude", "codex"],
     profile: "portable",
     mode: "dry-run",
     destinationRoot: null,
@@ -40,7 +39,7 @@ test("parseArgs selects install, all surfaces, portable profile, and dry-run by 
 
 test("parseArgs accepts every public action, surface, profile, mode, root, and format", () => {
   for (const action of ["install", "doctor", "validate", "diff", "eval"]) {
-    for (const surface of ["claude", "codex", "antigravity-2", "agy"]) {
+    for (const surface of ["claude", "codex"]) {
       const parsed = parseArgs([action, "--surface", surface, "--profile", "template", "--apply", "--destination-root", "fixture", "--format", "json"]);
       assert.equal(parsed.action, action);
       assert.deepEqual(parsed.surfaces, [surface]);
@@ -50,18 +49,18 @@ test("parseArgs accepts every public action, surface, profile, mode, root, and f
       assert.equal(parsed.format, "json");
     }
   }
-  assert.deepEqual(parseArgs(["--surface", "all"]).surfaces, ["claude", "codex", "antigravity-2", "agy"]);
+  assert.deepEqual(parseArgs(["--surface", "all"]).surfaces, ["claude", "codex"]);
 });
 
 test("parseArgs accepts register with one surface and package root, and defaults to dry-run", () => {
   assert.deepEqual(parseArgs(["register", "--surface", "codex", "--profile", "template", "--package-root", "pkg", "--format", "json"]), {
     action: "register", surfaces: ["codex"], profile: "template", mode: "dry-run", destinationRoot: null, packageRoot: "pkg", statuslineName: "", format: "json"
   });
-  assert.equal(parseArgs(["register", "--surface", "agy", "--package-root", "pkg", "--apply"]).mode, "apply");
+  assert.equal(parseArgs(["register", "--surface", "claude", "--package-root", "pkg", "--apply"]).mode, "apply");
 });
 
 test("parseArgs rejects registration without exactly one surface or package root", () => {
-  for (const argv of [["register", "--package-root", "pkg"], ["register", "--surface", "all", "--package-root", "pkg"], ["register", "--surface", "codex"], ["register", "--surface", "codex", "--package-root", "pkg", "--surface", "agy"]]) {
+  for (const argv of [["register", "--package-root", "pkg"], ["register", "--surface", "all", "--package-root", "pkg"], ["register", "--surface", "codex"], ["register", "--surface", "codex", "--package-root", "pkg", "--surface", "claude"]]) {
     assert.throws(() => parseArgs(argv), /surface|package-root|registration|duplicate/u);
   }
 });
@@ -71,7 +70,6 @@ test("parseArgs preserves explicit empty statusline names and trims safe Unicode
   assert.equal(parseArgs(["--surface", "claude", "--statusline-name="]).statuslineName, "");
   assert.equal(parseArgs(["--surface", "claude", "--statusline-name", "  คุณ 🚀  "]).statuslineName, "คุณ 🚀");
   assert.equal(parseArgs(["--surface", "claude", "--statusline-name", `quote\\path "ok"`]).statuslineName, `quote\\path "ok"`);
-  assert.equal(parseArgs(["--surface", "agy", "--statusline-name", `agy \\path \"ok\"`]).statuslineName, `agy \\path \"ok\"`);
 });
 
 test("validateStatuslineName accepts 64 code points and rejects overlength or terminal input", () => {
@@ -98,7 +96,8 @@ test("parseArgs rejects duplicates, missing values, conflicts, invalid values, a
     [["--profile", "unknown"], /profile/u],
     [["--format", "xml"], /format/u],
     [["--surface", "codex", "--statusline-name", "name"], /inapplicable/u],
-    [["--surface", "antigravity-2", "--statusline-name", "name"], /inapplicable/u]
+    [["install", "--surface", "claude", "--apply"], /explicit --destination-root/u],
+    [["--surface", "all", "--apply"], /explicit --destination-root/u]
   ];
   for (const [argv, expected] of cases) assert.throws(() => parseArgs(argv), expected);
 });
@@ -112,21 +111,11 @@ test("omitted statusline input is non-blocking by default and can be explicitly 
   assert.throws(() => parseArgs(["--surface", "claude"], { interactive: true }), /prompt callback/u);
 });
 
-test("interactive omitted statusline prompts once when Claude or agy is selected", () => {
+test("interactive omitted statusline prompts once when Claude is selected", () => {
   let prompts = 0;
   const prompt = () => { prompts += 1; return "claude-user"; };
   assert.equal(parseArgs(["--surface", "codex"], { interactive: true, prompt }).statuslineName, "");
   assert.equal(prompts, 0);
-  assert.equal(parseArgs(["--surface", "agy"], { interactive: true, prompt }).statuslineName, "claude-user");
-  assert.equal(prompts, 1);
   assert.equal(parseArgs(["--surface", "all"], { interactive: true, prompt }).statuslineName, "claude-user");
-  assert.equal(prompts, 2);
-});
-
-test("agy headless argv preserves hostile Unicode and shell metacharacters as one argument", () => {
-  const hostile = `ไทย spaces \"double\" 'single' ${String.fromCharCode(96)}tick $dollar ${String.fromCharCode(92)}slash`;
-  const argv = agyAdapter.buildHeadlessArgs({ prompt: hostile });
-  assert.equal(argv[2], hostile);
-  assert.equal(argv.filter((argument) => argument === hostile).length, 1);
-  assert.equal(Object.hasOwn(agyAdapter, "buildHeadlessCommand"), false);
+  assert.equal(prompts, 1);
 });

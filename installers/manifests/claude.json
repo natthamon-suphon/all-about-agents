@@ -7,19 +7,32 @@
   "pluginManifest": ".claude-plugin/plugin.json",
   "pluginRegistration": {
     "marketplace": "all-about-agents",
-    "marketplaceCommand": ["claude", "plugin", "marketplace", "add", "."],
-    "command": ["claude", "plugin", "install", "all-about-agents@all-about-agents"]
+    "marketplaceCommand": [
+      "claude",
+      "plugin",
+      "marketplace",
+      "add",
+      "."
+    ],
+    "command": [
+      "claude",
+      "plugin",
+      "install",
+      "all-about-agents@all-about-agents"
+    ]
   },
   "configRoot": {
     "environment": "CLAUDE_CONFIG_DIR",
     "fallback": "~/.claude",
-    "sharedBy": ["claude-code-cli", "claude-desktop-local-code"]
+    "sharedBy": [
+      "claude-code-cli",
+      "claude-desktop-local-code"
+    ]
   },
   "components": {
     "globalInstructions": "CLAUDE.md",
     "skills": "skills/{skill}/SKILL.md",
     "agents": "agents/{role}.md",
-    "commands": "commands/{command}.md",
     "rules": "rules/{rule}.md",
     "hooks": "hooks/hooks.json",
     "hookScripts": "hooks/{name}.mjs",
@@ -32,26 +45,43 @@
   },
   "profileContract": {
     "source": "profiles/{profile}/profile.json",
-    "modelPolicyRefs": ["surface-default", "approved-opus-sonnet"]
+    "modelPolicyRefs": [
+      "surface-default",
+      "approved-opus-sonnet"
+    ]
   },
   "profiles": {
     "portable": {
       "settings": {
         "permissions": {
           "defaultMode": "default",
-          "deny": ["Bash(rm -rf /)", "Bash(rm -rf ~)", "Bash(git push --force*)", "Bash(git reset --hard*)"]
+          "deny": [
+            "Bash(rm -rf /)",
+            "Bash(rm -rf ~)",
+            "Bash(git push --force*)",
+            "Bash(git reset --hard*)"
+          ]
         }
       }
     },
     "template": {
       "settings": {
         "model": "claude-opus-5",
-        "fallbackModel": ["claude-sonnet-5"],
+        "fallbackModel": [
+          "claude-sonnet-5"
+        ],
         "advisorModel": "claude-fable-5-1",
-        "env": {"CLAUDE_CODE_EFFORT_LEVEL": "xhigh"},
+        "env": {
+          "CLAUDE_CODE_EFFORT_LEVEL": "xhigh"
+        },
         "permissions": {
           "defaultMode": "bypassPermissions",
-          "deny": ["Bash(rm -rf /)", "Bash(rm -rf ~)", "Bash(git push --force*)", "Bash(git reset --hard*)"]
+          "deny": [
+            "Bash(rm -rf /)",
+            "Bash(rm -rf ~)",
+            "Bash(git push --force*)",
+            "Bash(git reset --hard*)"
+          ]
         }
       },
       "availability": {
@@ -60,36 +90,82 @@
     }
   },
   "semanticCapabilities": {
-    "repository-read": ["Read", "Glob", "Grep"],
-    "repository-write": ["Write", "Edit"],
-    "web-primary-sources": ["WebSearch", "WebFetch"],
-    "isolated-write": ["Write", "Edit", "Bash"],
-    "command-execution": ["Bash"],
-    "filesystem-read": ["Read", "Glob", "Grep"],
-    "filesystem-write": ["Write", "Edit"],
-    "git-read": ["Bash"],
-    "git-write": ["Bash"],
-    "test-execution": ["Bash"],
-    "external-research": ["WebSearch", "WebFetch"],
-    "evaluation": ["Bash", "Read"],
-    "role-dispatch": ["Agent"],
-    "workflow-state": ["Read", "Write"],
-    "schema-validation": ["Bash"],
-    "native-rendering": ["Skill"]
-  },
-  "actions": {
-    "aaa:design": "commands/design.md",
-    "aaa:build": "commands/build.md",
-    "aaa:fix": "commands/fix.md",
-    "aaa:review": "commands/review.md",
-    "aaa:audit": "commands/audit.md",
-    "aaa:improve-skill": "commands/improve-skill.md",
-    "aaa:resume": "commands/resume.md",
-    "aaa:verify": "commands/verify.md"
+    "repository-read": [
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "repository-write": [
+      "Write",
+      "Edit"
+    ],
+    "web-primary-sources": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "isolated-write": [
+      "Write",
+      "Edit",
+      "Bash"
+    ],
+    "command-execution": [
+      "Bash"
+    ],
+    "filesystem-read": [
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "filesystem-write": [
+      "Write",
+      "Edit"
+    ],
+    "git-read": [
+      "Bash"
+    ],
+    "git-write": [
+      "Bash"
+    ],
+    "test-execution": [
+      "Bash"
+    ],
+    "external-research": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "evaluation": [
+      "Bash",
+      "Read"
+    ],
+    "role-dispatch": [
+      "Agent"
+    ],
+    "schema-validation": [
+      "Bash"
+    ],
+    "native-rendering": [
+      "Skill"
+    ],
+    "workflow-state": [
+      "Read",
+      "Write"
+    ]
   },
   "readOnlyRoles": {
-    "roles": ["researcher", "investigator", "architect", "verifier", "reviewer", "security-reviewer"],
-    "disallowedTools": ["Agent", "Bash", "Edit", "Write"]
+    "roles": [
+      "researcher",
+      "investigator",
+      "architect",
+      "verifier",
+      "reviewer",
+      "security-reviewer"
+    ],
+    "disallowedTools": [
+      "Agent",
+      "Bash",
+      "Edit",
+      "Write"
+    ]
   },
   "ownedPaths": [
     ".claude-plugin/**",
@@ -98,7 +174,6 @@
     "CLAUDE.md",
     "agents/{role}.md",
     "all-about-agents/statusline.json",
-    "commands/{command}.md",
     "config/**",
     "config/settings.json",
     "config/statusline.json",
@@ -118,23 +193,41 @@
     "statusline/track-tool.mjs"
   ],
   "nativeValidation": {
-    "command": ["claude", "plugin", "validate", ".", "--strict"],
+    "command": [
+      "claude",
+      "plugin",
+      "validate",
+      ".",
+      "--strict"
+    ],
     "warningsAreFailures": true,
     "requiredWhenAvailable": true
   },
   "preflight": {
     "executable": "node",
-    "check": ["node", "--version"],
+    "check": [
+      "node",
+      "--version"
+    ],
     "minimumVersion": "22.12.0",
     "onMissing": "reject",
-    "requiredBy": ["hooks/*.mjs", "statusline/statusline.mjs"]
+    "requiredBy": [
+      "hooks/*.mjs",
+      "statusline/statusline.mjs"
+    ]
   },
   "statuslinePrerequisites": {
     "executable": "node",
-    "check": ["node", "--version"],
+    "check": [
+      "node",
+      "--version"
+    ],
     "minimumVersion": "22.12.0",
     "onMissing": "reject",
-    "requiredBy": ["statusline/statusline.mjs", "statusline/track-tool.mjs"]
+    "requiredBy": [
+      "statusline/statusline.mjs",
+      "statusline/track-tool.mjs"
+    ]
   },
   "rootInstructionContext": "CLAUDE.md is emitted as the global instruction source and deployed to <CLAUDE_CONFIG_DIR>/CLAUDE.md; plugin rules remain separate",
   "capabilityEvidence": {

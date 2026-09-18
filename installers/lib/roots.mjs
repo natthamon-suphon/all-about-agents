@@ -2,7 +2,7 @@ import { lstatSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { posix, win32 } from "node:path";
 
-const SURFACES = new Set(["claude", "codex", "antigravity-2", "agy"]);
+const SURFACES = new Set(["claude", "codex"]);
 
 /** A stable error for unavailable or unsafe automatic root discovery. */
 export class RootResolutionError extends Error {
@@ -150,8 +150,7 @@ export function assertSafeDestinationRoot(root, { platform = process.platform, h
 
 /**
  * Resolve a vendor root without creating directories or touching configuration.
- * Claude/Codex honor their documented environment variables. Antigravity
- * Desktop and agy intentionally require an explicit disposable/manual root.
+ * Claude/Codex honor their documented environment variables.
  */
 export function resolveDestinationRoot({ surface, override = null, env = process.env, platform = process.platform, homeDir = homedir() } = {}) {
   if (!SURFACES.has(surface)) fail("unsupported-surface", `unsupported surface: ${String(surface)}`);
@@ -179,18 +178,4 @@ export function resolveDestinationRoot({ surface, override = null, env = process
  * disposable package root; it is still subjected to the same fail-closed
  * destination checks as the native home.
  */
-export function resolveGeminiHome({ override = null, homeDir = homedir(), platform = process.platform } = {}) {
-  const pathModule = moduleFor(platform);
-  const home = validateHome(homeDir, pathModule);
-  const selected = override === null || override === undefined
-    ? pathModule.join(home, ".gemini")
-    : override;
-  const root = candidatePath(selected, home, pathModule);
-  return assertSafeDestinationRoot(root, {
-    platform,
-    homeDir: home,
-    allowedProductRoots: [root]
-  });
-}
-
 export { isContained, inspectExistingAncestors };

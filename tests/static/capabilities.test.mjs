@@ -5,15 +5,13 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import test from "node:test";
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 
-const surfaces = ["claude", "codex", "antigravity-2", "agy"];
+const surfaces = ["claude", "codex"];
 const manifestGlobalNames = new Map([
   ["claude", "CLAUDE.md"],
-  ["codex", "AGENTS.md"],
-  ["antigravity-2", "GEMINI.md"],
-  ["agy", "GEMINI.md"]
+  ["codex", "AGENTS.md"]
 ]);
 const repositoryRoot = resolve(process.cwd());
-const officialHosts = new Set(["antigravity.google", "code.claude.com", "developers.openai.com"]);
+const officialHosts = new Set(["code.claude.com", "developers.openai.com"]);
 
 async function assertValidSource(source, label) {
   assert.equal(typeof source, "string", `${label}: source must be a string`);
@@ -135,8 +133,8 @@ test("capability source validation rejects directories and links escaping the re
   }
 });
 
-test("Claude and agy native statusline capabilities are supported and stable", async () => {
-  for (const surface of ["claude", "agy"]) {
+test("Claude native statusline capability is supported and stable", async () => {
+  for (const surface of ["claude"]) {
     const record = await loadCapability(surface);
     const statusline = record.capabilities.find((item) => item.feature === "statusline.native");
     assert.ok(statusline, `${surface} statusline capability is missing`);
@@ -167,12 +165,6 @@ test("capability evidence keeps unsupported and unknown claims explicit", async 
   assert.ok(hooks);
   assert.doesNotMatch(hooks.notes, /enabled by default/iu);
   assert.match(hooks.notes, /trust|manual|not automatic/iu);
-
-  const antigravity = await loadCapability("antigravity-2");
-  const persistence = antigravity.capabilities.find((item) => item.feature === "desktop.model-persistence");
-  assert.ok(persistence);
-  assert.equal(persistence.support, "unknown");
-  assert.equal(persistence.stability, "unknown");
 });
 
 test("strict schemas reject undeclared capability properties", async () => {

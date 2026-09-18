@@ -75,7 +75,7 @@ function stringValues(value) {
 test("rule requirements have one explicit owner and stay profile-neutral and bounded", async () => {
   const records = await Promise.all(ruleIds.map(async (id) => JSON.parse(await readFile(resolve(process.cwd(), `core/rules/${id}/rule.json`), "utf8"))));
   const requirementIds = new Set();
-  const forbidden = /(?:statusline|rainbow|html|emoji|decorative|presentation|persona|tone|template|profile|Claude|Codex|Antigravity|\b(?:agy|PowerShell|Bash|Glob|Grep|LS|NotebookEdit|WebFetch|WebSearch|MultiEdit|TodoWrite)\b|spawn_agent|invoke_subagent|mcp__)/u;
+  const forbidden = /(?:statusline|rainbow|html|emoji|decorative|presentation|persona|tone|template|profile|Claude|Codex|\b(?:PowerShell|Bash|Glob|Grep|LS|NotebookEdit|WebFetch|WebSearch|MultiEdit|TodoWrite)\b|spawn_agent|invoke_subagent|mcp__)/u;
   for (const record of records) {
     for (const requirement of record.requirements) {
       const match = /^(?<owner>[a-z0-9-]+)\/(?<name>[a-z0-9-]+):\s/u.exec(requirement);

@@ -26,16 +26,15 @@ pull -> validate -> render -> dry-run -> apply package -> dry-run registration -
 
 Git pull changes the repository only. Package apply and native registration
 are separate explicit actions. The managed global destinations are
-`<CLAUDE_CONFIG_DIR>/CLAUDE.md`, `<CODEX_HOME>/AGENTS.md`, and
-`~/.gemini/GEMINI.md` for both Antigravity Desktop and `agy`.
+`<CLAUDE_CONFIG_DIR>/CLAUDE.md` and `<CODEX_HOME>/AGENTS.md`.
 
 An authorized apply may overwrite these managed global files without a backup.
 It must not guess a product root or replace unknown neighboring files.
 
 ## Product binaries must resolve first
 
-The native steps of `register --apply` spawn `claude`, `codex`, and `agy` by
-bare name. Rendering and package apply never call them. When a binary does not
+The native steps of `register --apply` spawn `claude` and `codex` by bare
+name. Rendering and package apply never call them. When a binary does not
 resolve, the plan still copies its managed files and then fails the native
 commands, which leaves a package that looks installed but that the product
 does not know about. Verify discovery with each product's own command before
@@ -44,7 +43,6 @@ you register:
 ```text
 claude plugin list
 codex plugin list --available --json
-agy plugin list
 ```
 
 Prepend the product's `bin` directory to `PATH` for the registration command
@@ -66,19 +64,17 @@ system cleans up. See [Windows setup](../setup/windows.md) and
    node scripts/aaa.mjs validate --scope all
    ```
 
-3. Render one surface into a new disposable package root. Claude and `agy`
-   accept the statusline name:
+3. Render one surface into a new disposable package root. Claude accepts the
+   statusline name:
 
    ```text
    node scripts/aaa.mjs install --surface claude --profile <PROFILE> --destination-root "<PACKAGE_ROOT>" --statusline-name "<YOUR_NAME>" --dry-run --format json
-   node scripts/aaa.mjs install --surface agy --profile <PROFILE> --destination-root "<PACKAGE_ROOT>" --statusline-name "<YOUR_NAME>" --dry-run --format json
    ```
 
-   Codex and Antigravity Desktop do not accept `--statusline-name`:
+   Codex does not accept `--statusline-name`:
 
    ```text
    node scripts/aaa.mjs install --surface codex --profile <PROFILE> --destination-root "<PACKAGE_ROOT>" --dry-run --format json
-   node scripts/aaa.mjs install --surface antigravity-2 --profile <PROFILE> --destination-root "<PACKAGE_ROOT>" --dry-run --format json
    ```
 
 4. Read the dry-run report.
@@ -93,12 +89,10 @@ and creates no backup.
 
    ```text
    node scripts/aaa.mjs install --surface claude --profile <PROFILE> --destination-root "<PACKAGE_ROOT>" --statusline-name "<YOUR_NAME>" --apply --format json
-   node scripts/aaa.mjs install --surface agy --profile <PROFILE> --destination-root "<PACKAGE_ROOT>" --statusline-name "<YOUR_NAME>" --apply --format json
    node scripts/aaa.mjs install --surface codex --profile <PROFILE> --destination-root "<PACKAGE_ROOT>" --apply --format json
-   node scripts/aaa.mjs install --surface antigravity-2 --profile <PROFILE> --destination-root "<PACKAGE_ROOT>" --apply --format json
    ```
 
-The statusline name is used by Claude and `agy`. An interactive install asks
+The statusline name is used by Claude only. An interactive install asks
 for it. A non-interactive install uses an empty name when the option is absent.
 The name is trimmed, limited to 64 Unicode code points, and rejects control
 and ANSI characters.
@@ -134,21 +128,9 @@ that the product will discover or run the package.
    node scripts/aaa.mjs register --surface codex --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
    ```
 
-2. Plan `agy` registration with its documented product root.
-
-   ```text
-   node scripts/aaa.mjs register --surface agy --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
-   ```
-
-3. Plan the Desktop manual path.
-
-   ```text
-   node scripts/aaa.mjs register --surface antigravity-2 --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
-   ```
-
 The `register` action accepts one surface and one package root. It uses
-`CLAUDE_CONFIG_DIR`, `CODEX_HOME`, or the documented `agy` root. The CLI does
-not accept a guessed `--product-root` option.
+`CLAUDE_CONFIG_DIR` or `CODEX_HOME`. The CLI does not accept a guessed
+`--product-root` option.
 
 Registration checks package consistency, not package origin or signature. It
 checks the supplied managed state, requested surface, requested profile, and
@@ -175,8 +157,8 @@ statusline/statusline.sh
 
 `settings.json` is not one of them. It is a shared product file that the user
 and other tools also write, so the plan merges into it instead of replacing it.
-The merge is the same deep merge `agy` uses: keys the package declares win, and
-every other key in the existing file is preserved. Before the merge, only
+The merge is a deep merge: keys the package declares win, and every other key
+in the existing file is preserved. Before the merge, only
 `statusLine.command` in the rendered source is rebased to the selected
 `CLAUDE_CONFIG_DIR`; the other rendered-source fields stay unchanged.
 
@@ -248,52 +230,6 @@ Use `gpt-5.6-sol` with `max` as the primary template policy. Select the
 `terra-max` profile or `gpt-5.6-terra` with `max` only as an explicit recovery
 choice. No automatic model fallback is claimed.
 
-### `agy` CLI
-
-The native registration plan uses:
-
-```text
-agy plugin install "<PACKAGE_ROOT>"
-agy plugin list
-```
-
-The settings artifact is a sparse overlay. Its only documented destination is:
-
-```text
-~/.gemini/antigravity-cli/settings.json
-```
-
-Rendering never writes settings. Review the dry-run first. An authorized
-`register --apply` merges the overlay and preserves unknown settings.
-The generated native statusline reads JSON from stdin and prints one text line.
-Use `gemini-3.7-flash-high` with `high` effort. Full access is a per-run
-choice. The rendered overlay retains the emergency deny rules, but native
-enforcement is not claimed until a runtime probe observes it. Hook files stay
-disabled and inert because failure and command-root behavior are not verified.
-
-### Antigravity Desktop
-
-Desktop registration is manual. The CLI does not write Desktop settings. Copy
-the contents from the exact rendered plugin source:
-
-```text
-"<PACKAGE_ROOT>/.agents/plugins/all-about-agents/"
-```
-
-Copy it to exactly one destination, without adding another nested package tree:
-
-```text
-"<WORKSPACE_ROOT>/.agents/plugins/all-about-agents/"
-"~/.gemini/config/plugins/all-about-agents/"
-```
-
-Then restart the Desktop product. Select `Custom` for the template full-access
-policy. Keep `Turbo mode` off and retain every emergency Deny rule.
-
-The Desktop hook template is disabled and inert. It is not active protection.
-The Desktop register apply action is unsupported. Use the manual checklist in
-`tests/integration/manual-desktop-checklist.json`.
-
 ## Apply registration
 
 Warning: `register --apply` runs native registration actions and may write a
@@ -325,14 +261,7 @@ a reviewed dry-run report.
    node scripts/aaa.mjs register --surface codex --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --apply --format json
    ```
 
-3. Register `agy` only when its documented root and settings merge have been
-   approved.
-
-   ```text
-   node scripts/aaa.mjs register --surface agy --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --apply --format json
-   ```
-
-4. Restart or reload the product.
+3. Restart or reload the product.
 
 The apply report can say `complete` even when native semantic discovery still
 needs a separate probe. Record the lifecycle state from observed product

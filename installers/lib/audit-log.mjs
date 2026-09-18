@@ -6,7 +6,7 @@ const AUDIT_FILE = "activity-audit.log";
 const MAX_KEY_CODE_POINTS = 64;
 const DEFAULT_MAX_BYTES = 1024 * 1024;
 const DEFAULT_MAX_FILES = 5;
-const SURFACES = new Set(["claude", "codex", "antigravity-2", "agy"]);
+const SURFACES = new Set(["claude", "codex"]);
 const SECRET_SHAPED_TEXT = /(?:token|password|api[_-]?key|secret|credential|authorization)\s*[:=]/iu;
 const queues = new Map();
 const activeStates = new Map();

@@ -23,6 +23,7 @@ Verified defects and costs that motivate this change:
 | D5 | The bootstrap hook injects the routing skill only when `source === "startup"`. After `/clear` or compaction the routing contract is gone. | `core/hooks/bootstrap.mjs` |
 | D6 | Antigravity 2 and agy are not weekly tools for the owner, yet own ~6,070 lines and appear in 30 of 82 test files. | owner decision 2, `find`/`grep` counts |
 | D7 | macOS has never produced native evidence for any surface, although the owner uses macOS daily. | `docs/limitations/known-limitations.md` |
+| D9 | `install --apply` without `--destination-root` auto-discovers the live `~/.claude` and `~/.codex` roots and writes into them. README claimed the opposite. Found 2026-09-19 00:38 when a pre-existing integration test (which expected antigravity-2 to make `--surface all --apply` fail) ran during phase 1 and installed the phase-1 render into both live roots, replacing `~/.claude/settings.json` with the portable overlay. | `installers/lib/roots.mjs` `resolveDestinationRoot`; incident record in the phase-1 report |
 | D8 | `quality:full` keeps only the first 2,000 characters of a failing check's output, so when the 774-test suite fails, the failure lines at the end are cut off and the report cannot say which test failed. Observed 2026-09-18: one `full-test-suite` FAIL whose cause was unrecoverable; two immediate reruns passed 770/774. | `scripts/quality-gate.mjs` `boundedEvidence` (`summary.slice(0, MAX_EVIDENCE_LENGTH - 25)`) |
 
 ## 2. Owner decisions (2026-09-18)
@@ -186,8 +187,16 @@ Edit (surface list becomes `["claude", "codex"]`):
   `tests/static/maintenance-docs.test.mjs`, `tests/static/presentation-safety.test.mjs`,
   `tests/behavioral/{presentation-contract,release-gates}.test.mjs`,
   `tests/contracts/{adapter-contract,args,audit-checkpoint,bootstrap-hooks,claude-adapter,codex-adapter,complete-skill-manifest,core-loader,native-registration,presentation-contract,profiles,quality-gate,quality-report,roles,roots,rules}.test.mjs`,
-  `tests/integration/{all-surfaces,claude-install,cli,native-registration}.test.mjs`
+  `tests/integration/{all-surfaces,claude-install,codex-install,cli,native-registration}.test.mjs`
 - Regenerate `tests/snapshots/{claude,codex}/*.json` after the render changes.
+
+Safety fix added 2026-09-19 (owner decision, after D9): `install --apply` requires an
+explicit `--destination-root` for every surface; without it the CLI fails closed with
+`destination-root-required` before any render or write. Automatic root discovery stays
+available for `--dry-run`, `doctor`, and `diff`. RED test first in
+`tests/integration/all-surfaces.test.mjs` (env-isolated temp roots, asserts non-zero exit
+and empty roots for `all`, `claude`, and `codex`) and `tests/contracts/args.test.mjs`;
+GREEN in `installers/lib/args.mjs`.
 
 Open check inside phase 1: `.agents/rules/all-about-agents.md` is tracked. Confirm from
 `docs/compatibility/codex.md` whether Codex reads it. If only Antigravity read it, delete it

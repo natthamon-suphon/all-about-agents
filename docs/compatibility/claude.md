@@ -22,7 +22,7 @@ from another state.
 
 | Capability | Current evidence | Boundary |
 | --- | --- | --- |
-| Skills, agents, rules, commands, and hooks | Package rendered; plugin discovery passed in a disposable Windows root | Component execution and hook execution are not claimed. |
+| Skills, agents, rules, and hooks | Package rendered; plugin discovery passed in a disposable Windows root | Component execution and hook execution are not claimed. |
 | Plugin registration | Disposable marketplace add, plugin install, and enabled-plugin discovery passed | Run the native registration steps for a new package. |
 | Statusline and display name | Native `statusLine` settings and platform launchers render; both disposable profiles produced the expected text | An installed live session and persistence are not claimed. |
 | Strict validation | `claude plugin validate "<PACKAGE_ROOT>" --strict` passed in the disposable check | A validator proves package shape, not model or hook behavior. |
@@ -44,7 +44,7 @@ to `<CLAUDE_CONFIG_DIR>/CLAUDE.md`, or `~/.claude/CLAUDE.md` when the normal
 root is used. Project `CLAUDE.md`, `.claude/CLAUDE.md`, and plugin rules are a
 more specific second layer.
 
-Visible skills, agents, commands, and workflows keep their machine IDs. Their
+Visible skills, agents, subagents, and hooks keep their machine IDs. Their
 user-facing labels put the emoji after the name, with a short reason and a
 2-to-7 item checklist. For example: `Using skill **brainstorming 🧠** —
 Explore the requirement.` This is prompt guidance, not a UI guarantee.

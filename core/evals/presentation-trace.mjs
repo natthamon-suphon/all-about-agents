@@ -3,7 +3,7 @@ import defaultProgressContract from "../presentation/progress-contract.json" wit
 
 const EVENT_TYPES = Object.freeze(["announcement", "checklist", "completion"]);
 const MAX_EVENTS = 64;
-const KINDS = Object.freeze(["skill", "role", "subagent", "command", "workflow", "hook", "profile"]);
+const KINDS = Object.freeze(["skill", "role", "subagent", "hook", "profile"]);
 const STATUSES = Object.freeze(["pending", "in-progress", "completed", "blocked", "failed", "not-run", "skipped"]);
 const EXCEPTIONAL_STATUSES = new Set(["blocked", "failed", "not-run", "skipped"]);
 const TERMINAL_STATUSES = new Set(["completed", ...EXCEPTIONAL_STATUSES]);
@@ -91,7 +91,7 @@ function fingerprintChecklist(checklist) {
 }
 
 function checkAnnouncement(event, path, presentation, state, errors) {
-  checkObjectKeys(event, ["type", "kind", "id", "label", "reason", "workflowId"], path, errors);
+  checkObjectKeys(event, ["type", "kind", "id", "label", "reason"], path, errors);
   if (event.type !== "announcement") errors.push(issue("event-type", pathJoin(path, "type"), "announcement event type is required"));
   if (!KINDS.includes(event.kind)) errors.push(issue("unknown-kind", pathJoin(path, "kind"), "invocation kind is not registered"));
   if (!safeId(event.id)) errors.push(issue("unsafe-id", pathJoin(path, "id"), "invocation ID must be a safe lowercase ASCII identifier"));
@@ -109,12 +109,6 @@ function checkAnnouncement(event, path, presentation, state, errors) {
     }
   }
 
-  if (event.kind === "command") {
-    if (!safeId(event.workflowId)) errors.push(issue("command-workflow-required", pathJoin(path, "workflowId"), "a command announcement must name its workflowId"));
-    else if (!expectedLabel(presentation, "workflow", event.workflowId)) errors.push(issue("unknown-workflow", pathJoin(path, "workflowId"), `no registered workflow exists for ${event.workflowId}`));
-  } else if (Object.hasOwn(event, "workflowId")) {
-    errors.push(issue("workflow-forbidden", pathJoin(path, "workflowId"), "workflowId is only valid for command announcements"));
-  }
   if (!state.announcement) state.announcement = event;
   else errors.push(issue("multiple-announcements", path, "a trace must contain exactly one announcement"));
 }
@@ -165,10 +159,6 @@ function checkChecklist(event, path, presentation, state, errors) {
 
   if (state.checklistOwner !== null && event.owner !== state.checklistOwner) {
     errors.push(issue("checklist-owner-change", pathJoin(path, "owner"), "one invocation must keep one checklist owner across revisions"));
-  }
-  if (state.announcement?.kind === "command" && safeId(state.announcement.workflowId)) {
-    const expectedOwner = `workflow-${state.announcement.workflowId}`;
-    if (event.owner !== expectedOwner) errors.push(issue("command-checklist-owner", pathJoin(path, "owner"), "command checklist owner must match its registered workflow"));
   }
 
   const active = event.items.filter((item) => isObject(item) && item.status === "in-progress");
@@ -236,8 +226,7 @@ function makeSummary(trace, state) {
     announcement: state.announcement ? {
       kind: KINDS.includes(state.announcement.kind) ? state.announcement.kind : null,
       id: safeId(state.announcement.id) ? state.announcement.id : null,
-      label: safeText(state.announcement.label, 160) ? state.announcement.label : null,
-      workflowId: safeId(state.announcement.workflowId) ? state.announcement.workflowId : null
+      label: safeText(state.announcement.label, 160) ? state.announcement.label : null
     } : null,
     checklistRevisions: state.checklists.length,
     checklistOwners: state.checklists.map((checklist) => safeId(checklist.owner) ? checklist.owner : null),

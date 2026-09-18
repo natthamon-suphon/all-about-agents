@@ -1,7 +1,7 @@
 {
-  "companionCount": 49,
-  "pathCount": 78,
-  "pathsSha256": "1078e89746a0d56d8ead944012a1e9f47e887b7b8e1900927de062b5ce3e3efa",
+  "companionCount": 41,
+  "pathCount": 70,
+  "pathsSha256": "ac4031d3e91db97f576c0754a94ab00d5cdf9b7ccd6eaa344e8476791032f748",
   "skillCount": 28,
   "skills": [
     "brainstorming",
@@ -33,5 +33,5 @@
     "writing-skills",
     "zero-downtime-migrations"
   ],
-  "uniquePathCount": 78
+  "uniquePathCount": 70
 }

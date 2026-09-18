@@ -4,5 +4,5 @@
   "description": "Persist bounded workflow checkpoint metadata so interrupted work can resume safely.",
   "failureMode": "fail-open",
   "storage": "durable-workflow",
-  "recordedFields": ["timestamp", "workflowId", "taskId", "state", "status"]
+  "recordedFields": ["timestamp", "taskId", "state", "status"]
 }

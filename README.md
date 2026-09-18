@@ -8,19 +8,17 @@ product, register an account, or claim that a product session has passed.
 
 | Path | Responsibility |
 | --- | --- |
-| `core/` | Vendor-neutral records: 28 skills, 7 roles, 9 rules, workflows, commands, hooks, and evaluations. |
+| `core/` | Vendor-neutral records: 28 skills, 7 roles, 9 rules, hooks, and evaluations. |
 | `profiles/` | `portable` and `template` policy profiles. |
-| `adapters/` | Claude, Codex, Antigravity 2.0, and agy renderers, manifests, native mappings, and limitations. |
+| `adapters/` | Claude and Codex renderers, manifests, native mappings, and limitations. |
 | `installers/` | Root resolution, validation, deterministic planning, atomic writes, managed state, and launchers. |
 | `scripts/aaa.mjs` | The repository CLI. |
 | `tests/` | Static, contract, behavioral, integration, and snapshot checks. |
 
-The old top-level `agents/`, `configs/`, `hooks/`, `setup/`, `statusline/`,
-`skills/`, legacy Antigravity guide, and obsolete Claude plugin manifest are
-isolated under [`quarantine/legacy/`](quarantine/README.md). New work must use
-`core/`, `profiles/`, `adapters/`, and `installers/`; quarantined files are not
-installer inputs or supported setup entrypoints. The Claude adapter now renders
-its plugin manifest and local marketplace together inside the generated package.
+Legacy files were removed in phase 1 of the simplification and remain in Git
+history. New work must use `core/`, `profiles/`, `adapters/`, and
+`installers/`. The Claude adapter renders its plugin manifest and local
+marketplace together inside the generated package.
 
 ## Requirements
 
@@ -110,15 +108,17 @@ or `runtime verified`.
 
 ## Surfaces and roots
 
-Use `--surface claude|codex|antigravity-2|agy|all` and an explicit
-`--destination-root` for qualification. Claude and Codex also have documented
-environment-based roots, but the setup pages use disposable roots so a real
-user configuration is not changed. Antigravity and `agy` have documented
-native discovery roots. The repository still requires an explicit destination
-and does not write those live roots automatically.
+Use `--surface claude|codex|all` and an explicit `--destination-root` for
+qualification. Claude and Codex also have documented environment-based roots,
+but the setup pages use disposable roots so a real user configuration is not
+changed. `install --apply` refuses to run without `--destination-root`
+(`destination-root-required`), so the live roots are never written by
+automatic discovery. Only `--dry-run`, `doctor`, and `diff` may resolve a root
+from the environment.
 
 When `--surface all` is used with one explicit root, each package is placed in
-a surface namespace below that root. This keeps surface files from colliding.
+a surface namespace below that root: `<root>/claude` and `<root>/codex`. This
+keeps surface files from colliding.
 The adapters render package files and manual registration records; they do not
 install a native plugin or run a native product.
 
@@ -128,8 +128,8 @@ does not remove emergency deny rules. The rendered policy retains those deny
 rules. Native enforcement is not claimed until a product runtime probe observes
 it.
 
-`--statusline-name` applies to Claude and `agy`. In an interactive install that
-includes either surface, omitting it prompts for a name; non-interactive
+`--statusline-name` applies to Claude only. In an interactive install that
+includes Claude, omitting it prompts for a name; non-interactive
 invocation uses an empty name. A supplied name is trimmed, must contain at most 64 Unicode
 code points, and may not contain control or ANSI characters.
 
@@ -139,14 +139,9 @@ Read the surface manifests for exact component paths and manual/native status:
 
 - [Claude manifest](installers/manifests/claude.json)
 - [Codex manifest](installers/manifests/codex.json)
-- [Antigravity 2.0 manifest](installers/manifests/antigravity-2.json)
-- [agy manifest](installers/manifests/agy.json)
 - [Claude compatibility](docs/compatibility/claude.md)
 - [Codex compatibility](docs/compatibility/codex.md)
-- [Antigravity 2.0 compatibility](docs/compatibility/antigravity-2.md)
-- [agy compatibility](docs/compatibility/agy.md)
 - [Known limitations](docs/limitations/known-limitations.md)
-- [Legacy quarantine disposition](quarantine/README.md)
 - [Evaluation method and limitations](docs/evaluations/method.md)
 
 Retained Windows evidence covers only the checks named in the evaluation

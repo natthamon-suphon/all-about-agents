@@ -12,10 +12,8 @@ import { main } from "../../scripts/aaa.mjs";
 
 const REPOSITORY_ROOT = resolve(process.cwd());
 const CLAUDE_FIXTURE = await readFile(resolve(REPOSITORY_ROOT, "tests/fixtures/native-statusline/claude.json"), "utf8");
-const AGY_FIXTURE = await readFile(resolve(REPOSITORY_ROOT, "tests/fixtures/native-statusline/agy.json"), "utf8");
 const CLAUDE_MARKERS = ["CLAUDE.md", ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "statusline/statusline.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", "all-about-agents/statusline.json"];
 const CODEX_MARKERS = [".codex-plugin/plugin.json", ".agents/plugins/marketplace.json", "hooks/hooks.json", "hooks/bootstrap.mjs"];
-const AGY_MARKERS = ["plugin.json", "settings.overlay.json", "statusline/statusline.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", "statusline/statusline.json"];
 const CODEX_HOOK_FILES = ["hooks/hooks.json", "hooks/bootstrap.mjs", "hooks/activity-audit.mjs", "hooks/pre-compact.mjs", "hooks/audit-log.mjs"];
 
 function contained(root, target) {
@@ -101,7 +99,7 @@ async function captureAaa(args, runtime = {}) {
 async function renderPackage(surface, profile, destinationRoot) {
   assertContained(resolve(destinationRoot, ".."), destinationRoot, `${surface} package root`);
   const args = ["install", "--surface", surface, "--profile", profile];
-  if (["claude", "agy"].includes(surface)) args.push("--statusline-name", `T07 ${surface} fixture`);
+  if (surface === "claude") args.push("--statusline-name", `T07 ${surface} fixture`);
   args.push("--destination-root", destinationRoot, "--apply", "--format", "json");
   const result = await captureAaa(args);
   assert.equal(result.code, 0, `${surface}/${profile} render failed: ${safeStatus(result.stderr, [destinationRoot])}`);
@@ -252,18 +250,6 @@ function parseCodexInstall(stdout) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
   if (payload.pluginId !== PLUGIN_SELECTOR || payload.name !== "all-about-agents" || typeof payload.installedPath !== "string") return null;
   return { selector: payload.pluginId, name: payload.name, installedPath: payload.installedPath };
-}
-
-function parseAgyValidationSummary(stdout) {
-  const summary = sanitizedText(stdout);
-  const skills = summary.match(/(?:^|\s)(?:skill|skills)\s*:\s*(\d+)\b/iu)?.[1];
-  const agents = summary.match(/(?:^|\s)(?:agent|agents)\s*:\s*(\d+)\b/iu)?.[1];
-  const hooks = summary.match(/(?:^|\s)(?:hook|hooks)\s*:\s*(\d+)\b/iu)?.[1];
-  return {
-    skills: skills === undefined ? null : Number(skills),
-    agents: agents === undefined ? null : Number(agents),
-    hooks: hooks === undefined ? null : Number(hooks)
-  };
 }
 
 function installedPluginRoot(productRoot, discovery) {
@@ -577,11 +563,11 @@ test("T07 helper settles a timed-out launcher", async () => {
 
 test("T07 renders portable and template native packages into separate disposable roots", async () => {
   await withDisposableRoot(async (root) => {
-    for (const surface of ["claude", "codex", "agy"]) {
+    for (const surface of ["claude", "codex"]) {
       for (const profile of ["portable", "template"]) {
         const packageRoot = resolve(root, `${surface}-${profile}`);
         await renderPackage(surface, profile, packageRoot);
-        const markers = surface === "claude" ? CLAUDE_MARKERS : surface === "codex" ? CODEX_MARKERS : AGY_MARKERS;
+        const markers = surface === "claude" ? CLAUDE_MARKERS : CODEX_MARKERS;
         await assertMarkers(packageRoot, markers);
         const files = await listFiles(packageRoot);
         assert.ok(files.length > 20, `${surface}/${profile} must render a complete package`);
@@ -767,119 +753,6 @@ test("T07 Codex registration uses only an isolated CODEX_HOME and exact installe
       await assertMarkers(installedRoot, CODEX_HOOK_FILES);
     });
   });
-});
-
-test("T07 agy validates both packages and checks statusline and model discovery without install", async (t) => {
-  await withDisposableRoot(async (root) => {
-    const packages = {};
-    for (const profile of ["portable", "template"]) {
-      packages[profile] = resolve(root, `agy-${profile}`);
-      await renderPackage("agy", profile, packages[profile]);
-    }
-    const version = await observeVersion(t, "agy", root);
-    if (version.status !== "PASS") {
-      await skipSubtest(t, "agy downstream native checks", "agy executable is unavailable on this host");
-      return;
-    }
-
-    const nativeEnvironment = isolatedEnvironment(root);
-    for (const [profile, packageRoot] of Object.entries(packages)) {
-      const validation = await runCheckedCommand(t, `agy ${profile} plugin validation`, {
-        executable: "agy",
-        args: ["plugin", "validate", packageRoot],
-        cwd: root,
-        env: nativeEnvironment,
-        timeoutMs: 120_000
-      }, { product: "agy", roots: [root] });
-      if (validation.status === "PASS") {
-        await t.test(`agy ${profile} validator exact counts`, async () => {
-          assert.deepEqual(parseAgyValidationSummary(validation.result.stdout), { skills: 28, agents: 7, hooks: 1 });
-        });
-      } else {
-        await skipSubtest(t, `agy ${profile} validator exact counts`, validation.reason);
-      }
-      await t.test(`agy ${profile} statusline fixture`, async (subtest) => {
-        const output = await runStatuslineLauncher(packageRoot, launcherForPlatform(process.platform), AGY_FIXTURE, subtest);
-        if (output === null) return;
-        assert.equal(/T07 agy fixture/iu.test(output), true, "agy statusline must use the fixture name");
-        assert.equal(/gemini-3\.7-flash-high/iu.test(output), true, "agy statusline must show the approved exact slug");
-        assert.equal(output.split(/\r?\n/u).length, 1, "agy statusline must render one stable line");
-      });
-    }
-
-    const isolatedHome = resolve(root, "agy-home");
-    await mkdir(isolatedHome, { recursive: true });
-    const modelEnvironment = isolatedEnvironment(root, {
-      HOME: isolatedHome,
-      USERPROFILE: isolatedHome,
-      APPDATA: isolatedHome,
-      LOCALAPPDATA: isolatedHome,
-      XDG_CONFIG_HOME: isolatedHome,
-      TEMP: isolatedHome,
-      TMP: isolatedHome,
-      TMPDIR: isolatedHome
-    });
-    const models = await runCheckedCommand(t, "agy isolated model discovery", {
-      executable: "agy",
-      args: ["models"],
-      cwd: packages.template,
-      env: modelEnvironment,
-      timeoutMs: 120_000
-    }, { product: "agy", roots: [root] });
-    if (models.status !== "PASS") {
-      await skipSubtest(t, "agy exact model slug and no-install state", models.reason);
-      return;
-    }
-    await t.test("agy exact model slug and no-install state", async () => {
-      const output = sanitizedText(models.result.stdout, [root]);
-      assert.equal(/(?:^|\s)gemini-3\.7-flash-high(?:\s|$)/u.test(output), true, "agy models must list the approved exact slug");
-      const files = await listFiles(isolatedHome);
-      assert.equal(files.some((path) => /settings\.json$/u.test(path)), false, "agy model probe must not create settings.json");
-      assert.equal(files.some((path) => /(?:^|\/)plugins?(?:\/|$)|(?:^|\/)settings\.json$/iu.test(path)), false, "agy model probe must not create plugin or settings state");
-    });
-  });
-});
-
-test("T06 agy registration copies GEMINI.md to the separate Gemini home before plugin actions", async () => {
-  await withDisposableRoot(async (root) => {
-    const packageRoot = resolve(root, "agy-template");
-    const instructionRoot = resolve(root, "gemini");
-    const productRoot = resolve(instructionRoot, "antigravity-cli");
-    await renderPackage("agy", "template", packageRoot);
-    await mkdir(productRoot, { recursive: true });
-    const plan = planNativeRegistration({
-      surface: "agy",
-      packageRoot,
-      productRoot,
-      instructionRoot,
-      profile: "template",
-      platform: process.platform
-    });
-    const dryRun = await runNativeRegistration(plan, { mode: "dry-run" });
-    assert.equal(dryRun.status, "dry-run");
-    assert.equal(dryRun.productRoot, "<PRODUCT_ROOT>");
-    assert.equal(dryRun.instructionRoot, "<INSTRUCTION_ROOT>");
-    assert.equal(dryRun.actions[0].id, "gemini-instructions-deploy");
-    const first = await runNativeRegistration(plan, {
-      mode: "apply",
-      runProcess: async () => ({ exitCode: 0, stdout: "", stderr: "" })
-    });
-    assert.equal(first.status, "complete");
-    assert.equal(await readFile(resolve(instructionRoot, "GEMINI.md"), "utf8"), await readFile(resolve(packageRoot, "GEMINI.md"), "utf8"));
-    const second = await runNativeRegistration(plan, {
-      mode: "apply",
-      runProcess: async () => ({ exitCode: 0, stdout: "", stderr: "" })
-    });
-    assert.equal(second.status, "complete");
-    assert.equal(second.actions[0].result.changed, false);
-    assert.equal(await pathExists(resolve(productRoot, "settings.json")), true);
-  });
-});
-
-test("T07 Antigravity Desktop UI and permission evidence remain manual", (t) => {
-  const reason = "status=NOT_RUN reason=Desktop UI, trust, permission, and emergency Deny checks require a fresh manual session";
-  t.diagnostic(reason);
-  t.skip(reason);
 });
 
 test("T07 real product-root metadata comparison is outside the disposable safety boundary", (t) => {

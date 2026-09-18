@@ -17,7 +17,7 @@ native tool registered, trusted, active, or runtime verified the skill. Use
 ## Canonical source
 
 The canonical source is `core/skills/<skill-name>/`. Do not edit a generated
-Claude, Codex, Antigravity, or `agy` copy as the source.
+Claude or Codex copy as the source.
 
 ## New-skill update flow
 
@@ -45,7 +45,7 @@ Review these items together:
 - routing metadata and capability records
 - behavior and static tests
 - evaluation cases and snapshots affected by the change
-- user documentation that names the skill or its command
+- user documentation that names the skill
 
 Use the `all-about-agents:writing-skills` process. A skill is behavior, not only
 text. Test what an agent does after reading it.

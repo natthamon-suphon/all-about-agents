@@ -8,7 +8,7 @@ import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderForSurface } from "../../installers/lib/render.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
 
-const SURFACES = ["claude", "codex", "antigravity-2", "agy"];
+const SURFACES = ["claude", "codex"];
 const NAMESPACES = new Set(SURFACES.map((surface) => `${surface}/`));
 
 function manifestPatternRegex(pattern) {
@@ -108,8 +108,6 @@ test("explicit all-surface apply is namespaced and idempotent", async () => {
     const afterFirst = await snapshotTree(root);
     const installed = Object.keys(afterFirst).filter((relativePath) => relativePath !== ".all-about-agents/state.json");
     assertNamespaced(installed);
-    assert.ok(afterFirst["antigravity-2/GEMINI.md"], "Desktop global instructions must remain at the package root for manual review and copy");
-    assert.equal(installed.some((relativePath) => relativePath.startsWith("antigravity-2/~/")), false, "aggregate packages must not materialize a literal home-marker directory");
     assert.ok(afterFirst[".all-about-agents/state.json"], "aggregate ownership state must be written");
     const state = JSON.parse(Buffer.from(afterFirst[".all-about-agents/state.json"], "base64").toString("utf8"));
     assert.deepEqual(new Set(state.surfaces), new Set(SURFACES));
@@ -132,10 +130,10 @@ test("single-surface refresh preserves every other surface in a shared managed r
     const refresh = await runCli(["install", "--surface", "claude", "--destination-root", root, "--apply", "--format", "json"]);
     assert.equal(refresh.code, 0, refresh.stderr);
     assert.equal(refresh.report.status, "complete");
-    assert.ok(refresh.report.plans[0].actions.every((action) => !action.relativePath.startsWith("codex/") && !action.relativePath.startsWith("agy/") && !action.relativePath.startsWith("antigravity-2/")), "single-surface plan must not mutate another surface namespace");
+    assert.ok(refresh.report.plans[0].actions.every((action) => !action.relativePath.startsWith("codex/")), "single-surface plan must not mutate another surface namespace");
 
     const after = await snapshotTree(root);
-    for (const prefix of ["codex/", "agy/", "antigravity-2/"]) {
+    for (const prefix of ["codex/"]) {
       for (const [relativePath, content] of Object.entries(before)) {
         if (relativePath.startsWith(prefix)) assert.equal(after[relativePath], content, `${relativePath} must be preserved byte-for-byte`);
       }
@@ -145,31 +143,6 @@ test("single-surface refresh preserves every other surface in a shared managed r
     const state = JSON.parse(Buffer.from(after[".all-about-agents/state.json"], "base64").toString("utf8"));
     assert.deepEqual(new Set(state.surfaces), new Set(SURFACES));
     assert.deepEqual(new Set(state.ownedPaths.map((entry) => entry.relativePath)), new Set(Object.keys(after).filter((relativePath) => relativePath !== ".all-about-agents/state.json")));
-  });
-});
-
-test("automatic all-surface apply fails before mutating discovered roots", async () => {
-  await withTempRoot(async (root) => {
-    const claudeRoot = join(root, "claude");
-    const codexRoot = join(root, "codex");
-    const previousClaude = process.env.CLAUDE_CONFIG_DIR;
-    const previousCodex = process.env.CODEX_HOME;
-    process.env.CLAUDE_CONFIG_DIR = claudeRoot;
-    process.env.CODEX_HOME = codexRoot;
-    try {
-      const result = await runCli(["install", "--surface", "all", "--apply", "--format", "json"]);
-      assert.equal(result.code, 1);
-      assert.ok(["fail", "failed"].includes(result.report.status));
-      assert.match(JSON.stringify(result.report.error), /manual\/discovery|explicit destination|root/i);
-      assert.deepEqual(await snapshotTree(claudeRoot), {});
-      assert.deepEqual(await snapshotTree(codexRoot), {});
-      assert.equal((await snapshotTree(root))[".all-about-agents/state.json"], undefined);
-    } finally {
-      if (previousClaude === undefined) delete process.env.CLAUDE_CONFIG_DIR;
-      else process.env.CLAUDE_CONFIG_DIR = previousClaude;
-      if (previousCodex === undefined) delete process.env.CODEX_HOME;
-      else process.env.CODEX_HOME = previousCodex;
-    }
   });
 });
 
@@ -191,4 +164,28 @@ test("every rendered surface file is declared by its manifest ownership patterns
       assert.deepEqual(uncovered, [], `${surface}/${profile} has files outside manifest ownership: ${uncovered.join(", ")}`);
     }
   }
+});
+
+test("install --apply without --destination-root fails closed before touching any discovered root", async () => {
+  await withTempRoot(async (root) => {
+    const claudeRoot = join(root, "claude");
+    const codexRoot = join(root, "codex");
+    const previous = { CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR, CODEX_HOME: process.env.CODEX_HOME };
+    process.env.CLAUDE_CONFIG_DIR = claudeRoot;
+    process.env.CODEX_HOME = codexRoot;
+    try {
+      for (const surface of ["all", ...SURFACES]) {
+        const result = await runCli(["install", "--surface", surface, "--apply", "--format", "json"]);
+        assert.notEqual(result.code, 0, `${surface}: apply without an explicit destination must not succeed`);
+        assert.match(JSON.stringify(result.report), /destination-root-required/u, `${surface}: report must name the guard`);
+        assert.deepEqual(await snapshotTree(claudeRoot), {}, `${surface}: discovered Claude root must stay untouched`);
+        assert.deepEqual(await snapshotTree(codexRoot), {}, `${surface}: discovered Codex root must stay untouched`);
+      }
+    } finally {
+      for (const [name, value] of Object.entries(previous)) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+    }
+  });
 });

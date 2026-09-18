@@ -3,7 +3,7 @@ import { dirname, isAbsolute, resolve } from "node:path";
 
 import { assertSafeDestinationRoot } from "./roots.mjs";
 
-const SURFACES = Object.freeze(["claude", "codex", "antigravity-2", "agy"]);
+const SURFACES = Object.freeze(["claude", "codex"]);
 const PROFILES = new Set(["portable", "template"]);
 const STATUSES = new Set(["pass", "fail", "not run"]);
 

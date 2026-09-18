@@ -13,8 +13,8 @@ For the separate native mutation and lifecycle record, use
 [native verification](../maintenance/native-verification.md).
 
 The global behavior source is
-`core/instructions/global-operating-rules.md`. Claude, Codex, Desktop, and
-`agy` render it into their documented global files. Project and plugin rules
+`core/instructions/global-operating-rules.md`. Claude and Codex render it
+into their documented global files. Project and plugin rules
 are a second, more specific layer. The presentation contract checks the emoji
 after each visible name, a short reason, and a 2-to-7 item checklist. This is
 model guidance, not a UI guarantee.
@@ -72,8 +72,7 @@ that describes an unknown or manual capability remains a warning only when the
 artifact also explicitly prevents automatic use.
 
 Gate 0 also checks that the exact global destinations are documented:
-`<CLAUDE_CONFIG_DIR>/CLAUDE.md`, `<CODEX_HOME>/AGENTS.md`, and
-`~/.gemini/GEMINI.md` for Antigravity Desktop and `agy`. It checks that
+`<CLAUDE_CONFIG_DIR>/CLAUDE.md` and `<CODEX_HOME>/AGENTS.md`. It checks that
 `CLAUDE.local.md` and `GEMINI.local.md` are not used as global destinations,
 and that the receiving-machine order is:
 
@@ -131,16 +130,12 @@ following:
 
 - Claude Code strict validation and statusline fixture checks for both
   profiles, then isolated marketplace install and exact enabled-plugin
-  discovery for the template package.
+  discovery for the template package. The Windows statusline command ran with
+  fixture stdin for both profiles. The POSIX launcher rendered; macOS runtime
+  was not run.
 - Codex marketplace add, plugin add, exact installed/enabled JSON discovery,
   and hook files inside the discovered installed package. All Codex state is
   under a disposable `CODEX_HOME`. Hook trust remains `NOT_RUN`.
-- `agy` validation for both profiles with exact native counts of 28 skills,
-  7 agents, and 1 hook. The Windows statusline command ran with fixture stdin
-  for both profiles. The POSIX launcher rendered; macOS runtime was not run.
-  The isolated model list must contain the exact `gemini-3.7-flash-high` slug.
-- Antigravity Desktop remains manual-only. The harness never automates its UI,
-  trust, permissions, or emergency Deny rules.
 
 Native product commands use explicit executable arguments and `shell: false`.
 The child environment starts from a small allowlist. Home, config, cache, and
@@ -156,18 +151,16 @@ the documented native `plugin add` operation clones its marketplace source.
 This Git repository exists only inside the temporary test root. Before
 cleanup, the test checks the canonical root, every path, and every symlink
 target. It removes roots after success and after an intentional failure. It
-never installs an `agy` plugin, writes `agy` settings, authenticates a model,
-or reads a real product root. The real-root metadata comparison is therefore
-explicitly `NOT_RUN`, not a guessed pass.
+never authenticates a model or reads a real product root. The real-root
+metadata comparison is therefore explicitly `NOT_RUN`, not a guessed pass.
 
 The final Windows T07 command exited `0`: 37 tests, 35 passed, 0 failed, and
 2 were skipped as `NOT_RUN`. The observed CLI versions were Claude Code
-`2.1.251`, Codex CLI `0.151.0-alpha.7.2`, and `agy` `1.1.22`. The two skipped
-checks were Desktop UI/manual controls and live-root metadata comparison.
+`2.1.251` and Codex CLI `0.151.0-alpha.7.2`. The two skipped checks were
+manual product controls and live-root metadata comparison.
 
-Use the checklist at
-`tests/integration/manual-desktop-checklist.json` to record exact product
-versions and separate `PASS`, `NOT_RUN`, and `NOT_RUN_UNAVAILABLE` results.
+Record exact product versions and separate `PASS`, `NOT_RUN`, and
+`NOT_RUN_UNAVAILABLE` results.
 A green disposable check proves only the observed disposable operation. It
 does not prove trust, active hooks, an interactive session, persistence, or an
 authenticated model request.
@@ -336,15 +329,12 @@ Current Windows evidence is partial. Earlier T049 evidence used Claude Code
 validation, disposable registration/install, exact enabled-plugin discovery,
 and both statusline profiles. Codex CLI 0.151.0-alpha.7.2 passed disposable
 marketplace registration, plugin install, exact installed discovery, and
-installed hook-file checks. `agy` 1.1.22 passed both native package validators,
-both statusline profiles, and isolated model discovery. Earlier manual evidence
-also recorded that Antigravity Desktop 2.11.0 discovered the disposable project
-package. The isolated CLI roots contained no credentials, and no macOS host was
-available.
+installed hook-file checks. The isolated CLI roots contained no credentials,
+and no macOS host was available.
 Therefore authenticated Claude/Codex execution, hook and permission behavior,
-persistence, Codex Desktop, Antigravity IDE, macOS, and all unexecuted Gate 2
+persistence, Codex Desktop, macOS, and all unexecuted Gate 2
 checks and Gate 3 fresh-session evaluation remain `NOT_RUN_UNAVAILABLE` or
-`NOT_RUN` as recorded in the manual checklist. Partial evidence cannot support
+`NOT_RUN`. Partial evidence cannot support
 a broader behavioral, routing, model-fallback, hook, or persistence release
 claim and is not evidence that unrun checks pass.
 

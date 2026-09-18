@@ -33,8 +33,6 @@ jobs:
           node --test
           tests/integration/claude-install.test.mjs
           tests/integration/codex-install.test.mjs
-          tests/integration/antigravity-2-install.test.mjs
-          tests/integration/agy-install.test.mjs
           tests/integration/all-surfaces.test.mjs
 
       - name: Smoke-test PowerShell launcher

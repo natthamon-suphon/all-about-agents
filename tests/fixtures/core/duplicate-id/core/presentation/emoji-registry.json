@@ -1,6 +1,29 @@
 {
   "schemaVersion": 1,
-  "skills": {}, "roles": {}, "subagents": { "default": { "emoji": "🤖" } }, "commands": {}, "workflows": {},
-  "hooks": { "activity-audit": { "emoji": "🧾" }, "bootstrap": { "emoji": "🚀" }, "checkpoint": { "emoji": "💾" } },
-  "profiles": { "portable": { "emoji": "🧳" }, "template": { "emoji": "⚙️" } }
+  "skills": {},
+  "roles": {},
+  "subagents": {
+    "default": {
+      "emoji": "🤖"
+    }
+  },
+  "hooks": {
+    "activity-audit": {
+      "emoji": "🧾"
+    },
+    "bootstrap": {
+      "emoji": "🚀"
+    },
+    "checkpoint": {
+      "emoji": "💾"
+    }
+  },
+  "profiles": {
+    "portable": {
+      "emoji": "🧳"
+    },
+    "template": {
+      "emoji": "⚙️"
+    }
+  }
 }

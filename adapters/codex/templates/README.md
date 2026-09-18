@@ -2,12 +2,11 @@
 
 The adapter renders a deterministic Codex package from the canonical core.
 It writes a regular `AGENTS.md` whose first section is the shared canonical
-global body, followed by Codex rules, one compact presentation catalog, and
-the canonical action-to-workflow mappings. Repository skills live under
-`.agents/skills/`, and standalone custom-agent TOML files live under
-`.codex/agents/`.
+global body, followed by Codex rules and one compact presentation catalog.
+Repository skills live under `.agents/skills/`, and standalone custom-agent
+TOML files live under `.codex/agents/`.
 
-Visible skill, agent, command, and workflow entries use the canonical display
+Visible skill, agent, subagent, and hook entries use the canonical display
 name plus its registered emoji. Each prompt or action includes one short
 reason and one bounded checklist. This is model guidance: it keeps the
 machine IDs, TOML keys, file paths, and native discovery names unchanged.

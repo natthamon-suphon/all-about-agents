@@ -1,10 +1,40 @@
 {
   "schemaVersion": 1,
-  "skills": { "alpha": { "emoji": "🅰️" }, "beta": { "emoji": "🅱️" } },
-  "roles": { "reviewer": { "emoji": "👀" } },
-  "subagents": { "default": { "emoji": "🤖" } },
-  "commands": { "aaa:review": { "emoji": "👀" }, "aaa:verify": { "emoji": "✅" } },
-  "workflows": { "a-flow": { "emoji": "🔹" }, "z-flow": { "emoji": "🔸" } },
-  "hooks": { "activity-audit": { "emoji": "🧾" }, "bootstrap": { "emoji": "🚀" }, "checkpoint": { "emoji": "💾" } },
-  "profiles": { "portable": { "emoji": "🧳" }, "template": { "emoji": "⚙️" } }
+  "skills": {
+    "alpha": {
+      "emoji": "🅰️"
+    },
+    "beta": {
+      "emoji": "🅱️"
+    }
+  },
+  "roles": {
+    "reviewer": {
+      "emoji": "👀"
+    }
+  },
+  "subagents": {
+    "default": {
+      "emoji": "🤖"
+    }
+  },
+  "hooks": {
+    "activity-audit": {
+      "emoji": "🧾"
+    },
+    "bootstrap": {
+      "emoji": "🚀"
+    },
+    "checkpoint": {
+      "emoji": "💾"
+    }
+  },
+  "profiles": {
+    "portable": {
+      "emoji": "🧳"
+    },
+    "template": {
+      "emoji": "⚙️"
+    }
+  }
 }

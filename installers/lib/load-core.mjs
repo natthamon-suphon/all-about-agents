@@ -8,7 +8,7 @@ import { CANONICAL_ROLE_IDS, canonicalRoleCapabilityErrors, isSafePortableRolePr
 
 export { SEMANTIC_CAPABILITIES, VENDOR_NATIVE_TOOL_NAMES };
 
-const SCHEMA_NAMES = Object.freeze(["rule", "role", "workflow", "command", "skill"]);
+const SCHEMA_NAMES = Object.freeze(["rule", "role", "skill"]);
 
 // These are the only capability names that may cross the portable/native seam.
 // Adapters map them to product-specific tools; the core never does that mapping.
@@ -849,9 +849,7 @@ function checkDuplicateIds(collection, errors) {
 
 const REFERENCE_FIELDS = {
   skills: /^(?:required|allowed|optional)?skills?$|^skillids?$/iu,
-  roles: /^(?:required|allowed|optional)?roles?$|^roleids?$/iu,
-  workflows: /^(?:required|allowed|optional)?workflows?$|^workflowids?$/iu,
-  commands: /^(?:required|allowed|optional)?commands?$|^commandids?$/iu
+  roles: /^(?:required|allowed|optional)?roles?$|^roleids?$/iu
 };
 
 function checkReferences(collections, errors) {
@@ -976,16 +974,14 @@ export async function loadCore(root, options = {}) {
     }
   }
 
-  const [globalInstructions, rules, roles, skills, workflows, commands, evals] = await Promise.all([
+  const [globalInstructions, rules, roles, skills, evals] = await Promise.all([
     loadGlobalInstructions(repositoryRoot, coreRoot, errors),
     loadJsonCollection(repositoryRoot, coreRoot, "rules", "rule", errors),
     loadRoleCollection(repositoryRoot, coreRoot, errors),
     loadSkills(repositoryRoot, coreRoot, inventory, errors),
-    loadJsonCollection(repositoryRoot, coreRoot, "workflows", "workflow", errors),
-    loadJsonCollection(repositoryRoot, coreRoot, "commands", "command", errors),
     loadEvaluations(repositoryRoot, coreRoot, errors)
   ]);
-  const collections = { rules, roles, skills, workflows, commands, evals };
+  const collections = { rules, roles, skills, evals };
   for (const collection of Object.values(collections)) checkDuplicateIds(collection, errors);
   errors.push(...roleContractErrors(roles, inventory?.repository === "all-about-agents"));
   errors.push(...await mutationScopeContainmentErrors(repositoryRoot, roles));
@@ -994,8 +990,6 @@ export async function loadCore(root, options = {}) {
   const canonical = {
     skills: Array.isArray(inventory?.skills) ? inventory.skills : [],
     roles: roles.map((entry) => entry.record.id),
-    commands: commands.map((entry) => entry.record.actionId),
-    workflows: workflows.map((entry) => entry.record.id),
     hooks: [...FIXED_PRESENTATION_HOOKS],
     profiles: [...FIXED_PRESENTATION_PROFILES]
   };
@@ -1007,8 +1001,6 @@ export async function loadCore(root, options = {}) {
     rules: rules.map((entry) => entry.record),
     roles: roles.map((entry) => entry.record),
     skills: skills.map((entry) => entry.record),
-    workflows: workflows.map((entry) => entry.record),
-    commands: commands.map((entry) => entry.record),
     evals: evals.map((entry) => entry.record),
     presentation
   };

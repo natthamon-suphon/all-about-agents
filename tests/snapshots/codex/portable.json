@@ -1,5 +1,5 @@
 {
-  "fileCount": 177,
+  "fileCount": 161,
   "files": [
     {
       "relativePath": ".agents/plugins/marketplace.json",
@@ -78,7 +78,7 @@
     },
     {
       "relativePath": ".agents/skills/handoff/SKILL.md",
-      "sha256": "f8cbffd0a1e774649cc53c8f7a9afeb77c9b6fc7aa83b4d5e0285bbd81839678",
+      "sha256": "0e867c801b7f96ad141efc20fc6bc8bda61a37c95f9be2b08584d1f4baedcc57",
       "mode": null
     },
     {
@@ -148,7 +148,7 @@
     },
     {
       "relativePath": ".agents/skills/session-compaction-resilience/SKILL.md",
-      "sha256": "ea5f1cbf51d8da5d3fd14b1686fd6e65ae8daa287f39dedbe64e23c60e6ef395",
+      "sha256": "33e3cfacb165a65ef04825206ee098259cc80e25c0f80d845282d40620d50907",
       "mode": null
     },
     {
@@ -207,11 +207,6 @@
       "mode": null
     },
     {
-      "relativePath": ".agents/skills/systematic-debugging/CREATION-LOG.md",
-      "sha256": "c24733a5b1821bd6bed1fc950261f0b9f4e90097e0bbb96459d8179713730789",
-      "mode": null
-    },
-    {
       "relativePath": ".agents/skills/systematic-debugging/SKILL.md",
       "sha256": "c8b8caea1f0b42dbf28a345724432c571cd79a5262860dca61d5da6fdaf30def",
       "mode": null
@@ -252,26 +247,6 @@
       "mode": null
     },
     {
-      "relativePath": ".agents/skills/systematic-debugging/test-academic.md",
-      "sha256": "fe2ba480d78ac0d686dc025f41c2a32a43d642bf533f91b0c6053a04d35d6486",
-      "mode": null
-    },
-    {
-      "relativePath": ".agents/skills/systematic-debugging/test-pressure-1.md",
-      "sha256": "0b6a915db0054577819834c79be9eb614e97bddba10d73768e1fbe91cfed048a",
-      "mode": null
-    },
-    {
-      "relativePath": ".agents/skills/systematic-debugging/test-pressure-2.md",
-      "sha256": "b2030aeffba07050e8ad573ddf87486457c4a016a786bb326235bebd856f2016",
-      "mode": null
-    },
-    {
-      "relativePath": ".agents/skills/systematic-debugging/test-pressure-3.md",
-      "sha256": "96b50a52e2c7989c9cf20fb752c47c1e9a3a70dc362f8f7989f8f5b64dac7708",
-      "mode": null
-    },
-    {
       "relativePath": ".agents/skills/test-driven-development/SKILL.md",
       "sha256": "bfb5491a300aca1d6aa3349977f371a773e80577ac9140837987d94fc2e30c14",
       "mode": null
@@ -298,27 +273,12 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "f39728597bf958a19060c33ac728f427bc0406dace7a97f3dd91b81a72e93b00",
-      "mode": null
-    },
-    {
-      "relativePath": ".agents/skills/using-all-about-agents/references/antigravity-tools.md",
-      "sha256": "85e1b4283f7a55486d07546014a70cc94a24bb58d300f2aaca0ba9ec5851d421",
+      "sha256": "32c4d1ec495cb19f96163bb1c1781a3da508784bac2b70f23d0e21f0a000ed8d",
       "mode": null
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/codex-tools.md",
       "sha256": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68",
-      "mode": null
-    },
-    {
-      "relativePath": ".agents/skills/using-all-about-agents/references/gemini-tools.md",
-      "sha256": "502545bea9b0136df4a1757558caa43f7d51a5b9bb5636679cd167b0ff5e6666",
-      "mode": null
-    },
-    {
-      "relativePath": ".agents/skills/using-all-about-agents/references/pi-tools.md",
-      "sha256": "2bbe68e9bf0f2b301c12d622b76db558121ec54d68d0601d38212025fdff6e78",
       "mode": null
     },
     {
@@ -443,7 +403,7 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "769a0166d529a66a890d99452ac9ba2dbfc400f5900d7d282035d473ef122a95",
+      "sha256": "543d973496fc8d6c140b6ad1f027e1d5409169fa240285dfeab7ab727bd4c972",
       "mode": null
     },
     {
@@ -468,7 +428,7 @@
     },
     {
       "relativePath": "hooks/audit-log.mjs",
-      "sha256": "1919d1d5e39ff08f69a9136426f8f1a7ce61949f1ca59b762be2436991a2604d",
+      "sha256": "bd13821e2ac58646630718575e32c7ea26db0304ae90d3304ddfaa9b6b899a04",
       "mode": 493
     },
     {
@@ -478,12 +438,12 @@
     },
     {
       "relativePath": "hooks/bootstrap.mjs",
-      "sha256": "753d71622c3f73f87bc648bed1b0635ff9f80e810670bc3cebb7be82f20a66a8",
+      "sha256": "91faff936da797b672e17f3abc4fa747464895cb507c8b3df1815fb7d5861395",
       "mode": 493
     },
     {
       "relativePath": "hooks/checkpoint.json",
-      "sha256": "8e42420e8a8d218e746243b3d08a1e120128d6cfe173af570860b2a5b8be133e",
+      "sha256": "8a84e0b840969583166c38eebd19e34b884ddb6377380dbfc45ed9424f1c72dd",
       "mode": null
     },
     {
@@ -493,7 +453,7 @@
     },
     {
       "relativePath": "hooks/pre-compact.mjs",
-      "sha256": "b0e3e1c46e93938ee5716c6b078a45dfb0c81f3e29acef75cdcb148fe17ca364",
+      "sha256": "34e890ac65353c20ad10aeba1313145989d67233f26a96f0770a98d6072867bd",
       "mode": 493
     },
     {
@@ -568,7 +528,7 @@
     },
     {
       "relativePath": "skills/handoff/SKILL.md",
-      "sha256": "f8cbffd0a1e774649cc53c8f7a9afeb77c9b6fc7aa83b4d5e0285bbd81839678",
+      "sha256": "0e867c801b7f96ad141efc20fc6bc8bda61a37c95f9be2b08584d1f4baedcc57",
       "mode": null
     },
     {
@@ -638,7 +598,7 @@
     },
     {
       "relativePath": "skills/session-compaction-resilience/SKILL.md",
-      "sha256": "ea5f1cbf51d8da5d3fd14b1686fd6e65ae8daa287f39dedbe64e23c60e6ef395",
+      "sha256": "33e3cfacb165a65ef04825206ee098259cc80e25c0f80d845282d40620d50907",
       "mode": null
     },
     {
@@ -697,11 +657,6 @@
       "mode": null
     },
     {
-      "relativePath": "skills/systematic-debugging/CREATION-LOG.md",
-      "sha256": "c24733a5b1821bd6bed1fc950261f0b9f4e90097e0bbb96459d8179713730789",
-      "mode": null
-    },
-    {
       "relativePath": "skills/systematic-debugging/SKILL.md",
       "sha256": "c8b8caea1f0b42dbf28a345724432c571cd79a5262860dca61d5da6fdaf30def",
       "mode": null
@@ -742,26 +697,6 @@
       "mode": null
     },
     {
-      "relativePath": "skills/systematic-debugging/test-academic.md",
-      "sha256": "fe2ba480d78ac0d686dc025f41c2a32a43d642bf533f91b0c6053a04d35d6486",
-      "mode": null
-    },
-    {
-      "relativePath": "skills/systematic-debugging/test-pressure-1.md",
-      "sha256": "0b6a915db0054577819834c79be9eb614e97bddba10d73768e1fbe91cfed048a",
-      "mode": null
-    },
-    {
-      "relativePath": "skills/systematic-debugging/test-pressure-2.md",
-      "sha256": "b2030aeffba07050e8ad573ddf87486457c4a016a786bb326235bebd856f2016",
-      "mode": null
-    },
-    {
-      "relativePath": "skills/systematic-debugging/test-pressure-3.md",
-      "sha256": "96b50a52e2c7989c9cf20fb752c47c1e9a3a70dc362f8f7989f8f5b64dac7708",
-      "mode": null
-    },
-    {
       "relativePath": "skills/test-driven-development/SKILL.md",
       "sha256": "bfb5491a300aca1d6aa3349977f371a773e80577ac9140837987d94fc2e30c14",
       "mode": null
@@ -788,27 +723,12 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "f39728597bf958a19060c33ac728f427bc0406dace7a97f3dd91b81a72e93b00",
-      "mode": null
-    },
-    {
-      "relativePath": "skills/using-all-about-agents/references/antigravity-tools.md",
-      "sha256": "85e1b4283f7a55486d07546014a70cc94a24bb58d300f2aaca0ba9ec5851d421",
+      "sha256": "32c4d1ec495cb19f96163bb1c1781a3da508784bac2b70f23d0e21f0a000ed8d",
       "mode": null
     },
     {
       "relativePath": "skills/using-all-about-agents/references/codex-tools.md",
       "sha256": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68",
-      "mode": null
-    },
-    {
-      "relativePath": "skills/using-all-about-agents/references/gemini-tools.md",
-      "sha256": "502545bea9b0136df4a1757558caa43f7d51a5b9bb5636679cd167b0ff5e6666",
-      "mode": null
-    },
-    {
-      "relativePath": "skills/using-all-about-agents/references/pi-tools.md",
-      "sha256": "2bbe68e9bf0f2b301c12d622b76db558121ec54d68d0601d38212025fdff6e78",
       "mode": null
     },
     {
@@ -950,7 +870,7 @@
     },
     {
       "relativePath": ".agents/skills/handoff/SKILL.md",
-      "sha256": "f8cbffd0a1e774649cc53c8f7a9afeb77c9b6fc7aa83b4d5e0285bbd81839678"
+      "sha256": "0e867c801b7f96ad141efc20fc6bc8bda61a37c95f9be2b08584d1f4baedcc57"
     },
     {
       "relativePath": ".agents/skills/improve-codebase-architecture/HTML-REPORT.md",
@@ -1006,7 +926,7 @@
     },
     {
       "relativePath": ".agents/skills/session-compaction-resilience/SKILL.md",
-      "sha256": "ea5f1cbf51d8da5d3fd14b1686fd6e65ae8daa287f39dedbe64e23c60e6ef395"
+      "sha256": "33e3cfacb165a65ef04825206ee098259cc80e25c0f80d845282d40620d50907"
     },
     {
       "relativePath": ".agents/skills/session-compaction-resilience/snapshot-template.md",
@@ -1053,10 +973,6 @@
       "sha256": "e3b4a1bfe7cd55ed0459e5ca9cdddb6ff086c345b99e9097036db6a18545729e"
     },
     {
-      "relativePath": ".agents/skills/systematic-debugging/CREATION-LOG.md",
-      "sha256": "c24733a5b1821bd6bed1fc950261f0b9f4e90097e0bbb96459d8179713730789"
-    },
-    {
       "relativePath": ".agents/skills/systematic-debugging/SKILL.md",
       "sha256": "c8b8caea1f0b42dbf28a345724432c571cd79a5262860dca61d5da6fdaf30def"
     },
@@ -1089,22 +1005,6 @@
       "sha256": "d2944b36766e51ccecb9f9e891d3b1c56f3122bcd575675c800100bed7be1da7"
     },
     {
-      "relativePath": ".agents/skills/systematic-debugging/test-academic.md",
-      "sha256": "fe2ba480d78ac0d686dc025f41c2a32a43d642bf533f91b0c6053a04d35d6486"
-    },
-    {
-      "relativePath": ".agents/skills/systematic-debugging/test-pressure-1.md",
-      "sha256": "0b6a915db0054577819834c79be9eb614e97bddba10d73768e1fbe91cfed048a"
-    },
-    {
-      "relativePath": ".agents/skills/systematic-debugging/test-pressure-2.md",
-      "sha256": "b2030aeffba07050e8ad573ddf87486457c4a016a786bb326235bebd856f2016"
-    },
-    {
-      "relativePath": ".agents/skills/systematic-debugging/test-pressure-3.md",
-      "sha256": "96b50a52e2c7989c9cf20fb752c47c1e9a3a70dc362f8f7989f8f5b64dac7708"
-    },
-    {
       "relativePath": ".agents/skills/test-driven-development/SKILL.md",
       "sha256": "bfb5491a300aca1d6aa3349977f371a773e80577ac9140837987d94fc2e30c14"
     },
@@ -1126,23 +1026,11 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "f39728597bf958a19060c33ac728f427bc0406dace7a97f3dd91b81a72e93b00"
-    },
-    {
-      "relativePath": ".agents/skills/using-all-about-agents/references/antigravity-tools.md",
-      "sha256": "85e1b4283f7a55486d07546014a70cc94a24bb58d300f2aaca0ba9ec5851d421"
+      "sha256": "32c4d1ec495cb19f96163bb1c1781a3da508784bac2b70f23d0e21f0a000ed8d"
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/codex-tools.md",
       "sha256": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68"
-    },
-    {
-      "relativePath": ".agents/skills/using-all-about-agents/references/gemini-tools.md",
-      "sha256": "502545bea9b0136df4a1757558caa43f7d51a5b9bb5636679cd167b0ff5e6666"
-    },
-    {
-      "relativePath": ".agents/skills/using-all-about-agents/references/pi-tools.md",
-      "sha256": "2bbe68e9bf0f2b301c12d622b76db558121ec54d68d0601d38212025fdff6e78"
     },
     {
       "relativePath": ".agents/skills/using-git-worktrees/SKILL.md",
@@ -1242,7 +1130,7 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "769a0166d529a66a890d99452ac9ba2dbfc400f5900d7d282035d473ef122a95"
+      "sha256": "543d973496fc8d6c140b6ad1f027e1d5409169fa240285dfeab7ab727bd4c972"
     },
     {
       "relativePath": "config.toml",
@@ -1262,7 +1150,7 @@
     },
     {
       "relativePath": "hooks/audit-log.mjs",
-      "sha256": "1919d1d5e39ff08f69a9136426f8f1a7ce61949f1ca59b762be2436991a2604d"
+      "sha256": "bd13821e2ac58646630718575e32c7ea26db0304ae90d3304ddfaa9b6b899a04"
     },
     {
       "relativePath": "hooks/bootstrap.json",
@@ -1270,11 +1158,11 @@
     },
     {
       "relativePath": "hooks/bootstrap.mjs",
-      "sha256": "753d71622c3f73f87bc648bed1b0635ff9f80e810670bc3cebb7be82f20a66a8"
+      "sha256": "91faff936da797b672e17f3abc4fa747464895cb507c8b3df1815fb7d5861395"
     },
     {
       "relativePath": "hooks/checkpoint.json",
-      "sha256": "8e42420e8a8d218e746243b3d08a1e120128d6cfe173af570860b2a5b8be133e"
+      "sha256": "8a84e0b840969583166c38eebd19e34b884ddb6377380dbfc45ed9424f1c72dd"
     },
     {
       "relativePath": "hooks/hooks.json",
@@ -1282,7 +1170,7 @@
     },
     {
       "relativePath": "hooks/pre-compact.mjs",
-      "sha256": "b0e3e1c46e93938ee5716c6b078a45dfb0c81f3e29acef75cdcb148fe17ca364"
+      "sha256": "34e890ac65353c20ad10aeba1313145989d67233f26a96f0770a98d6072867bd"
     },
     {
       "relativePath": "skills/brainstorming/SKILL.md",
@@ -1342,7 +1230,7 @@
     },
     {
       "relativePath": "skills/handoff/SKILL.md",
-      "sha256": "f8cbffd0a1e774649cc53c8f7a9afeb77c9b6fc7aa83b4d5e0285bbd81839678"
+      "sha256": "0e867c801b7f96ad141efc20fc6bc8bda61a37c95f9be2b08584d1f4baedcc57"
     },
     {
       "relativePath": "skills/improve-codebase-architecture/HTML-REPORT.md",
@@ -1398,7 +1286,7 @@
     },
     {
       "relativePath": "skills/session-compaction-resilience/SKILL.md",
-      "sha256": "ea5f1cbf51d8da5d3fd14b1686fd6e65ae8daa287f39dedbe64e23c60e6ef395"
+      "sha256": "33e3cfacb165a65ef04825206ee098259cc80e25c0f80d845282d40620d50907"
     },
     {
       "relativePath": "skills/session-compaction-resilience/snapshot-template.md",
@@ -1445,10 +1333,6 @@
       "sha256": "e3b4a1bfe7cd55ed0459e5ca9cdddb6ff086c345b99e9097036db6a18545729e"
     },
     {
-      "relativePath": "skills/systematic-debugging/CREATION-LOG.md",
-      "sha256": "c24733a5b1821bd6bed1fc950261f0b9f4e90097e0bbb96459d8179713730789"
-    },
-    {
       "relativePath": "skills/systematic-debugging/SKILL.md",
       "sha256": "c8b8caea1f0b42dbf28a345724432c571cd79a5262860dca61d5da6fdaf30def"
     },
@@ -1481,22 +1365,6 @@
       "sha256": "d2944b36766e51ccecb9f9e891d3b1c56f3122bcd575675c800100bed7be1da7"
     },
     {
-      "relativePath": "skills/systematic-debugging/test-academic.md",
-      "sha256": "fe2ba480d78ac0d686dc025f41c2a32a43d642bf533f91b0c6053a04d35d6486"
-    },
-    {
-      "relativePath": "skills/systematic-debugging/test-pressure-1.md",
-      "sha256": "0b6a915db0054577819834c79be9eb614e97bddba10d73768e1fbe91cfed048a"
-    },
-    {
-      "relativePath": "skills/systematic-debugging/test-pressure-2.md",
-      "sha256": "b2030aeffba07050e8ad573ddf87486457c4a016a786bb326235bebd856f2016"
-    },
-    {
-      "relativePath": "skills/systematic-debugging/test-pressure-3.md",
-      "sha256": "96b50a52e2c7989c9cf20fb752c47c1e9a3a70dc362f8f7989f8f5b64dac7708"
-    },
-    {
       "relativePath": "skills/test-driven-development/SKILL.md",
       "sha256": "bfb5491a300aca1d6aa3349977f371a773e80577ac9140837987d94fc2e30c14"
     },
@@ -1518,23 +1386,11 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "f39728597bf958a19060c33ac728f427bc0406dace7a97f3dd91b81a72e93b00"
-    },
-    {
-      "relativePath": "skills/using-all-about-agents/references/antigravity-tools.md",
-      "sha256": "85e1b4283f7a55486d07546014a70cc94a24bb58d300f2aaca0ba9ec5851d421"
+      "sha256": "32c4d1ec495cb19f96163bb1c1781a3da508784bac2b70f23d0e21f0a000ed8d"
     },
     {
       "relativePath": "skills/using-all-about-agents/references/codex-tools.md",
       "sha256": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68"
-    },
-    {
-      "relativePath": "skills/using-all-about-agents/references/gemini-tools.md",
-      "sha256": "502545bea9b0136df4a1757558caa43f7d51a5b9bb5636679cd167b0ff5e6666"
-    },
-    {
-      "relativePath": "skills/using-all-about-agents/references/pi-tools.md",
-      "sha256": "2bbe68e9bf0f2b301c12d622b76db558121ec54d68d0601d38212025fdff6e78"
     },
     {
       "relativePath": "skills/using-git-worktrees/SKILL.md",
@@ -1851,7 +1707,6 @@
       "failureMode": "fail-open",
       "recordedFields": [
         "timestamp",
-        "workflowId",
         "taskId",
         "state",
         "status"

@@ -17,8 +17,6 @@ const requiredOutputs = [
   "core/schemas/inventory.schema.json",
   "adapters/claude/capabilities.json",
   "adapters/codex/capabilities.json",
-  "adapters/antigravity-2/capabilities.json",
-  "adapters/agy/capabilities.json",
   "core/schemas/capability.schema.json",
   "tests/static/inventory.test.mjs",
   "tests/static/capabilities.test.mjs",
@@ -46,39 +44,9 @@ const expectedBaselineFiles = new Map([
   ["tests/static/presentation-safety.test.mjs", { kind: "test", status: "stable" }],
   ["core/skills/test-driven-development/writing-good-tests.md", { kind: "asset", status: "stable" }],
   ["core/skills/zero-downtime-migrations/postgres-expand-contract-examples.md", { kind: "asset", status: "stable" }],
-  ["quarantine/legacy/agents/codebase-architect.json", { kind: "config", status: "quarantined" }],
-  ["quarantine/legacy/agents/codebase-architect.md", { kind: "source", status: "quarantined" }],
-  ["quarantine/legacy/agents/deep-investigator.json", { kind: "config", status: "quarantined" }],
-  ["quarantine/legacy/agents/deep-investigator.md", { kind: "source", status: "quarantined" }],
-  ["quarantine/legacy/agents/generalist.json", { kind: "config", status: "quarantined" }],
-  ["quarantine/legacy/agents/generalist.md", { kind: "source", status: "quarantined" }],
-  ["quarantine/legacy/agents/implementer.json", { kind: "config", status: "quarantined" }],
-  ["quarantine/legacy/agents/implementer.md", { kind: "source", status: "quarantined" }],
-  ["quarantine/legacy/agents/security-auditor.json", { kind: "config", status: "quarantined" }],
-  ["quarantine/legacy/agents/security-auditor.md", { kind: "source", status: "quarantined" }],
-  ["quarantine/legacy/agents/task-reviewer.json", { kind: "config", status: "quarantined" }],
-  ["quarantine/legacy/agents/task-reviewer.md", { kind: "source", status: "quarantined" }],
-  ["quarantine/legacy/hooks/hooks.json", { kind: "config", status: "quarantined" }],
-  ["quarantine/legacy/hooks/antigravity-hooks.json", { kind: "config", status: "quarantined" }],
-  ["quarantine/legacy/hooks/antigravity-session-start.js", { kind: "script", status: "quarantined" }],
-  ["quarantine/legacy/hooks/antigravity-track-tool.js", { kind: "script", status: "quarantined" }],
-  ["quarantine/legacy/hooks/session-start", { kind: "metadata", status: "quarantined" }],
-  ["quarantine/legacy/hooks/run-hook.cmd", { kind: "script", status: "quarantined" }],
-  ["quarantine/legacy/configs/CLAUDE.local.md", { kind: "source", status: "quarantined" }],
-  ["quarantine/legacy/configs/GEMINI.local.md", { kind: "source", status: "quarantined" }],
-  ["quarantine/legacy/configs/settings.local.json", { kind: "config", status: "quarantined" }],
-  ["quarantine/legacy/.claude-plugin/plugin.json", { kind: "config", status: "quarantined" }],
-  ["quarantine/legacy/.claude-plugin/marketplace.json", { kind: "config", status: "quarantined" }],
-  ["quarantine/legacy/statusline/statusline.js", { kind: "script", status: "quarantined" }],
-  ["quarantine/legacy/statusline/track-tool.js", { kind: "script", status: "quarantined" }],
-  ["quarantine/legacy/setup/setup-antigravity.ps1", { kind: "script", status: "quarantined" }],
-  ["quarantine/legacy/setup/setup-antigravity.sh", { kind: "script", status: "quarantined" }],
-  ["quarantine/legacy/setup/setup-guide-antigravity.md", { kind: "source", status: "quarantined" }]
 ]);
 
 const expectedBaselinePaths = `
-quarantine/legacy/.claude-plugin/marketplace.json
-quarantine/legacy/.claude-plugin/plugin.json
 .gitattributes
 .gitignore
 .idea/.gitignore
@@ -90,35 +58,9 @@ quarantine/legacy/.claude-plugin/plugin.json
 AGENTS.md
 CLAUDE.md
 LICENSE
-quarantine/legacy/agents/README.md
-quarantine/legacy/agents/codebase-architect.json
-quarantine/legacy/agents/codebase-architect.md
-quarantine/legacy/agents/deep-investigator.json
-quarantine/legacy/agents/deep-investigator.md
-quarantine/legacy/agents/generalist.json
-quarantine/legacy/agents/generalist.md
-quarantine/legacy/agents/implementer.json
-quarantine/legacy/agents/implementer.md
-quarantine/legacy/agents/security-auditor.json
-quarantine/legacy/agents/security-auditor.md
-quarantine/legacy/agents/task-reviewer.json
-quarantine/legacy/agents/task-reviewer.md
-quarantine/legacy/configs/CLAUDE.local.md
-quarantine/legacy/configs/GEMINI.local.md
-quarantine/legacy/configs/settings.local.json
-quarantine/legacy/docs/antigravity.md
-quarantine/legacy/hooks/antigravity-hooks.json
-quarantine/legacy/hooks/antigravity-session-start.js
-quarantine/legacy/hooks/antigravity-track-tool.js
-quarantine/legacy/hooks/hooks.json
-quarantine/legacy/hooks/run-hook.cmd
-quarantine/legacy/hooks/session-start
 package.json
 scripts/aaa.mjs
 scripts/lint-shell.sh
-quarantine/legacy/setup/setup-antigravity.ps1
-quarantine/legacy/setup/setup-antigravity.sh
-quarantine/legacy/setup/setup-guide-antigravity.md
 core/instructions/global-operating-rules.md
 core/presentation/emoji-registry.json
 core/presentation/progress-contract.json
@@ -163,7 +105,6 @@ core/skills/subagent-driven-development/scripts/sdd-workspace.js
 core/skills/subagent-driven-development/scripts/task-brief
 core/skills/subagent-driven-development/scripts/task-brief.js
 core/skills/subagent-driven-development/task-reviewer-prompt.md
-core/skills/systematic-debugging/CREATION-LOG.md
 core/skills/systematic-debugging/SKILL.md
 core/skills/systematic-debugging/condition-based-waiting-example.ts
 core/skills/systematic-debugging/condition-based-waiting.md
@@ -172,19 +113,12 @@ core/skills/systematic-debugging/feedback-loops.md
 core/skills/systematic-debugging/find-polluter.sh
 core/skills/systematic-debugging/root-cause-tracing.md
 core/skills/systematic-debugging/hitl-loop.template.sh
-core/skills/systematic-debugging/test-academic.md
-core/skills/systematic-debugging/test-pressure-1.md
-core/skills/systematic-debugging/test-pressure-2.md
-core/skills/systematic-debugging/test-pressure-3.md
 core/skills/test-driven-development/SKILL.md
 core/skills/test-driven-development/writing-good-tests.md
 core/skills/threat-modeling-and-security/SKILL.md
 core/skills/threat-modeling-and-security/stride-checklist.md
 core/skills/using-all-about-agents/SKILL.md
-core/skills/using-all-about-agents/references/antigravity-tools.md
 core/skills/using-all-about-agents/references/codex-tools.md
-core/skills/using-all-about-agents/references/gemini-tools.md
-core/skills/using-all-about-agents/references/pi-tools.md
 core/skills/using-git-worktrees/SKILL.md
 core/skills/verification-before-completion/SKILL.md
 core/skills/wait-what/SKILL.md
@@ -200,8 +134,6 @@ core/skills/writing-skills/render-graphs.js
 core/skills/writing-skills/testing-skills-with-subagents.md
 core/skills/zero-downtime-migrations/SKILL.md
 core/skills/zero-downtime-migrations/postgres-expand-contract-examples.md
-quarantine/legacy/statusline/statusline.js
-quarantine/legacy/statusline/track-tool.js
 tests/helpers/temp-root.mjs
 tests/static/repository-layout.test.mjs
 tests/static/runtime.test.mjs
@@ -285,35 +217,6 @@ test("inventory preserves the reconciled canonical and quarantine path contract"
     assert.equal(entry.kind, expected.kind, `baseline category changed: ${path}`);
     assert.equal(entry.auditDisposition.status, expected.status, `baseline disposition changed: ${path}`);
   }
-  assert.deepEqual(inventory.legacyRoles.map((role) => role.name), [
-    "codebase-architect",
-    "deep-investigator",
-    "generalist",
-    "implementer",
-    "security-auditor",
-    "task-reviewer"
-  ]);
-  assert.deepEqual(inventory.hooks.map((hook) => hook.path), [
-    "quarantine/legacy/hooks/hooks.json",
-    "quarantine/legacy/hooks/antigravity-hooks.json",
-    "quarantine/legacy/hooks/antigravity-session-start.js",
-    "quarantine/legacy/hooks/antigravity-track-tool.js",
-    "quarantine/legacy/hooks/session-start",
-    "quarantine/legacy/hooks/run-hook.cmd"
-  ]);
-  assert.deepEqual(inventory.configs.map((config) => config.path), [
-    "quarantine/legacy/.claude-plugin/plugin.json",
-    "quarantine/legacy/.claude-plugin/marketplace.json",
-    "quarantine/legacy/configs/CLAUDE.local.md",
-    "quarantine/legacy/configs/GEMINI.local.md",
-    "quarantine/legacy/configs/settings.local.json"
-  ]);
-  assert.deepEqual(inventory.statusline.map((entry) => entry.path), ["quarantine/legacy/statusline/statusline.js", "quarantine/legacy/statusline/track-tool.js"]);
-  assert.deepEqual(inventory.setupScripts.map((entry) => entry.path), [
-    "quarantine/legacy/setup/setup-antigravity.ps1",
-    "quarantine/legacy/setup/setup-antigravity.sh",
-    "quarantine/legacy/setup/setup-guide-antigravity.md"
-  ]);
 });
 
 test("gitignore keeps the root eval harness ignored without hiding core eval artifacts", async () => {

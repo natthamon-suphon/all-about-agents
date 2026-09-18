@@ -240,17 +240,12 @@
       "name": "systematic-debugging",
       "source": "skills/systematic-debugging/SKILL.md",
       "assets": [
-        "skills/systematic-debugging/CREATION-LOG.md",
         "skills/systematic-debugging/condition-based-waiting-example.ts",
         "skills/systematic-debugging/condition-based-waiting.md",
         "skills/systematic-debugging/defense-in-depth.md",
         "skills/systematic-debugging/feedback-loops.md",
         "skills/systematic-debugging/find-polluter.sh",
-        "skills/systematic-debugging/root-cause-tracing.md",
-        "skills/systematic-debugging/test-academic.md",
-        "skills/systematic-debugging/test-pressure-1.md",
-        "skills/systematic-debugging/test-pressure-2.md",
-        "skills/systematic-debugging/test-pressure-3.md"
+        "skills/systematic-debugging/root-cause-tracing.md"
       ],
       "scripts": [
         "skills/systematic-debugging/hitl-loop.template.sh"
@@ -288,10 +283,7 @@
       "name": "using-all-about-agents",
       "source": "skills/using-all-about-agents/SKILL.md",
       "assets": [
-        "skills/using-all-about-agents/references/antigravity-tools.md",
-        "skills/using-all-about-agents/references/codex-tools.md",
-        "skills/using-all-about-agents/references/gemini-tools.md",
-        "skills/using-all-about-agents/references/pi-tools.md"
+        "skills/using-all-about-agents/references/codex-tools.md"
       ],
       "scripts": [],
       "auditDisposition": {
@@ -383,22 +375,6 @@
   ],
   "sourceFiles": [
     {
-      "path": "quarantine/legacy/.claude-plugin/marketplace.json",
-      "kind": "config",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy marketplace replaced by the self-contained generated Claude package; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/.claude-plugin/plugin.json",
-      "kind": "config",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
       "path": ".gitattributes",
       "kind": "metadata",
       "auditDisposition": {
@@ -487,190 +463,6 @@
       }
     },
     {
-      "path": "quarantine/legacy/agents/README.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/codebase-architect.json",
-      "kind": "config",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/codebase-architect.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/deep-investigator.json",
-      "kind": "config",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/deep-investigator.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/generalist.json",
-      "kind": "config",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/generalist.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/implementer.json",
-      "kind": "config",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/implementer.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/security-auditor.json",
-      "kind": "config",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/security-auditor.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/task-reviewer.json",
-      "kind": "config",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/agents/task-reviewer.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/configs/CLAUDE.local.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/configs/GEMINI.local.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/configs/settings.local.json",
-      "kind": "config",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/docs/antigravity.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/hooks/antigravity-hooks.json",
-      "kind": "config",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/hooks/antigravity-session-start.js",
-      "kind": "script",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/hooks/antigravity-track-tool.js",
-      "kind": "script",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/hooks/hooks.json",
-      "kind": "config",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/hooks/run-hook.cmd",
-      "kind": "script",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/hooks/session-start",
-      "kind": "metadata",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
       "path": "package.json",
       "kind": "config",
       "auditDisposition": {
@@ -692,30 +484,6 @@
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
-      "path": "quarantine/legacy/setup/setup-antigravity.ps1",
-      "kind": "script",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/setup/setup-antigravity.sh",
-      "kind": "script",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/setup/setup-guide-antigravity.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
       }
     },
     {
@@ -1071,14 +839,6 @@
       }
     },
     {
-      "path": "core/skills/systematic-debugging/CREATION-LOG.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
       "path": "core/skills/systematic-debugging/SKILL.md",
       "kind": "source",
       "auditDisposition": {
@@ -1143,38 +903,6 @@
       }
     },
     {
-      "path": "core/skills/systematic-debugging/test-academic.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
-      "path": "core/skills/systematic-debugging/test-pressure-1.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
-      "path": "core/skills/systematic-debugging/test-pressure-2.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
-      "path": "core/skills/systematic-debugging/test-pressure-3.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
       "path": "core/skills/test-driven-development/SKILL.md",
       "kind": "source",
       "auditDisposition": {
@@ -1215,31 +943,7 @@
       }
     },
     {
-      "path": "core/skills/using-all-about-agents/references/antigravity-tools.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
       "path": "core/skills/using-all-about-agents/references/codex-tools.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
-      "path": "core/skills/using-all-about-agents/references/gemini-tools.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
-      "path": "core/skills/using-all-about-agents/references/pi-tools.md",
       "kind": "source",
       "auditDisposition": {
         "status": "stable",
@@ -1367,22 +1071,6 @@
       }
     },
     {
-      "path": "quarantine/legacy/statusline/statusline.js",
-      "kind": "script",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
-      "path": "quarantine/legacy/statusline/track-tool.js",
-      "kind": "script",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Historical source retained under quarantine; canonical replacement and evidence are documented in quarantine/README.md."
-      }
-    },
-    {
       "path": "tests/helpers/temp-root.mjs",
       "kind": "script",
       "auditDisposition": {
@@ -1447,231 +1135,10 @@
       }
     }
   ],
-  "legacyRoles": [
-    {
-      "name": "codebase-architect",
-      "files": [
-        "quarantine/legacy/agents/codebase-architect.json",
-        "quarantine/legacy/agents/codebase-architect.md"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy role replaced by canonical core/roles contracts; retained only for historical audit."
-      }
-    },
-    {
-      "name": "deep-investigator",
-      "files": [
-        "quarantine/legacy/agents/deep-investigator.json",
-        "quarantine/legacy/agents/deep-investigator.md"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy role replaced by canonical core/roles contracts; retained only for historical audit."
-      }
-    },
-    {
-      "name": "generalist",
-      "files": [
-        "quarantine/legacy/agents/generalist.json",
-        "quarantine/legacy/agents/generalist.md"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy role replaced by canonical core/roles contracts; retained only for historical audit."
-      }
-    },
-    {
-      "name": "implementer",
-      "files": [
-        "quarantine/legacy/agents/implementer.json",
-        "quarantine/legacy/agents/implementer.md"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy role replaced by canonical core/roles contracts; retained only for historical audit."
-      }
-    },
-    {
-      "name": "security-auditor",
-      "files": [
-        "quarantine/legacy/agents/security-auditor.json",
-        "quarantine/legacy/agents/security-auditor.md"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy role replaced by canonical core/roles contracts; retained only for historical audit."
-      }
-    },
-    {
-      "name": "task-reviewer",
-      "files": [
-        "quarantine/legacy/agents/task-reviewer.json",
-        "quarantine/legacy/agents/task-reviewer.md"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy role replaced by canonical core/roles contracts; retained only for historical audit."
-      }
-    }
-  ],
-  "hooks": [
-    {
-      "path": "quarantine/legacy/hooks/hooks.json",
-      "events": [
-        "SessionStart",
-        "PreToolUse",
-        "PostToolUse"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy hook replaced by canonical core/hooks and adapter templates; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/hooks/antigravity-hooks.json",
-      "events": [
-        "PreInvocation",
-        "PostToolUse"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy hook replaced by canonical core/hooks and adapter templates; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/hooks/antigravity-session-start.js",
-      "events": [
-        "PreInvocation"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy hook replaced by canonical core/hooks and adapter templates; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/hooks/antigravity-track-tool.js",
-      "events": [
-        "PostToolUse"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy hook replaced by canonical core/hooks and adapter templates; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/hooks/session-start",
-      "events": [
-        "SessionStart"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy hook replaced by canonical core/hooks and adapter templates; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/hooks/run-hook.cmd",
-      "events": [
-        "command"
-      ],
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy hook replaced by canonical core/hooks and adapter templates; retained only for historical audit."
-      }
-    }
-  ],
-  "configs": [
-    {
-      "path": "quarantine/legacy/.claude-plugin/plugin.json",
-      "surface": "claude",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy config replaced by profile, rule, and adapter output; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/.claude-plugin/marketplace.json",
-      "surface": "claude",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy marketplace replaced by the self-contained generated Claude package; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/configs/CLAUDE.local.md",
-      "surface": "claude",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy config replaced by profile, rule, and adapter output; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/configs/GEMINI.local.md",
-      "surface": "antigravity-2",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy config replaced by profile, rule, and adapter output; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/configs/settings.local.json",
-      "surface": "antigravity-2",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy config replaced by profile, rule, and adapter output; retained only for historical audit."
-      }
-    }
-  ],
-  "statusline": [
-    {
-      "path": "quarantine/legacy/statusline/statusline.js",
-      "surface": "claude",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy statusline replaced by adapters/claude/templates/statusline; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/statusline/track-tool.js",
-      "surface": "claude",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy statusline replaced by adapters/claude/templates/statusline; retained only for historical audit."
-      }
-    }
-  ],
-  "setupScripts": [
-    {
-      "path": "quarantine/legacy/setup/setup-antigravity.ps1",
-      "platform": "win32",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy setup flow replaced by installers and the repository CLI; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/setup/setup-antigravity.sh",
-      "platform": "darwin",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy setup flow replaced by installers and the repository CLI; retained only for historical audit."
-      }
-    },
-    {
-      "path": "quarantine/legacy/setup/setup-guide-antigravity.md",
-      "platform": "all",
-      "auditDisposition": {
-        "status": "quarantined",
-        "reason": "Legacy setup flow replaced by installers and the repository CLI; retained only for historical audit."
-      }
-    }
-  ],
   "auditDisposition": {
     "status": "stable",
-    "reason": "Reconciled canonical and quarantine inventory; native capability claims remain versioned in adapter records.",
+    "reason": "Canonical inventory for the Claude and Codex surfaces; native capability claims remain versioned in adapter records.",
     "unknowns": [
-      "Antigravity Desktop persisted model/config key is undocumented.",
-      "Antigravity CLI folder-based standalone skill discovery conflicts across approved records.",
       "Codex automatic model fallback is undocumented and unsupported."
     ]
   }

@@ -8,9 +8,8 @@ import test from "node:test";
 import { promisify } from "node:util";
 
 import { loadCore } from "../../installers/lib/load-core.mjs";
-import { AdapterContractError } from "../../adapters/shared/adapter-contract.mjs";
 import { NATIVE_PHASES } from "../../adapters/shared/native-state.mjs";
-import { displayLabel, renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
+import { renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
 
 const adapter = await import("../../adapters/codex/adapter.mjs");
 const core = await loadCore(process.cwd());
@@ -138,7 +137,7 @@ test("Codex render emits a regular AGENTS.md and every canonical skill without r
   assert.doesNotMatch(JSON.stringify(result.registrations), /(?:automations|cron)/iu);
 });
 
-test("Codex AGENTS.md composes the canonical body, labeled catalog, rules, and one checklist per action workflow", () => {
+test("Codex AGENTS.md composes the canonical body, labeled catalog, and rules", () => {
   const result = resultFor();
   const files = fileMap(result);
   const agents = files.get("AGENTS.md");
@@ -148,15 +147,6 @@ test("Codex AGENTS.md composes the canonical body, labeled catalog, rules, and o
   assert.equal((agents.match(/# Global Operating Rules/g) ?? []).length, 1);
   assert.equal((agents.match(/Presentation catalog/g) ?? []).length, 1);
   assert.equal((agents.match(/## Canonical repository rules/g) ?? []).length, 1);
-  assert.equal((agents.match(/## Canonical actions/g) ?? []).length, 1);
-  assert.equal((agents.match(/^Checklist$/gmu) ?? []).length, core.commands.length);
-  assert.equal((agents.match(/Reason rule:/g) ?? []).length, core.commands.length);
-  for (const command of core.commands) {
-    const commandLabel = displayLabel(core.presentation, "command", command.actionId);
-    const workflowLabel = displayLabel(core.presentation, "workflow", command.workflowId);
-    assert.ok(agents.includes(`### ${commandLabel}\n`), `missing display heading ${commandLabel}`);
-    assert.ok(agents.includes(`- action: ${command.actionId}\n- workflowId: ${command.workflowId}\n- description: ${command.presentation.help}\n- workflow: ${workflowLabel}`), `missing display workflow mapping ${workflowLabel}`);
-  }
   assert.equal(agents.includes(renderPresentationCatalog(core.presentation)), true);
   assert.ok(new TextEncoder().encode(agents).byteLength < 32768);
   assert.doesNotMatch(agents, /<\/?[A-Za-z][^>]*>|\u001b/iu);
@@ -225,96 +215,6 @@ test("Codex bootstrap skill links to a resolvable factual capability guide", () 
   assert.match(guidance, /standalone custom-agent TOML/u);
   assert.match(guidance, /Desktop.*manual/u);
   assert.doesNotMatch(guidance, /Claude|spawn_agent|mcp__/iu);
-});
-
-test("Codex AGENTS.md maps every canonical action to its workflow and description", () => {
-  const agents = fileMap(resultFor()).get("AGENTS.md");
-  for (const command of core.commands) {
-    assert.match(agents, new RegExp(`- action: ${command.actionId}\\n- workflowId: ${command.workflowId}\\n- description: ${command.presentation.help}`, "u"));
-  }
-});
-
-test("Codex rejects malformed canonical command presentation metadata", () => {
-  const malformedCases = [
-    {
-      name: "missing presentation",
-      field: "presentation",
-      message: "presentation hints are required",
-      mutate: ({ presentation: _presentation, ...command }) => command
-    },
-    {
-      name: "missing presentation.label",
-      field: "presentation.label",
-      message: "presentation.label must be a non-empty string",
-      mutate: ({ presentation, ...command }) => ({ ...command, presentation: { help: presentation.help } })
-    },
-    {
-      name: "missing presentation.help",
-      field: "presentation.help",
-      message: "presentation.help must be a non-empty string",
-      mutate: ({ presentation, ...command }) => ({ ...command, presentation: { label: presentation.label } })
-    },
-    {
-      name: "empty label",
-      field: "presentation.label",
-      message: "presentation.label must be a non-empty string",
-      mutate: (command) => ({ ...command, presentation: { ...command.presentation, label: "" } })
-    },
-    {
-      name: "empty help",
-      field: "presentation.help",
-      message: "presentation.help must be a non-empty string",
-      mutate: (command) => ({ ...command, presentation: { ...command.presentation, help: "" } })
-    },
-    {
-      name: "whitespace label",
-      field: "presentation.label",
-      message: "presentation.label must be a non-empty string",
-      mutate: (command) => ({ ...command, presentation: { ...command.presentation, label: String.fromCharCode(32, 9, 13, 10, 32) } })
-    },
-    {
-      name: "whitespace help",
-      field: "presentation.help",
-      message: "presentation.help must be a non-empty string",
-      mutate: (command) => ({ ...command, presentation: { ...command.presentation, help: String.fromCharCode(32, 9, 13, 10, 32) } })
-    },
-    {
-      name: "non-string label",
-      field: "presentation.label",
-      message: "presentation.label must be a non-empty string",
-      mutate: (command) => ({ ...command, presentation: { ...command.presentation, label: false } })
-    },
-    {
-      name: "non-string help",
-      field: "presentation.help",
-      message: "presentation.help must be a non-empty string",
-      mutate: (command) => ({ ...command, presentation: { ...command.presentation, help: 42 } })
-    }
-  ];
-
-  for (const { name, field, message, mutate } of malformedCases) {
-    const malformedCore = {
-      ...core,
-      commands: core.commands.map((command, index) => index === 0 ? mutate(command) : command)
-    };
-    let thrown;
-    try {
-      resultFor("portable", { core: malformedCore });
-    } catch (error) {
-      thrown = error;
-    }
-    assert.ok(thrown, name);
-    assert.ok(thrown instanceof AdapterContractError, name);
-    assert.ok(thrown.errors.some((entry) => entry.path === `/commands/0/${field.replace(".", "/")}` && entry.message === message), name);
-  }
-});
-
-test("Codex rejects a canonical command set with a missing action mapping", () => {
-  const incompleteCore = { ...core, commands: core.commands.slice(1) };
-  assert.throws(
-    () => resultFor("portable", { core: incompleteCore }),
-    /missing canonical action|missing native action mapping|invalid command/iu
-  );
 });
 
 test("Codex AGENTS.md remains a regular file in a Windows checkout with core.symlinks=false", async (t) => {
@@ -553,18 +453,6 @@ test("Codex adapter satisfies the shared renderSurface action contract", () => {
   assert.ok(result.files.length > 0);
   assert.ok(result.registrations.some((entry) => entry.kind === "instructions"));
   assert.equal(result.diagnostics.filter((diagnostic) => diagnostic.code === "missing-skill-source").length, core.inventory.skills.length - core.skills.length);
-});
-
-test("Codex adapter rejects an incomplete native action mapping", () => {
-  assert.throws(
-    () => adapter.renderSurface({
-      core,
-      profile: { id: "portable" },
-      statuslineName: "",
-      capabilityRecord: { actionMappings: {} }
-    }),
-    (error) => error instanceof AdapterContractError && error.errors.some((entry) => entry.code === "missing-native-mapping")
-  );
 });
 
 test("Codex render is deterministic and matches the checked-in portable snapshot", async () => {

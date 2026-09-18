@@ -20,9 +20,9 @@ test("T029 exposes its routing evidence", async () => {
   for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
 });
 
-test("session-compaction-resilience names the canonical long-task workflow", async () => {
+test("session-compaction-resilience names the canonical long-task sequence", async () => {
   const skill = await readFile(resolve(process.cwd(), "core/skills/session-compaction-resilience/SKILL.md"), "utf8");
-  assert.match(skill, /canonical long-task workflow/iu);
+  assert.match(skill, /canonical long-task sequence/iu);
 });
 
 test("session-compaction-resilience preserves durable evidence and safe recovery boundaries", async () => {

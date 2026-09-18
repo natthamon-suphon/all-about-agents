@@ -3,26 +3,56 @@
   "$id": "https://all-about-agents.invalid/schemas/state.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "repositoryVersion", "profile", "surfaces", "ownedPaths"],
+  "required": [
+    "schemaVersion",
+    "repositoryVersion",
+    "profile",
+    "surfaces",
+    "ownedPaths"
+  ],
   "properties": {
-    "schemaVersion": { "const": 1 },
-    "repositoryVersion": { "type": "string", "minLength": 1 },
-    "profile": { "enum": ["portable", "template"] },
+    "schemaVersion": {
+      "const": 1
+    },
+    "repositoryVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profile": {
+      "enum": [
+        "portable",
+        "template"
+      ]
+    },
     "surfaces": {
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
-      "items": { "enum": ["agy", "antigravity-2", "claude", "codex"] }
+      "items": {
+        "enum": [
+          "claude",
+          "codex"
+        ]
+      }
     },
     "ownedPaths": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["relativePath", "sha256"],
+        "required": [
+          "relativePath",
+          "sha256"
+        ],
         "properties": {
-          "relativePath": { "type": "string", "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$)).+$" },
-          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          "relativePath": {
+            "type": "string",
+            "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$)).+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
         }
       }
     }

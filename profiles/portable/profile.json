@@ -7,8 +7,6 @@
   "advisor": "disabled",
   "modelPolicies": {
     "claude": "surface-default",
-    "codex": "surface-default",
-    "antigravity-2": "surface-default",
-    "agy": "surface-default"
+    "codex": "surface-default"
   }
 }

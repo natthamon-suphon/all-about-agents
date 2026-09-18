@@ -6,8 +6,8 @@ import { validateSchema } from "../installers/lib/validate-schema.mjs";
 export const PROFILE_MODEL_POLICY_REFS = Object.freeze({
   claude: Object.freeze(["surface-default", "approved-opus-sonnet"]),
   codex: Object.freeze(["surface-default", "approved-sol-terra"]),
-  "antigravity-2": Object.freeze(["surface-default", "approved-desktop-flash"]),
-  agy: Object.freeze(["surface-default", "approved-cli-flash"])
+
+
 });
 
 const PROFILE_IDS = Object.freeze(["portable", "template"]);

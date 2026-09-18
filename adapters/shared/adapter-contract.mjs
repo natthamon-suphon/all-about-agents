@@ -2,22 +2,7 @@ import { createHash } from "node:crypto";
 import { validateNativeIntegrationRecord } from "./native-state.mjs";
 import { GLOBAL_INSTRUCTION_SOURCE_PATH } from "../../installers/lib/global-instructions.mjs";
 
-export const SURFACES = Object.freeze(["claude", "codex", "antigravity-2", "agy"]);
-export const ACTION_IDS = Object.freeze([
-  "aaa:design",
-  "aaa:build",
-  "aaa:fix",
-  "aaa:review",
-  "aaa:audit",
-  "aaa:improve-skill",
-  "aaa:resume",
-  "aaa:verify"
-]);
-
-const COMMAND_KEYS = new Set(["$schema", "id", "actionId", "workflowId", "arguments", "result", "presentation"]);
-const EMBEDDED_WORKFLOW_KEYS = new Set([
-  "states", "transitions", "gates", "recovery", "successCriteria", "stopCondition", "durableOutput", "steps", "workflowStates"
-]);
+export const SURFACES = Object.freeze(["claude", "codex"]);
 const RENDER_RESULT_KEYS = new Set(["files", "registrations", "diagnostics", "ownership"]);
 const FILE_KEYS = new Set(["relativePath", "content", "mode"]);
 const DIAGNOSTIC_KEYS = new Set(["code", "severity", "message", "sourcePath"]);
@@ -49,172 +34,6 @@ function checkObjectKeys(value, allowed, path, errors) {
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) errors.push(issue("unexpected-field", `field ${key} is not part of this contract`, `${path}/${key}`));
   }
-}
-
-function hasEmbeddedWorkflow(value, path = "") {
-  if (Array.isArray(value)) return value.some((item, index) => hasEmbeddedWorkflow(item, `${path}/${index}`));
-  if (!isObject(value)) return false;
-  for (const [key, child] of Object.entries(value)) {
-    if (EMBEDDED_WORKFLOW_KEYS.has(key)) return true;
-    if (hasEmbeddedWorkflow(child, `${path}/${key}`)) return true;
-  }
-  return false;
-}
-
-function validateSchemaObject(value, path, errors, name) {
-  if (!isObject(value)) {
-    errors.push(issue("missing-schema", `${name} must be an object schema`, path));
-    return;
-  }
-  if (value.type !== "object") errors.push(issue("invalid-schema", `${name}.type must be object`, `${path}/type`));
-  if (!isObject(value.properties)) errors.push(issue("invalid-schema", `${name}.properties must be an object`, `${path}/properties`));
-  if (!Array.isArray(value.required)) errors.push(issue("invalid-schema", `${name}.required must be an array`, `${path}/required`));
-  if (value.additionalProperties !== false) errors.push(issue("invalid-schema", `${name}.additionalProperties must be false`, `${path}/additionalProperties`));
-}
-
-function workflowSet(workflows) {
-  if (workflows === undefined || workflows === null) return null;
-  if (workflows instanceof Set) return new Set(workflows);
-  if (!Array.isArray(workflows)) return new Set();
-  return new Set(workflows.map((workflow) => typeof workflow === "string" ? workflow : workflow?.id).filter((id) => typeof id === "string"));
-}
-
-/** Validate thin canonical command records at the core/adapter seam. */
-export function validateCommandRecords(records, workflows) {
-  const errors = [];
-  if (!Array.isArray(records)) return { valid: false, errors: [issue("invalid-commands", "commands must be an array")] };
-  const knownWorkflows = workflowSet(workflows);
-  const ids = new Map();
-  const actionIds = new Map();
-  records.forEach((record, index) => {
-    const path = `/commands/${index}`;
-    if (!isObject(record)) {
-      errors.push(issue("invalid-command", "command must be an object", path));
-      return;
-    }
-    checkObjectKeys(record, COMMAND_KEYS, path, errors);
-    if (typeof record.id !== "string" || !/^[a-z0-9][a-z0-9-]*$/u.test(record.id)) errors.push(issue("invalid-command-id", "id must be kebab-case", `${path}/id`));
-    else if (ids.has(record.id)) errors.push(issue("duplicate-command-id", `duplicate id ${record.id}`, `${path}/id`));
-    else ids.set(record.id, index);
-    if (typeof record.actionId !== "string" || !/^aaa:[a-z0-9][a-z0-9-]*$/u.test(record.actionId)) errors.push(issue("invalid-action-id", "actionId must use the aaa: prefix", `${path}/actionId`));
-    else if (!ACTION_IDS.includes(record.actionId)) errors.push(issue("unknown-action", `unknown canonical action ${record.actionId}`, `${path}/actionId`));
-    else if (actionIds.has(record.actionId)) errors.push(issue("duplicate-action-id", `duplicate actionId ${record.actionId}`, `${path}/actionId`));
-    else actionIds.set(record.actionId, index);
-    if (typeof record.workflowId !== "string" || record.workflowId.length === 0) errors.push(issue("missing-workflow", "workflowId is required", `${path}/workflowId`));
-    else if (knownWorkflows && !knownWorkflows.has(record.workflowId)) errors.push(issue("unknown-workflow", `workflowId ${record.workflowId} is not declared`, `${path}/workflowId`));
-    validateSchemaObject(record.arguments, `${path}/arguments`, errors, "arguments");
-    validateSchemaObject(record.result, `${path}/result`, errors, "result");
-    if (!isObject(record.presentation)) errors.push(issue("missing-presentation", "presentation hints are required", `${path}/presentation`));
-    else checkObjectKeys(record.presentation, new Set(["label", "help"]), `${path}/presentation`, errors);
-    if (hasEmbeddedWorkflow(record)) errors.push(issue("embedded-workflow", "command records must dispatch a workflow, not embed workflow logic", path));
-  });
-  for (const actionId of ACTION_IDS) if (!actionIds.has(actionId)) errors.push(issue("missing-action", `missing canonical action ${actionId}`, "/commands"));
-  return { valid: errors.length === 0, errors: sortedErrors(errors) };
-}
-
-function mappingEntries(capabilityRecord) {
-  const field = ["actionMappings", "nativeMappings", "commandMappings", "mappings"].find((key) => Object.hasOwn(capabilityRecord, key));
-  if (!field) return null;
-  const value = capabilityRecord[field];
-  if (Array.isArray(value)) return value.map((entry) => [entry?.actionId ?? entry?.id, entry]);
-  if (isObject(value)) return Object.entries(value);
-  return [];
-}
-
-function mappingTarget(mapping) {
-  if (typeof mapping === "string") return mapping.trim().length > 0 ? mapping : null;
-  if (!isObject(mapping)) return null;
-  for (const key of ["native", "target", "value", "command", "name"]) {
-    if (typeof mapping[key] === "string" && mapping[key].trim().length > 0) return mapping[key];
-  }
-  return null;
-}
-
-function hasMappingTargetField(mapping) {
-  return isObject(mapping) && ["native", "target", "value", "command", "name"].some((key) => Object.hasOwn(mapping, key));
-}
-
-function completeExplicitUnsupported(mapping) {
-  return isObject(mapping)
-    && mapping.supported === false
-    && typeof mapping.source === "string"
-    && mapping.source.trim().length > 0
-    && typeof mapping.reason === "string"
-    && mapping.reason.trim().length > 0
-    && typeof mapping.manualStep === "string"
-    && mapping.manualStep.trim().length > 0;
-}
-
-/** Validate the required semantic-action to native-action mapping. */
-export function validateNativeMappings(capabilityRecord, requiredActionIds = ACTION_IDS, { allowExplicitUnsupported = false } = {}) {
-  const errors = [];
-  const diagnostics = [];
-  if (!isObject(capabilityRecord)) return { valid: false, errors: [issue("missing-capability-record", "capabilityRecord must be an object")] };
-  if (typeof allowExplicitUnsupported !== "boolean") {
-    errors.push(issue("invalid-mapping-policy", "allowExplicitUnsupported must be boolean", "/capabilityRecord/allowExplicitUnsupported"));
-  }
-  if (!Array.isArray(requiredActionIds) || requiredActionIds.length === 0) {
-    errors.push(issue("invalid-required-mappings", "requiredMappings must be a non-empty approved action subset", "/capabilityRecord/requiredMappings"));
-    return { valid: false, errors: sortedErrors(errors), diagnostics };
-  }
-  const invalidRequiredType = requiredActionIds.some((actionId) => typeof actionId !== "string");
-  if (invalidRequiredType) errors.push(issue("invalid-required-mappings", "requiredMappings entries must be canonical action ID strings", "/capabilityRecord/requiredMappings"));
-  const uniqueRequired = new Set(requiredActionIds);
-  if (uniqueRequired.size !== requiredActionIds.length) errors.push(issue("invalid-required-mappings", "requiredMappings must not contain duplicates", "/capabilityRecord/requiredMappings"));
-  for (const actionId of requiredActionIds) if (!ACTION_IDS.includes(actionId)) errors.push(issue("invalid-required-mappings", `requiredMappings contains unknown action ${String(actionId)}`, "/capabilityRecord/requiredMappings"));
-  const entries = mappingEntries(capabilityRecord);
-  const byAction = new Map();
-  for (const [actionId, mapping] of entries ?? []) {
-    if (typeof actionId !== "string") {
-      errors.push(issue("invalid-native-mapping", "mapping must name an actionId", "/capabilityRecord/mappings"));
-      continue;
-    }
-    if (!ACTION_IDS.includes(actionId)) {
-      errors.push(issue("unknown-native-mapping", `mapping names unknown action ${actionId}`, `/capabilityRecord/mappings/${actionId}`));
-      continue;
-    }
-    if (byAction.has(actionId)) errors.push(issue("duplicate-native-mapping", `duplicate mapping for ${actionId}`, `/capabilityRecord/mappings/${actionId}`));
-    byAction.set(actionId, mapping);
-  }
-  const required = Array.isArray(requiredActionIds) ? requiredActionIds : ACTION_IDS;
-  for (const actionId of required) {
-    if (!ACTION_IDS.includes(actionId)) {
-      errors.push(issue("unknown-native-mapping", `required mapping names unknown action ${actionId}`, "/capabilityRecord/requiredMappings"));
-      continue;
-    }
-    const mapping = byAction.get(actionId);
-    if (mapping === undefined) {
-      errors.push(issue("missing-native-mapping", `required action ${actionId} has no native mapping`, `/capabilityRecord/mappings/${actionId}`));
-      continue;
-    }
-    const supported = typeof mapping === "string" || (isObject(mapping) && (mapping.supported === true || mapping.support === "supported"));
-    if (!supported) {
-      if (allowExplicitUnsupported === true && completeExplicitUnsupported(mapping)) {
-        diagnostics.push({
-          code: "native-mapping-explicitly-unsupported",
-          severity: "warning",
-          message: `required action ${actionId} has no documented native mapping; follow the recorded manual step only after verification`,
-          sourcePath: null
-        });
-      } else {
-        const code = allowExplicitUnsupported === true && isObject(mapping) && mapping.supported === false
-          ? "incomplete-unsupported-native-mapping"
-          : "unsupported-native-mapping";
-        errors.push(issue(code, `required action ${actionId} is unsupported without complete source, reason, and manual-step evidence`, `/capabilityRecord/mappings/${actionId}`));
-      }
-    }
-    if (supported && mappingTarget(mapping) === null) {
-      const code = hasMappingTargetField(mapping) || typeof mapping === "string" ? "invalid-native-target" : "missing-native-mapping";
-      errors.push(issue(code, `required action ${actionId} has no non-empty native target`, `/capabilityRecord/mappings/${actionId}`));
-    }
-  }
-  for (const actionId of ACTION_IDS) if (!required.includes(actionId)) diagnostics.push({
-    code: "native-mapping-not-required",
-    severity: "warning",
-    message: `native mapping for ${actionId} was not required by this approved subset`,
-    sourcePath: null
-  });
-  return { valid: errors.length === 0, errors: sortedErrors(errors), diagnostics };
 }
 
 function absolutePath(value) {
@@ -317,7 +136,7 @@ export function validateRenderResult(result) {
 function coreShapeErrors(core) {
   const errors = [];
   if (!isObject(core)) return [issue("invalid-core", "core must be an object", "/core")];
-  for (const key of ["inventory", "rules", "roles", "skills", "workflows", "commands", "evals"]) {
+  for (const key of ["inventory", "rules", "roles", "skills", "evals"]) {
     if (!Object.hasOwn(core, key)) errors.push(issue("invalid-core", `core.${key} is required`, `/core/${key}`));
     else if (key !== "inventory" && !Array.isArray(core[key])) errors.push(issue("invalid-core", `core.${key} must be an array`, `/core/${key}`));
   }
@@ -339,27 +158,13 @@ function coreShapeErrors(core) {
 /** Validate and return one adapter's deterministic render result. */
 export function renderSurface(input) {
   const errors = [];
-  let mappingDiagnostics = [];
   if (!isObject(input)) throw new AdapterContractError([issue("invalid-input", "renderSurface input must be an object")]);
   if (!SURFACES.includes(input.surface)) errors.push(issue("invalid-surface", `unsupported surface ${String(input.surface)}`, "/surface"));
   errors.push(...coreShapeErrors(input.core));
   if (!isObject(input.profile)) errors.push(issue("invalid-profile", "profile must be an object", "/profile"));
   if (typeof input.statuslineName !== "string") errors.push(issue("invalid-statusline-name", "statuslineName must be a string", "/statuslineName"));
   if (!isObject(input.capabilityRecord)) errors.push(issue("missing-capability-record", "capabilityRecord must be an object", "/capabilityRecord"));
-  else {
-    if (input.capabilityRecord.surface !== undefined && input.capabilityRecord.surface !== input.surface) errors.push(issue("surface-mismatch", "capabilityRecord.surface must match surface", "/capabilityRecord/surface"));
-    const requiredMappings = Object.hasOwn(input.capabilityRecord, "requiredMappings")
-      ? input.capabilityRecord.requiredMappings
-      : ACTION_IDS;
-    const mappingValidation = validateNativeMappings(input.capabilityRecord, requiredMappings, {
-      allowExplicitUnsupported: input.capabilityRecord.allowExplicitUnsupported === true
-    });
-    errors.push(...mappingValidation.errors);
-    mappingDiagnostics = mappingValidation.diagnostics;
-  }
-  if (isObject(input.core) && Array.isArray(input.core.commands)) {
-    errors.push(...validateCommandRecords(input.core.commands, input.core.workflows).errors);
-  }
+  else if (input.capabilityRecord.surface !== undefined && input.capabilityRecord.surface !== input.surface) errors.push(issue("surface-mismatch", "capabilityRecord.surface must match surface", "/capabilityRecord/surface"));
   if (errors.length > 0) throw new AdapterContractError(errors);
 
   const result = typeof input.capabilityRecord.render === "function"
@@ -373,9 +178,5 @@ export function renderSurface(input) {
   if (result && typeof result.then === "function") throw new AdapterContractError([issue("async-render", "renderSurface requires a synchronous RenderResult", "/capabilityRecord/render")]);
   const validation = validateRenderResult(result);
   if (!validation.valid) throw new AdapterContractError(validation.errors);
-  if (mappingDiagnostics.length === 0) return result;
-  const withDiagnostics = { ...result, diagnostics: [...mappingDiagnostics, ...result.diagnostics] };
-  const finalValidation = validateRenderResult(withDiagnostics);
-  if (!finalValidation.valid) throw new AdapterContractError(finalValidation.errors);
-  return withDiagnostics;
+  return result;
 }

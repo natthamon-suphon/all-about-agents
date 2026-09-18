@@ -1,7 +1,7 @@
 # Contributing to All About Agents
 
-This repository keeps one source for Claude Code, Codex, Antigravity Desktop,
-and `agy`. Keep every change clear, small, and supported by fresh evidence.
+This repository keeps one source for Claude Code and Codex. Keep every change
+clear, small, and supported by fresh evidence.
 
 The native lifecycle is:
 
@@ -28,9 +28,9 @@ A change that spans several phases starts from a design spec in
 `docs/plans/YYYY-MM-DD-<name>.md`. The owner reviews the spec before phase 1. Each phase
 ends with the evidence report the spec defines.
 
-The release source is main and origin/main. `AGENTS.md`, `CLAUDE.md`, and
-`.agents/rules/all-about-agents.md` are separate regular files. They carry the
-same minimum protocol. They are not redirects to one another.
+The release source is main and origin/main. `AGENTS.md` and `CLAUDE.md` are
+separate regular files. They carry the same minimum protocol. They are not
+redirects to one another.
 
 ## Change One Skill
 
@@ -55,7 +55,7 @@ When an adapter changes, review its capability record, manifest, contract tests,
 integration tests, and snapshots. Static render success is not native runtime
 success.
 
-When a command or document changes, update every command table, local link, and
+When a CLI option or document changes, update every table, local link, and
 static documentation test that owns the same fact.
 
 ## Quick and Full Checks
@@ -124,8 +124,7 @@ plugin, change trust, or start a native session. No backup is made.
 ## Live Install Boundary
 
 Repository checks and native installation are separate actions. Never install
-or change Claude, Codex, Antigravity, or `agy` live config without exact
-authority.
+or change Claude or Codex live config without exact authority.
 
 Warning: `--apply` writes the selected disposable or approved root. Read its
 dry-run report first. The installer may overwrite declared owned files. It does

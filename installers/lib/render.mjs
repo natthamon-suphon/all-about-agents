@@ -3,14 +3,10 @@ import { hashBytes, equalBytes } from "./hash.mjs";
 import { SURFACES, validateRenderResult } from "../../adapters/shared/adapter-contract.mjs";
 import { renderSurface as renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderSurface as renderCodex } from "../../adapters/codex/adapter.mjs";
-import { renderSurface as renderAntigravity } from "../../adapters/antigravity-2/adapter.mjs";
-import { renderSurface as renderAgy } from "../../adapters/agy/adapter.mjs";
 
 export const SURFACE_RENDERERS = Object.freeze({
   claude: renderClaude,
   codex: renderCodex,
-  "antigravity-2": renderAntigravity,
-  agy: renderAgy
 });
 const SURFACE_ORDER = new Map(SURFACES.map((surface, index) => [surface, index]));
 
@@ -95,7 +91,7 @@ export async function renderForSurface({ repositoryRoot = process.cwd(), core = 
 
 /** Render all selected surfaces in deterministic surface order. */
 export async function renderPayload({ repositoryRoot = process.cwd(), core = null, surfaces, surface, profile = "portable", statuslineName = "", platform = process.platform, targetRuntime, ...rest } = {}) {
-  const selected = surfaces ?? (surface === "all" ? ["claude", "codex", "antigravity-2", "agy"] : surface ? [surface] : null);
+  const selected = surfaces ?? (surface === "all" ? ["claude", "codex"] : surface ? [surface] : null);
   if (!Array.isArray(selected) || selected.length === 0) throw new TypeError("surfaces must contain at least one supported surface");
   const unique = [...new Set(selected)];
   if (unique.length !== selected.length) throw new TypeError("surfaces must not contain duplicates");

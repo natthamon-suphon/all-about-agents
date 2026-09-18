@@ -1,4 +1,4 @@
-const SURFACES = Object.freeze(["claude", "codex", "antigravity-2", "agy"]);
+const SURFACES = Object.freeze(["claude", "codex"]);
 const SURFACE_SET = new Set(SURFACES);
 const ACTIONS = new Set(["install", "doctor", "validate", "diff", "eval", "register"]);
 const PROFILES = new Set(["portable", "template"]);
@@ -149,9 +149,12 @@ export function parseArgs(argv, options = {}) {
     if (destinationRoot !== null) fail("inapplicable-destination-root", "--destination-root is only valid for install, doctor, or diff");
     if (statuslineSeen) fail("inapplicable-statusline-name", "--statusline-name is only valid for install");
   }
-  const hasStatuslineSurface = surfaces.includes("claude") || surfaces.includes("agy");
+  if (action === "install" && mode === "apply" && destinationRoot === null) {
+    fail("destination-root-required", "install --apply requires an explicit --destination-root; automatic root discovery is available only to --dry-run, doctor, and diff");
+  }
+  const hasStatuslineSurface = surfaces.includes("claude");
   if (statuslineSeen && !hasStatuslineSurface) {
-    fail("inapplicable-statusline-name", "inapplicable --statusline-name: select Claude or agy");
+    fail("inapplicable-statusline-name", "inapplicable --statusline-name: select Claude");
   }
   if (statuslineName === null) {
     if (options.interactive === true && hasStatuslineSurface) {

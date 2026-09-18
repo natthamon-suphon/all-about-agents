@@ -33,8 +33,8 @@ const baseInput = () => ({
       id: "z-last",
       status: "NOT_RUN_UNAVAILABLE",
       required: false,
-      command: ["agy", "plugin", "list"],
-      evidence: "agy is not installed",
+      command: ["codex", "--version"],
+      evidence: "codex is not installed",
       durationMs: 0
     },
     {

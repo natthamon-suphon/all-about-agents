@@ -29,8 +29,8 @@ behavior.
 
 ## Eight-step checklist for any tool or session
 
-Copy this checklist into a new Claude Code, Codex, Antigravity Desktop, or
-`agy` session. It keeps the same quality on Windows and macOS:
+Copy this checklist into a new Claude Code or Codex session. It keeps the same
+quality on Windows and macOS:
 
 ```text
 - [ ] 1. Read the repository entrypoint and current global instructions.
@@ -56,9 +56,8 @@ snapshots. They show what the repository can create. They do not show that a
 native product loaded the package.
 
 Review the surface capability record and compatibility page together. Check
-the statusline block and display name for Claude and `agy`. Check the explicit
-Terra recovery profile for Codex. Check the Desktop hook template remains
-disabled and inert.
+the statusline block and display name for Claude. Check the explicit Terra
+recovery profile for Codex.
 
 ## Disposable-root checks
 
@@ -93,23 +92,6 @@ loaded `AGENTS.md`, plugin discovery, skill discovery, role config, selected
 model/profile, and permission state. Open `/hooks` and review trust after a new
 or changed hook hash. Test CLI and Desktop separately when both are claimed.
 Terra is an explicit recovery choice. Do not claim automatic fallback.
-
-### Antigravity Desktop
-
-Reload the workspace or restart Desktop. Confirm the workspace or global plugin
-path, 28 skills, rule, 7 agents, model selector, and permissions. Use the
-manual emergency Deny checklist. Do not enable hook templates until process
-failure and blocking behavior are supported. The Desktop statusline and display
-name are unavailable under the current contract.
-
-### `agy`
-
-Start a fresh terminal. Confirm `agy --version`, the documented settings and
-plugin roots, package validation or listing, agent selection, exact model slug,
-effort, and permission flag. Check the statusline with documented JSON stdin.
-Keep the settings artifact as a sparse overlay. Test runtime skill use
-separately from package validation. The prompt must stay one structured argv
-item.
 
 ## Cross-machine handoff
 

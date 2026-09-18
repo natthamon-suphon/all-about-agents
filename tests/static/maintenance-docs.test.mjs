@@ -19,15 +19,11 @@ const relatedDocs = [
   "docs/setup/macos.md",
   "docs/compatibility/claude.md",
   "docs/compatibility/codex.md",
-  "docs/compatibility/antigravity-2.md",
-  "docs/compatibility/agy.md",
   "docs/limitations/known-limitations.md",
   "docs/evaluations/method.md",
   "docs/maintenance/global-instructions.md",
   "adapters/claude/templates/README.md",
   "adapters/codex/templates/README.md",
-  "adapters/antigravity-2/templates/README.md",
-  "adapters/agy/templates/README.md",
   ...maintenanceDocs
 ];
 
@@ -87,8 +83,6 @@ test("maintenance guides define the complete shared workflow", async () => {
     "Native product checks",
     "Claude Code",
     "Codex",
-    "Antigravity Desktop",
-    "agy",
     "NOT_RUN_UNAVAILABLE"
   ]) assert.ok(quality.includes(value), `quality guide omits ${value}`);
 
@@ -112,16 +106,15 @@ test("maintenance guides define the complete shared workflow", async () => {
     "register --dry-run",
     "register --apply",
     "CODEX_HOME",
-    "CLAUDE_CONFIG_DIR",
-    "~/.gemini/antigravity-cli/settings.json"
+    "CLAUDE_CONFIG_DIR"
   ]) assert.match(registration, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "iu"), `registration guide omits ${value}`);
   assert.match(registration, /git[\s\S]{0,240}native registration/iu);
   assert.match(registration, /warning|do not|never/iu);
   assert.doesNotMatch(registration, /install --surface <SURFACE>[^\r\n]*--statusline-name/u, "generic install command must not pass a surface-specific option");
-  for (const surface of ["claude", "agy"]) {
+  for (const surface of ["claude"]) {
     assert.match(registration, new RegExp(`install --surface ${surface}[^\\r\\n]*--statusline-name`, "u"), `registration guide omits ${surface} statusline-name install`);
   }
-  for (const surface of ["codex", "antigravity-2"]) {
+  for (const surface of ["codex"]) {
     assert.match(registration, new RegExp(`install --surface ${surface}[^\\r\\n]*(?:--dry-run|--apply)`, "u"), `registration guide omits ${surface} install without statusline-name`);
   }
   assert.doesNotMatch(registration, /register --surface all/u, "register accepts one surface, not all");
@@ -132,8 +125,7 @@ test("maintenance guides define the complete shared workflow", async () => {
   assert.match(registration, /`config\.toml`[\s\S]{0,320}refuses to replace an existing file/iu);
   assert.match(registration, /CLAUDE_CONFIG_DIR\s*=\s*"<CLAUDE_PRODUCT_ROOT>"/u);
   assert.match(registration, /CODEX_HOME\s*=\s*"<CODEX_PRODUCT_ROOT>"/u);
-  assert.doesNotMatch(registration, /(?:--destination-root|--package-root|git -C|claude plugin marketplace add|claude plugin validate|codex plugin marketplace add|agy plugin (?:install|validate))\s+<[^>\r\n]+>/u);
-  assert.match(registration, /"<PACKAGE_ROOT>\/\.agents\/plugins\/all-about-agents\/"[\s\S]{0,320}\.agents\/plugins\/all-about-agents\//u);
+  assert.doesNotMatch(registration, /(?:--destination-root|--package-root|git -C|claude plugin marketplace add|claude plugin validate|codex plugin marketplace add)\s+<[^>\r\n]+>/u);
   const registrationGitCommand = registration.indexOf("git -C \"<PACKAGE_ROOT>\" init");
   const registrationGitWarning = registration.indexOf("Warning: the following Git commands");
   assert.ok(registrationGitWarning >= 0 && registrationGitWarning < registrationGitCommand, "native registration Git warning must precede its mutation commands");
@@ -165,7 +157,6 @@ test("global instruction guide defines the shared source and dual-layer model", 
     "CLAUDE.md",
     "CODEX_HOME",
     "AGENTS.md",
-    "~/.gemini/GEMINI.md",
     "Global layer",
     "Project and plugin layer",
     "brainstorming 🧠",
@@ -175,7 +166,6 @@ test("global instruction guide defines the shared source and dual-layer model", 
     "not a UI guarantee"
   ]) assert.match(body, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "iu"), `global guide omits ${value}`);
   assert.match(body, /CLAUDE\.local\.md[\s\S]{0,120}(?:private|project)[\s\S]{0,120}(?:not|never)[\s\S]{0,120}global/iu);
-  assert.match(body, /GEMINI\.local\.md[\s\S]{0,120}(?:not|never)[\s\S]{0,120}global/iu);
 });
 
 test("entry and platform docs link the maintenance workflow", async () => {
@@ -193,9 +183,7 @@ test("entry and platform docs link the maintenance workflow", async () => {
 
   for (const relativePath of [
     "docs/compatibility/claude.md",
-    "docs/compatibility/codex.md",
-    "docs/compatibility/antigravity-2.md",
-    "docs/compatibility/agy.md"
+    "docs/compatibility/codex.md"
   ]) {
     const body = await text(relativePath);
     assert.match(body, /cross-tool-quality\.md/u);
@@ -217,7 +205,7 @@ test("entry and platform docs link the maintenance workflow", async () => {
 });
 
 test("maintenance documentation has valid links and no stale workflow claims", async () => {
-  const unquotedPathPlaceholder = /(?:--destination-root|--package-root|git -C|claude plugin marketplace add|claude plugin validate|codex plugin marketplace add|agy plugin (?:install|validate))\s+<[^>\r\n]+>/u;
+  const unquotedPathPlaceholder = /(?:--destination-root|--package-root|git -C|claude plugin marketplace add|claude plugin validate|codex plugin marketplace add)\s+<[^>\r\n]+>/u;
   const banned = [
     /\borigin\s+master\b/iu,
     /\bgit\s+pull\b[^\r\n]*(?:&&|;)\s*[^\r\n]*(?:install|--apply)/iu,
@@ -242,7 +230,7 @@ test("maintenance documentation has valid links and no stale workflow claims", a
   for (const relativePath of relatedDocs) {
     const body = await text(relativePath);
     for (const line of body.split(/\r?\n/u)) {
-      if (/(?:CLAUDE\.local\.md|GEMINI\.local\.md)/iu.test(line) && /global|destination/iu.test(line)) {
+      if (/CLAUDE\.local\.md/iu.test(line) && /global|destination/iu.test(line)) {
         assert.match(line, /\b(?:not|never|no)\b/iu, `${relativePath} has stale local-global guidance`);
       }
     }

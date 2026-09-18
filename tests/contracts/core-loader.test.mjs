@@ -12,8 +12,6 @@ const requiredOutputs = [
   "installers/lib/load-core.mjs",
   "core/schemas/rule.schema.json",
   "core/schemas/role.schema.json",
-  "core/schemas/workflow.schema.json",
-  "core/schemas/command.schema.json",
   "core/schemas/skill.schema.json",
   "core/schemas/presentation.schema.json",
   "core/presentation/emoji-registry.json",
@@ -52,13 +50,10 @@ test("loadCore returns deterministic sorted collections from a valid core", asyn
   assert.equal(first.presentation.emojiRegistry.schemaVersion, 1);
   assert.equal(Object.keys(first.presentation.emojiRegistry.skills).length, 2);
   assert.equal(Object.keys(first.presentation.emojiRegistry.roles).length, 1);
-  assert.equal(Object.keys(first.presentation.emojiRegistry.commands).length, 2);
   assert.equal(first.presentation.progressContract.maxItems, 7);
   assert.deepEqual(first.rules.map((record) => record.id), ["a-rule", "z-rule"]);
   assert.deepEqual(first.roles.map((record) => record.id), ["reviewer"]);
   assert.deepEqual(first.skills.map((record) => record.id), ["alpha", "beta"]);
-  assert.deepEqual(first.workflows.map((record) => record.id), ["a-flow", "z-flow"]);
-  assert.deepEqual(first.commands.map((record) => record.id), ["a-command", "z-command"]);
   assert.deepEqual(first.evals.map((record) => record.id), ["a-eval", "z-eval"]);
 });
 
@@ -262,25 +257,13 @@ test("loadCore rejects unknown fields and vendor tool names in portable metadata
       entry.jsonPointer === "/frontmatter/capabilities" &&
       entry.keyword === "frontmatterType"
     ));
-    assert.ok(error.errors.some((entry) =>
-      entry.sourcePath === "core/commands/unknown-command.json" &&
-      entry.jsonPointer === "/arguments/operation" &&
-      entry.keyword === "vendorTool"
-    ));
-    for (const [index, name] of ["MultiEdit", "Agent", "Skill", "TodoWrite", "PowerShell"].entries()) {
-      assert.ok(error.errors.some((entry) =>
-        entry.sourcePath === "core/commands/native-names.json" &&
-        entry.jsonPointer === `/arguments/nested/${index}` &&
-        entry.keyword === "vendorTool"
-      ), `nested vendor tool ${name} was not rejected`);
-    }
     return true;
   });
 });
 
-test("core schemas are strict and expose the five canonical record contracts", async () => {
+test("core schemas are strict and expose the three canonical record contracts", async () => {
   const { validateSchema } = await import("../../installers/lib/validate-schema.mjs");
-  for (const kind of ["rule", "role", "workflow", "command", "skill"]) {
+  for (const kind of ["rule", "role", "skill"]) {
     const schema = JSON.parse(await readFile(resolve(process.cwd(), `core/schemas/${kind}.schema.json`), "utf8"));
     assert.equal(schema.additionalProperties, false, `${kind} schema must be strict`);
     const invalid = { id: "example", unexpected: true };

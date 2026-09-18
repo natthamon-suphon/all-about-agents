@@ -11,5 +11,5 @@
     "format": "json-object",
     "documentedFields": ["hook_event_name", "session_id", "transcript_path", "trigger"]
   },
-  "recordedFields": ["timestamp", "workflowId", "taskId", "state", "status"]
+  "recordedFields": ["timestamp", "taskId", "state", "status"]
 }

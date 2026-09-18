@@ -67,16 +67,9 @@ codex plugin marketplace add DietrichGebert/ponytail
 codex plugin add ponytail@ponytail
 ```
 
-`agy` CLI:
-
-```text
-agy plugin install https://github.com/DietrichGebert/ponytail
-```
-
-Its lifecycle hooks need Node.js on `PATH`. An `agy plugin install` writes into
-the shared plugin root described in [agy compatibility](../compatibility/agy.md),
-so Ponytail and `all-about-agents` occupy sibling directories there; they do not
-overwrite each other.
+Its lifecycle hooks need Node.js on `PATH`. Ponytail and `all-about-agents`
+are separate plugins in each product's plugin root; they do not overwrite each
+other.
 
 Ponytail changes how an agent decides what to write. It is guidance, not a
 guardrail, and it does not replace the emergency deny rules in this repository's

@@ -1,5 +1,5 @@
 import { globalInstructionContent } from "../../installers/lib/global-instructions.mjs";
-import { displayLabel, renderInvocationGuidance, renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
+import { renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
 
 function ensureCore(core) {
   if (!core || typeof core !== "object" || Array.isArray(core)) throw new TypeError("core is required");
@@ -32,30 +32,6 @@ function renderRules(rules) {
   return lines;
 }
 
-function renderCommands(commands, presentation) {
-  const lines = [
-    "## Canonical actions",
-    "",
-    "Actions dispatch their declared workflow; reusable procedures belong in skills.",
-    ""
-  ];
-  for (const command of [...commands].sort((left, right) => String(left?.actionId ?? "").localeCompare(String(right?.actionId ?? "")))) {
-    const actionId = ensureText(command?.actionId, "unknown-action");
-    const workflowId = ensureText(command?.workflowId, "unknown-workflow");
-    const commandLabel = displayLabel(presentation, "command", actionId);
-    const workflowLabel = displayLabel(presentation, "workflow", workflowId);
-    const guidance = renderInvocationGuidance(presentation, {
-      kind: "command",
-      id: actionId,
-      workflowId,
-      task: `Run ${commandLabel} for the requested workflow`,
-      reason: `Run ${commandLabel} for the requested workflow.`
-    });
-    lines.push(`### ${commandLabel}`, "", `- action: ${actionId}`, `- workflowId: ${workflowId}`, `- description: ${ensureText(command?.presentation?.help, "Canonical action.")}`, `- workflow: ${workflowLabel}`, "", guidance, "");
-  }
-  return lines;
-}
-
 const CLAUDE_HOUSE_RULES = `
 
 ## egroup house rules (coding-guidelines)
@@ -77,16 +53,10 @@ export function renderClaudeGlobalInstructions(core) {
   return normalizeBody(renderSharedGlobalInstructions(core).trimEnd() + CLAUDE_HOUSE_RULES);
 }
 
-/** Render the shared canonical body for Antigravity Desktop and agy. */
-export function renderGeminiGlobalInstructions(core) {
-  return renderSharedGlobalInstructions(core);
-}
-
 /** Render Codex's shared global body followed by its canonical local sections. */
-export function renderCodexGlobalInstructions(core, { canonicalRules, commands } = {}) {
+export function renderCodexGlobalInstructions(core, { canonicalRules } = {}) {
   const loaded = ensureCore(core);
   const rules = canonicalRules === undefined ? loaded.rules : ensureRecords(canonicalRules, "canonicalRules");
-  const actions = commands === undefined ? loaded.commands : ensureRecords(commands, "commands");
   if (!loaded.presentation || typeof loaded.presentation !== "object") throw new TypeError("core.presentation is required for Codex rendering");
   return normalizeBody([
     renderSharedGlobalInstructions(loaded).trimEnd(),
@@ -98,8 +68,6 @@ export function renderCodexGlobalInstructions(core, { canonicalRules, commands }
     "",
     "## Presentation",
     "",
-    renderPresentationCatalog(loaded.presentation),
-    "",
-    ...renderCommands(actions, loaded.presentation)
+    renderPresentationCatalog(loaded.presentation)
   ].join("\n"));
 }

@@ -23,13 +23,10 @@ export const MAX_STDIN_BYTES = DEFAULT_MAX_STDIN_BYTES;
 
 const EMPTY_OUTPUTS = Object.freeze({
   claude: Object.freeze({}),
-  codex: Object.freeze({}),
-  "antigravity-2": Object.freeze({ injectSteps: [] }),
-  agy: Object.freeze({})
+  codex: Object.freeze({})
 });
 
 const SESSION_START_SURFACES = new Set(["claude", "codex"]);
-const INVOCATION_SURFACES = new Set(["antigravity-2"]);
 const BOOTSTRAP_CONTRACT_KEYS = new Set([
   "schemaVersion",
   "id",
@@ -55,28 +52,12 @@ function hasSessionStartEvent(request) {
   return request.hook_event_name === "SessionStart" && typeof request.source === "string";
 }
 
-function hasFirstInvocation(request) {
-  return Number.isInteger(request.invocationNum)
-    && Number.isInteger(request.initialNumSteps)
-    && request.invocationNum === 0
-    && request.initialNumSteps === 0;
-}
-
 /** Normalize only documented native event fields; malformed input stays fail-open. */
 export function normalizeRequest(surface, request) {
   if (typeof surface !== "string" || !isPlainObject(request)) return null;
   if (SESSION_START_SURFACES.has(surface)) {
     if (!hasSessionStartEvent(request)) return null;
     return { surface, event: "SessionStart", source: request.source };
-  }
-  if (INVOCATION_SURFACES.has(surface)) {
-    if (!Number.isInteger(request.invocationNum) || !Number.isInteger(request.initialNumSteps)) return null;
-    return {
-      surface,
-      event: "PreInvocation",
-      invocationNum: request.invocationNum,
-      initialNumSteps: request.initialNumSteps
-    };
   }
   return null;
 }
@@ -96,11 +77,6 @@ export function buildBootstrapOutput(surface, request, canonicalContent) {
   if (!normalized || typeof canonicalContent !== "string") return emptyOutput(surface);
   if (SESSION_START_SURFACES.has(surface)) {
     return normalized.source === "startup" ? contextOutput(normalized.event, canonicalContent) : emptyOutput(surface);
-  }
-  if (surface === "antigravity-2") {
-    return hasFirstInvocation(normalized)
-      ? { injectSteps: [{ ephemeralMessage: canonicalContent }] }
-      : emptyOutput(surface);
   }
   return emptyOutput(surface);
 }

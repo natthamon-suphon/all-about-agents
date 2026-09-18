@@ -4,7 +4,7 @@ The adapter renders a structural Claude plugin fixture from the canonical core.
 When canonical sources are unavailable, the fixture is intentionally incomplete
 and marked for deferral by hard diagnostics.
 Its output uses the documented plugin component directories (`skills/`,
-`agents/`, `commands/`, and `hooks/`) plus installer-owned `rules/` and
+`agents/`, and `hooks/`) plus installer-owned `rules/` and
 `config/` overlays. It also emits `CLAUDE.md` from the canonical global
 instruction source. Registration deploys that file to the selected
 `CLAUDE_CONFIG_DIR`; plugin rules remain separate. The `portable` and

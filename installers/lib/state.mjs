@@ -7,7 +7,7 @@ import { atomicReplaceFile } from "./atomic-write.mjs";
 export const STATE_SCHEMA_VERSION = 1;
 export const STATE_RELATIVE_PATH = ".all-about-agents/state.json";
 
-const SURFACES = new Set(["claude", "codex", "antigravity-2", "agy"]);
+const SURFACES = new Set(["claude", "codex"]);
 const PROFILES = new Set(["portable", "template"]);
 const HASH = /^[0-9a-f]{64}$/u;
 const CONTENT_KINDS = new Set(["create", "replace", "unchanged"]);

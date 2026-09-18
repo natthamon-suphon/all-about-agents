@@ -16,7 +16,7 @@ export const NATIVE_STATUSES = Object.freeze([
 
 const RECORD_KEYS = new Set(["kind", "surface", "feature", "phases", "sourcePath", "manualSteps"]);
 const PHASE_KEYS = new Set(["status", "evidence"]);
-const SURFACES = new Set(["claude", "codex", "antigravity-2", "agy"]);
+const SURFACES = new Set(["claude", "codex"]);
 const CONTROL_CHARACTER = /[\u0000-\u001f\u007f]/u;
 const SECRET_PATTERNS = [
   /\b(?:sk|pk)-[A-Za-z0-9_-]{16,}/iu,

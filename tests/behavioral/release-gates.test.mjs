@@ -10,11 +10,9 @@ import { validateSkillArtifacts } from "../../installers/lib/validate-skill.mjs"
 import { materializeRenderResult, renderForSurface } from "../../installers/lib/render.mjs";
 import { validateRenderResult } from "../../adapters/shared/adapter-contract.mjs";
 import { nativeIntegrationStatus } from "../../adapters/shared/native-state.mjs";
-import { routeRole } from "../../core/roles/router.mjs";
 import { CANONICAL_ROLE_IDS, assertNativeRoleSemantics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { isContained, assertSafeDestinationRoot } from "../../installers/lib/roots.mjs";
 import { auditPresentationTrace } from "../../core/evals/presentation-trace.mjs";
-import routingFixture from "./roles/routing.json" with { type: "json" };
 import presentationScenarios from "../../core/evals/scenarios/presentation-contract.json" with { type: "json" };
 import { withTempRoot } from "../helpers/temp-root.mjs";
 import { main } from "../../scripts/aaa.mjs";
@@ -53,9 +51,7 @@ test("emergency protection remains a non-runtime claim across rendered surfaces"
   const renders = [
     await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "claude", profile: "template", statuslineName: "", platform: process.platform }),
     await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "codex", profile: "template", targetRuntime: "cli", platform: process.platform }),
-    await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "codex", profile: "template", targetRuntime: "desktop", platform: process.platform }),
-    await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "antigravity-2", profile: "template", statuslineName: "", platform: process.platform }),
-    await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "agy", profile: "template", statuslineName: "", platform: process.platform })
+    await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "codex", profile: "template", targetRuntime: "desktop", platform: process.platform })
   ];
   for (const rendered of renders) {
     const records = rendered.registrations.filter((entry) => entry.kind === "native-integration" && entry.feature === "emergency-protection");
@@ -67,7 +63,7 @@ test("emergency protection remains a non-runtime claim across rendered surfaces"
 
 test("T07 structured presentation scenarios are deterministic and do not make native claims", async () => {
   const core = await loadCore(process.cwd());
-  assert.equal(presentationScenarios.scenarios.length, 10);
+  assert.equal(presentationScenarios.scenarios.length, 9);
   for (const scenario of presentationScenarios.scenarios) {
     for (const entry of scenario.cases) {
       const first = auditPresentationTrace({ trace: entry.trace, presentation: core.presentation });
@@ -83,7 +79,7 @@ test("T07 structured presentation scenarios are deterministic and do not make na
 
 const rubricPath = resolve(process.cwd(), "core/evals/rubric.json");
 const evidenceDirectory = resolve(process.cwd(), "tests", ".tmp", "t050-release-gates");
-const surfaces = ["claude", "codex", "antigravity-2", "agy"];
+const surfaces = ["claude", "codex"];
 const expectedDimensions = [
   ["task-spec-correctness", "task/spec correctness", 30],
   ["evidence-verification-uncertainty", "evidence/verification/uncertainty", 20],
@@ -125,16 +121,13 @@ function renderFingerprint(result) {
 }
 
 function skillPath(surface, skillId) {
-  if (surface === "claude" || surface === "agy") return `skills/${skillId}/SKILL.md`;
-  if (surface === "codex") return `.agents/skills/${skillId}/SKILL.md`;
-  return `.agents/plugins/all-about-agents/skills/${skillId}/SKILL.md`;
+  if (surface === "claude") return `skills/${skillId}/SKILL.md`;
+  return `.agents/skills/${skillId}/SKILL.md`;
 }
 
 function rolePath(surface, roleId) {
   if (surface === "claude") return `agents/${roleId}.md`;
-  if (surface === "codex") return `.codex/agents/${roleId}.toml`;
-  if (surface === "agy") return `agents/${roleId}/agent.md`;
-  return `.agents/plugins/all-about-agents/agents/${roleId}.md`;
+  return `.codex/agents/${roleId}.toml`;
 }
 
 async function removeReleaseGateEvidence() {
@@ -205,11 +198,9 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
   assert.equal(core.skills.length, 28);
   assert.equal(core.roles.length, CANONICAL_ROLE_IDS.length);
   assert.equal(core.rules.length, 9);
-  assert.equal(core.workflows.length, 6);
-  assert.equal(core.commands.length, 8);
   const validationResult = parseCliJson(await captureCli(["validate", "--scope", "all", "--format", "json"]), 0, "Gate 0 validate --scope all");
   assert.equal(validationResult.status, "pass");
-  checks.push({ id: "load-core-and-validate", status: "PASS", evidence: { validationStatus: validationResult.status, skills: core.skills.length, roles: core.roles.length, rules: core.rules.length, workflows: core.workflows.length, commands: core.commands.length } });
+  checks.push({ id: "load-core-and-validate", status: "PASS", evidence: { validationStatus: validationResult.status, skills: core.skills.length, roles: core.roles.length, rules: core.rules.length } });
 
   for (const surface of surfaces) {
     const first = materializeRenderResult(await renderForSurface({ repositoryRoot: process.cwd(), core, surface, profile: "portable", statuslineName: "", platform: process.platform }));
@@ -222,16 +213,6 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
     surfaceEvidence.push({ surface, status: "PASS", passRate: 100, fileCount: first.files.length, skillCount: core.skills.length, roleCount: core.roles.length });
   }
   checks.push({ id: "render-and-materialize", status: "PASS", evidence: surfaceEvidence });
-
-  const routingChecks = routingFixture.scenarios.flatMap((scenario) => scenario.cases.map((entry) => {
-    const result = routeRole({ prompt: entry.prompt, roles: core.roles });
-    const expectedStatus = entry.expectedStatus || "matched";
-    const expectedRole = entry.expectedRole ?? null;
-    const passed = result.status === expectedStatus && (expectedStatus !== "matched" || result.roleId === expectedRole) && (!entry.expectedCandidates || JSON.stringify(result.candidates) === JSON.stringify(entry.expectedCandidates));
-    return { id: entry.id, status: passed ? "PASS" : "FAIL", evidence: { expectedStatus, actualStatus: result.status, expectedRole, actualRole: result.roleId ?? null } };
-  }));
-  assert.equal(passRate(routingChecks), 100);
-  checks.push({ id: "role-routing", status: "PASS", evidence: { cases: routingChecks.length, passRate: passRate(routingChecks) } });
 
   const disposableRoot = resolve(process.cwd(), "tests", ".tmp", "t050-release-gates");
   const pathModule = process.platform === "win32" ? win32 : posix;
@@ -311,7 +292,6 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
     evidenceRefs: [
       "core/evals/rubric.json",
       "tests/behavioral/release-gates.test.mjs",
-      "tests/integration/manual-desktop-checklist.json",
       "tests/.tmp/t050-release-gates/gate-1-eval-result.json"
     ],
     gates: [

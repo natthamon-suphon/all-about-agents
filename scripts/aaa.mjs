@@ -543,7 +543,7 @@ export async function main(args, output = process.stdout, errorOutput = process.
   let options;
   try {
     options = normalizeParsedOptions(parseArgs([action, ...rest]), invocationCwd);
-    if (action === "install" && interactive && options.surfaces.some((surface) => ["claude", "agy"].includes(surface)) && !hasOption(rest, "--statusline-name")) {
+    if (action === "install" && interactive && options.surfaces.includes("claude") && !hasOption(rest, "--statusline-name")) {
       const statuslineName = await prompt("Statusline display name");
       options = normalizeParsedOptions(parseArgs([action, ...rest, "--statusline-name", statuslineName]), invocationCwd);
     }

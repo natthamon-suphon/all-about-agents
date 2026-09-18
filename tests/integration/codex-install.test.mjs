@@ -41,8 +41,6 @@ test("Codex clean-profile materializes declared destinations and is idempotent",
     assert.equal(core.skills.length, 28);
     assert.equal(core.roles.length, 7);
     assert.equal(core.rules.length, 9);
-    assert.equal(core.workflows.length, 6);
-    assert.equal(core.commands.length, 8);
 
     for (const skill of core.skills) await access(resolve(destination, ".agents", "skills", skill.id, "SKILL.md"));
     for (const role of core.roles) {
@@ -51,8 +49,6 @@ test("Codex clean-profile materializes declared destinations and is idempotent",
     }
     const agents = await readFile(resolve(destination, "AGENTS.md"), "utf8");
     for (const rule of core.rules) assert.ok(agents.includes(`### ${rule.title || rule.id}`), rule.id);
-    for (const command of core.commands) assert.ok(agents.includes(command.actionId), command.actionId);
-    for (const workflow of core.workflows) assert.ok(agents.includes(workflow.id), workflow.id);
 
     await access(resolve(destination, ".codex-plugin", "plugin.json"));
     await access(resolve(destination, "config.toml"));
