@@ -74,6 +74,11 @@ Use these guides to keep the same source and quality on every machine:
 - [Native verification](docs/maintenance/native-verification.md)
 - [Prompt for another session](docs/maintenance/session-prompt.md)
 
+Design specs for multi-phase changes live in `docs/plans/YYYY-MM-DD-<name>.md` and are
+reviewed before phase 1 starts. Current:
+[Simplify to Claude + Codex](docs/plans/2026-09-18-simplify-to-claude-codex.md) with its
+[repository comparison](docs/plans/2026-09-18-repo-comparison.md).
+
 A pull updates only the repository. It does not install files into a coding
 tool. Installation always needs a separate, exact action.
 

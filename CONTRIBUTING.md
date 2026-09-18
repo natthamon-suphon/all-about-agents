@@ -24,6 +24,10 @@ Run the local, read-only sync check:
 npm run sync:status
 ```
 
+A change that spans several phases starts from a design spec in
+`docs/plans/YYYY-MM-DD-<name>.md`. The owner reviews the spec before phase 1. Each phase
+ends with the evidence report the spec defines.
+
 The release source is main and origin/main. `AGENTS.md`, `CLAUDE.md`, and
 `.agents/rules/all-about-agents.md` are separate regular files. They carry the
 same minimum protocol. They are not redirects to one another.
