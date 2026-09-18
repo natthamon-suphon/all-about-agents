@@ -1,6 +1,8 @@
 # Simplify all-about-agents to Claude + Codex
 
-Status: design spec, awaiting owner review. No implementation has started.
+Status: approved by the owner on 2026-09-19 ("implement phases 1-4"). Phase 1 is
+committed as `8cbfd3b` on `simplify/phase-1`; phases 2-4 follow on stacked branches.
+Phase reports are in section 14.
 Date: 2026-09-18. Author machine: Windows. Companion analysis and decision log:
 [2026-09-18-repo-comparison.md](2026-09-18-repo-comparison.md).
 
@@ -458,3 +460,49 @@ dirty state; remaining risks. Lifecycle words `registered`, `trusted`, `active`,
   `skills/writing-skills/SKILL.md`, `docs/testing.md`, `tests/claude-code/README.md`.
 - mattpocock/skills v1.2.3 (fetched 2026-09-18): `README.md`, `.agents/invocation.md`,
   `skills/productivity/writing-for-agents/SKILL-MECHANICS.md`.
+
+## 14. Phase reports
+
+### Phase 1 report (2026-09-19, Windows, branch `simplify/phase-1`, commit `8cbfd3b`)
+
+Changed: 265 files, +1,781 / -25,112 lines. Deleted 161 files, modified 103, added
+`tests/static/surface-scope.test.mjs`. The commit message lists every removed area.
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Core validation | `node scripts/aaa.mjs validate --scope all --format json` | pass, 0 errors |
+| Quick gate | `npm run quality:quick` | PASS, 9 of 9 checks |
+| Full gate | `npm run quality:full` | PASS on the second run; the first run failed on `tests/integration/codex-install.test.mjs`, which still asserted `core.workflows` and `core.commands`; fixed, then PASS |
+| Whole suite | `node --test` | 657 tests, 654 pass, 3 skipped (POSIX mode bits on Windows, live product roots) |
+| Dry-run both surfaces | `install --surface all --destination-root <DISPOSABLE> --dry-run` | status dry-run, namespaced: claude 104 files, codex 168 files |
+| Apply guard | `install --surface codex --apply` with no destination | exit 2, `destination-root-required` |
+| Invariant I4 | `git grep` from the phase 1 acceptance block | no matches |
+| Snapshot diff | local regeneration script (git-ignored) | 16 files removed per package; 7 (Claude) and 11 (Codex) kept files changed, all expected |
+
+Not run: macOS (no macOS machine in this session); native `register --apply`; any
+live-root install. Native lifecycle claims for this commit: `rendered` and `validated`
+only.
+
+Incident D9 during phase 1. A subagent fixing `tests/integration/cli.test.mjs` ran the
+pre-existing test "all-surface automatic discovery fails closed before mutation" as its
+baseline. That test executed `install --surface all --apply` without a destination and
+relied on antigravity-2 to make it fail. After the cut, both remaining surfaces
+auto-discovered their live roots, and at 00:38 the phase-1 render was written into
+`~/.claude` (104 files) and `~/.codex` (168 files) with no backup.
+
+- Lost: `~/.claude/settings.json` (replaced by the portable overlay; `enabledPlugins`,
+  the RTK `PreToolUse` hook, model and effort keys gone). `~/.codex/config.toml` dropped
+  from the template render (`model = "gpt-5.6-sol"`, `approval_policy = "never"`,
+  `sandbox_mode = "danger-full-access"`, `model_reasoning_effort = "max"`) to the
+  portable render. `~/.codex/AGENTS.md` and `agents/*.toml` were byte-identical and lost
+  nothing.
+- Restored under the owner's authority: `~/.claude/settings.json` rebuilt from the
+  template overlay at `main` plus `enabledPlugins` from `installed_plugins.json`; the RTK
+  hook via `rtk init -g --hook-only --auto-patch` (backup at `~/.claude/settings.json.bak`);
+  `~/.codex/config.toml` from a fresh template render. Personal allow rules, if any
+  existed, were not recoverable.
+- Cleanup of the 97 + 159 added files is a deletion under the home directory, which the
+  auto-mode classifier refused for the agent; the owner runs the prepared dry-run script
+  with `--apply`.
+- Prevention shipped in `8cbfd3b`: `install --apply` requires `--destination-root`; RED
+  tests first, then the guard in `installers/lib/args.mjs`.
