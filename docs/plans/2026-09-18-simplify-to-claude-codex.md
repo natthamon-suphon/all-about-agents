@@ -3,7 +3,8 @@
 Status: approved by the owner on 2026-09-19 ("implement phases 1-4"). All four phases
 are implemented on stacked branches `simplify/phase-1` (`8cbfd3b`, `276d6d7`),
 `simplify/phase-2` (`e89870e`), `simplify/phase-3` (`0a6e5ea`), and `simplify/phase-4`,
-merged fast-forward into `main` on 2026-09-19 and released as `2.1.0` (`WhatsNew.md`).
+merged fast-forward into `main` on 2026-09-19 and released as `2.1.0`; the pre-install
+review pass added D10 and released `2.1.1` (`WhatsNew.md`).
 Phase reports are in section 14. Open: macOS evidence and a model-run result with the
 current package installed.
 Date: 2026-09-18. Author machine: Windows. Companion analysis and decision log:
@@ -30,6 +31,7 @@ Verified defects and costs that motivate this change:
 | D7 | macOS has never produced native evidence for any surface, although the owner uses macOS daily. | `docs/limitations/known-limitations.md` |
 | D9 | `install --apply` without `--destination-root` auto-discovers the live `~/.claude` and `~/.codex` roots and writes into them. README claimed the opposite. Found 2026-09-19 00:38 when a pre-existing integration test (which expected antigravity-2 to make `--surface all --apply` fail) ran during phase 1 and installed the phase-1 render into both live roots, replacing `~/.claude/settings.json` with the portable overlay. | `installers/lib/roots.mjs` `resolveDestinationRoot`; incident record in the phase-1 report |
 | D8 | `quality:full` keeps only the first 2,000 characters of a failing check's output, so when the 774-test suite fails, the failure lines at the end are cut off and the report cannot say which test failed. Observed 2026-09-18: one `full-test-suite` FAIL whose cause was unrecoverable; two immediate reruns passed 770/774. | `scripts/quality-gate.mjs` `boundedEvidence` (`summary.slice(0, MAX_EVIDENCE_LENGTH - 25)`) |
+| D10 | A package root last written by 1.x holds a managed state naming removed surfaces. `readManagedState` returned null for it, so `renderPlans` treated the root as unmanaged: no `invalid-previous-state` diagnostic, no prune actions, stale `claude/commands/*.md` kept after an in-place refresh. Found 2026-09-19 during the pre-install review of `~/.all-about-agents/package` (dry-run: replace 129, unchanged 144, prune 0). Fixed in `847af88`, released as 2.1.1. | `scripts/aaa.mjs` `loadPreviousState`, RED test in `tests/integration/cli.test.mjs` |
 
 ## 2. Owner decisions (2026-09-18)
 
