@@ -360,3 +360,26 @@ test("dry-run reports a legacy managed state it cannot read instead of silently 
     assert.match(result.stdout, /invalid-previous-state/u, "the report must name the unreadable previous state");
   });
 });
+
+test("apply refuses before mutation when the managed state exists but cannot be read", async () => {
+  await withTempRoot(async (root) => {
+    const stale = resolve(root, "claude", "commands", "build.md");
+    const statePath = resolve(root, ".all-about-agents", "state.json");
+    const legacyState = JSON.stringify({
+      schemaVersion: 1, repositoryVersion: "1.0.0", profile: "portable",
+      surfaces: ["retired-surface", "claude"],
+      ownedPaths: [{ relativePath: "claude/commands/build.md", sha256: "a".repeat(64) }]
+    });
+    await mkdir(resolve(root, ".all-about-agents"), { recursive: true });
+    await mkdir(resolve(root, "claude", "commands"), { recursive: true });
+    await writeFile(statePath, legacyState, "utf8");
+    await writeFile(stale, "stale\n", "utf8");
+    const result = await capture(["install", "--surface", "claude", "--destination-root", root, "--apply", "--format", "json"]);
+    assert.notEqual(result.code, 0, "apply must not succeed on an unreadable previous state");
+    assert.match(result.stdout, /invalid-previous-state/u);
+    assert.match(result.stdout, /managed state merge rejected before mutation/u);
+    assert.equal(await readFile(statePath, "utf8"), legacyState, "the legacy state must stay untouched");
+    assert.equal(await readFile(stale, "utf8"), "stale\n", "no owned file may be written or pruned");
+    await assert.rejects(access(resolve(root, "claude", "CLAUDE.md")), "no new file may be created");
+  });
+});

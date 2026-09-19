@@ -10,10 +10,12 @@ All notable changes to all-about-agents. The format follows
 
 ### Fixed
 
-- `install --dry-run` and `--apply` now report `invalid-previous-state` when a package
-  root holds a managed state this version cannot read (for example a 1.x root that
-  names a removed surface). Before, such a root was silently treated as unmanaged and
-  its stale files were never pruned.
+- `install` no longer treats a package root as unmanaged when its managed state
+  exists but cannot be read (for example a 1.x root that names a removed surface).
+  `--dry-run` reports `invalid-previous-state`; `--apply` refuses before any
+  mutation with `managed state merge rejected before mutation`. Before, such a root
+  was rendered over silently and its stale files were never pruned. Remedy: empty the
+  root and render again (see `docs/maintenance/sync-and-update.md`).
 
 ## [2.1.0] - 2026-09-19
 
