@@ -28,7 +28,7 @@ marketplace together inside the generated package.
 
 That is the whole requirement list. The repository declares no `dependencies`
 and no `devDependencies`. Optional workstation tools such as `uvx`,
-`ui-ux-pro-max-cli`, Ponytail, and Context7 are described in
+`ui-ux-pro-max-cli`, Ponytail, Caveman, Context7, and RTK are described in
 [companion tooling](docs/setup/companion-tooling.md); none of them is needed to
 render, validate, or install a package.
 

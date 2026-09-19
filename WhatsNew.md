@@ -8,6 +8,18 @@ All notable changes to all-about-agents. The format follows
 
 ### Added
 
+- `docs/setup/companion-tooling.md` now covers Caveman: what it does not ship (no
+  lifecycle hook of its own), where the skills live, how to wire a `SessionStart`
+  activation hook for Claude Code and Codex, and how to verify it with a live
+  answer rather than a written file. The Ponytail section gains the
+  platform-specific config path and the `.ponytail-active` flag file, and the RTK
+  section records that `rtk gain --history` returned no history on `0.47.0`.
+  Two Codex behaviors observed on `v0.152.1` are written down because each cost a
+  debugging cycle: a `SessionStart` hook in `$CODEX_HOME/hooks.json` is parsed but
+  never executed while plugin-delivered hooks run normally, and `codex plugin add`
+  clones the source with `git`, so a local plugin directory must be a git
+  repository with a commit.
+
 - `npm run setup` (`scripts/setup.mjs`): one guarded pipeline for installing this
   repository into the local products. `--mode fresh` clears every previous render
   from the package root first; `--mode update` keeps the root and syncs it with the

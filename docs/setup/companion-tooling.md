@@ -19,6 +19,7 @@ it provides, and record the version you installed. A tool that is absent is
 | `uvx` | Python runner | Runs Python entry points for skills that ship `.py` scripts, without a project virtual environment. |
 | `ui-ux-pro-max-cli` | npm CLI | Installs the UI/UX Pro Max skill into supported AI coding assistants. |
 | Ponytail | agent plugin | A "lazy senior developer" ruleset that pushes an agent to write less code. |
+| Caveman | skill set plus an operator-written hook | Compresses agent prose without dropping technical detail. Ships no hook of its own. |
 | Context7 | MCP server | Fetches current library documentation into a session instead of relying on model memory. |
 | RTK | CLI proxy | Trims shell output before it reaches the session context, and reports the measured saving. |
 
@@ -71,9 +72,128 @@ Its lifecycle hooks need Node.js on `PATH`. Ponytail and `all-about-agents`
 are separate plugins in each product's plugin root; they do not overwrite each
 other.
 
+Ponytail reads its default level from `PONYTAIL_DEFAULT_MODE`, then from a
+config file, then falls back to `full`. The config path is platform-specific:
+`$XDG_CONFIG_HOME/ponytail/config.json` when that variable is set,
+`~/.config/ponytail/config.json` on macOS and Linux, and
+`%APPDATA%\ponytail\config.json` on Windows. Do not assume `~/.config` on
+Windows.
+
+To confirm the plugin is active in a session, read the flag file its
+`SessionStart` hook writes:
+
+```text
+cat "$CLAUDE_CONFIG_DIR/.ponytail-active"
+```
+
+`CLAUDE_CONFIG_DIR` defaults to `~/.claude`. The file holds the active level.
+An absent file means the hook did not run.
+
 Ponytail changes how an agent decides what to write. It is guidance, not a
 guardrail, and it does not replace the emergency deny rules in this repository's
 profiles.
+
+## Caveman
+
+Caveman is a set of skills that compress agent prose while keeping code, error
+strings, and technical terms exact. It is published at
+[`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman).
+
+Unlike Ponytail, the copy installed as plain skills ships **no lifecycle hook**,
+so nothing activates it at session start. The skills load on demand only. To
+start every session in caveman mode you add a `SessionStart` hook yourself.
+
+### Install the skills
+
+The skills live in the personal skills directory, one folder per skill:
+
+```text
+~/.claude/skills/caveman
+~/.claude/skills/caveman-commit
+~/.claude/skills/caveman-help
+...
+```
+
+How a given machine acquired them is not recorded here. Copy the `caveman*`
+folders from a machine that already has them, or install from upstream and read
+what that package ships before adding a hook of your own. If upstream already
+ships a working `SessionStart` hook, use it and skip the rest of this section.
+
+### Activation hook
+
+The activator, the level config, and the Codex plugin live together in one
+operator-owned folder:
+
+```text
+~/.caveman/caveman-activate.js      resolves the level, emits the skill text
+~/.caveman/codex-plugin/            the Codex plugin that carries the hook
+~/.config/caveman/config.json       {"defaultMode": "full"}
+```
+
+Copy that folder to the new machine, then wire each product. The full
+procedure, including hosts outside this repository's scope, is kept next to the
+files in `~/.caveman/README.md`.
+
+Claude Code reads a `SessionStart` hook straight from user settings. Merge this
+into `~/.claude/settings.json`; do not replace the file, which also holds your
+plugins and other hooks:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["<HOME>/.caveman/caveman-activate.js", "--surface", "claude"],
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The `args` exec form spawns the executable directly with no shell, so a Windows
+path with spaces or `$` never reaches a shell parser.
+
+Codex needs a plugin. Two facts observed on Codex `v0.152.1`, both of which
+cost a debugging cycle:
+
+- A `SessionStart` hook written to `$CODEX_HOME/hooks.json` is **parsed but not
+  executed**. Invalid JSON there produces `warning: failed to parse hooks
+  config`, which proves the file is read, yet the handler never runs. Hooks
+  delivered by an installed plugin do run in the same session. The cause is not
+  established; prefer the plugin path.
+- `codex plugin add` clones the plugin source with `git`, so a local plugin
+  directory must be a git repository with at least one commit, or the install
+  fails with `does not appear to be a git repository`.
+
+```text
+cd ~/.caveman/codex-plugin
+git init && git add -A && git commit -m "Caveman Codex plugin source"
+codex plugin marketplace add ~/.caveman/codex-plugin
+codex plugin add caveman@caveman
+```
+
+### Verify
+
+Ask the product itself, in a fresh session:
+
+```text
+claude -p "Is caveman mode active? Name the level."
+codex exec "One short line: is caveman mode active and at what level?"
+```
+
+A hook that is written but never fires is the common failure, and only a live
+answer separates *installed* from *runtime verified*.
+
+Caveman changes how an agent writes, not what it is allowed to do. It is
+guidance, not a guardrail.
 
 ## Context7
 
@@ -104,6 +224,11 @@ A failing `rtk gain` usually means a different tool named `rtk` resolves first
 on the path. Check the resolved binary with `where.exe rtk` on Windows or
 `which rtk` on macOS. The `rtk rg` subcommand shells out to ripgrep, so install
 ripgrep as well when you want it.
+
+On `rtk 0.47.0`, `rtk gain --history` printed the same summary as plain
+`rtk gain` and no per-command history, so do not rely on that flag as evidence
+that a specific command was proxied. The running total in `rtk gain` moving
+across two calls is the cheaper proof that the hook is wrapping commands.
 
 Hosts pick RTK up through a hook, which rewrites a plain shell command into an
 `rtk` call. Claude Code uses a `PreToolUse` hook that runs `rtk hook claude`,
