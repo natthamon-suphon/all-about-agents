@@ -149,7 +149,7 @@
     "progressContract": "core/presentation/progress-contract.json",
     "renderedIn": "AGENTS.md and native skill/role prompts"
   },
-  "rootInstructionContext": "AGENTS.md is emitted with the canonical global body first, followed by Codex rules, presentation labels, and action-to-workflow mappings; project AGENTS.md remains the more specific layer",
+  "rootInstructionContext": "AGENTS.md is emitted with the canonical global body first, followed by Codex rules, presentation labels, and the checklist contract; project AGENTS.md remains the more specific layer",
   "nativeValidation": {
     "command": [
       "codex",

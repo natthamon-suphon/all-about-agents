@@ -3,8 +3,9 @@
 Status: approved by the owner on 2026-09-19 ("implement phases 1-4"). All four phases
 are implemented on stacked branches `simplify/phase-1` (`8cbfd3b`, `276d6d7`),
 `simplify/phase-2` (`e89870e`), `simplify/phase-3` (`0a6e5ea`), and `simplify/phase-4`,
-all pushed to origin and not yet merged to `main`. Phase reports are in section 14.
-Open: macOS evidence and a model-run result with the current package installed.
+merged fast-forward into `main` on 2026-09-19 and released as `2.1.0` (`WhatsNew.md`).
+Phase reports are in section 14. Open: macOS evidence and a model-run result with the
+current package installed.
 Date: 2026-09-18. Author machine: Windows. Companion analysis and decision log:
 [2026-09-18-repo-comparison.md](2026-09-18-repo-comparison.md).
 

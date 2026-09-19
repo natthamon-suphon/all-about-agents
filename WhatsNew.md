@@ -6,7 +6,12 @@ All notable changes to all-about-agents. The format follows
 
 ## [Unreleased]
 
-Phase 3 of the simplification spec: skill content pulled from superpowers v6.3.0.
+## [2.1.0] - 2026-09-19
+
+Phases 3 and 4 of the simplification spec. Install this version, not 2.0.0: the
+merged `main` already contains both phases.
+
+Phase 3: skill content pulled from superpowers v6.3.0.
 
 ### Changed
 
