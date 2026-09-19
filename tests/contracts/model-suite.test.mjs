@@ -8,7 +8,10 @@ import { checkPreconditions, evaluateCase, redact, runSuite } from "../model/run
 
 const root = process.cwd();
 
-test("trigger suite exists, is manual, and stays out of the quality gates", async () => {
+test("trigger suite exists, is manual, spawns without a shell, and stays out of the quality gates", async () => {
+  const runner = readFileSync(resolve(root, "tests/model/run-trigger-suite.mjs"), "utf8");
+  assert.doesNotMatch(runner, /shell\s*:|spawnSync|execSync|\bexec\(/u, "prompts must never pass through a shell");
+  assert.match(runner, /process-runner.mjs/u);
   const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
   assert.equal(pkg.scripts["test:model"], "node tests/model/run-trigger-suite.mjs");
   const gate = readFileSync(resolve(root, "scripts/quality-gate.mjs"), "utf8");
@@ -43,11 +46,11 @@ test("stale or missing installations make every case NOT_RUN_UNAVAILABLE without
   try {
     const outputDir = join(sandbox, "eval-runs");
     mkdirSync(outputDir, { recursive: true });
-    let spawnCalls = 0;
-    const spawn = () => { spawnCalls += 1; return { status: 0, stdout: "", stderr: "" }; };
-    const preconditions = () => ({ ok: false, reasons: ["installed package stale: plugin 1.0.0, package.json 2.0.0"], packageVersion: "2.0.0", configDir: sandbox });
-    const { summary, batch } = await runSuite({ spawn, preconditions, outputDir });
-    assert.equal(spawnCalls, 0, "no claude session may start when preconditions fail");
+    let runCalls = 0;
+    const run = async () => { runCalls += 1; return { exitCode: 0, stdout: "", stderr: "", unavailable: false, timedOut: false, outputTooLarge: false }; };
+    const preconditions = async () => ({ ok: false, reasons: ["installed package stale: plugin 1.0.0, package.json 2.0.0"], packageVersion: "2.0.0", configDir: sandbox });
+    const { summary, batch } = await runSuite({ run, preconditions, outputDir });
+    assert.equal(runCalls, 0, "no claude session may start when preconditions fail");
     assert.equal(summary.notRun, summary.total);
     assert.equal(summary.fail, 0);
     assert.ok(batch.results.every((entry) => entry.metadata.status === "NOT_RUN_UNAVAILABLE" && /stale/u.test(entry.metadata.reason)));
@@ -64,14 +67,17 @@ test("a fake claude executable drives PASS and FAIL classification per case", as
     mkdirSync(outputDir, { recursive: true });
     const suitePath = join(sandbox, "suite.json");
     writeFileSync(suitePath, JSON.stringify({ schemaVersion: 1, skills: ["brainstorming"], forbiddenPressurePhrases: ["I have implemented"] }), "utf8");
-    const spawn = (executable, args) => {
-      if (executable === "git") return { status: 0, stdout: "", stderr: "" };
+    const run = async ({ executable, args }) => {
+      const ok = { exitCode: 0, stderr: "", unavailable: false, timedOut: false, outputTooLarge: false };
+      if (executable === "git") return { ...ok, stdout: "" };
+      assert.equal(executable, "claude");
+      assert.equal(args[0], "-p", "the prompt travels as a structured argument, never through a shell");
       const prompt = args[1];
       const announced = /trivial|read-only|bounded read-only|status or file listing/iu.test(prompt) ? "The listing is short." : "Using skill **brainstorming 🧠** — a behavior change needs a design first.";
-      return { status: 0, stdout: JSON.stringify({ result: announced }), stderr: "" };
+      return { ...ok, stdout: JSON.stringify({ result: announced }) };
     };
-    const preconditions = () => ({ ok: true, reasons: [], packageVersion: "2.0.0", configDir: sandbox });
-    const { summary } = await runSuite({ spawn, preconditions, suitePath, outputDir });
+    const preconditions = async () => ({ ok: true, reasons: [], packageVersion: "2.0.0", configDir: sandbox });
+    const { summary } = await runSuite({ run, preconditions, suitePath, outputDir });
     assert.equal(summary.notRun, 0);
     assert.equal(summary.fail, 0, "every brainstorming routing case should pass against the fake announcer");
     assert.equal(summary.pass, summary.total);
@@ -80,9 +86,9 @@ test("a fake claude executable drives PASS and FAIL classification per case", as
   }
 });
 
-test("preconditions report a missing claude executable as a reason", () => {
-  const spawn = () => ({ error: new Error("ENOENT"), status: null, stdout: "", stderr: "" });
-  const result = checkPreconditions({ spawn, home: mkdtempSync(join(tmpdir(), "aaa-no-claude-")), env: {} });
+test("preconditions report a missing claude executable as a reason", async () => {
+  const run = async () => ({ exitCode: null, stdout: "", stderr: "", unavailable: true, timedOut: false, outputTooLarge: false });
+  const result = await checkPreconditions({ run, home: mkdtempSync(join(tmpdir(), "aaa-no-claude-")), env: {} });
   assert.equal(result.ok, false);
   assert.ok(result.reasons.some((reason) => /claude executable is unavailable/u.test(reason)));
 });
