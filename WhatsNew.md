@@ -6,6 +6,8 @@ All notable changes to all-about-agents. The format follows
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-09-19
+
 ### Fixed
 
 - `install --dry-run` and `--apply` now report `invalid-previous-state` when a package
