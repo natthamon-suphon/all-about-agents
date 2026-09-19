@@ -129,6 +129,13 @@ fetch -> sync:status -> pull --ff-only -> quality checks -> doctor -> dry-run
 -> restart/reload -> native verification
 ```
 
+A package root last written by a 1.x repository lists surfaces this version no
+longer renders. The installer cannot read that managed state, reports
+`invalid-previous-state` in the plan, and will not prune the 1.x files (for
+example `claude/commands/*.md`). Before rendering 2.x into such a root, remove the
+old surface directories and the root `.all-about-agents/` directory, keep the root
+path itself so the registered marketplace pointer stays valid, then render again.
+
 Claude caches an installed plugin under its version directory. When `version`
 in `package.json` changed since the last registration, `claude plugin update`
 is not enough: run `claude plugin uninstall all-about-agents@all-about-agents`

@@ -6,6 +6,13 @@ All notable changes to all-about-agents. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- `install --dry-run` and `--apply` now report `invalid-previous-state` when a package
+  root holds a managed state this version cannot read (for example a 1.x root that
+  names a removed surface). Before, such a root was silently treated as unmanaged and
+  its stale files were never pruned.
+
 ## [2.1.0] - 2026-09-19
 
 Phases 3 and 4 of the simplification spec. Install this version, not 2.0.0: the

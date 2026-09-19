@@ -341,3 +341,22 @@ test("PowerShell launcher preserves normalized output and exit-code parity", asy
   assert.equal(report.action, "doctor");
   assert.equal(report.status, "not run");
 });
+
+test("dry-run reports a legacy managed state it cannot read instead of silently disabling pruning", async () => {
+  await withTempRoot(async (root) => {
+    // A package root written by an older repository version names a surface this
+    // version no longer renders. The state is unreadable under the current schema;
+    // the plan must say so instead of quietly treating the root as unmanaged.
+    await mkdir(resolve(root, ".all-about-agents"), { recursive: true });
+    await writeFile(resolve(root, ".all-about-agents", "state.json"), JSON.stringify({
+      schemaVersion: 1,
+      repositoryVersion: "1.0.0",
+      profile: "portable",
+      surfaces: ["retired-surface", "claude"],
+      ownedPaths: [{ relativePath: "claude/commands/build.md", sha256: "a".repeat(64) }]
+    }), "utf8");
+    const result = await capture(["install", "--surface", "claude", "--destination-root", root, "--dry-run", "--format", "json"]);
+    assert.equal(result.code, 0, result.stderr);
+    assert.match(result.stdout, /invalid-previous-state/u, "the report must name the unreadable previous state");
+  });
+});

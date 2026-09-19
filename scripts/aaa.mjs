@@ -13,7 +13,7 @@ import { resolveDestinationRoot } from "../installers/lib/roots.mjs";
 import { renderForSurface, materializeRenderResult } from "../installers/lib/render.mjs";
 import { buildPlan } from "../installers/lib/plan.mjs";
 import { applyPreparedSurface, preflightOperation } from "../installers/lib/apply.mjs";
-import { readManagedState } from "../installers/lib/state.mjs";
+import { readManagedState, STATE_RELATIVE_PATH } from "../installers/lib/state.mjs";
 import { hashBytes } from "../installers/lib/hash.mjs";
 import { validateRenderResult } from "../adapters/shared/adapter-contract.mjs";
 import { diagnose, SURFACES as DOCTOR_SURFACES } from "../installers/lib/doctor.mjs";
@@ -199,8 +199,19 @@ function namespacePayload(payload, surface) {
   };
 }
 
+/** Return the parsed managed state, the raw bytes when a state file exists but is unreadable, or null when absent. */
+async function loadPreviousState(root) {
+  const parsed = await readManagedState(root);
+  if (parsed !== null) return parsed;
+  const statePath = resolve(root, ...STATE_RELATIVE_PATH.split("/"));
+  if (!existsSync(statePath)) return null;
+  // A root written by an older repository version (for example one naming a
+  // removed surface) must surface as invalid-previous-state, not as unmanaged.
+  return readFileSync(statePath);
+}
+
 function usesSharedNamespace(previousState) {
-  if (previousState === null || previousState === undefined || previousState.surfaces.length <= 1) return false;
+  if (previousState === null || previousState === undefined || !Array.isArray(previousState.surfaces) || previousState.surfaces.length <= 1) return false;
   for (const entry of previousState.ownedPaths) {
     const owners = previousState.surfaces.filter((surface) => entry.relativePath.startsWith(`${surface}/`));
     if (owners.length !== 1) throw new Error("managed multi-surface root contains ambiguous ownership; refusing to mutate it");
@@ -217,7 +228,7 @@ async function renderPlans(options, cwd) {
     const payload = materializeRenderResult(rendered);
     const validation = validateRenderResult(payload);
     if (!validation.valid) throw new Error(`render validation failed for ${surface}: ${JSON.stringify(validation.errors)}`);
-    const previousState = await readManagedState(root);
+    const previousState = await loadPreviousState(root);
     const selectedSurfaces = [surface];
     const plan = buildPlan({ payload, destinationRoot: root, previousState, selectedSurfaces });
     const contents = new Map(payload.files.map((file) => [file.relativePath, file.content]));
@@ -237,7 +248,7 @@ async function renderPlans(options, cwd) {
       diagnostics: entries.flatMap((entry) => entry.payload.diagnostics),
       ownership: namespaced.flatMap((entry) => entry.ownership)
     };
-    const previousState = await readManagedState(first.root);
+    const previousState = await loadPreviousState(first.root);
     const selectedSurfaces = [...options.surfaces];
     const plan = buildPlan({ payload, destinationRoot: first.root, previousState, selectedSurfaces });
     return [{ surface: first.surface, root: first.root, payload, plan, contents: new Map(files.map((file) => [file.relativePath, file.content])), previousState, selectedSurfaces }];
