@@ -13,7 +13,7 @@ product, register an account, or claim that a product session has passed.
 | `adapters/` | Claude and Codex renderers, manifests, native mappings, and limitations. |
 | `installers/` | Root resolution, validation, deterministic planning, atomic writes, managed state, and launchers. |
 | `scripts/aaa.mjs` | The repository CLI. |
-| `tests/` | Static, contract, behavioral, integration, and snapshot checks. |
+| `tests/` | Static, contract, lint, integration, and snapshot checks, plus the manual `test:model` trigger suite. |
 
 Legacy files were removed in phase 1 of the simplification and remain in Git
 history. New work must use `core/`, `profiles/`, `adapters/`, and

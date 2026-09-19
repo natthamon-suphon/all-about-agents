@@ -230,7 +230,7 @@ test("presentation trace evaluation artifacts remain in the core eval boundary",
     "core/evals/presentation-trace.mjs",
     "core/evals/presentation-trace.schema.json",
     "core/evals/scenarios/presentation-contract.json",
-    "tests/behavioral/presentation-contract.test.mjs"
+    "tests/lint/presentation-contract.test.mjs"
   ]) await access(resolve(process.cwd(), relativePath));
   const source = await readFile(resolve(process.cwd(), "core/evals/presentation-trace.mjs"), "utf8");
   assert.doesNotMatch(source, /fetch\(|axios|openai|anthropic|gemini|codex|claude/iu);

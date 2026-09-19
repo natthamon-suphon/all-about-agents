@@ -7,7 +7,7 @@ import test from "node:test";
 const requiredOutputs = [
   "core/skills/using-all-about-agents/SKILL.md",
   "core/evals/skill-routing/using-all-about-agents.json",
-  "tests/behavioral/skills/using-all-about-agents.test.mjs",
+  "tests/lint/skills/using-all-about-agents.test.mjs",
   "tests/fixtures/bootstrap-skill/expected-manifest.json",
   "core/inventory.json"
 ];

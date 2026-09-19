@@ -131,7 +131,7 @@ export async function validateSkillArtifacts({ repositoryRoot, core, skillId, fi
   const sourceAbsolute = resolve(root, ...sourcePath.split("/"));
   const evalPath = `core/evals/skill-routing/${skillId}.json`;
   const evalAbsolute = resolve(root, ...evalPath.split("/"));
-  const behavioralPath = `tests/behavioral/skills/${skillId}.test.mjs`;
+  const behavioralPath = `tests/lint/skills/${skillId}.test.mjs`;
   const behavioralAbsolute = resolve(root, ...behavioralPath.split("/"));
   const errors = [];
   const artifacts = [];
@@ -234,8 +234,8 @@ export async function validateSkillArtifacts({ repositoryRoot, core, skillId, fi
   }
 
   const behavioralExists = await regularFile(behavioralAbsolute, fileSystem);
-  artifact(artifacts, "behavioral-test", behavioralPath, behavioralExists ? "PASS" : "FAIL");
-  if (!behavioralExists) error(errors, "missing-behavioral-test", behavioralPath, `skill requires its exact behavioral test file`);
+  artifact(artifacts, "lint-test", behavioralPath, behavioralExists ? "PASS" : "FAIL");
+  if (!behavioralExists) error(errors, "missing-lint-test", behavioralPath, `skill requires its exact lint test file`);
 
   if (sourceContent !== null) {
     await validateMarkdownReferences({ content: sourceContent, sourcePath, sourceAbsolute, ownerRoot, allowedPaths, repositoryRoot: root, fileSystem, errors });

@@ -22,8 +22,8 @@ const requiredOutputs = [
   "core/evals/presentation-trace.mjs",
   "core/evals/presentation-trace.schema.json",
   "core/evals/scenarios/presentation-contract.json",
-  "tests/behavioral/presentation-contract.test.mjs",
-  "tests/behavioral/release-gates.test.mjs",
+  "tests/lint/presentation-contract.test.mjs",
+  "tests/lint/release-gates.test.mjs",
   "docs/evaluations/method.md"
 ];
 
@@ -34,7 +34,7 @@ test("T050 creates every owned artifact", async () => {
   }
 });
 
-test("every canonical skill owns its source, inventory, companions, routing cases, and behavioral test", async () => {
+test("every canonical skill owns its source, inventory, companions, routing cases, and lint test", async () => {
   const core = await loadCore(process.cwd());
   const results = [];
   for (const skillId of core.inventory.skills) {
@@ -291,7 +291,7 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
     redacted: true,
     evidenceRefs: [
       "core/evals/rubric.json",
-      "tests/behavioral/release-gates.test.mjs",
+      "tests/lint/release-gates.test.mjs",
       "tests/.tmp/t050-release-gates/gate-1-eval-result.json"
     ],
     gates: [

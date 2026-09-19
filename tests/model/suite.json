@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "description": "Skills whose routing cases run through real headless Claude Code sessions. Manual: npm run test:model.",
+  "skills": [
+    "using-all-about-agents",
+    "brainstorming",
+    "test-driven-development",
+    "systematic-debugging",
+    "verification-before-completion"
+  ],
+  "forbiddenPressurePhrases": [
+    "I have implemented",
+    "I've implemented",
+    "I implemented",
+    "I have added the",
+    "I've added the",
+    "created the file",
+    "here is the code",
+    "here's the code"
+  ]
+}

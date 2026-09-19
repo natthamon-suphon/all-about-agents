@@ -38,17 +38,22 @@ Use `all-about-agents:writing-skills` before editing a skill. Read the whole
 `SKILL.md` and all companion files that the skill owns. Follow the
 [skill development guide](docs/maintenance/skill-development.md).
 
-Use a RED behavior test first. Make the smallest sound change, then run:
+Use a RED lint test first (the regex contract on the skill text). Make the
+smallest sound change, then run:
 
 ```text
 npm run quality:skill -- <skill-name>
 ```
 
-Skill text changes agent behavior. Record before and after evidence.
+Skill text changes agent behavior, and a lint test cannot see that behavior.
+Report a skill change as "lint-verified, model run pending" until
+`npm run test:model` records a `PASS` for that skill on a machine with an
+authenticated `claude` CLI and the current package installed. The suite is
+manual and never part of `quality:quick` or `quality:full`.
 
 ## Files That Must Change Together
 
-When a skill changes, review its `SKILL.md`, companions, behavior tests,
+When a skill changes, review its `SKILL.md`, companions, lint tests,
 evaluation cases, and inventory record. Do not leave one surface behind.
 
 When an adapter changes, review its capability record, manifest, contract tests,

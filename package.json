@@ -16,7 +16,8 @@
     "sync:status": "node scripts/sync-status.mjs",
     "quality:quick": "node scripts/quality-gate.mjs quick",
     "quality:full": "node scripts/quality-gate.mjs full",
-    "quality:skill": "node scripts/quality-gate.mjs skill"
+    "quality:skill": "node scripts/quality-gate.mjs skill",
+    "test:model": "node tests/model/run-trigger-suite.mjs"
   },
   "dependencies": {},
   "devDependencies": {}

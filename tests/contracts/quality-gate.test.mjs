@@ -69,9 +69,9 @@ test("quality gate selects a stable quick subset, full superset, and focused ski
   assert.deepEqual(full.slice(0, quick.length), quick);
   assert.ok(full.some((entry) => entry.id === "full-test-suite"));
   assert.ok(full.some((entry) => entry.id === "native-codex-version" && entry.required === false));
-  assert.deepEqual(skill.map((entry) => entry.id), ["skill-artifacts", "skill-behavior"]);
+  assert.deepEqual(skill.map((entry) => entry.id), ["skill-artifacts", "skill-lint"]);
   assert.ok(skill[0].args.includes("alpha"));
-  assert.ok(skill[1].args.includes("tests/behavioral/skills/alpha.test.mjs"));
+  assert.ok(skill[1].args.includes("tests/lint/skills/alpha.test.mjs"));
   for (const check of [...quick, ...full, ...skill]) {
     assert.equal(typeof check.executable, "string");
     assert.ok(Array.isArray(check.args));
@@ -90,7 +90,7 @@ test("quick gate wires every approved mutation to a failing contract", () => {
     ["break a documented maintenance command", ["documentation-contracts", "tests/static/maintenance-docs.test.mjs"]],
     ["change AGENTS.md back to symlink mode", ["documentation-contracts", "tests/static/contributor-entrypoints.test.mjs"]],
     ["break all-surface preflight", ["installer-contracts", "tests/integration/cli.test.mjs"]],
-    ["weaken release evidence", ["release-contracts", "tests/behavioral/release-gates.test.mjs"]]
+    ["weaken release evidence", ["release-contracts", "tests/lint/release-gates.test.mjs"]]
   ]);
 
   for (const [mutation, [checkId, testFile]] of mutations) {

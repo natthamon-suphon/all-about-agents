@@ -28,7 +28,7 @@ const requiredOutputs = [
   "core/evals/presentation-trace.mjs",
   "core/evals/presentation-trace.schema.json",
   "core/evals/scenarios/presentation-contract.json",
-  "tests/behavioral/presentation-contract.test.mjs",
+  "tests/lint/presentation-contract.test.mjs",
   "tests/static/eval-runner.test.mjs"
 ];
 
@@ -40,7 +40,7 @@ const expectedBaselineFiles = new Map([
   ["core/evals/presentation-trace.mjs", { kind: "source", status: "stable" }],
   ["core/evals/presentation-trace.schema.json", { kind: "metadata", status: "stable" }],
   ["core/evals/scenarios/presentation-contract.json", { kind: "metadata", status: "stable" }],
-  ["tests/behavioral/presentation-contract.test.mjs", { kind: "test", status: "stable" }],
+  ["tests/lint/presentation-contract.test.mjs", { kind: "test", status: "stable" }],
   ["tests/static/presentation-safety.test.mjs", { kind: "test", status: "stable" }],
   ["core/skills/test-driven-development/writing-good-tests.md", { kind: "asset", status: "stable" }],
   ["core/skills/zero-downtime-migrations/postgres-expand-contract-examples.md", { kind: "asset", status: "stable" }],
@@ -141,7 +141,7 @@ tests/static/presentation-safety.test.mjs
 core/evals/presentation-trace.mjs
 core/evals/presentation-trace.schema.json
 core/evals/scenarios/presentation-contract.json
-tests/behavioral/presentation-contract.test.mjs
+tests/lint/presentation-contract.test.mjs
 `.trim().split(/\r?\n/u);
 
 test("T002 creates every owned artifact", async () => {

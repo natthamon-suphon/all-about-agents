@@ -42,11 +42,12 @@ const QUICK_CHECKS = Object.freeze([
     "tests/contracts/apply.test.mjs"
   ]),
   check("installer-contracts", process.execPath, ["--test", "tests/integration/cli.test.mjs"]),
-  check("release-contracts", process.execPath, ["--test", "tests/behavioral/release-gates.test.mjs"])
+  check("release-contracts", process.execPath, ["--test", "tests/lint/release-gates.test.mjs"])
 ]);
 
 const FULL_ONLY_CHECKS = Object.freeze([
   check("full-test-suite", process.execPath, ["--test"], { timeoutMs: FULL_TIMEOUT_MS }),
+  check("model-suite-age", process.execPath, ["tests/model/suite-age.mjs"], { required: false }),
   check("native-claude-version", "claude", ["--version"], { required: false }),
   check("native-codex-version", "codex", ["--version"], { required: false })
 ]);
@@ -61,7 +62,7 @@ export function selectChecks({ mode, skill = null } = {}) {
     if (!SKILL_ID.test(skill ?? "")) throw new TypeError("skill mode requires one kebab-case skill name");
     return [
       { ...check("skill-artifacts", process.execPath, ["scripts/aaa.mjs", "validate", "--scope", "skill", "--skill", skill, "--format", "json"]), args: ["scripts/aaa.mjs", "validate", "--scope", "skill", "--skill", skill, "--format", "json"] },
-      { ...check("skill-behavior", process.execPath, ["--test", `tests/behavioral/skills/${skill}.test.mjs`]), args: ["--test", `tests/behavioral/skills/${skill}.test.mjs`] }
+      { ...check("skill-lint", process.execPath, ["--test", `tests/lint/skills/${skill}.test.mjs`]), args: ["--test", `tests/lint/skills/${skill}.test.mjs`] }
     ];
   }
   if (skill !== null) throw new TypeError("skill is valid only in skill mode");

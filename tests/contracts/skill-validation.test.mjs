@@ -70,14 +70,14 @@ async function fixture(t) {
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(resolve(root, "core", "skills", SKILL_ID), { recursive: true });
   await mkdir(resolve(root, "core", "evals", "skill-routing"), { recursive: true });
-  await mkdir(resolve(root, "tests", "behavioral", "skills"), { recursive: true });
+  await mkdir(resolve(root, "tests", "lint", "skills"), { recursive: true });
   const currentInventory = inventory();
   const currentEvaluation = evaluation();
   await writeFile(resolve(root, "core", "inventory.json"), `${JSON.stringify(currentInventory, null, 2)}\n`);
   await writeFile(resolve(root, "core", "skills", SKILL_ID, "SKILL.md"), `---\nname: ${SKILL_ID}\ndescription: Use when alpha behavior is needed.\nevaluationCases:\n${CASE_IDS.map((id) => `  - ${id}`).join("\n")}\n---\n\n# Alpha\n\nRead [the guide](guide.md).\n`);
   await writeFile(resolve(root, "core", "skills", SKILL_ID, "guide.md"), "# Guide\n");
   await writeFile(resolve(root, "core", "evals", "skill-routing", `${SKILL_ID}.json`), `${JSON.stringify(currentEvaluation, null, 2)}\n`);
-  await writeFile(resolve(root, "tests", "behavioral", "skills", `${SKILL_ID}.test.mjs`), `import test from "node:test";\ntest("${SKILL_ID} behavior", () => {});\n`);
+  await writeFile(resolve(root, "tests", "lint", "skills", `${SKILL_ID}.test.mjs`), `import test from "node:test";\ntest("${SKILL_ID} behavior", () => {});\n`);
   return { root, inventory: currentInventory, evaluation: currentEvaluation, core: coreFor(currentInventory, currentEvaluation) };
 }
 
@@ -153,11 +153,11 @@ test("skill validator requires routing eval and all three case kinds", async (t)
   }
 });
 
-test("skill validator requires exact behavioral-test ownership", async (t) => {
+test("skill validator requires exact lint-test ownership", async (t) => {
   const sample = await fixture(t);
-  await rm(resolve(sample.root, "tests", "behavioral", "skills", `${SKILL_ID}.test.mjs`));
+  await rm(resolve(sample.root, "tests", "lint", "skills", `${SKILL_ID}.test.mjs`));
   const result = await validateSkillArtifacts({ repositoryRoot: sample.root, core: sample.core, skillId: SKILL_ID });
-  assert.ok(codes(result).includes("missing-behavioral-test"));
+  assert.ok(codes(result).includes("missing-lint-test"));
 });
 
 test("skill validator rejects escaping Markdown references", async (t) => {

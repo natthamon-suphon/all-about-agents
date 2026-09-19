@@ -11,7 +11,7 @@ import { assertUnifiedSkillPortfolio, loadCore } from "../../installers/lib/load
 
 const requiredOutputs = [
   "tests/contracts/complete-skill-manifest.test.mjs",
-  "tests/behavioral/skill-collisions.test.mjs",
+  "tests/lint/skill-collisions.test.mjs",
   "tests/snapshots/claude/skills-manifest.json",
   "tests/snapshots/codex/skills-manifest.json"
 ];

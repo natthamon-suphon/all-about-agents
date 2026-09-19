@@ -1,8 +1,10 @@
 # Simplify all-about-agents to Claude + Codex
 
-Status: approved by the owner on 2026-09-19 ("implement phases 1-4"). Phase 1 is
-committed as `8cbfd3b` on `simplify/phase-1`; phases 2-4 follow on stacked branches.
-Phase reports are in section 14.
+Status: approved by the owner on 2026-09-19 ("implement phases 1-4"). All four phases
+are implemented on stacked branches `simplify/phase-1` (`8cbfd3b`, `276d6d7`),
+`simplify/phase-2` (`e89870e`), `simplify/phase-3` (`0a6e5ea`), and `simplify/phase-4`,
+all pushed to origin and not yet merged to `main`. Phase reports are in section 14.
+Open: macOS evidence and a model-run result with the current package installed.
 Date: 2026-09-18. Author machine: Windows. Companion analysis and decision log:
 [2026-09-18-repo-comparison.md](2026-09-18-repo-comparison.md).
 
@@ -562,3 +564,22 @@ upstream originals do; trimming them is later work, not part of this phase.
 | Snapshot diff | 24 (Claude) / 48 (Codex) kept files changed, none added or removed |
 
 Not run: macOS; native `register --apply`; any `claude -p` behavior check (phase 4).
+
+### Phase 4 report (2026-09-19, Windows, branch `simplify/phase-4`)
+
+| Item | Change | Evidence |
+| --- | --- | --- |
+| 4a | `tests/behavioral/` renamed to `tests/lint/` (`git mv`, 31 files). `quality:skill` check id `skill-behavior` → `skill-lint`; validator artifact `lint-test`, error `missing-lint-test`; paths updated in `scripts/quality-gate.mjs`, `installers/lib/validate-skill.mjs`, `core/inventory.json`, and the static, contract, and lint tests that named them. README, CONTRIBUTING, `docs/maintenance/skill-development.md`, and `docs/limitations/known-limitations.md` now call the regex layer lint and describe the model run separately. | static 67/67, lint layer + model contract 197 pass |
+| 4b | `tests/model/run-trigger-suite.mjs` (manual, `npm run test:model`), `tests/model/suite.json` (5 skills, 17 routing cases), `tests/model/suite-age.mjs`, and `tests/contracts/model-suite.test.mjs` (RED first: module not found; GREEN after the files landed). Preconditions: `claude` on PATH, installed plugin version equals `package.json`, rendered global `CLAUDE.md` deployed; otherwise every case is `NOT_RUN_UNAVAILABLE` and no session starts. `quality:full` gained the optional, non-required `model-suite-age` check. | contract test 6/6 with a fake `claude`; first real run on this machine: 17/17 `NOT_RUN_UNAVAILABLE`, reason "installed package stale: plugin 1.0.0, package.json 2.0.0"; result file written to `.aaa/eval-runs/` |
+| 4c | macOS run | `NOT_RUN_UNAVAILABLE`: no macOS machine in this session. Next owner: the owner's Mac runs `npm run quality:full`, the two-surface install dry-run, and `npm run test:model`, then records `docs/evaluations/native-macos-<date>.md`. |
+
+| Check | Result |
+| --- | --- |
+| `node scripts/aaa.mjs validate --scope all` | pass |
+| `npm run quality:quick` | PASS (after pinning `test:model` in `tests/static/runtime.test.mjs`) |
+| `npm run quality:full` | PASS; `model-suite-age` reports "newest result is 0 hours old" |
+| `npm run test:model` | 17 cases, 0 PASS, 0 FAIL, 17 NOT_RUN_UNAVAILABLE (stale install) |
+
+Not run: macOS; any `claude -p` case with a current install. To get real trigger evidence
+on this machine: authorized `register --apply` for Claude from the rendered 2.0.0
+package, `claude plugin uninstall` + `claude plugin install`, then `npm run test:model`.

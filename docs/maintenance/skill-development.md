@@ -26,7 +26,9 @@ Use this order when adding a skill:
 1. Update the canonical skill content under `core/skills/<skill-name>/`.
 2. Update `core/inventory.json` and the `emoji registry` when the skill is
    new or its presentation changes.
-3. Add or update a behavior scenario when the skill changes behavior.
+3. Add or update the routing cases in `core/evals/skill-routing/<skill>.json` and
+   the lint assertions in `tests/lint/skills/<skill>.test.mjs` when the skill
+   changes behavior.
 4. Render all surfaces and both profiles in disposable roots.
 5. Run the focused skill test, then the package and repository tests.
 6. Record exact evidence in checkpoints or a handoff.
@@ -43,12 +45,24 @@ Review these items together:
 - `scripts/`, `references/`, `assets/`, and templates owned by the skill
 - `core/inventory.json`
 - routing metadata and capability records
-- behavior and static tests
+- lint and static tests
 - evaluation cases and snapshots affected by the change
 - user documentation that names the skill
 
 Use the `all-about-agents:writing-skills` process. A skill is behavior, not only
 text. Test what an agent does after reading it.
+
+## Two test layers
+
+`tests/lint/skills/<skill>.test.mjs` is a regex contract on the skill text. It is
+fast and runs in every gate, and it proves nothing about what an agent does.
+`npm run test:model` runs the routing cases of the skills in
+`tests/model/suite.json` through real headless `claude -p` sessions and records
+`PASS`, `FAIL`, or `NOT_RUN_UNAVAILABLE` per case under `.aaa/eval-runs/`. It is
+manual: it needs an authenticated `claude` CLI and the installed plugin at the
+current `package.json` version, or every case is `NOT_RUN_UNAVAILABLE`. Report a
+skill change as "lint-verified, model run pending" until the model run has a
+`PASS` dated after the change.
 
 ## Define behavior cases
 

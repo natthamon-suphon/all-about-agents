@@ -1127,7 +1127,7 @@
       }
     },
     {
-      "path": "tests/behavioral/presentation-contract.test.mjs",
+      "path": "tests/lint/presentation-contract.test.mjs",
       "kind": "test",
       "auditDisposition": {
         "status": "stable",

@@ -26,6 +26,22 @@ Phase 3 of the simplification spec: skill content pulled from superpowers v6.3.0
   record not-run) were removed from 19 skills where they only restated the global
   rules; skill-specific forms stay.
 
+Phase 4: truthful test vocabulary and a manual model-run suite.
+
+### Changed
+
+- The regex skill tests moved from `tests/behavioral/` to `tests/lint/`; the focused
+  gate check is `skill-lint` and the validator error is `missing-lint-test`. Docs no
+  longer call a regex check behavioral.
+
+### Added
+
+- `npm run test:model` runs the routing cases of five critical skills through real
+  headless `claude -p` sessions and records PASS, FAIL, or NOT_RUN_UNAVAILABLE per case
+  under `.aaa/eval-runs/`. It refuses to spawn sessions when the installed plugin
+  version differs from `package.json` or the rendered global CLAUDE.md is missing.
+  `quality:full` reports the age of the newest result as optional evidence only.
+
 ## [2.0.0] - 2026-09-19
 
 Phases 1 and 2 of `docs/plans/2026-09-18-simplify-to-claude-codex.md`.

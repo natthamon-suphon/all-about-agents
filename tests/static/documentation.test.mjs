@@ -183,7 +183,7 @@ test("T09 provides one copyable eight-step quality checklist and new-skill flow"
     "canonical skill content",
     "inventory",
     "emoji registry",
-    "behavior scenario",
+    "routing cases",
     "render all surfaces",
     "commit/push",
     "receiving machine"

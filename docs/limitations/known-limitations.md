@@ -62,6 +62,14 @@ execution, permission blocking, persistence, and Gate 3 remain `NOT_RUN` or
   `%TEMP%`, `$TMPDIR`, or `/tmp` can be removed by routine cleanup, which
   breaks the registration with no error at install time.
 
+## Skill behavior evidence
+
+The lint layer under `tests/lint/` checks skill text with regular expressions. It
+does not observe model behavior. The manual trigger suite (`npm run test:model`)
+is the only behavior check in the repository; it records `NOT_RUN_UNAVAILABLE`
+when the `claude` CLI, its login, or the installed package version is missing.
+macOS has produced no result from it yet.
+
 ## No automated pre-execution command guard
 
 The `emergency-guard` `PreToolUse` hook and its command classifier were removed
