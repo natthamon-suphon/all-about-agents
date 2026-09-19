@@ -127,13 +127,16 @@ test("automatic renderers consume the canonical core bootstrap contract", async 
   }
 });
 
-test("Claude production handler injects only on startup and fails open for every other SessionStart source", async () => {
+test("Claude production handler injects on startup, clear, and compact and fails open for every other SessionStart source", async () => {
   const core = await loadCore(process.cwd());
   const result = renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CLAUDE_CONFIG_DIR: "C:/disposable" } });
   const base = { surface: "claude", runtimePath: "hooks/bootstrap.mjs", skillPath: "skills/using-all-about-agents/SKILL.md", configPath: "hooks/bootstrap.json" };
   const canonical = fileMap(result).get("skills/using-all-about-agents/SKILL.md");
   assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source: "startup" } }), { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: canonical } });
-  for (const source of ["clear", "compact", "resume", "fork"]) {
+  for (const source of ["clear", "compact"]) {
+    assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source } }), { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: canonical } }, `${source} must re-inject the routing contract`);
+  }
+  for (const source of ["resume", "fork"]) {
     assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source } }), {});
   }
   for (const input of ["{malformed", "[]", "null", {}, { hook_event_name: "SessionStart", source: 0 }, { hook_event_name: "Other", source: "startup" }]) {
@@ -149,7 +152,8 @@ test("Codex production handler supports documented SessionStart sources and malf
   const base = { surface: "codex", runtimePath: "hooks/bootstrap.mjs", skillPath: ".agents/skills/using-all-about-agents/SKILL.md", configPath: "hooks/bootstrap.json" };
   const canonical = fileMap(result).get(".agents/skills/using-all-about-agents/SKILL.md");
   assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source: "startup" } }), { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: canonical } });
-  for (const source of ["clear", "compact"]) assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source } }), {});
+  for (const source of ["clear", "compact"]) assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source } }), { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: canonical } }, `${source} must re-inject the routing contract`);
+  assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source: "resume" } }), {});
   for (const input of ["{malformed", "[]", {}, { hook_event_name: "SessionStart", source: [] }, { hook_event_name: [], source: "startup" }]) {
     assert.deepEqual(await executeRendered(result, { ...base, input }), {});
   }
@@ -201,11 +205,11 @@ test("rendered hook configs consume their parsed native templates and declare ru
   const core = await loadCore(process.cwd());
   const claude = renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" });
   const claudeHooks = JSON.parse(fileMap(claude).get("hooks/hooks.json"));
-  assert.equal(claudeHooks.hooks.SessionStart[0].matcher, "startup");
+  assert.equal(claudeHooks.hooks.SessionStart[0].matcher, "startup|clear|compact");
   assert.deepEqual(claudeHooks.hooks.SessionStart[0].hooks[0].args.slice(1), ["--surface", "claude", "--skill-path", "${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md", "--config-path", "${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json"]);
   const codex = renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" });
   const codexHooks = JSON.parse(fileMap(codex).get("hooks/hooks.json"));
-  assert.equal(codexHooks.hooks.SessionStart[0].matcher, "^startup$");
+  assert.equal(codexHooks.hooks.SessionStart[0].matcher, "^(startup|clear|compact)$");
   assert.match(codexHooks.hooks.SessionStart[0].hooks[0].command, /\$PLUGIN_ROOT\/hooks\/bootstrap\.mjs/u);
   assert.ok(codex.registrations.some((entry) => entry.kind === "runtime-prerequisite" && entry.onMissing === "unavailable"));
 });

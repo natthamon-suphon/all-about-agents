@@ -14,10 +14,6 @@ actually independent, each worker has a bounded owner scope, and the current
 harness can perform native agent dispatch. The coordinator owns the plan,
 authorization, integration, evidence, and final decision.
 
-**Announce at start:** “I'm using the dispatching-parallel-agents skill because
-the approved work contains useful independent items with disjoint ownership
-and verified native dispatch availability.”
-
 **Core principle:** parallelism is a conditional optimization, not a quota.
 Independence, ownership, and native availability must all be true before a
 parallel dispatch.

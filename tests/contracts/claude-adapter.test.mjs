@@ -142,14 +142,14 @@ test("Claude render emits the canonical global file and one presentation contrac
   assert.equal((presentationRule.match(/brainstorming 🧠/gu) || []).length, 1);
 
   const skill = files.get("skills/brainstorming/SKILL.md");
-  assert.match(skill, /Using skill \*\*brainstorming 🧠\*\*/u);
-  assert.match(skill, /Checklist/u);
-  assert.match(skill, /task-specific reason/u);
+  assert.doesNotMatch(skill, /Using skill \*\*/u, "rendered skills carry no preamble; the announce rule lives once in the global rules");
+  assert.doesNotMatch(skill, /Reason rule:|Checklist rules:/u);
+  assert.match(skill, /^# Brainstorming/mu);
 
   const agent = files.get("agents/architect.md");
   assert.match(agent, /^name: architect$/mu);
-  assert.match(agent, /Invoking agent \*\*architect 🏛️\*\*/u);
-  assert.match(agent, /Checklist/u);
+  assert.doesNotMatch(agent, /Invoking agent \*\*/u);
+  assert.doesNotMatch(agent, /Reason rule:|Checklist rules:/u);
 });
 
 test("Claude plugin relies on conventional hook discovery without duplicate manifest registration", () => {
@@ -355,7 +355,7 @@ test("Claude startup hook invokes the rendered canonical runtime", async () => {
   const result = resultFor();
   const files = fileMap(result);
   const hooks = JSON.parse(files.get("hooks/hooks.json")).hooks;
-  const startup = hooks.SessionStart.find((entry) => entry.matcher === "startup");
+  const startup = hooks.SessionStart.find((entry) => entry.matcher === "startup|clear|compact");
   assert.ok(startup);
   assert.deepEqual(startup.hooks[0].args, [
     "${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.mjs",
@@ -521,4 +521,14 @@ test("template Claude snapshot keeps the approved model and permission shape", a
   assert.deepEqual(snapshot.content, Object.fromEntries([".claude-plugin/marketplace.json", ".claude-plugin/plugin.json", "agents/investigator.md", "config/settings.json", "hooks/hooks.json"].map((path) => [path, files.get(path)])));
   assert.deepEqual(snapshot.ownershipHashes, Object.fromEntries(result.ownership.map((entry) => [entry.relativePath, entry.sha256])));
   assert.deepEqual(snapshot.registration, result.registrations.find((entry) => entry.kind === "resolved-config-root"));
+});
+
+test("Claude plugin and marketplace manifests take their version from package.json", async () => {
+  const files = fileMap(resultFor());
+  const pkg = JSON.parse(await readFile(resolve(process.cwd(), "package.json"), "utf8"));
+  assert.match(String(pkg.version), /^\d+\.\d+\.\d+$/u, "package.json must carry the single semver source");
+  const plugin = JSON.parse(files.get(".claude-plugin/plugin.json"));
+  const marketplace = JSON.parse(files.get(".claude-plugin/marketplace.json"));
+  assert.equal(plugin.version, pkg.version);
+  assert.equal(marketplace.plugins[0].version, pkg.version);
 });

@@ -14,8 +14,6 @@ reviewable implementation plan. The plan is an executable contract for an
 implementer who has little repository context; it is not permission to change
 code, install dependencies, or perform Git operations.
 
-**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
-
 **Core principle:** plan from an approved design, name exact boundaries and
 interfaces, and attach observable test evidence to every implementation slice.
 

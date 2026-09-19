@@ -6,6 +6,7 @@ import { join, posix } from "node:path";
 import claudeBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
 import claudeActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
 import claudeCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
+import packageJson from "../../package.json" with { type: "json" };
 
 import { renderJson } from "../shared/render-utils.mjs";
 import {
@@ -17,7 +18,7 @@ import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installer
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 import { renderClaudeGlobalInstructions } from "../shared/global-instructions.mjs";
-import { displayLabel, renderInvocationGuidance, renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
+import { renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
 
 const CLAUDE_SURFACE = "claude";
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
@@ -304,14 +305,8 @@ function renderSkill(name, record, presentation) {
   const sourceBody = hasSource
     ? stripFrontmatter(record.content)
     : "DEFERRED: canonical source is missing.\nOwner: cycle-05-skill-remediation (T017-T043).\n";
-  const guidance = renderInvocationGuidance(presentation, {
-    kind: "skill",
-    id: name,
-    task: `Apply ${displayLabel(presentation, "skill", name)} to the current task`,
-    reason: `Use ${displayLabel(presentation, "skill", name)} when its scope matches the current task.`
-  });
   return {
-    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${guidance}\n\n${sourceBody}`),
+    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${sourceBody}`),
     hasSource
   };
 }
@@ -344,13 +339,7 @@ function renderAgent(name, role, presentation) {
     Array.isArray(role?.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
   const capabilityDiagnostics = nativeCapabilityDiagnostics({ surface: CLAUDE_SURFACE, role: role || fallback, mappings: CLAUDE_SEMANTIC_MAPPINGS, blockedNativeTools: READ_ONLY_NATIVE_TOOLS });
-  const guidance = renderInvocationGuidance(presentation, {
-    kind: "role",
-    id: name,
-    task: `Delegate the current task to ${displayLabel(presentation, "role", name)}`,
-    reason: `Use ${displayLabel(presentation, "role", name)} when its role matches the task and scope.`
-  });
-  const body = `${guidance}\n\n${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.\n`}${capabilityDiagnostics.length > 0 ? `\n\nNative capability diagnostic: ${capabilityDiagnostics.map((entry) => entry.message).join(" ")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
+  const body = `${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.\n`}${capabilityDiagnostics.length > 0 ? `\n\nNative capability diagnostic: ${capabilityDiagnostics.map((entry) => entry.message).join(" ")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
   const readOnly = isRoleReadOnly(role || fallback);
   const allowedTools = readOnly ? tools.filter((tool) => !READ_ONLY_NATIVE_TOOLS.includes(tool)) : tools;
   const restriction = readOnly
@@ -453,8 +442,8 @@ export function settingsFor(profile, { statuslineCommand } = {}) {
 function pluginManifest() {
   return {
     name: "all-about-agents",
-    version: "1.0.0",
-    description: "Portable all-about-agents skills, agents, commands, hooks, and rules for Claude Code.",
+    version: packageJson.version,
+    description: "Portable all-about-agents skills, agents, hooks, and rules for Claude Code.",
     author: { name: "All About Agents" }
   };
 }

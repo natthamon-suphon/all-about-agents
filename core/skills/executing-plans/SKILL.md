@@ -14,8 +14,6 @@ session. Treat the plan as the execution contract: preserve its boundaries,
 follow its task order, and leave an evidence trail that another session can
 resume without guessing.
 
-**Announce at start:** "I'm using the executing-plans skill to implement this plan."
-
 **Core principle:** approval authorizes execution of the named plan, not an
 expanded task. Every checkpoint needs observable evidence, and every review
 gate remains in force until its findings are resolved.

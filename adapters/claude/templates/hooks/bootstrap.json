@@ -3,7 +3,7 @@
   "surface": "claude",
   "module": "bootstrap",
   "event": "SessionStart",
-  "nativeMatcher": "startup",
+  "nativeMatcher": "startup|clear|compact",
   "matchers": [
     "startup",
     "resume",

@@ -6,13 +6,13 @@ import { readFileSync } from "node:fs";
 import codexBootstrapTemplate from "./templates/hooks/bootstrap.json" with { type: "json" };
 import codexActivityTemplate from "./templates/hooks/activity-audit.json" with { type: "json" };
 import codexCheckpointTemplate from "./templates/hooks/checkpoint.json" with { type: "json" };
+import packageJson from "../../package.json" with { type: "json" };
 import { renderJson, renderText, renderToml } from "../shared/render-utils.mjs";
 import { AdapterContractError, renderSurface as validateSurface, validateRenderResult } from "../shared/adapter-contract.mjs";
 import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, hasScopedMutation, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
-import { displayLabel, renderInvocationGuidance } from "../../installers/lib/presentation-contract.mjs";
 import { renderCodexGlobalInstructions } from "../shared/global-instructions.mjs";
 
 const CODEX_SURFACE = "codex";
@@ -146,14 +146,8 @@ function renderSkill(name, record, presentation) {
   const guidanceReference = name === "using-all-about-agents"
     ? "\nSee [Codex adapter capability guidance](./references/adapter-capability-guidance.md).\n"
     : "";
-  const guidance = renderInvocationGuidance(presentation, {
-    kind: "skill",
-    id: name,
-    task: `Apply ${displayLabel(presentation, "skill", name)} to the current task`,
-    reason: `Use ${displayLabel(presentation, "skill", name)} when its scope matches the current task.`
-  });
   return {
-    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${guidance}\n\n${source}${guidanceReference}`),
+    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${source}${guidanceReference}`),
     hasSource
   };
 }
@@ -174,13 +168,7 @@ function renderRole(name, role, presentation) {
     Array.isArray(role?.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
     Array.isArray(role?.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
-  const guidance = renderInvocationGuidance(presentation, {
-    kind: "role",
-    id: name,
-    task: `Delegate the current task to ${displayLabel(presentation, "role", name)}`,
-    reason: `Use ${displayLabel(presentation, "role", name)} when its role matches the task and scope.`
-  });
-  const instructions = `${guidance}\n\n${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
+  const instructions = `${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
   const readOnly = isRoleReadOnly(role);
   const sandboxMode = readOnly || !hasScopedMutation(role) ? "read-only" : "workspace-write";
   return ensureText([
@@ -198,7 +186,7 @@ function pluginManifest() {
       name: "All About Agents Maintainers"
     },
     name: "all-about-agents",
-    version: "1.0.0",
+    version: packageJson.version,
     description: "Portable all-about-agents skills for Codex CLI and Desktop.",
     skills: "./skills/",
     interface: {

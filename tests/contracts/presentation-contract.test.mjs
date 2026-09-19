@@ -5,7 +5,6 @@ import test from "node:test";
 
 import {
   displayLabel,
-  renderInvocationGuidance,
   renderPresentationCatalog,
   validatePresentationContract
 } from "../../installers/lib/presentation-contract.mjs";
@@ -183,48 +182,25 @@ test("display labels fail closed when an approved entity mapping is changed", ()
   assert.throws(() => displayLabel(presentation, "skill", "brainstorming"), /approved|mapping/iu);
 });
 
-test("invocation guidance includes one announcement, bounded checklist, state transitions, and terminal completion", () => {
-  const progressContract = validProgressContract();
-  const presentation = { emojiRegistry: { schemaVersion: 1, ...registryFromExpected() }, progressContract };
-  const guidance = renderInvocationGuidance(presentation, {
-    kind: "skill",
-    id: "verification-before-completion",
-    task: "Verify the release evidence",
-    reason: "Verify the release evidence before handoff."
-  });
-  assert.match(guidance, /Using skill \*\*verification-before-completion ✅\*\*/u);
-  assert.match(guidance, /Verify the release evidence before handoff\./u);
-  assert.match(guidance, /one short, task-specific reason/iu);
-  assert.match(guidance, /Checklist/u);
-  assert.match(guidance, /2.{0,8}7|2-7/u);
-  assert.match(guidance, /state change|only when .*change/iu);
-  assert.match(guidance, /terminal|completed/iu);
-  assert.match(guidance, /parallel owner/iu);
-  assert.equal((guidance.match(/^Checklist$/gmu) ?? []).length, 1);
-  assert.match(guidance, /⬜/u);
-  assert.match(guidance, /task-specific|derive .*steps/iu);
-  assert.doesNotMatch(guidance, /Understand the requirement|Complete the scoped work|Verify the result/u);
-  assert.match(guidance, /verification-before-completion ✅/u);
-});
-
-test("invocation guidance rejects a changed checklist marker", () => {
-  const progressContract = validProgressContract();
-  progressContract.states.pending.emoji = "🔶";
-  const presentation = { emojiRegistry: { schemaVersion: 1, ...registryFromExpected() }, progressContract };
-  assert.throws(() => renderInvocationGuidance(presentation, { kind: "skill", id: "brainstorming" }), /approved|progress contract|checklist/iu);
-});
-
-test("invocation guidance rejects Unicode line separators in visible prose", () => {
-  const presentation = { emojiRegistry: { schemaVersion: 1, ...registryFromExpected() }, progressContract: validProgressContract() };
-  assert.throws(() => renderInvocationGuidance(presentation, { kind: "skill", id: "brainstorming", reason: "First\u2028second" }), /safe|reason/iu);
-  assert.throws(() => renderInvocationGuidance(presentation, { kind: "skill", id: "brainstorming", task: "First\u2029second" }), /safe|task/iu);
-});
-
-test("guidance and catalog fail closed for an invalid progress contract", () => {
+test("catalog fails closed for an invalid progress contract", () => {
   const presentation = { emojiRegistry: { schemaVersion: 1, ...registryFromExpected() }, progressContract: validProgressContract() };
   delete presentation.progressContract.states.completed;
-  assert.throws(() => renderInvocationGuidance(presentation, { kind: "skill", id: "research" }), /progress contract|checklist state/iu);
   assert.throws(() => renderPresentationCatalog(presentation), /progress contract|checklist state/iu);
+});
+
+test("the presentation contract exposes no per-artifact invocation preamble renderer", async () => {
+  const contract = await import("../../installers/lib/presentation-contract.mjs");
+  assert.equal(contract.renderInvocationGuidance, undefined, "the announce rule is stated once in the global rules, not rendered into every artifact");
+});
+
+test("no canonical skill carries its own announce line", async () => {
+  const { readdir } = await import("node:fs/promises");
+  const offenders = [];
+  for (const skill of await readdir(resolve(process.cwd(), "core/skills"))) {
+    const body = await readFile(resolve(process.cwd(), "core/skills", skill, "SKILL.md"), "utf8").catch(() => "");
+    if (/Announce at start/u.test(body)) offenders.push(skill);
+  }
+  assert.deepEqual(offenders, []);
 });
 
 test("catalog is deterministic, complete, and keeps hooks silent", () => {

@@ -4,7 +4,7 @@
   "module": "bootstrap",
   "description": "Workspace bootstrap hook.",
   "event": "SessionStart",
-  "nativeMatcher": "^startup$",
+  "nativeMatcher": "^(startup|clear|compact)$",
   "command": "node \"$PLUGIN_ROOT/hooks/bootstrap.mjs\" --surface codex --skill-path \"$PLUGIN_ROOT/.agents/skills/using-all-about-agents/SKILL.md\" --config-path \"$PLUGIN_ROOT/hooks/bootstrap.json\"",
   "commandWindows": "node \"%PLUGIN_ROOT%/hooks/bootstrap.mjs\" --surface codex --skill-path \"%PLUGIN_ROOT%/.agents/skills/using-all-about-agents/SKILL.md\" --config-path \"%PLUGIN_ROOT%/hooks/bootstrap.json\"",
   "contentRef": "core/skills/using-all-about-agents/SKILL.md",

@@ -13,8 +13,6 @@ Execute an explicitly approved implementation plan by giving each independent
 task a fresh worker, a bounded write scope, and an independent review. The
 coordinator owns the plan, integration, evidence, and final disposition.
 
-**Announce at start:** "I'm using the subagent-driven-development skill to execute this approved plan."
-
 **Core principle:** delegate only independent work, serialize every overlapping
 write, and preserve evidence and review gates even when speed is requested.
 

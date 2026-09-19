@@ -13,6 +13,7 @@ import { renderPresentationCatalog } from "../../installers/lib/presentation-con
 
 const adapter = await import("../../adapters/codex/adapter.mjs");
 const core = await loadCore(process.cwd());
+const packageVersion = JSON.parse(await readFile(resolve(process.cwd(), "package.json"), "utf8")).version;
 const execFileAsync = promisify(execFile);
 
 function fileMap(result) {
@@ -152,17 +153,17 @@ test("Codex AGENTS.md composes the canonical body, labeled catalog, and rules", 
   assert.doesNotMatch(agents, /<\/?[A-Za-z][^>]*>|\u001b/iu);
 });
 
-test("Codex skill and role prompts carry one labeled invocation guide without changing machine identifiers", () => {
+test("Codex skill and role prompts carry no rendered preamble and keep machine identifiers", () => {
   const result = resultFor();
   const files = fileMap(result);
   const skill = files.get(".agents/skills/using-all-about-agents/SKILL.md");
   assert.match(skill, /^---\nname: using-all-about-agents\n/u);
-  assert.match(skill, /Using skill \*\*using-all-about-agents 🧰\*\* —/u);
-  assert.equal((skill.match(/^Checklist$/gmu) ?? []).length, 1);
+  assert.doesNotMatch(skill, /Using skill \*\*/u, "rendered skills carry no preamble");
+  assert.equal((skill.match(/^Checklist$/gmu) ?? []).length, 0);
   const role = adapter.parseCodexToml(files.get(".codex/agents/reviewer.toml"));
   assert.match(role.name, /^reviewer$/u);
-  assert.match(role.developer_instructions, /Invoking agent \*\*reviewer 👀\*\* —/u);
-  assert.equal((role.developer_instructions.match(/^Checklist$/gmu) ?? []).length, 1);
+  assert.doesNotMatch(role.developer_instructions, /Invoking agent \*\*/u);
+  assert.equal((role.developer_instructions.match(/^Checklist$/gmu) ?? []).length, 0);
   assert.doesNotMatch(role.developer_instructions, /<\/?[A-Za-z][^>]*>|\u001b/iu);
   for (const skillId of core.inventory.skills) {
     assert.match(files.get(`.agents/skills/${skillId}/SKILL.md`), new RegExp(`^---\\nname: ${skillId}\\n`, "u"));
@@ -294,7 +295,7 @@ test("Codex package manifest and Desktop guidance use only documented surfaces",
     },
     name: "all-about-agents",
     skills: "./skills/",
-    version: "1.0.0"
+    version: packageVersion
   });
   const manual = files.get("docs/manual-desktop.md");
   assert.match(manual, /gpt-5\.6-terra/u);
@@ -398,7 +399,7 @@ test("Codex plugin hooks invoke the rendered runtime and require trust plus Node
   const files = fileMap(result);
   const hooks = JSON.parse(files.get("hooks/hooks.json"));
   const startup = hooks.hooks.SessionStart[0];
-  assert.equal(startup.matcher, "^startup$");
+  assert.equal(startup.matcher, "^(startup|clear|compact)$");
   assert.equal(startup.hooks[0].type, "command");
   assert.match(startup.hooks[0].command, /\$PLUGIN_ROOT\/hooks\/bootstrap\.mjs/u);
   assert.match(startup.hooks[0].commandWindows, /%PLUGIN_ROOT%\/hooks\/bootstrap\.mjs/u);

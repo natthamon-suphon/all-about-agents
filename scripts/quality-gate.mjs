@@ -12,7 +12,7 @@ const FORMATS = new Set(["text", "json"]);
 const SKILL_ID = /^[a-z0-9][a-z0-9-]*$/u;
 const FOCUSED_TIMEOUT_MS = 300_000;
 const FULL_TIMEOUT_MS = 900_000;
-const MAX_EVIDENCE_LENGTH = 2_000;
+const MAX_EVIDENCE_LENGTH = 8_000;
 
 function check(id, executable, args, { required = true, timeoutMs = FOCUSED_TIMEOUT_MS } = {}) {
   return Object.freeze({ id, required, executable, args: Object.freeze([...args]), timeoutMs });
@@ -86,7 +86,8 @@ function boundedEvidence(result) {
   const summary = result.outputTooLarge
     ? `process output exceeded the bounded capture${details ? `; ${details}` : ""}`
     : details || (result.timedOut ? "process timed out" : result.unavailable ? "executable is unavailable" : `process exited ${String(result.exitCode)}`);
-  return summary.length <= MAX_EVIDENCE_LENGTH ? summary : `${summary.slice(0, MAX_EVIDENCE_LENGTH - 25)}\n...[evidence truncated]`;
+  // Test runners print failure details and counts last, so keep the tail.
+  return summary.length <= MAX_EVIDENCE_LENGTH ? summary : `[evidence truncated]...\n${summary.slice(-(MAX_EVIDENCE_LENGTH - 25))}`;
 }
 
 function resultStatus(definition, result) {

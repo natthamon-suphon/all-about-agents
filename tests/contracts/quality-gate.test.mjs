@@ -213,3 +213,19 @@ test("quality gate CLI returns stable success, failure, and invalid-argument exi
   assert.equal(await qualityModule.main(["skill"], io, { repositoryRoot: process.cwd(), run: runner().run, clock: fixedClock }), 2);
   assert.match(errors.join(""), /skill/iu);
 });
+
+test("quality gate keeps the tail of oversized failing output so the failing test name survives", async () => {
+  const base = runner({ failCheck: "focused-contracts" });
+  const run = async (request) => {
+    const result = await base.run(request);
+    if (result.exitCode === 7) return processResult({ exitCode: 1, stdout: `${"✔ passing test\n".repeat(700)}✖ the one failing test (12ms)\nℹ fail 1\n` });
+    return result;
+  };
+  const report = await qualityModule.runQualityGate({ mode: "quick", repositoryRoot: process.cwd(), run, clock: fixedClock });
+  const check = report.checks.find((entry) => entry.id === "focused-contracts");
+  assert.equal(check.status, "FAIL");
+  assert.match(check.evidence, /✖ the one failing test/u, "the failure line at the end of the output must survive truncation");
+  assert.match(check.evidence, /ℹ fail 1/u);
+  assert.match(check.evidence, /evidence truncated/u);
+  assert.ok(check.evidence.length <= 8_100, `evidence stays bounded, got ${check.evidence.length}`);
+});

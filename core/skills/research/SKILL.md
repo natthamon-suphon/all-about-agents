@@ -14,8 +14,6 @@ on a fact outside the supplied workspace: a changing vendor contract, a named
 specification, a third-party API, or another first-party source. The
 coordinator owns the question, scope, synthesis, and final decision.
 
-**Announce at start:** "I'm using the research skill to investigate this against primary sources."
-
 **Core principle:** verify only the external fact that matters, cite the
 source that owns each claim, and keep anything not confirmed as an explicit
 gap.

@@ -242,10 +242,16 @@ test("both surfaces use the same normative presentation clauses and native label
     renders.set(surface, new Map(result.files.map((file) => [file.relativePath, new TextDecoder().decode(file.content)])));
   }
 
+  // The normative clauses live once per package: the rendered catalog for Claude and
+  // the AGENTS.md presentation section for Codex. Skills and roles carry no copy.
   const placements = {
-    claude: ["skills/brainstorming/SKILL.md", "agents/architect.md", "rules/presentation.md"],
-    codex: [".agents/skills/brainstorming/SKILL.md", ".codex/agents/architect.toml", "AGENTS.md"]
+    claude: ["rules/presentation.md"],
+    codex: ["AGENTS.md"]
   };
+  for (const [surface, files] of renders) {
+    const skillPath = surface === "claude" ? "skills/brainstorming/SKILL.md" : ".agents/skills/brainstorming/SKILL.md";
+    assert.doesNotMatch(files.get(skillPath) ?? "", /Checklist rules:|Reason rule:|Using skill \*\*/u, `${surface}: skills carry no preamble`);
+  }
   const clauses = [
     "one short, task-specific reason",
     "2-7 material steps",

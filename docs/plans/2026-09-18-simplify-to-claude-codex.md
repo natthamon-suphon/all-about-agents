@@ -506,3 +506,25 @@ auto-discovered their live roots, and at 00:38 the phase-1 render was written in
   with `--apply`.
 - Prevention shipped in `8cbfd3b`: `install --apply` requires `--destination-root`; RED
   tests first, then the guard in `installers/lib/args.mjs`.
+
+### Phase 2 report (2026-09-19, Windows, branch `simplify/phase-2`)
+
+Changed: 25 modified files plus `WhatsNew.md`. Each sub-item started RED and ended GREEN.
+
+| Item | RED test | GREEN change |
+| --- | --- | --- |
+| 2a bootstrap sources | `tests/contracts/bootstrap-hooks.test.mjs`: `clear` and `compact` must inject, `resume` and `fork` stay empty; matchers `startup\|clear\|compact` (Claude) and `^(startup\|clear\|compact)$` (Codex) | `core/hooks/bootstrap.mjs` `INJECTING_SOURCES`; both bootstrap templates |
+| 2b version | `tests/contracts/claude-adapter.test.mjs` and `codex-adapter.test.mjs`: manifest version equals `package.json` version (was `undefined` vs `1.0.0`) | `package.json` `"version": "2.0.0"`; both adapters import it; `WhatsNew.md`; reinstall note in `docs/maintenance/sync-and-update.md` |
+| 2c preamble | adapter tests flipped to `doesNotMatch(/Using skill \*\*/)`; `renderInvocationGuidance` must be undefined; no skill carries "Announce at start"; placement test reads `rules/presentation.md` and `AGENTS.md` | preamble renderer removed from `installers/lib/presentation-contract.mjs` and both adapters; five announce lines removed; the checklist contract is rendered once into the presentation catalog from `progress-contract.json` |
+| 2d gate evidence | `tests/contracts/quality-gate.test.mjs`: a failing line after 700 passing lines must survive truncation | `scripts/quality-gate.mjs` keeps the last 8,000 characters; `CONTRIBUTING.md` documents `--output` |
+
+| Check | Result |
+| --- | --- |
+| `node scripts/aaa.mjs validate --scope all` | pass |
+| `npm run quality:quick` | PASS 9 of 9 |
+| `npm run quality:full` | PASS |
+| Snapshot diff | first regeneration: 39 kept files changed per Claude package (manifests, 7 agents, hooks, 28 skills), 0 removed; second: only `rules/presentation.md` and `AGENTS.md` |
+| Bootstrap smoke | `source: compact` returns `hookSpecificOutput`; `source: resume` returns `{}` |
+
+Not run: macOS; native `register --apply`; Codex `SessionStart` `source` values are
+assumed to match Claude's (the previous template already matched `^startup$`).

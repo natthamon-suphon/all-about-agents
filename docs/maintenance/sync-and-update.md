@@ -129,6 +129,13 @@ fetch -> sync:status -> pull --ff-only -> quality checks -> doctor -> dry-run
 -> restart/reload -> native verification
 ```
 
+Claude caches an installed plugin under its version directory. When `version`
+in `package.json` changed since the last registration, `claude plugin update`
+is not enough: run `claude plugin uninstall all-about-agents@all-about-agents`
+and then `claude plugin install all-about-agents@all-about-agents` after the
+authorized `register --apply`. When only the marketplace pointer changed,
+`claude plugin update` is enough. `WhatsNew.md` lists the version history.
+
 1. Enter the repository root.
 
 2. Check Node.js.

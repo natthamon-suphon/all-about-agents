@@ -27,6 +27,8 @@ const EMPTY_OUTPUTS = Object.freeze({
 });
 
 const SESSION_START_SURFACES = new Set(["claude", "codex"]);
+// The routing contract must survive /clear and compaction, not only the first start.
+const INJECTING_SOURCES = new Set(["startup", "clear", "compact"]);
 const BOOTSTRAP_CONTRACT_KEYS = new Set([
   "schemaVersion",
   "id",
@@ -76,7 +78,7 @@ export function buildBootstrapOutput(surface, request, canonicalContent) {
   const normalized = normalizeRequest(surface, request);
   if (!normalized || typeof canonicalContent !== "string") return emptyOutput(surface);
   if (SESSION_START_SURFACES.has(surface)) {
-    return normalized.source === "startup" ? contextOutput(normalized.event, canonicalContent) : emptyOutput(surface);
+    return INJECTING_SOURCES.has(normalized.source) ? contextOutput(normalized.event, canonicalContent) : emptyOutput(surface);
   }
   return emptyOutput(surface);
 }
