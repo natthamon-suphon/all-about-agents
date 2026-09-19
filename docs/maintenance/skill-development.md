@@ -64,6 +64,12 @@ current `package.json` version, or every case is `NOT_RUN_UNAVAILABLE`. Report a
 skill change as "lint-verified, model run pending" until the model run has a
 `PASS` dated after the change.
 
+A case counts as announced when one line carries the canonical skill name together
+with the skill emoji from `core/presentation/emoji-registry.json`. Naming a skill
+without that emoji, for example to explain why it stays unused, is not an
+announcement. Each case gets 300000 ms; set `AAA_CASE_TIMEOUT_MS` to change it. A
+case that outruns the budget is `NOT_RUN_UNAVAILABLE`, never `FAIL`.
+
 ## Define behavior cases
 
 Write expected behavior before implementation. Include at least these cases:

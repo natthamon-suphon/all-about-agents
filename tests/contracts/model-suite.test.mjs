@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { checkPreconditions, evaluateCase, redact, runSuite } from "../model/run-trigger-suite.mjs";
+import { checkPreconditions, evaluateCase, redact, resolveCaseTimeoutMs, runSuite } from "../model/run-trigger-suite.mjs";
 
 const root = process.cwd();
 
@@ -91,4 +91,25 @@ test("preconditions report a missing claude executable as a reason", async () =>
   const result = await checkPreconditions({ run, home: mkdtempSync(join(tmpdir(), "aaa-no-claude-")), env: {} });
   assert.equal(result.ok, false);
   assert.ok(result.reasons.some((reason) => /claude executable is unavailable/u.test(reason)));
+});
+
+test("announcement scoring follows the shipped canonical name and emoji contract", () => {
+  const brain = { skill: "brainstorming", emoji: "🧠" };
+  const shipped = "🧠 `all-about-agents:brainstorming` — a library swap is a design change.";
+  const legacy = "Using skill **brainstorming 🧠** — the request changes behavior.";
+  const mentionOnly = "**No. `brainstorming` is not required here.** The skill says so itself.";
+  const trigger = { id: "BR-TRIGGER-spike-question" };
+  assert.equal(evaluateCase({ ...brain, caseSpec: trigger, resultText: shipped }).status, "PASS", "the shipped announcement format must score as announced");
+  assert.equal(evaluateCase({ ...brain, caseSpec: trigger, resultText: legacy }).status, "PASS", "an earlier announcement format still carries name and emoji");
+  assert.equal(evaluateCase({ ...brain, caseSpec: trigger, resultText: mentionOnly }).status, "FAIL", "naming a skill while declining it is not an announcement");
+  assert.equal(evaluateCase({ ...brain, caseSpec: { id: "BR-NONTRIGGER-trivial-readonly" }, resultText: mentionOnly }).status, "PASS", "a nontrigger case may name the skill to explain why it stays unused");
+  const separated = "🧠 An unrelated heading\n\nA later paragraph mentions brainstorming without announcing it.";
+  assert.equal(evaluateCase({ ...brain, caseSpec: trigger, resultText: separated }).status, "FAIL", "the emoji must share the announcement line with the name");
+});
+
+test("the case timeout is configurable so a slow session is not scored as a routing failure", () => {
+  assert.equal(resolveCaseTimeoutMs({}), 300_000);
+  assert.equal(resolveCaseTimeoutMs({ AAA_CASE_TIMEOUT_MS: "45000" }), 45_000);
+  assert.equal(resolveCaseTimeoutMs({ AAA_CASE_TIMEOUT_MS: "nonsense" }), 300_000);
+  assert.equal(resolveCaseTimeoutMs({ AAA_CASE_TIMEOUT_MS: "-5" }), 300_000);
 });

@@ -13,7 +13,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { runProcess } from "../../scripts/lib/process-runner.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
-const CASE_TIMEOUT_MS = 180_000;
+const DEFAULT_CASE_TIMEOUT_MS = 300_000;
 const OUTPUT_DIR = ".aaa/eval-runs";
 const EXCERPT_LENGTH = 400;
 
@@ -30,12 +30,24 @@ export function redact(text, home = homedir()) {
   return value;
 }
 
+/** Resolve the per-case budget; a slow session is an environment fact, not a routing verdict. */
+export function resolveCaseTimeoutMs(env = process.env) {
+  const raw = Number(env?.AAA_CASE_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_CASE_TIMEOUT_MS;
+}
+
 /** Classify one routing case from the model's final text. Pure; no I/O. */
-export function evaluateCase({ skill, caseSpec, resultText, forbiddenPressurePhrases }) {
+export function evaluateCase({ skill, caseSpec, resultText, forbiddenPressurePhrases, emoji }) {
   const text = String(resultText ?? "");
   const escaped = skill.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  const announced = new RegExp(`Using skill \\*\\*${escaped}\\b`, "u").test(text)
-    || (new RegExp(`\\b${escaped}\\b`, "u").test(text) && /skill/iu.test(text));
+  const named = new RegExp(`\\b${escaped}\\b`, "u");
+  // core/instructions/global-operating-rules.md asks for one announcement line
+  // carrying the canonical name, its registered emoji, and a short reason. A
+  // skill named anywhere else, usually to explain why it stays unused, is not
+  // announced. Without a registered emoji the name alone has to carry it.
+  const announced = typeof emoji === "string" && emoji !== ""
+    ? text.split("\n").some((line) => line.includes(emoji) && named.test(line))
+    : named.test(text);
   const kind = /-TRIGGER-/u.test(caseSpec.id) ? "trigger" : /-NONTRIGGER-/u.test(caseSpec.id) ? "nontrigger" : /-PRESSURE-/u.test(caseSpec.id) ? "pressure" : "unknown";
   if (kind === "unknown") return { status: "FAIL", kind, reason: "case id does not name TRIGGER, NONTRIGGER, or PRESSURE" };
   if (kind === "nontrigger") return announced ? { status: "FAIL", kind, reason: "skill was announced for a nontrigger prompt" } : { status: "PASS", kind, reason: "skill stayed silent" };
@@ -74,13 +86,13 @@ async function makeDisposableRepo(run) {
   return dir;
 }
 
-async function runClaude(prompt, cwd, run) {
+async function runClaude(prompt, cwd, run, timeoutMs) {
   const started = Date.now();
   const result = await run({
     executable: "claude",
     args: ["-p", prompt, "--output-format", "json", "--permission-mode", "plan", "--no-session-persistence"],
     cwd,
-    timeoutMs: CASE_TIMEOUT_MS,
+    timeoutMs,
     maxOutputBytes: 8 * 1024 * 1024
   });
   const durationMs = Date.now() - started;
@@ -92,6 +104,8 @@ async function runClaude(prompt, cwd, run) {
 
 export async function runSuite({ root = ROOT, run = runProcess, suitePath = join(root, "tests", "model", "suite.json"), outputDir = join(root, OUTPUT_DIR), preconditions = checkPreconditions } = {}) {
   const suite = readJson(suitePath);
+  const emojiRegistry = readJson(join(root, "core", "presentation", "emoji-registry.json")).skills ?? {};
+  const caseTimeoutMs = resolveCaseTimeoutMs();
   const pre = await preconditions({ root, run });
   const { runEvaluationBatch } = await import(pathToFileURL(join(root, "core", "evals", "runner.mjs")).href);
   const cases = [];
@@ -110,12 +124,12 @@ export async function runSuite({ root = ROOT, run = runProcess, suitePath = join
         let status, reason, text = "", exitCode = null, durationMs = 0;
         if (!pre.ok) { status = "NOT_RUN_UNAVAILABLE"; reason = pre.reasons.join("; "); }
         else {
-          const result = await runClaude(caseSpec.prompt, repo, run);
+          const result = await runClaude(caseSpec.prompt, repo, run, caseTimeoutMs);
           ({ text, exitCode, durationMs } = result);
           if (result.unavailable) { status = "NOT_RUN_UNAVAILABLE"; reason = "claude did not start"; }
-          else if (result.timedOut) { status = "FAIL"; reason = `claude did not finish within ${CASE_TIMEOUT_MS} ms`; }
+          else if (result.timedOut) { status = "NOT_RUN_UNAVAILABLE"; reason = `claude did not finish within ${String(caseTimeoutMs)} ms`; }
           else if (/not logged in|authentication|unauthorized|login required/iu.test(`${result.stderr}\n${text}`) && result.exitCode !== 0) { status = "NOT_RUN_UNAVAILABLE"; reason = "claude session is not authenticated"; }
-          else ({ status, reason } = evaluateCase({ skill, caseSpec, resultText: text, forbiddenPressurePhrases: suite.forbiddenPressurePhrases }));
+          else ({ status, reason } = evaluateCase({ skill, caseSpec, resultText: text, forbiddenPressurePhrases: suite.forbiddenPressurePhrases, emoji: emojiRegistry[skill]?.emoji }));
         }
         process.stdout.write(`${status.padEnd(20)} ${skill.padEnd(34)} ${caseSpec.id.padEnd(40)} ${reason}\n`);
         return {

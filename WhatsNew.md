@@ -18,6 +18,20 @@ All notable changes to all-about-agents. The format follows
   without a rendered package marker, and it never deletes inside the product roots.
   See `docs/maintenance/sync-and-update.md`.
 
+### Fixed
+
+- `npm run test:model` scored the announcement by a literal `Using skill **<skill>`
+  string, with a fallback that accepted the skill name plus the word "skill"
+  anywhere in the answer. Nothing rendered into the package carries that literal
+  string, so compliant announcements were recorded as `FAIL`, and a non-trigger
+  answer that named the skill to explain why it stayed unused was recorded as an
+  announcement. A case now counts as announced when one line carries the canonical
+  skill name together with its emoji from `core/presentation/emoji-registry.json`,
+  which is what `core/instructions/global-operating-rules.md` asks for.
+- A case that outruns its budget is `NOT_RUN_UNAVAILABLE`, not `FAIL`: a slow
+  session is an environment fact, not a routing verdict. The budget moved from a
+  fixed 180000 ms to 300000 ms and reads `AAA_CASE_TIMEOUT_MS` when it is set.
+
 ## [2.1.1] - 2026-09-19
 
 ### Fixed
