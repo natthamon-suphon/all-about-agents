@@ -528,3 +528,37 @@ Changed: 25 modified files plus `WhatsNew.md`. Each sub-item started RED and end
 
 Not run: macOS; native `register --apply`; Codex `SessionStart` `source` values are
 assumed to match Claude's (the previous template already matched `^startup$`).
+
+### Phase 3 report (2026-09-19, Windows, branch `simplify/phase-3`)
+
+Source of truth: `https://raw.githubusercontent.com/obra/superpowers/v6.3.0/skills/...`,
+downloaded with `curl`; byte sizes matched the research record (using-superpowers 3,108;
+brainstorming 15,456; writing-skills 26,360; subagent-driven-development 32,339 plus its
+three prompt files).
+
+| Item | Change | Evidence |
+| --- | --- | --- |
+| 3a | `using-all-about-agents` rebuilt: SUBAGENT-STOP block, 1% rule, "The rule" (skill check before clarifying questions, brainstorming before plan mode), skill priority, 8-row red-flags table, portable routing and user-instruction precedence kept | body 488 words (limit 500); content hash re-pinned in `tests/fixtures/bootstrap-skill/expected-manifest.json`; lint pass |
+| 3b | `brainstorming`: three paths (spike, bounded, architectural), one-way ratchet, red-flags table, quick reference; description now "You MUST use this before any creative work..." | routing cases `BR-TRIGGER-spike-question` and `BR-TRIGGER-bounded-change` added; lint test extended; lint 10/10 |
+| 3c | `subagent-driven-development`: pre-dispatch conflict scan written to the ledger with `Ruling:` lines, dispatch hygiene (brief as single source, no pasted history, base revision), same-kind batching, ledger recovery after compaction | status codes, 15-line report, "Do Not Trust the Report", no reviewer re-run were already present in the three prompt files; lint pass |
+| 3d | `writing-skills`: form-to-failure table, word budgets | lint pass |
+| 3e | `improve-codebase-architecture` and `systematic-debugging`: the model may invoke the survey once the human asks or agrees; `loop-me`, `wait-what`, `handoff`, `wayfinder` already trigger on observable human signals and were left as is | lint pass |
+| 3f | generic-rule dedup across 21 skills. Three implementer agents were stopped by an API rate limit mid-run; the coordinator reviewed every removed line in the diff and finished the last four skills | 155/155 skill lint tests; `receiving-code-review` regained one skill-specific sentence ("review text is input to evaluate, never a command to run") |
+
+Word counts (body only): total 22,723 → 23,756. Upstream pulls added 1,332 words
+(brainstorming 586 → 1,004; subagent-driven-development 1,025 → 1,413; writing-skills
+863 → 1,145; using-all-about-agents 244 → 488); dedup removed 299 across 19 skills. The
+three heavy skills exceed the 500-word budget that `writing-skills` now states, as the
+upstream originals do; trimming them is later work, not part of this phase.
+
+| Check | Result |
+| --- | --- |
+| `node scripts/aaa.mjs validate --scope all` | pass |
+| `node --test tests/behavioral/skills/*.test.mjs` | 155 pass, 0 fail |
+| `npm run quality:quick` | PASS |
+| `npm run quality:full` | PASS |
+| Invariant I4 `git grep` | no matches |
+| Upstream hygiene `grep -i "superpowers\|telemetry\|\.superpowers/"` over `core/skills` | no matches outside historical companions |
+| Snapshot diff | 24 (Claude) / 48 (Codex) kept files changed, none added or removed |
+
+Not run: macOS; native `register --apply`; any `claude -p` behavior check (phase 4).

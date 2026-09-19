@@ -14,11 +14,12 @@ The survey produces candidates, not implementation authority. It uses the
 module, interface, implementation, depth, seam, adapter, leverage, and locality
 vocabulary from `codebase-design`.
 
-This skill is user-invoked: use it when the user explicitly asks for an
-architecture survey or codebase-wide improvement candidates. A request to fix
-one bug, rename one symbol, or make a local behavior change is a nontrigger.
-Route the narrow task to the appropriate debugging or implementation workflow
-and mention a broader survey only after the task if concrete evidence supports it.
+Use this skill when the user explicitly asks for an architecture survey or
+codebase-wide improvement candidates, or agrees to a survey that another skill
+recommended after its own work finished. A request to fix one bug, rename one
+symbol, or make a local behavior change is a nontrigger. Route the narrow task
+to the appropriate debugging or implementation workflow and mention a broader
+survey only after the task if concrete evidence supports it.
 
 ## Skill Gate Protocol
 

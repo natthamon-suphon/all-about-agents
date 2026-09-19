@@ -265,7 +265,7 @@ Required before declaring done:
 
 **Then ask: what would have prevented this bug?**
 
-If the answer is architectural — no good test seam, tangled callers, hidden coupling — write the specifics down and tell your human partner they can run `/improve-codebase-architecture` to survey it properly. That skill is user-invoked only; you cannot start it yourself, and you should not begin refactoring on the back of a bug fix. Make the recommendation **after** the fix is in, not before: you know far more now than when you started.
+If the answer is architectural — no good test seam, tangled callers, hidden coupling — write the specifics down and recommend the `improve-codebase-architecture` skill to your human partner, and invoke it only after they agree. Never begin refactoring on the back of a bug fix. Make the recommendation **after** the fix is in, not before: you know far more now than when you started.
 
 ## Red Flags - STOP and Follow Process
 

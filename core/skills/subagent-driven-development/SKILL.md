@@ -55,6 +55,46 @@ write, and preserve evidence and review gates even when speed is requested.
   concerns. Answer missing context before resuming work; do not force a
   blocked worker through an unapproved assumption.
 
+## Before Task 1: conflict scan
+
+Read the plan once. If it names a spec, read that too: the spec is the
+authority the plan argues from, and conflicts inside the plan resolve against
+it. Then scan the plan for conflicts and write the scan into the ledger as a
+table, not a verdict:
+
+- one row for every pair of tasks that share a file or an interface: the two
+  tasks, what one produces against what the other consumes, and what you found;
+- one row for every task: whether its own text agrees with itself (the tests it
+  specifies against the code it specifies, the files it creates against the
+  files it later touches);
+- one row for anything the plan mandates that the review rubric treats as a
+  defect (a test that asserts nothing, a duplicated logic block).
+
+"The scan is clean" without those rows is not a scan you ran. Rule on every
+finding before dispatching Task 1 and record each ruling beside its row as
+`Ruling: <decision> — <why> — <cost if wrong>`. The review loop remains the net
+for conflicts that only emerge from implementation; a non-catastrophic
+conflict found later gets a ruling and the plan continues.
+
+## Dispatch hygiene and batching
+
+- A dispatch describes one task, not the session's history: one line on where
+  the task fits, the brief path introduced as the single source of
+  requirements, interfaces and decisions from earlier tasks that the brief
+  cannot know, your resolution of any ambiguity in the brief, and the report
+  path with its contract. Exact values live only in the brief. Never make a
+  worker read the whole plan or pasted prior-task summaries.
+- Record the base revision before every dispatch; review packages and fix-round
+  diffs need it, and `HEAD~1` silently drops all but the last commit of a
+  multi-commit task.
+- Small tasks of the same kind (for example three one-line renames in one
+  module) may be batched into one dispatch with one brief and one review when
+  their write scopes are disjoint from every other task; the batch gets one
+  ledger entry per task.
+- The ledger names its plan on its first line and is the recovery map: after
+  compaction, trust the ledger and the commit log over recollection. Tasks with
+  a completed line are done; do not re-dispatch them.
+
 ## Model and review policy
 
 Use the strongest approved model available for each worker, reviewer, fix round,

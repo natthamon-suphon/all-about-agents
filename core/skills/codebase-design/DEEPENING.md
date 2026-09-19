@@ -54,7 +54,7 @@ production adapter unless callers genuinely must handle them.
 3. Move one coherent behavior path behind it while preserving callers.
 4. Replace callers incrementally and verify each compatibility boundary.
 5. Remove the obsolete shallow layer only after no caller relies on it.
-6. Re-run focused behavior and integration checks; report anything not run.
+6. Re-run focused behavior and integration checks.
 
 ## Testing strategy: replace, do not layer
 

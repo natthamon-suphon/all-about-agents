@@ -6,6 +6,26 @@ All notable changes to all-about-agents. The format follows
 
 ## [Unreleased]
 
+Phase 3 of the simplification spec: skill content pulled from superpowers v6.3.0.
+
+### Changed
+
+- `using-all-about-agents` (the bootstrap skill) now carries the 1% rule, the
+  skill-priority order, a red-flags table, and a SUBAGENT-STOP block, while keeping
+  the portable-routing and unavailable-capability rules. 488 words.
+- `brainstorming` classifies every request as spike, bounded, or architectural before
+  the first question; the artifact scales down, the approval gate never does. Two
+  routing cases added.
+- `subagent-driven-development` adds the pre-dispatch conflict scan with ledger
+  rulings, dispatch hygiene, same-kind batching, and ledger recovery after compaction.
+- `writing-skills` adds the form-to-failure table and word budgets.
+- `improve-codebase-architecture` may be invoked by the model once the human asks for
+  or agrees to a survey; `systematic-debugging` recommends it instead of calling it
+  user-only.
+- Generic operating rules (untrusted data, preserve unrelated work, no invented paths,
+  record not-run) were removed from 19 skills where they only restated the global
+  rules; skill-specific forms stay.
+
 ## [2.0.0] - 2026-09-19
 
 Phases 1 and 2 of `docs/plans/2026-09-18-simplify-to-claude-codex.md`.

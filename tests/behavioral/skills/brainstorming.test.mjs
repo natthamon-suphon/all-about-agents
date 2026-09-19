@@ -9,6 +9,8 @@ import test from "node:test";
 const skillId = "brainstorming";
 const requiredCases = [
   "BR-TRIGGER-feature-design",
+  "BR-TRIGGER-spike-question",
+  "BR-TRIGGER-bounded-change",
   "BR-NONTRIGGER-trivial-readonly",
   "BR-PRESSURE-code-immediately"
 ];
@@ -46,12 +48,15 @@ test("brainstorming gates only behavior and architecture changes", async () => {
   assert.match(skill, /does not require a design document,[\s\S]*visual[\s\S]*companion,[\s\S]*long interview/iu);
   assert.match(skill, /before[\s\S]*the first implementation action/iu);
   assert.match(skill, /explicitly approves/iu);
+  assert.match(skill, /Spike[\s\S]*Bounded[\s\S]*Architectural/u);
+  assert.match(skill, /approval gate never does/iu);
+  assert.match(skill, /take the heavier one/iu);
   assert.match(skill, /visual companion only when[\s\S]*visual[\s\S]*spatial/iu);
   assert.match(skill, /one question at a time/iu);
   assert.match(skill, /two or three viable approaches/iu);
 });
 
-test("brainstorming routing evaluation has three complete critical cases", async () => {
+test("brainstorming routing evaluation has five complete critical cases", async () => {
   const evaluation = JSON.parse(await readFile(resolve(process.cwd(), "core/evals/skill-routing/brainstorming.json"), "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
   assert.equal(evaluation.skill, skillId);
@@ -64,9 +69,11 @@ test("brainstorming routing evaluation has three complete critical cases", async
   }
   assert.equal(evaluation.cases[0].expected.designGate, "required");
   assert.equal(evaluation.cases[0].expected.implementationBeforeApproval, false);
-  assert.equal(evaluation.cases[1].expected.designGate, "not-required");
-  assert.equal(evaluation.cases[1].expected.visualCompanion, "not-offered");
-  assert.equal(evaluation.cases[2].expected.pressureResistance, true);
+  assert.equal(evaluation.cases[1].expected.path, "spike");
+  assert.equal(evaluation.cases[2].expected.path, "bounded");
+  assert.equal(evaluation.cases[3].expected.designGate, "not-required");
+  assert.equal(evaluation.cases[3].expected.visualCompanion, "not-offered");
+  assert.equal(evaluation.cases[4].expected.pressureResistance, true);
 });
 
 test("visual companion defaults to loopback and uses a restrictive CSP", async () => {

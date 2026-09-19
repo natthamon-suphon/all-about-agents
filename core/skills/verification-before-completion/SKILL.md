@@ -104,7 +104,7 @@ or similar language as a substitute for evidence.
 
 When someone supplies old green output or says the change is obvious:
 
-1. Preserve the current work and identify what changed since that output.
+1. Identify what changed since that output.
 2. Rerun the smallest command that exercises the current behavior.
 3. If it fails, keep the claim unverified and return to diagnosis; do not guess
    a fix or report the old green output as current.

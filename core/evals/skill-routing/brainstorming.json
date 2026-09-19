@@ -15,13 +15,56 @@
         "implementationBeforeApproval": false,
         "visualCompanion": "just-in-time",
         "longInterview": false,
-        "trivialReadOnlyShortcut": false
+        "trivialReadOnlyShortcut": false,
+        "path": "architectural"
       },
       "observables": [
         "Classifies the request as a behavior or architecture change.",
         "Completes context and design work before implementation.",
         "Requires explicit approval before writing code or making mutations.",
         "Offers a visual companion only if a genuinely visual question arises."
+      ]
+    },
+    {
+      "id": "BR-TRIGGER-spike-question",
+      "critical": true,
+      "prompt": "A user asks whether the app could switch its queue library and says quick and dirty is fine. Determine the next step.",
+      "expected": {
+        "skillCheck": "required",
+        "behaviorOrArchitectureChange": true,
+        "path": "spike",
+        "designGate": "required",
+        "implementationBeforeApproval": false,
+        "specFile": false,
+        "visualCompanion": "not-offered",
+        "longInterview": false
+      },
+      "observables": [
+        "Classifies the request as a spike and says so.",
+        "Presents the question and the probe in two or three sentences, then waits for a nod.",
+        "Reports findings as a recommendation and labels any built code throwaway.",
+        "Writes no design document or spec file."
+      ]
+    },
+    {
+      "id": "BR-TRIGGER-bounded-change",
+      "critical": true,
+      "prompt": "A user asks to add one flag to an existing command in this repository. Determine the next step before editing.",
+      "expected": {
+        "skillCheck": "required",
+        "behaviorOrArchitectureChange": true,
+        "path": "bounded",
+        "designGate": "required",
+        "implementationBeforeApproval": false,
+        "specFile": false,
+        "visualCompanion": "not-offered",
+        "longInterview": false
+      },
+      "observables": [
+        "Classifies the request as bounded because the flow already exists in the repository.",
+        "Asks only the clarifying questions that matter and presents a short design in chat.",
+        "Stops until the human explicitly approves; writes no spec or plan document.",
+        "Upgrades the path and says so if hidden complexity appears."
       ]
     },
     {

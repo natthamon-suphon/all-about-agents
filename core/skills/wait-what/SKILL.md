@@ -36,8 +36,8 @@ means the assistant does not re-pitch.
    normal question, keep the normal response path and do not invoke this skill.
 3. Re-pitch the smallest missing point: give the needed context, use plain
    language in the session language, and anchor it with one concrete example.
-   Use the project's own names consistently. Do not invent facts or silently
-   change the requested meaning.
+   Use the project's own names consistently. Do not silently change the
+   requested meaning.
 4. Keep the session language. Do not switch to English or force English when
    the conversation is in another language. If the language is genuinely
    unclear, ask one short language question rather than guessing.
