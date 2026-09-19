@@ -79,6 +79,7 @@ test("package metadata declares ESM Node support without dependencies", async ()
     "quality:full",
     "quality:quick",
     "quality:skill",
+    "setup",
     "sync:status",
     "test",
     "test:contracts",

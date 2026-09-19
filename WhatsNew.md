@@ -6,6 +6,18 @@ All notable changes to all-about-agents. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `npm run setup` (`scripts/setup.mjs`): one guarded pipeline for installing this
+  repository into the local products. `--mode fresh` clears every previous render
+  from the package root first; `--mode update` keeps the root and syncs it with the
+  current checkout. Both then remove the installed plugin, render, commit the Codex
+  plugin source when it changed, register each surface, and list what each product
+  reports. Planning is the default and `--apply` is required to mutate. The run
+  refuses a home directory, a live product root, this repository, or any directory
+  without a rendered package marker, and it never deletes inside the product roots.
+  See `docs/maintenance/sync-and-update.md`.
+
 ## [2.1.1] - 2026-09-19
 
 ### Fixed

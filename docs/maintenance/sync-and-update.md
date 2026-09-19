@@ -32,6 +32,63 @@ The global destinations are `<CLAUDE_CONFIG_DIR>/CLAUDE.md` and
 the more specific second layer. Read
 [global instructions](global-instructions.md) for the complete model.
 
+## One-command setup
+
+`npm run setup` runs the whole receiving-machine order as one guarded
+pipeline. It is the shortest path when an agent session performs the install.
+Every step spawns a program with a structured argument list and no command
+shell, the run plans by default, and `--apply` is required to mutate.
+
+```text
+node scripts/setup.mjs --mode update            # plan only
+node scripts/setup.mjs --mode update --apply    # perform the run
+```
+
+| Mode | Package root | Use it when |
+| --- | --- | --- |
+| `update` | kept, then synced with this checkout | the normal refresh after a pull |
+| `fresh` | every previous render removed first | the root was written by an older repository version, or a render is in doubt |
+
+Both modes run the same remaining pipeline: validate the checkout, report how
+it compares with its upstream, render into the package root, commit the Codex
+plugin source when it changed, remove the installed plugin from each product,
+register each surface, and list what each product reports.
+
+The plugin removal is not optional in either mode, because both products serve
+a cached snapshot and a version-keyed cache does not refresh in place. It runs
+after the render on purpose: a failed render then leaves the working
+installation untouched instead of stranding the product with no plugin.
+
+`fresh` clears only the package root, which is a directory this installer owns
+end to end. It never deletes anything inside `CLAUDE_CONFIG_DIR` or
+`CODEX_HOME`, so personal skills, settings, credentials, and history stay in
+place; registration then overwrites only the files the package owns. The run
+refuses a package root that is a home directory, a live product root, this
+repository, or any directory without a rendered package marker.
+
+The defaults are `~/.all-about-agents/package`, profile `template`, and both
+surfaces. Options: `--package-root`, `--profile`, `--surface`,
+`--statusline-name`, and `--format text|json`. When the display name is not
+supplied, the name already rendered in the package root is reused.
+
+A reported step is `completed`, `pending` (planned, needs `--apply`),
+`skipped` with a reason (for example a plugin that was not installed),
+`not-run-unavailable` when a product CLI is off PATH, `blocked`, or `failed`.
+A failed or blocked step stops the run, the remaining steps are listed as not
+attempted, and the exit code is 1.
+
+An `update` dry-run plans the real render against the existing package root.
+When that plan reports `invalid-previous-state` or a rejected action, the step
+is `blocked` and names the remedy: a root written by an older repository
+version cannot be updated in place, so run `--mode fresh` instead. A `fresh`
+dry-run reports the render as `pending` without planning it, because the root
+it would be planned against is cleared first. The run never pulls, merges, or commits in this repository; when the
+checkout is behind its upstream the report says so and leaves the pull to you.
+
+Registration still ends in manual steps the products own: restart the product,
+then confirm the hook under its own review screen. Verify with
+`claude plugin list`, `codex plugin list`, and `npm run test:model`.
+
 ## Source machine (author machine)
 
 Use this order:

@@ -17,6 +17,7 @@
     "quality:quick": "node scripts/quality-gate.mjs quick",
     "quality:full": "node scripts/quality-gate.mjs full",
     "quality:skill": "node scripts/quality-gate.mjs skill",
+    "setup": "node scripts/setup.mjs",
     "test:model": "node tests/model/run-trigger-suite.mjs"
   },
   "dependencies": {},
