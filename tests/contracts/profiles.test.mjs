@@ -3,6 +3,7 @@ import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 
+import { renderAntigravity } from "../../adapters/antigravity/adapter.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
@@ -27,6 +28,7 @@ const profiles = {
 };
 
 const renderers = {
+  antigravity: (profile) => renderAntigravity({ core, profile, env: {}, homeDir: "C:/Users/tester", platform: "win32", targetRuntime: "cli" }),
   claude: (profile) => renderClaude({ core, profile, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude" }, homeDir: "C:/Users/tester", platform: "win32" }),
   codex: (profile) => renderCodex({ core, profile, statuslineName: "", env: { CODEX_HOME: "C:/disposable/codex" }, homeDir: "C:/Users/tester", platform: "win32", targetRuntime: "cli" })
 };
@@ -40,7 +42,7 @@ function serializedFiles(result) {
 }
 
 function skillPath(surface, skill) {
-  if (surface === "claude") return `skills/${skill}/SKILL.md`;
+  if (surface === "claude" || surface === "antigravity") return `skills/${skill}/SKILL.md`;
   return `.agents/skills/${skill}/SKILL.md`;
 }
 
@@ -64,7 +66,7 @@ test("portable is controlled and leaves personal choices to each installed surfa
   assert.equal(profiles.portable.authority, "controlled");
   assert.equal(profiles.portable.reasoning, "surface-default");
   assert.equal(profiles.portable.advisor, "disabled");
-  assert.deepEqual(Object.values(profiles.portable.modelPolicies), ["surface-default", "surface-default"]);
+  assert.deepEqual(Object.values(profiles.portable.modelPolicies), ["surface-default", "surface-default", "surface-default"]);
   const body = JSON.stringify(profiles.portable);
   for (const forbidden of ["statuslineName", "displayName", "skillPack", "skillPacks", "skills", "includeSkills", "excludeSkills", "toolPermission", "sandbox_mode", "defaultMode"]) {
     assert.equal(body.includes(forbidden), false, `portable profile stores forbidden selector/native key ${forbidden}`);
@@ -76,11 +78,12 @@ test("template contains only semantic full-access, maximum-reasoning, model, and
   assert.equal(profiles.template.reasoning, "maximum-supported");
   assert.equal(profiles.template.advisor, "fable");
   assert.deepEqual(profiles.template.modelPolicies, {
+    antigravity: "approved-gemini-pro",
     claude: "approved-opus-sonnet",
     codex: "approved-sol-terra"
   });
   const body = JSON.stringify(profiles.template);
-  for (const forbidden of ["claude-opus-5", "gpt-5.6-sol", "gemini-3.7-flash-high", "bypassPermissions", "danger-full-access", "statuslineName", "skills"]) {
+  for (const forbidden of ["claude-opus-5", "gpt-5.6-sol", "gemini-3.1-pro-high", "bypassPermissions", "danger-full-access", "statuslineName", "skills"]) {
     assert.equal(body.includes(forbidden), false, `template leaks native value ${forbidden}`);
   }
 });
@@ -97,7 +100,8 @@ test("profile seam rejects unavailable model-policy evidence and inconsistent se
     ...profiles.template,
     modelPolicies: {
       codex: "approved-sol-terra",
-      claude: "approved-opus-sonnet"
+      claude: "approved-opus-sonnet",
+      antigravity: "approved-gemini-pro"
     }
   };
   assert.equal(resolveProfile(reordered, { surface: "claude", modelPolicyRefs: PROFILE_MODEL_POLICY_REFS.claude }).id, "template");

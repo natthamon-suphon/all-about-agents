@@ -49,6 +49,7 @@ test("every canonical skill owns its source, inventory, companions, routing case
 test("emergency protection remains a non-runtime claim across rendered surfaces", async () => {
   const core = await loadCore(process.cwd());
   const renders = [
+    await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "antigravity", profile: "template", targetRuntime: "cli", platform: process.platform }),
     await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "claude", profile: "template", statuslineName: "", platform: process.platform }),
     await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "codex", profile: "template", targetRuntime: "cli", platform: process.platform }),
     await renderForSurface({ repositoryRoot: process.cwd(), core, surface: "codex", profile: "template", targetRuntime: "desktop", platform: process.platform })
@@ -79,7 +80,7 @@ test("T07 structured presentation scenarios are deterministic and do not make na
 
 const rubricPath = resolve(process.cwd(), "core/evals/rubric.json");
 const evidenceDirectory = resolve(process.cwd(), "tests", ".tmp", "t050-release-gates");
-const surfaces = ["claude", "codex"];
+const surfaces = ["antigravity", "claude", "codex"];
 const expectedDimensions = [
   ["task-spec-correctness", "task/spec correctness", 30],
   ["evidence-verification-uncertainty", "evidence/verification/uncertainty", 20],
@@ -121,12 +122,12 @@ function renderFingerprint(result) {
 }
 
 function skillPath(surface, skillId) {
-  if (surface === "claude") return `skills/${skillId}/SKILL.md`;
+  if (surface === "claude" || surface === "antigravity") return `skills/${skillId}/SKILL.md`;
   return `.agents/skills/${skillId}/SKILL.md`;
 }
 
 function rolePath(surface, roleId) {
-  if (surface === "claude") return `agents/${roleId}.md`;
+  if (surface === "claude" || surface === "antigravity") return `agents/${roleId}.md`;
   return `.codex/agents/${roleId}.toml`;
 }
 

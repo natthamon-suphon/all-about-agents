@@ -1,6 +1,6 @@
 # Contributing to All About Agents
 
-This repository keeps one source for Claude Code and Codex. Keep every change
+This repository keeps one source for Antigravity, Claude Code, and Codex. Keep every change
 clear, small, and supported by fresh evidence.
 
 The native lifecycle is:
@@ -136,7 +136,7 @@ plugin, change trust, or start a native session. No backup is made.
 ## Live Install Boundary
 
 Repository checks and native installation are separate actions. Never install
-or change Claude or Codex live config without exact authority.
+or change live product config on any surface without exact authority.
 
 Warning: `--apply` writes the selected disposable or approved root. Read its
 dry-run report first. The installer may overwrite declared owned files. It does

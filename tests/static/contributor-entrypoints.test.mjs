@@ -5,7 +5,7 @@ import { dirname, resolve } from "node:path";
 import test from "node:test";
 
 const root = process.cwd();
-const entrypoints = ["AGENTS.md", "CLAUDE.md"];
+const entrypoints = ["AGENTS.md", "CLAUDE.md", "GEMINI.md"];
 const allDocs = ["CONTRIBUTING.md", ...entrypoints];
 const requiredHeadings = [
   "Before You Start",
@@ -91,9 +91,11 @@ test("all local Markdown links resolve and prose stays short and factual", async
   }
 });
 
-test("AGENTS.md is a regular Git file on Windows and macOS checkouts", async () => {
-  const details = await lstat(resolve(root, "AGENTS.md"));
-  assert.equal(details.isSymbolicLink(), false);
-  const index = execFileSync("git", ["ls-files", "-s", "--", "AGENTS.md"], { cwd: root, encoding: "utf8" }).trim();
-  assert.match(index, /^100644\s/u);
+test("every native entry point is a regular Git file on Windows and macOS checkouts", async () => {
+  for (const relativePath of entrypoints) {
+    const details = await lstat(resolve(root, relativePath));
+    assert.equal(details.isSymbolicLink(), false, relativePath);
+    const index = execFileSync("git", ["ls-files", "-s", "--", relativePath], { cwd: root, encoding: "utf8" }).trim();
+    assert.match(index, /^100644\s/u, relativePath);
+  }
 });

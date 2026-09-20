@@ -1,5 +1,7 @@
 # Codex CLI and Desktop compatibility
 
+Sibling pages: [Antigravity](antigravity.md) and [Claude Code](claude.md).
+
 This page covers the Codex package and its native boundary. The observed
 runtime is Codex CLI `0.151.0-alpha.7.2` on Windows. The T07 disposable
 checks passed local marketplace add, plugin add, exact plugin discovery, and

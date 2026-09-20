@@ -2,8 +2,9 @@ import { access, lstat } from "node:fs/promises";
 import { dirname, isAbsolute, resolve } from "node:path";
 
 import { assertSafeDestinationRoot } from "./roots.mjs";
+import { SURFACES as SUPPORTED_SURFACES } from "../../adapters/shared/surfaces.mjs";
 
-const SURFACES = Object.freeze(["claude", "codex"]);
+const SURFACES = SUPPORTED_SURFACES;
 const PROFILES = new Set(["portable", "template"]);
 const STATUSES = new Set(["pass", "fail", "not run"]);
 

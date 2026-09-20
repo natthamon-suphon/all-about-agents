@@ -239,3 +239,44 @@ test("update is blocked when the package root holds a state this version cannot 
     assert.ok(!runner.calls.some((call) => call.args.includes("--apply")), "a preview must never apply");
   });
 });
+
+test("a surface subset is refused inside a root this repository already manages as a whole", async () => {
+  await withTempRoot(async (root) => {
+    const target = await packageRoot(root);
+
+    const runner = recorder();
+    const refused = await runMain(["--mode", "update", "--surface", "antigravity", "--package-root", target], { runProcess: runner.run });
+    assert.notEqual(refused.code, 0, "a subset render would write a second managed state that shadows this one");
+    assert.match(`${refused.stdout}${refused.stderr}`, /surface-subset-in-managed-root/u);
+    assert.equal(runner.calls.length, 0, "nothing may run before the refusal");
+
+    const accepted = await runMain(["--mode", "update", "--surface", "all", "--package-root", target], { runProcess: recorder().run });
+    assert.doesNotMatch(`${accepted.stdout}${accepted.stderr}`, /surface-subset-in-managed-root/u, "the whole-root selection stays allowed");
+  });
+});
+
+test("a registration that exits zero while refusing a guarded file is not reported as a plain success", async () => {
+  await withTempRoot(async (root) => {
+    const target = await packageRoot(root, ["antigravity", "claude", "codex"]);
+
+    const refusedDeploy = JSON.stringify({
+      action: "register",
+      status: "complete",
+      actions: [
+        { id: "antigravity-instructions-deploy", kind: "file-copy", status: "manual-required" },
+        { id: "antigravity-plugin-install", kind: "process", status: "complete" }
+      ]
+    });
+    const runner = recorder({ "register --surface antigravity": { stdout: refusedDeploy } });
+    const result = await runMain(["--mode", "update", "--surface", "all", "--package-root", target, "--apply", "--format", "json"], { runProcess: runner.run });
+
+    const report = JSON.parse(result.stdout);
+    const step = (report.steps ?? []).find((entry) => entry.id === "register-antigravity");
+    assert.ok(step, "the antigravity registration must be reported");
+    assert.match(
+      step.reason ?? "",
+      /manual follow-up: antigravity-instructions-deploy/u,
+      "a refused no-clobber deploy must be visible in the summary, not hidden behind exit code 0"
+    );
+  });
+});

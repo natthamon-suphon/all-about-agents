@@ -8,12 +8,17 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { assertSafeDestinationRoot } from "../installers/lib/roots.mjs";
 import { runProcess as defaultRunProcess } from "./lib/process-runner.mjs";
+import { SURFACES as SUPPORTED_SURFACES } from "../adapters/shared/surfaces.mjs";
 
 const MODES = new Set(["fresh", "update"]);
-const SURFACES = Object.freeze(["claude", "codex"]);
+const SURFACES = SUPPORTED_SURFACES;
+// A surface is not always its binary: the Antigravity CLI is `agy`.
+const SURFACE_EXECUTABLES = Object.freeze({ antigravity: "agy", claude: "claude", codex: "codex" });
 const PROFILES = new Set(["portable", "template"]);
 const FORMATS = new Set(["text", "json"]);
 const PLUGIN_ID = "all-about-agents@all-about-agents";
+// agy uninstalls by plain plugin name; Claude and Codex use the marketplace id.
+const SURFACE_PLUGIN_IDS = Object.freeze({ antigravity: "all-about-agents", claude: PLUGIN_ID, codex: PLUGIN_ID });
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CLI = resolve(REPOSITORY_ROOT, "scripts", "aaa.mjs");
 const SYNC_STATUS = resolve(REPOSITORY_ROOT, "scripts", "sync-status.mjs");
@@ -180,10 +185,19 @@ export function planSetup({ mode, surfaces, profile, packageRoot, statuslineName
     steps.push({ id: "package-root-clear", title: "Remove every previous render from the package root", kind: "clear", mutates: true, tolerate: false });
   }
 
-  const installArgs = [CLI, "install", "--surface", selected.length === SURFACES.length ? "all" : selected[0], "--profile", profile, "--destination-root", packageRoot];
-  if (selected.includes("claude") && typeof statuslineName === "string" && statuslineName !== "") installArgs.push("--statusline-name", statuslineName);
-  installArgs.push("--apply", "--format", "json");
-  steps.push(command("package-install", "Render this checkout into the package root", process.execPath, installArgs, { cwd: REPOSITORY_ROOT, kind: "install", mutates: true }));
+  // `--surface all` namespaces each package under the root by itself. A subset
+  // must ask for the same layout explicitly, or the render would land at the
+  // root while registration below looks for `<root>/<surface>`.
+  const statuslineArgs = typeof statuslineName === "string" && statuslineName !== "" ? ["--statusline-name", statuslineName] : [];
+  if (selected.length === SURFACES.length) {
+    const installArgs = [CLI, "install", "--surface", "all", "--profile", profile, "--destination-root", packageRoot, ...statuslineArgs, "--apply", "--format", "json"];
+    steps.push(command("package-install", "Render this checkout into the package root", process.execPath, installArgs, { cwd: REPOSITORY_ROOT, kind: "install", mutates: true }));
+  } else {
+    for (const surface of selected) {
+      const installArgs = [CLI, "install", "--surface", surface, "--profile", profile, "--destination-root", join(packageRoot, surface), ...(surface === "claude" ? statuslineArgs : []), "--apply", "--format", "json"];
+      steps.push(command(`package-install-${surface}`, `Render this checkout into the ${surface} package namespace`, process.execPath, installArgs, { cwd: REPOSITORY_ROOT, kind: "install", mutates: true }));
+    }
+  }
 
   if (selected.includes("codex")) {
     steps.push({ id: "codex-source-commit", title: "Commit the Codex plugin source so its clone serves the new render", kind: "codex-source", mutates: true, tolerate: false });
@@ -198,12 +212,15 @@ export function planSetup({ mode, surfaces, profile, packageRoot, statuslineName
   if (selected.includes("codex")) {
     steps.push(command("plugin-remove-codex", "Remove the installed Codex plugin", "codex", ["plugin", "remove", PLUGIN_ID], { mutates: true, tolerate: true }));
   }
+  if (selected.includes("antigravity")) {
+    steps.push(command("plugin-uninstall-antigravity", "Remove the installed Antigravity plugin", SURFACE_EXECUTABLES.antigravity, ["plugin", "uninstall", SURFACE_PLUGIN_IDS.antigravity], { mutates: true, tolerate: true }));
+  }
 
   for (const surface of selected) {
     steps.push(command(`register-${surface}`, `Register the ${surface} package with its product`, process.execPath, [CLI, "register", "--surface", surface, "--profile", profile, "--package-root", join(packageRoot, surface), "--apply", "--format", "json"], { cwd: REPOSITORY_ROOT, mutates: true }));
   }
   for (const surface of selected) {
-    steps.push(command(`verify-${surface}`, `List the plugins ${surface} reports`, surface, ["plugin", "list"], { tolerate: true }));
+    steps.push(command(`verify-${surface}`, `List the plugins ${surface} reports`, SURFACE_EXECUTABLES[surface], ["plugin", "list"], { tolerate: true }));
   }
 
   return { schemaVersion: 1, mode, profile, packageRoot, surfaces: [...selected], steps };
@@ -252,6 +269,25 @@ async function runCommandStep(step, run) {
   if (result.timedOut) return { status: "failed", reason: `${step.executable} timed out` };
   if (result.exitCode !== 0) return { status: step.tolerate ? "skipped" : "failed", reason: evidenceOf(result) };
   return { status: "completed", reason: null, evidence: (result.stdout || "").trim().split("\n").at(-1) ?? "" };
+}
+
+// A registration can exit 0 while refusing to write a guarded file: a
+// no-clobber destination that already differs reports `manual-required` and is
+// skipped. Reporting only the exit code hides that, and the operator is left
+// believing a file was deployed when it was not.
+async function reportRegistration(step, run) {
+  const result = await run({ executable: step.executable, args: step.args, cwd: step.cwd });
+  if (result.unavailable) return { status: "not-run-unavailable", reason: `${step.executable} is not on PATH` };
+  if (result.timedOut) return { status: "failed", reason: `${step.executable} timed out` };
+  if (result.exitCode !== 0) return { status: step.tolerate ? "skipped" : "failed", reason: evidenceOf(result) };
+
+  let report = null;
+  try { report = JSON.parse(result.stdout); } catch { report = null; }
+  const actions = Array.isArray(report?.actions) ? report.actions : [];
+  const manual = actions.filter((action) => action?.status === "manual-required");
+  if (manual.length === 0) return { status: "completed", reason: null, evidence: (result.stdout || "").trim().split("\n").at(-1) ?? "" };
+  const ids = manual.map((action) => action.id).join(", ");
+  return { status: "completed", reason: `${manual.length} step(s) need a manual follow-up: ${ids}` };
 }
 
 function planCounts(report) {
@@ -326,9 +362,29 @@ async function commitCodexSource(root, run, apply, mode) {
   return { status: "completed", reason: null };
 }
 
+/**
+ * Refuse to mix whole-root and per-surface management in one package root.
+ *
+ * `--surface all` keeps one managed state at the root. A subset renders into
+ * `<root>/<surface>` and writes a second state there. Registration prefers the
+ * nested state when it exists, so the two drift apart on the next render and
+ * the surface fails with a hash mismatch. Fail closed instead of building that
+ * split state.
+ */
+function assertSurfaceSelectionMatchesRoot({ packageRoot, surfaces }) {
+  const selected = Array.isArray(surfaces) && surfaces.length > 0 ? surfaces : [...SURFACES];
+  if (selected.length === SURFACES.length) return;
+  if (!existsSync(join(packageRoot, ".all-about-agents", "state.json"))) return;
+  fail(
+    "surface-subset-in-managed-root",
+    `${packageRoot} is already managed as a whole root. Rerun with --surface all, or choose a package root that this repository does not manage yet.`
+  );
+}
+
 /** Execute one setup plan. Every external program runs through the injected runner. */
 export async function runSetup(options, { runProcess = defaultRunProcess, env = process.env, homeDir = homedir() } = {}) {
   assertPackageRootIsSafe(options.packageRoot, { homeDir, env });
+  assertSurfaceSelectionMatchesRoot(options);
   if (options.mode === "fresh") await assertClearable(options.packageRoot);
   const statuslineName = options.statuslineName ?? (await renderedStatuslineName(options.packageRoot));
   const plan = planSetup({ ...options, statuslineName });
@@ -346,6 +402,7 @@ export async function runSetup(options, { runProcess = defaultRunProcess, env = 
       ? { status: "pending", reason: "planned against the cleared package root" }
       : await previewInstall(step, runProcess);
     else if (step.id.startsWith("verify-")) outcome = await verifyPluginList(step, runProcess);
+    else if (step.id.startsWith("register-")) outcome = await reportRegistration(step, runProcess);
     else if (step.kind === "clear") outcome = await clearPackageRoot(options.packageRoot, options.apply);
     else if (step.kind === "codex-source") outcome = await commitCodexSource(options.packageRoot, runProcess, options.apply, options.mode);
     else outcome = await runCommandStep(step, runProcess);

@@ -40,13 +40,20 @@ node --test tests/static/documentation.test.mjs tests/static/maintenance-docs.te
 The native harness uses fresh temporary roots. It checks Claude validation,
 marketplace registration, plugin discovery, and both statusline profiles. It
 checks Codex marketplace and plugin discovery and hook file presence. Codex
-hook trust is not run.
+hook trust is not run. For Antigravity it checks the package layout that
+`agy plugin validate` accepts; Antigravity renders no hooks, so there is no
+hook-file or hook-trust check to run.
 
 Run a product validator only against a disposable package root:
 
 ```text
 claude plugin validate "<PACKAGE_ROOT>" --strict
+agy plugin validate "<PACKAGE_ROOT>"
 ```
+
+`agy plugin validate` is read-only and prints one processed count per
+component. A package of this repository must report 28 skills and 7 agents,
+with commands, mcpServers, and hooks all skipped.
 
 A validator result is `validated`. It does not by itself prove `registered`,
 `trusted`, `active`, or `runtime verified`.
@@ -107,9 +114,8 @@ and confirm the root before applying it.
    ```
 
 10. Follow [dry-run registration](native-registration.md#dry-run-registration).
-    It creates isolated Claude/Codex roots and includes the Codex local-Git
-    package prerequisite. Do not use a generic register command for Claude or
-    Codex.
+    It creates isolated product roots and includes the Codex local-Git package
+    prerequisite. Do not use a generic register command for any surface.
 
 Warning: the next command may mutate a native product root. Use only after an
 authorized decision and after reviewing the dry-run report.
@@ -122,6 +128,35 @@ authorized decision and after reviewing the dry-run report.
 13. Run the product-specific observation below.
 
 ## Product observations
+
+### Antigravity (`agy`)
+
+1. Record `agy --version`.
+
+2. Validate the package with `agy plugin validate "<PACKAGE_ROOT>"`.
+
+3. Run `agy plugin install "<PACKAGE_ROOT>"`. It takes a plain directory and
+   needs no Git repository.
+
+4. Record `agy plugin list` and `agy agents`. All seven role names must appear.
+
+5. Check whether the `GEMINI.md` deploy was refused. A no-clobber destination
+   that already differs reports `manual-required`, and the routing contract is
+   then absent until it is merged by hand. A green registration is not evidence
+   that the file was written.
+
+6. Ask the product, from a directory that has **no** `.agents/` folder:
+
+   ```text
+   agy -p "Quote the first heading of your global instructions. Do they contain a section titled 'Routing contract'? Name three skills available to you."
+   ```
+
+   Inside a workspace that carries its own copy of the package, a correct answer
+   cannot say which copy was loaded, so the run proves nothing about the global
+   install.
+
+7. Antigravity Desktop has no headless mode. Record it as
+   `NOT_RUN_UNAVAILABLE` unless someone opened it and asked the same question.
 
 ### Claude Code
 

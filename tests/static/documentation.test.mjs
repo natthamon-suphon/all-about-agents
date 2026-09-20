@@ -14,6 +14,7 @@ const requiredOutputs = [
   "docs/setup/windows.md",
   "docs/setup/macos.md",
   "docs/maintenance/global-instructions.md",
+  "docs/compatibility/antigravity.md",
   "docs/compatibility/claude.md",
   "docs/compatibility/codex.md",
   "docs/evaluations/native-windows-2026-08-31.md",
@@ -28,6 +29,7 @@ const documentationFiles = [
   "CONTRIBUTING.md",
   "AGENTS.md",
   "CLAUDE.md",
+  "GEMINI.md",
   ...requiredOutputs.filter((path) => path.startsWith("docs/"))
 ];
 
@@ -53,6 +55,7 @@ const canonicalPrefixes = [
 const coreRelativePrefixes = ["skills/", "roles/", "rules/", "hooks/", "evals/"];
 
 const surfaces = [
+  { id: "antigravity", options: { env: {}, targetRuntime: "cli" } },
   { id: "claude", options: { env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude" } } },
   { id: "codex", options: { env: { CODEX_HOME: "C:/disposable/codex" }, targetRuntime: "cli" } }
 ];
@@ -144,7 +147,7 @@ test("T09 documents the dual layer, exact destinations, and receiving-machine or
   const readme = await textAt("README.md");
 
   assert.match(global, /one canonical source/iu);
-  for (const destination of ["CLAUDE.md", "AGENTS.md"]) assert.ok(global.includes(destination), `global guide omits ${destination}`);
+  for (const destination of ["CLAUDE.md", "AGENTS.md", "GEMINI.md"]) assert.ok(global.includes(destination), `global guide omits ${destination}`);
   assert.match(global, /global layer/iu);
   assert.match(global, /project and plugin layer/iu);
   assert.match(global, /more specific second layer/iu);
@@ -338,7 +341,12 @@ test("all generated package snapshots retain complete deterministic ownership ma
         assert.equal(entry.sha256, sha256(file.content), `${surface.id}/${profile}/${file.relativePath} hash drift`);
       }
       assert.ok(paths.some((path) => path.includes("skills/")), `${surface.id}/${profile} lost generated skills/ vocabulary`);
-      assert.ok(paths.some((path) => path === "hooks.json" || path.endsWith("/hooks.json") || path.includes("hooks/")), `${surface.id}/${profile} lost generated hook vocabulary`);
+      const hasHooks = paths.some((path) => path === "hooks.json" || path.endsWith("/hooks.json") || path.includes("hooks/"));
+      // Antigravity documents no SessionStart event, so it renders no hooks at
+      // all and inlines the routing contract into GEMINI.md instead. Every
+      // other surface must keep its hook vocabulary.
+      if (surface.id === "antigravity") assert.equal(hasHooks, false, `${surface.id}/${profile} must not render hooks`);
+      else assert.ok(hasHooks, `${surface.id}/${profile} lost generated hook vocabulary`);
     }
   }
 });

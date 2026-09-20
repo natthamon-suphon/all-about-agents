@@ -25,9 +25,10 @@ root behavior. They do not establish native discovery or behavior.
 
 T07 Windows checks observed Claude Code `2.1.251` and Codex CLI
 `0.151.0-alpha.7.2` for only the operations listed in the evaluation records.
-Codex Desktop, macOS, authenticated model transport, hook trust, hook
-execution, permission blocking, persistence, and Gate 3 remain `NOT_RUN` or
-`NOT_RUN_UNAVAILABLE`.
+The Antigravity surface was checked separately on `agy 1.2.7` on 2026-09-19.
+Codex Desktop, Antigravity Desktop, macOS, authenticated model transport, hook
+trust, hook execution, permission blocking, persistence, and Gate 3 remain
+`NOT_RUN` or `NOT_RUN_UNAVAILABLE`.
 
 ## Surface limits
 
@@ -35,6 +36,7 @@ execution, permission blocking, persistence, and Gate 3 remain `NOT_RUN` or
 | --- | --- | --- |
 | [Claude Code](../compatibility/claude.md) | Package validation, disposable marketplace registration, plugin discovery, and both statusline fixtures passed on Windows. | Authenticated model and component use, hook trust and execution, Fable access, deny blocking, persistence, Desktop behavior, and macOS are not qualified. |
 | [Codex](../compatibility/codex.md) | Marketplace add, plugin add, exact available-plugin discovery, and discovered hook-file checks passed in an isolated Windows CLI home. | `/hooks` trust, hook execution, authenticated model use, Desktop behavior, persistence, and macOS are not qualified. Automatic fallback is unsupported. |
+| [Antigravity](../compatibility/antigravity.md) | `agy plugin validate`, `agy plugin install`, `agy plugin list`, and `agy agents` passed on `agy 1.2.7`, and a headless session named real skills and the inlined routing contract from outside any workspace copy. | Antigravity Desktop, macOS, permission deny blocking, and persistence are not qualified. There is no hook or status line to qualify: none is rendered. |
 
 ## Safety and setup constraints
 
@@ -48,6 +50,13 @@ execution, permission blocking, persistence, and Gate 3 remain `NOT_RUN` or
   prove emergency deny behavior.
 - Codex hooks are not automatic. Registration, trust, active loading, and
   runtime behavior are separate states.
+- Antigravity renders no hooks at all, because no session-start event can be
+  named with current evidence. The recorded event list is inherited from the
+  2026-08-31 evaluation of `agy 1.1.22` and was not re-verified on 1.2.7. Its routing contract lives in `GEMINI.md`, which is deployed with a
+  no-clobber guard, so a registration can complete while that file is untouched
+  and the contract is absent. Ask the product; do not infer it from a green run.
+- `agy plugin uninstall <name>` exits 0 even for a name that was never
+  installed, so its exit code proves nothing was removed.
 - Native manual steps must use a fresh disposable product or workspace root.
   Do not request real credentials or paid model calls for a repository check.
 - Emoji labels, short reasons, and 2-to-7 item checklists are prompt guidance.

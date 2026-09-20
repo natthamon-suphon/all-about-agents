@@ -47,10 +47,17 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "antigravity",
         "claude",
         "codex"
       ],
       "properties": {
+        "antigravity": {
+          "enum": [
+            "surface-default",
+            "approved-gemini-pro"
+          ]
+        },
         "claude": {
           "enum": [
             "surface-default",

@@ -5,10 +5,13 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 
-// Guard for docs/plans/2026-09-18-simplify-to-claude-codex.md invariant I4:
-// after phase 1 nothing tracked may reference the removed surfaces, commands,
-// workflows, or quarantine, except historical records.
-const CUT_PATTERN = /antigravity|(^|[^a-z])agy([^a-z]|$)|aaa:(build|fix|review|audit|design|verify|resume|improve-skill)|workflowId|\.aaa\/state\/workflows|implement-change|quarantine\/legacy/iu;
+// Guard for docs/plans/2026-09-18-simplify-to-claude-codex.md invariant I4, as
+// narrowed by docs/plans/2026-09-19-restore-antigravity.md. Antigravity is a
+// supported surface again, so its name and the `agy` binary are allowed. The
+// removed two-surface design (`antigravity-2`, the `agy` surface id and its
+// adapter paths) stays forbidden, together with the commands, workflows, and
+// quarantine that decision D6 also cut.
+const CUT_PATTERN = /antigravity-2|adapters\/agy|manifests\/agy|snapshots\/agy|aaa:(build|fix|review|audit|design|verify|resume|improve-skill)|workflowId|\.aaa\/state\/workflows|implement-change|quarantine\/legacy/iu;
 const HISTORICAL_PREFIXES = ["WhatsNew.md", "docs/evaluations/", "docs/plans/"];
 const REMOVED_PATHS = [
   "adapters/antigravity-2",
@@ -38,9 +41,15 @@ test("removed surfaces, commands, workflows, and quarantine no longer exist", ()
   assert.deepEqual(present, []);
 });
 
-test("the shared adapter contract knows exactly two surfaces", async () => {
+test("the shared adapter contract knows exactly the three supported surfaces", async () => {
   const { SURFACES } = await import("../../adapters/shared/adapter-contract.mjs");
-  assert.deepEqual([...SURFACES], ["claude", "codex"]);
+  assert.deepEqual([...SURFACES], ["antigravity", "claude", "codex"]);
+});
+
+test("every supported surface has exactly one renderer", async () => {
+  const { SURFACES } = await import("../../adapters/shared/adapter-contract.mjs");
+  const { SURFACE_RENDERERS } = await import("../../installers/lib/render.mjs");
+  assert.deepEqual(Object.keys(SURFACE_RENDERERS).sort(), [...SURFACES].sort());
 });
 
 test("no tracked file references a removed surface, action, workflow, or quarantine path", async () => {

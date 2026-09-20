@@ -2,8 +2,8 @@
 
 This repository has one canonical source for global behavior:
 `core/instructions/global-operating-rules.md`. Adapters render that source for
-Claude Code and Codex. The source is reviewed in Git. The generated files are
-not edited by hand.
+Antigravity, Claude Code, and Codex. The source is reviewed in Git. The
+generated files are not edited by hand.
 
 ## Two instruction layers
 
@@ -24,19 +24,27 @@ behavior. A project file does not replace the shared source.
 
 ## Surface-specific appendices
 
-The shared source reaches every surface. Two appendices are added at render
-time, so a rendered global file is not always byte-identical to the source:
+The shared source reaches every surface. Each surface may add an appendix at
+render time, so a rendered global file is not always byte-identical to the
+source:
 
 | Section | Surfaces | Defined in |
 | --- | --- | --- |
 | `## RTK house rules (rust-token-killer)` | both | `core/instructions/global-operating-rules.md` |
 | `## egroup house rules (coding-guidelines)` | Claude Code only | `adapters/shared/global-instructions.mjs` |
 | `# All About Agents for Codex` | Codex only | `adapters/shared/global-instructions.mjs` |
+| `# All About Agents for Antigravity` | Antigravity only | `adapters/shared/global-instructions.mjs` |
 
-`renderSharedGlobalInstructions` returns the shared body alone. The Codex
-renderer builds on that function, never on the Claude renderer, so the
-Claude-only appendix cannot reach `AGENTS.md`. A contract test in
-`tests/contracts/claude-adapter.test.mjs` holds that boundary.
+`renderSharedGlobalInstructions` returns the shared body alone. The Codex and
+Antigravity renderers build on that function, never on the Claude renderer, so
+the Claude-only appendix cannot reach `AGENTS.md` or `GEMINI.md`. A contract
+test in `tests/contracts/claude-adapter.test.mjs` holds that boundary.
+
+The Antigravity appendix carries one thing the others do not: the body of the
+`using-all-about-agents` skill. Claude and Codex receive that routing contract
+from the `SessionStart` bootstrap hook, and Antigravity has no such event, so
+the always-loaded instruction file is its only carrier. See
+`docs/plans/2026-09-19-restore-antigravity.md` decision A7.
 
 The egroup appendix uses Claude's `@` import syntax and one operator-specific
 path. Other surfaces do not resolve `@` imports, and the path is absent on a
@@ -50,9 +58,21 @@ The adapters use the following exact destinations:
 | --- | --- | --- |
 | Claude Code | `<CLAUDE_CONFIG_DIR>/CLAUDE.md` | `~/.claude/CLAUDE.md` |
 | Codex | `<CODEX_HOME>/AGENTS.md` | `~/.codex/AGENTS.md` |
+| Antigravity | `~/.gemini/GEMINI.md` | `~/.gemini/GEMINI.md` |
+
+Antigravity publishes no environment variable for its home, so the table has no
+variable column entry for it. This repository defines `AAA_ANTIGRAVITY_ROOT`
+for qualification runs only; it is not a product variable.
 
 `CLAUDE.local.md` is a private project file, not a global destination. Do not
 use it for installation.
+
+`GEMINI.md` is the one exception to that overwrite rule. Its deploy carries
+`guard: "no-clobber"`: when the destination already exists and differs from the
+managed source, registration reports `manual-required` and writes nothing. The
+Claude render is a superset of the live `CLAUDE.md`, so replacing it loses
+nothing; the Antigravity render is not a superset of a live `GEMINI.md`, which
+may hold operator sections this package does not own. Merge those by hand.
 
 Global files are managed files. An explicitly authorized native apply may
 overwrite the approved global file without a backup. It does not change

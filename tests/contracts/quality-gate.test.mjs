@@ -69,6 +69,10 @@ test("quality gate selects a stable quick subset, full superset, and focused ski
   assert.deepEqual(full.slice(0, quick.length), quick);
   assert.ok(full.some((entry) => entry.id === "full-test-suite"));
   assert.ok(full.some((entry) => entry.id === "native-codex-version" && entry.required === false));
+  const antigravity = full.find((entry) => entry.id === "native-antigravity-version");
+  assert.ok(antigravity, "the full gate must probe every supported surface binary");
+  assert.equal(antigravity.required, false);
+  assert.equal(antigravity.executable, "agy", "the Antigravity binary is agy, not the surface name");
   assert.deepEqual(skill.map((entry) => entry.id), ["skill-artifacts", "skill-lint"]);
   assert.ok(skill[0].args.includes("alpha"));
   assert.ok(skill[1].args.includes("tests/lint/skills/alpha.test.mjs"));

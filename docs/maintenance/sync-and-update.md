@@ -27,10 +27,16 @@ Package apply and native registration are separate explicit actions.
 Managed global files are separate
 from Git pull. An authorized native apply may overwrite them without a backup.
 
-The global destinations are `<CLAUDE_CONFIG_DIR>/CLAUDE.md` and
-`<CODEX_HOME>/AGENTS.md`. Project instruction files and plugin rules remain
-the more specific second layer. Read
+The global destinations are `<CLAUDE_CONFIG_DIR>/CLAUDE.md`,
+`<CODEX_HOME>/AGENTS.md`, and `~/.gemini/GEMINI.md`. Project instruction files
+and plugin rules remain the more specific second layer. Read
 [global instructions](global-instructions.md) for the complete model.
+
+`GEMINI.md` is the one destination that is never overwritten. When the file
+already exists and differs, registration reports `manual-required` and writes
+nothing, because a live Gemini home may hold operator sections this package
+does not own. On such a machine, keep the rendered file and append everything
+from the first heading it does not contain.
 
 ## One-command setup
 
@@ -60,16 +66,23 @@ after the render on purpose: a failed render then leaves the working
 installation untouched instead of stranding the product with no plugin.
 
 `fresh` clears only the package root, which is a directory this installer owns
-end to end. It never deletes anything inside `CLAUDE_CONFIG_DIR` or
-`CODEX_HOME`, so personal skills, settings, credentials, and history stay in
-place; registration then overwrites only the files the package owns. The run
+end to end. It never deletes anything inside `CLAUDE_CONFIG_DIR`, `CODEX_HOME`,
+or the Gemini home, so personal skills, settings, credentials, and history stay
+in place; registration then overwrites only the files the package owns. The run
 refuses a package root that is a home directory, a live product root, this
 repository, or any directory without a rendered package marker.
 
-The defaults are `~/.all-about-agents/package`, profile `template`, and both
-surfaces. Options: `--package-root`, `--profile`, `--surface`,
+The defaults are `~/.all-about-agents/package`, profile `template`, and every
+surface. Options: `--package-root`, `--profile`, `--surface`,
 `--statusline-name`, and `--format text|json`. When the display name is not
 supplied, the name already rendered in the package root is reused.
+
+Manage one package root either as a whole with `--surface all`, or per surface
+with a subset, never both. `--surface all` keeps one managed state at the root;
+a subset writes a second one inside `<root>/<surface>`, and registration
+prefers the nested file. The two then drift apart on the next render and the
+surface fails with a hash mismatch. A subset run against a root that is already
+managed as a whole is refused with `surface-subset-in-managed-root`.
 
 A reported step is `completed`, `pending` (planned, needs `--apply`),
 `skipped` with a reason (for example a plugin that was not installed),
@@ -87,7 +100,8 @@ checkout is behind its upstream the report says so and leaves the pull to you.
 
 Registration still ends in manual steps the products own: restart the product,
 then confirm the hook under its own review screen. Verify with
-`claude plugin list`, `codex plugin list`, and `npm run test:model`.
+`claude plugin list`, `codex plugin list`, `agy plugin list`, and
+`npm run test:model`.
 
 ## Source machine (author machine)
 
@@ -185,6 +199,12 @@ fetch -> sync:status -> pull --ff-only -> quality checks -> doctor -> dry-run
 -> install --apply -> register --dry-run -> authorized register --apply
 -> restart/reload -> native verification
 ```
+
+A package root last written before this version knows fewer surfaces than this
+version renders. That direction is safe: `install --surface all` adds the new
+surface namespace and leaves every existing surface byte-identical. A root
+written by a 1.x repository is the other direction and still needs the manual
+step below.
 
 A package root last written by a 1.x repository lists surfaces this version no
 longer renders. The installer cannot read that managed state, reports
@@ -295,7 +315,7 @@ disposable root. Read the dry-run report first. The installer creates no backup.
    ```
 
 16. Follow [dry-run registration](native-registration.md#dry-run-registration).
-    This creates isolated Claude/Codex roots and includes the Codex local-Git
+    This creates isolated product roots and includes the Codex local-Git
     package prerequisite. Do not use a generic register command for Claude or
     Codex.
 

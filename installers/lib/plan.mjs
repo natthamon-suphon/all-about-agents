@@ -3,8 +3,9 @@ import { isAbsolute, relative, resolve } from "node:path";
 import { hashBytes, SHA256_HEX } from "./hash.mjs";
 import { assertSafeDestinationRoot } from "./roots.mjs";
 import { parseManagedState } from "./state.mjs";
+import { SURFACE_SET } from "../../adapters/shared/surfaces.mjs";
 
-const SURFACES = new Set(["claude", "codex"]);
+const SURFACES = SURFACE_SET;
 const ACTION_KINDS = new Set(["create", "replace", "unchanged", "prune", "reject"]);
 const DEFAULT_FILE_MODE = 0o600;
 

@@ -8,7 +8,7 @@ import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderForSurface } from "../../installers/lib/render.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
 
-const SURFACES = ["claude", "codex"];
+const SURFACES = ["antigravity", "claude", "codex"];
 const NAMESPACES = new Set(SURFACES.map((surface) => `${surface}/`));
 
 function manifestPatternRegex(pattern) {

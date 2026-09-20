@@ -16,6 +16,7 @@ import { applyPreparedSurface, preflightOperation } from "../installers/lib/appl
 import { readManagedState, STATE_RELATIVE_PATH } from "../installers/lib/state.mjs";
 import { hashBytes } from "../installers/lib/hash.mjs";
 import { validateRenderResult } from "../adapters/shared/adapter-contract.mjs";
+import { isSurface } from "../adapters/shared/surfaces.mjs";
 import { diagnose, SURFACES as DOCTOR_SURFACES } from "../installers/lib/doctor.mjs";
 import { formatDiffText, formatPlanText, serializeReport } from "../installers/lib/report.mjs";
 import { planNativeRegistration, runNativeRegistration, resolveNativeProductRoot, resolveNativeInstructionRoot, formatNativeRegistrationText } from "../installers/lib/native-registration.mjs";
@@ -320,7 +321,7 @@ async function registerNative(options, output, errorOutput, cwd, invocationCwd, 
       ? null
       : typeof runtime.instructionRoot === "string"
         ? resolveRegistrationRoot(runtime.instructionRoot, "instructionRoot", invocationCwd)
-        : productOverride !== null && ["claude", "codex"].includes(options.surfaces[0])
+        : productOverride !== null && isSurface(options.surfaces[0])
           ? productRoot
           : resolveNativeInstructionRoot(options.surfaces[0], { env: process.env, homeDir: homedir(), platform: process.platform });
     const plan = planNativeRegistration({

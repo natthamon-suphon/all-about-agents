@@ -17,7 +17,7 @@ native tool registered, trusted, active, or runtime verified the skill. Use
 ## Canonical source
 
 The canonical source is `core/skills/<skill-name>/`. Do not edit a generated
-Claude or Codex copy as the source.
+Antigravity, Claude, or Codex copy as the source.
 
 ## New-skill update flow
 

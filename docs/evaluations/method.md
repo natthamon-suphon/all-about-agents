@@ -13,8 +13,8 @@ For the separate native mutation and lifecycle record, use
 [native verification](../maintenance/native-verification.md).
 
 The global behavior source is
-`core/instructions/global-operating-rules.md`. Claude and Codex render it
-into their documented global files. Project and plugin rules
+`core/instructions/global-operating-rules.md`. Every surface renders it
+into its documented global file. Project and plugin rules
 are a second, more specific layer. The presentation contract checks the emoji
 after each visible name, a short reason, and a 2-to-7 item checklist. This is
 model guidance, not a UI guarantee.
@@ -72,8 +72,9 @@ that describes an unknown or manual capability remains a warning only when the
 artifact also explicitly prevents automatic use.
 
 Gate 0 also checks that the exact global destinations are documented:
-`<CLAUDE_CONFIG_DIR>/CLAUDE.md` and `<CODEX_HOME>/AGENTS.md`. It checks that
-`CLAUDE.local.md` and `GEMINI.local.md` are not used as global destinations,
+`<CLAUDE_CONFIG_DIR>/CLAUDE.md`, `<CODEX_HOME>/AGENTS.md`, and
+`~/.gemini/GEMINI.md`. It checks that `CLAUDE.local.md` and `GEMINI.local.md`
+are not used as global destinations,
 and that the receiving-machine order is:
 
 ```text
@@ -136,6 +137,10 @@ following:
 - Codex marketplace add, plugin add, exact installed/enabled JSON discovery,
   and hook files inside the discovered installed package. All Codex state is
   under a disposable `CODEX_HOME`. Hook trust remains `NOT_RUN`.
+- Antigravity package validation through `agy plugin validate`, then install and
+  plugin/agent discovery. There is no hook-file or hook-trust check: the surface
+  renders no hooks. A runtime question must run from a directory with no
+  `.agents/` folder, or it cannot say which copy of the package answered.
 
 Native product commands use explicit executable arguments and `shell: false`.
 The child environment starts from a small allowlist. Home, config, cache, and
@@ -331,10 +336,15 @@ and both statusline profiles. Codex CLI 0.151.0-alpha.7.2 passed disposable
 marketplace registration, plugin install, exact installed discovery, and
 installed hook-file checks. The isolated CLI roots contained no credentials,
 and no macOS host was available.
-Therefore authenticated Claude/Codex execution, hook and permission behavior,
-persistence, Codex Desktop, macOS, and all unexecuted Gate 2
-checks and Gate 3 fresh-session evaluation remain `NOT_RUN_UNAVAILABLE` or
-`NOT_RUN`. Partial evidence cannot support
+The Antigravity surface was checked separately on `agy 1.2.7` on 2026-09-19:
+package validation, install, plugin and agent discovery, and one headless
+session that named real skills and the inlined routing contract. Antigravity
+Desktop has no headless mode and stays `NOT_RUN_UNAVAILABLE`.
+
+Therefore authenticated execution on any surface, hook and permission behavior,
+persistence, Codex Desktop, Antigravity Desktop, macOS, and all unexecuted
+Gate 2 checks and Gate 3 fresh-session evaluation remain `NOT_RUN_UNAVAILABLE`
+or `NOT_RUN`. Partial evidence cannot support
 a broader behavioral, routing, model-fallback, hook, or persistence release
 claim and is not evidence that unrun checks pass.
 

@@ -6,6 +6,7 @@
   "reasoning": "maximum-supported",
   "advisor": "fable",
   "modelPolicies": {
+    "antigravity": "approved-gemini-pro",
     "claude": "approved-opus-sonnet",
     "codex": "approved-sol-terra"
   }

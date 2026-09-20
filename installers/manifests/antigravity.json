@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "surface": "antigravity",
+  "product": "Antigravity CLI (agy) and Antigravity Desktop",
+  "productVersion": "1.2.7",
+  "package": "all-about-agents",
+  "pluginManifest": "plugin.json",
+  "pluginRegistration": {
+    "marketplace": null,
+    "validateArgs": [
+      "plugin",
+      "validate",
+      "PACKAGE_ROOT"
+    ],
+    "installArgs": [
+      "plugin",
+      "install",
+      "PACKAGE_ROOT"
+    ],
+    "discoveryArgs": [
+      "plugin",
+      "list"
+    ]
+  },
+  "configRoot": {
+    "environment": null,
+    "fallback": "~/.gemini",
+    "sharedBy": [
+      "antigravity-cli",
+      "antigravity-desktop"
+    ]
+  },
+  "components": {
+    "pluginManifest": "plugin.json",
+    "instructions": "GEMINI.md",
+    "globalInstructions": "GEMINI.md",
+    "skills": "skills/{skill}/SKILL.md",
+    "agents": "agents/{role}.md",
+    "manualDesktop": "docs/manual-desktop.md",
+    "readme": "README.md"
+  },
+  "profileContract": {
+    "source": "profiles/{profile}/profile.json",
+    "modelPolicyRefs": [
+      "surface-default",
+      "approved-gemini-pro"
+    ]
+  },
+  "profiles": {
+    "portable": {
+      "model": null,
+      "effort": null
+    },
+    "template": {
+      "model": "gemini-3.1-pro-high",
+      "effort": "high",
+      "selection": "manual"
+    }
+  },
+  "semanticCapabilities": {
+    "repository-read": [
+      "GEMINI.md"
+    ],
+    "repository-write": [
+      "GEMINI.md"
+    ],
+    "web-primary-sources": [
+      "search_web"
+    ],
+    "isolated-write": [
+      "write_file"
+    ],
+    "command-execution": [
+      "run_shell_command"
+    ],
+    "filesystem-read": [
+      "read_file"
+    ],
+    "filesystem-write": [
+      "write_file"
+    ],
+    "git-read": [
+      "run_shell_command"
+    ],
+    "git-write": [
+      "run_shell_command"
+    ],
+    "test-execution": [
+      "run_shell_command"
+    ],
+    "external-research": [
+      "search_web"
+    ],
+    "evaluation": [
+      "run_shell_command"
+    ],
+    "role-dispatch": [
+      "invoke_subagent"
+    ],
+    "schema-validation": [
+      "run_shell_command"
+    ],
+    "native-rendering": [
+      "plugin"
+    ],
+    "workflow-state": [
+      "GEMINI.md"
+    ]
+  },
+  "ownedPaths": [
+    "GEMINI.md",
+    "README.md",
+    "agents/{role}.md",
+    "docs/manual-desktop.md",
+    "plugin.json",
+    "skills/{skill}/**",
+    "skills/{skill}/SKILL.md"
+  ],
+  "presentation": {
+    "registry": "core/presentation/emoji-registry.json",
+    "progressContract": "core/presentation/progress-contract.json",
+    "renderedIn": "GEMINI.md and native skill/role prompts"
+  },
+  "rootInstructionContext": "GEMINI.md is emitted with the canonical global body first, then the inlined using-all-about-agents routing contract, then Antigravity rules and the presentation catalog; a workspace GEMINI.md remains the more specific layer",
+  "hooks": {
+    "rendered": false,
+    "reason": "Antigravity documents PreToolUse, PostToolUse, PreInvocation, PostInvocation, and Stop. There is no SessionStart event, so the routing contract is inlined into GEMINI.md instead of injected by a hook."
+  },
+  "statusline": {
+    "rendered": false,
+    "reason": "The removed adapters built a status line command from a plugin path the product never creates, so the rendered status line could not run."
+  },
+  "nativeValidation": {
+    "command": [
+      "agy",
+      "plugin",
+      "validate",
+      "PACKAGE_ROOT"
+    ],
+    "requiredWhenAvailable": true
+  },
+  "capabilityEvidence": {
+    "productContracts": "docs/evaluations/research-antigravity.md",
+    "restorationPlan": "docs/plans/2026-09-19-restore-antigravity.md"
+  }
+}

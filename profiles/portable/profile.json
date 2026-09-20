@@ -6,6 +6,7 @@
   "reasoning": "surface-default",
   "advisor": "disabled",
   "modelPolicies": {
+    "antigravity": "surface-default",
     "claude": "surface-default",
     "codex": "surface-default"
   }

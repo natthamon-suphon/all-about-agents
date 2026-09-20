@@ -5,8 +5,9 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import test from "node:test";
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 
-const surfaces = ["claude", "codex"];
+const surfaces = ["antigravity", "claude", "codex"];
 const manifestGlobalNames = new Map([
+  ["antigravity", "GEMINI.md"],
   ["claude", "CLAUDE.md"],
   ["codex", "AGENTS.md"]
 ]);

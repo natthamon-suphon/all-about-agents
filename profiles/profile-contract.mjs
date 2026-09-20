@@ -4,6 +4,7 @@ import profileSchema from "../core/schemas/profile.schema.json" with { type: "js
 import { validateSchema } from "../installers/lib/validate-schema.mjs";
 
 export const PROFILE_MODEL_POLICY_REFS = Object.freeze({
+  antigravity: Object.freeze(["surface-default", "approved-gemini-pro"]),
   claude: Object.freeze(["surface-default", "approved-opus-sonnet"]),
   codex: Object.freeze(["surface-default", "approved-sol-terra"]),
 

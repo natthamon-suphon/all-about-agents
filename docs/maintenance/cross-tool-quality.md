@@ -29,7 +29,7 @@ behavior.
 
 ## Eight-step checklist for any tool or session
 
-Copy this checklist into a new Claude Code or Codex session. It keeps the same
+Copy this checklist into a new Antigravity, Claude Code, or Codex session. It keeps the same
 quality on Windows and macOS:
 
 ```text
@@ -57,7 +57,8 @@ native product loaded the package.
 
 Review the surface capability record and compatibility page together. Check
 the statusline block and display name for Claude. Check the explicit Terra
-recovery profile for Codex.
+recovery profile for Codex. Check that Antigravity still renders no hooks and
+no status line, and that its `GEMINI.md` keeps the inlined routing contract.
 
 ## Disposable-root checks
 
@@ -76,6 +77,15 @@ and creates no backup. Never use a broad or guessed destination.
 
 Native checks need the real product, exact version, exact discovery root, and a
 fresh session. Record only behavior that was observed.
+
+### Antigravity
+
+Restart `agy` after registration or package changes. Confirm the loaded
+`GEMINI.md` heading, that a `Routing contract` section is present, plugin and
+skill discovery, and that `agy agents` lists all seven roles. Run the check
+from a directory with no `.agents/` folder, or the answer cannot say which copy
+of the package was loaded. Antigravity Desktop has no headless mode; test it by
+hand or record it as `NOT_RUN_UNAVAILABLE`.
 
 ### Claude Code
 

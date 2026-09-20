@@ -48,7 +48,7 @@ complete while a later registration silently fails its native steps. Confirm
 each binary you intend to register:
 
 ```powershell
-Get-Command claude, codex -ErrorAction SilentlyContinue |
+Get-Command agy, claude, codex -ErrorAction SilentlyContinue |
   Select-Object Name, Source
 ```
 
@@ -116,7 +116,7 @@ control or ANSI characters.
 
 ## Disposable roots for every surface
 
-Use a separate root when inspecting the Codex package:
+Use a separate root when inspecting each non-Claude package:
 
 ```powershell
 $CodexRoot = Join-Path $env:TEMP "all-about-agents-codex"
@@ -126,10 +126,18 @@ pwsh -NoProfile -File .\installers\install.ps1 install --surface codex --destina
 pwsh -NoProfile -File .\installers\install.ps1 install --surface codex --destination-root $CodexRoot --apply
 ```
 
+```powershell
+$AntigravityRoot = Join-Path $env:TEMP "all-about-agents-antigravity"
+New-Item -ItemType Directory -Path $AntigravityRoot -Force | Out-Null
+
+pwsh -NoProfile -File .\installers\install.ps1 install --surface antigravity --destination-root $AntigravityRoot --dry-run
+pwsh -NoProfile -File .\installers\install.ps1 install --surface antigravity --destination-root $AntigravityRoot --apply
+```
+
 These commands do not write live native roots, register a native plugin, or
 enable hooks automatically.
 
-To render both packages in one disposable tree, use one more explicit root:
+To render every package in one disposable tree, use one more explicit root:
 
 ```powershell
 $AllRoot = Join-Path $env:TEMP "all-about-agents-all"
@@ -138,7 +146,8 @@ pwsh -NoProfile -File .\installers\install.ps1 install --surface all --destinati
 pwsh -NoProfile -File .\installers\install.ps1 install --surface all --destination-root $AllRoot --statusline-name "<YOUR_NAME>" --apply
 ```
 
-The all-surface tree is namespaced by surface (`claude/` and `codex/`).
+The all-surface tree is namespaced by surface (`antigravity/`, `claude/`, and
+`codex/`).
 
 ## Policy and limitations
 
@@ -149,6 +158,7 @@ and manual registration require the product-specific procedure; they are not
 performed by these commands.
 
 See the [repository overview](../../README.md), [surface manifests](../../installers/manifests/claude.json),
+[Antigravity compatibility notes](../compatibility/antigravity.md),
 [Claude compatibility notes](../compatibility/claude.md),
 [Codex compatibility notes](../compatibility/codex.md), and the
 [evaluation method and current limitations](../evaluations/method.md). After an

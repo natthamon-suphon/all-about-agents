@@ -114,7 +114,7 @@ control or ANSI characters.
 
 ## Disposable roots for every surface
 
-Use a separate root when inspecting the Codex package:
+Use a separate root when inspecting each non-Claude package:
 
 ```sh
 CODEX_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/all-about-agents-codex.XXXXXX")"
@@ -123,10 +123,17 @@ bash ./installers/install.sh install --surface codex --destination-root "$CODEX_
 bash ./installers/install.sh install --surface codex --destination-root "$CODEX_ROOT" --apply
 ```
 
+```sh
+ANTIGRAVITY_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/all-about-agents-antigravity.XXXXXX")"
+
+bash ./installers/install.sh install --surface antigravity --destination-root "$ANTIGRAVITY_ROOT" --dry-run
+bash ./installers/install.sh install --surface antigravity --destination-root "$ANTIGRAVITY_ROOT" --apply
+```
+
 These commands do not write live native roots, register a native plugin, or
 enable hooks automatically.
 
-To render both packages in one disposable tree, use one more explicit root:
+To render every package in one disposable tree, use one more explicit root:
 
 ```sh
 ALL_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/all-about-agents-all.XXXXXX")"
@@ -134,7 +141,8 @@ bash ./installers/install.sh install --surface all --destination-root "$ALL_ROOT
 bash ./installers/install.sh install --surface all --destination-root "$ALL_ROOT" --statusline-name "<YOUR_NAME>" --apply
 ```
 
-The all-surface tree is namespaced by surface (`claude/` and `codex/`).
+The all-surface tree is namespaced by surface (`antigravity/`, `claude/`, and
+`codex/`).
 
 ## Policy and limitations
 
@@ -145,6 +153,7 @@ and manual registration require the product-specific procedure; they are not
 performed by these commands.
 
 See the [repository overview](../../README.md), [surface manifests](../../installers/manifests/claude.json),
+[Antigravity compatibility notes](../compatibility/antigravity.md),
 [Claude compatibility notes](../compatibility/claude.md),
 [Codex compatibility notes](../compatibility/codex.md), and the
 [evaluation method and current limitations](../evaluations/method.md). After an

@@ -1,5 +1,7 @@
 # Claude Code compatibility
 
+Sibling pages: [Antigravity](antigravity.md) and [Codex](codex.md).
+
 This page describes the Claude package and its native boundary. The observed
 runtime is Claude Code `2.1.251` on Windows. The T07 disposable checks passed
 strict validation, local marketplace registration, plugin discovery, and both

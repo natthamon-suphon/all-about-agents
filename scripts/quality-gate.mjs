@@ -48,6 +48,8 @@ const QUICK_CHECKS = Object.freeze([
 const FULL_ONLY_CHECKS = Object.freeze([
   check("full-test-suite", process.execPath, ["--test"], { timeoutMs: FULL_TIMEOUT_MS }),
   check("model-suite-age", process.execPath, ["tests/model/suite-age.mjs"], { required: false }),
+  // The Antigravity CLI binary is `agy`, not the surface name.
+  check("native-antigravity-version", "agy", ["--version"], { required: false }),
   check("native-claude-version", "claude", ["--version"], { required: false }),
   check("native-codex-version", "codex", ["--version"], { required: false })
 ]);

@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "surface": "antigravity",
+  "checkedAt": "2026-09-19",
+  "productVersion": "1.2.7",
+  "capabilities": [
+    {
+      "feature": "instructions.global",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-09-19",
+      "productVersion": "1.2.7",
+      "value": {
+        "package": "GEMINI.md",
+        "destination": "~/.gemini/GEMINI.md",
+        "guard": "no-clobber",
+        "consumers": [
+          "antigravity-cli",
+          "antigravity-desktop"
+        ]
+      },
+      "notes": "A headless agy session quoted the first heading of the live file, so the product loads it. The destination is shared with operator-owned sections, so registration refuses to replace a differing file instead of overwriting it."
+    },
+    {
+      "feature": "skills.discovery",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-09-19",
+      "productVersion": "1.2.7",
+      "value": {
+        "plugin": "skills/<skill>/SKILL.md",
+        "workspace": "<workspace>/.agents/plugins/<plugin>/skills/<skill>/SKILL.md"
+      },
+      "notes": "agy plugin validate reported '28 processed' for this layout, and a headless agy session named three real skill folders while running from a directory with no .agents folder, so the global install is active on its own."
+    },
+    {
+      "feature": "agents.discovery",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-09-19",
+      "productVersion": "1.2.7",
+      "value": {
+        "plugin": "agents/<role>.md",
+        "format": "Markdown with YAML frontmatter",
+        "listCommand": "agy agents"
+      },
+      "notes": "agy plugin validate reported '7 processed' and agy agents listed all seven role names from outside any workspace that carries its own copy."
+    },
+    {
+      "feature": "install.plugin",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-09-19",
+      "productVersion": "1.2.7",
+      "value": {
+        "validate": "agy plugin validate <directory>",
+        "command": "agy plugin install <directory>",
+        "path": "~/.gemini/config/plugins/<name>/",
+        "requiresGitRepository": false
+      },
+      "notes": "install accepts a plain local directory; unlike codex plugin add it does not clone the source with git. The installed copy does not follow later renders, so re-running install is required after every package update."
+    },
+    {
+      "feature": "commands.plugin",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-09-19",
+      "productVersion": "1.2.7",
+      "value": {
+        "commands": [
+          "agy plugin list",
+          "agy plugin validate <path>",
+          "agy plugin install <path>",
+          "agy plugin uninstall <name>",
+          "agy plugin enable <name>",
+          "agy plugin disable <name>"
+        ]
+      },
+      "notes": "Read from agy plugin --help on 1.2.7. plugin validate reports the processed count for skills, agents, commands, mcpServers, and hooks; a rules folder is not a processed component."
+    },
+    {
+      "feature": "plugin.manifest",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-09-19",
+      "productVersion": "1.2.7",
+      "value": {
+        "path": "plugin.json",
+        "location": "package root",
+        "documentedProperties": [
+          "name",
+          "description"
+        ]
+      },
+      "notes": "Pointing agy plugin validate at a package whose manifest sits in .claude-plugin/ fails with 'missing plugin.json', so the manifest must be at the root."
+    },
+    {
+      "feature": "model.cli",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-09-19",
+      "productVersion": "1.2.7",
+      "value": "gemini-3.1-pro-high",
+      "notes": "agy models listed the slug. Selection is manual through --model or /model."
+    },
+    {
+      "feature": "effort.cli",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-09-19",
+      "productVersion": "1.2.7",
+      "value": "high",
+      "notes": "agy --help documents --effort low|medium|high. No higher level is documented."
+    },
+    {
+      "feature": "hooks.lifecycle",
+      "support": "unknown",
+      "stability": "unknown",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-08-31",
+      "productVersion": "1.1.22",
+      "value": {
+        "events": [
+          "PreToolUse",
+          "PostToolUse",
+          "PreInvocation",
+          "PostInvocation",
+          "Stop"
+        ],
+        "sessionStart": false,
+        "inheritedFrom": "adapters/agy/capabilities.json at 8cbfd3b^"
+      },
+      "notes": "INFERRED, not re-verified. The event list and the absence of SessionStart come from the removed agy adapter's 2026-08-31 record for agy 1.1.22. agy 1.2.7 publishes no hook documentation through its CLI, so the list could not be re-checked. Because no event can be named with current evidence, this adapter renders no hook files and the routing contract is inlined into GEMINI.md instead."
+    },
+    {
+      "feature": "statusline.native",
+      "support": "unknown",
+      "stability": "unknown",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-09-19",
+      "productVersion": "1.2.7",
+      "value": {
+        "settingsPath": "~/.gemini/antigravity-cli/settings.json"
+      },
+      "notes": "A statusLine key exists in the settings file, but the removed adapters pointed it at a plugin path the product never creates and the dead entry had to be removed by hand on 2026-09-19. No status line is rendered until a working command is observed."
+    },
+    {
+      "feature": "desktop.discovery",
+      "support": "unknown",
+      "stability": "unknown",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-09-19",
+      "productVersion": "1.2.7",
+      "value": {
+        "workspace": "<workspace>/.agents/plugins/<plugin>/",
+        "global": "~/.gemini/config/plugins/<plugin>/"
+      },
+      "notes": "ASSUMPTION MADE: Desktop reads the per-workspace slot. The source is a 2026-09-03 note, not a check on the current build. Desktop has no headless mode, so this stays NOT_RUN_UNAVAILABLE until someone opens it and asks."
+    }
+  ]
+}

@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import { validateNativeIntegrationRecord } from "./native-state.mjs";
 import { GLOBAL_INSTRUCTION_SOURCE_PATH } from "../../installers/lib/global-instructions.mjs";
+import { SURFACES } from "./surfaces.mjs";
 
-export const SURFACES = Object.freeze(["claude", "codex"]);
+export { SURFACES };
 const RENDER_RESULT_KEYS = new Set(["files", "registrations", "diagnostics", "ownership"]);
 const FILE_KEYS = new Set(["relativePath", "content", "mode"]);
 const DIAGNOSTIC_KEYS = new Set(["code", "severity", "message", "sourcePath"]);

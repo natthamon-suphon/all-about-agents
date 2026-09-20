@@ -6,8 +6,9 @@ import { hashBytes, SHA256_HEX } from "./hash.mjs";
 import { atomicReplaceFile } from "./atomic-write.mjs";
 import { mergeManagedState, serializeManagedState, STATE_RELATIVE_PATH, writeManagedState } from "./state.mjs";
 import { createApplyResult, failedAction } from "./report.mjs";
+import { SURFACE_SET } from "../../adapters/shared/surfaces.mjs";
 
-const SURFACES = new Set(["claude", "codex"]);
+const SURFACES = SURFACE_SET;
 const PROFILES = new Set(["portable", "template"]);
 const ACTION_KINDS = new Set(["create", "replace", "unchanged", "prune", "reject"]);
 const CONTENT_KINDS = new Set(["create", "replace", "unchanged"]);

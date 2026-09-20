@@ -5,15 +5,17 @@ import { basename, dirname, isAbsolute, relative, resolve, join } from "node:pat
 
 import { renderClaudeStatuslineCommand, resolveClaudeConfigDir } from "../../adapters/claude/adapter.mjs";
 import { resolveCodexHome } from "../../adapters/codex/adapter.mjs";
+import { resolveGeminiHome } from "../../adapters/antigravity/adapter.mjs";
 import { assertSafeDestinationRoot } from "./roots.mjs";
 import { mergeSettingsOverlay } from "./settings-overlay.mjs";
 import { atomicReplaceFile } from "./atomic-write.mjs";
 import { hashBytes } from "./hash.mjs";
 import { parseManagedState, STATE_RELATIVE_PATH } from "./state.mjs";
 import { runProcess as defaultRunProcess } from "../../scripts/lib/process-runner.mjs";
+import { SURFACES, SURFACE_SET as SUPPORTED_SURFACE_SET } from "../../adapters/shared/surfaces.mjs";
 
-export const REGISTRATION_SURFACES = Object.freeze(["claude", "codex"]);
-const SURFACE_SET = new Set(REGISTRATION_SURFACES);
+export const REGISTRATION_SURFACES = SURFACES;
+const SURFACE_SET = SUPPORTED_SURFACE_SET;
 const PROFILE_SET = new Set(["portable", "template"]);
 const SHA256 = /^[0-9a-f]{64}$/u;
 const AUTHENTIC_PLANS = new WeakSet();
@@ -66,11 +68,12 @@ function sameRoot(left, right) {
 
 function assertRootPair(surface, productRoot, instructionRoot) {
   if (typeof productRoot !== "string" || typeof instructionRoot !== "string") throw pathError("instruction-root-required", "native registration requires both productRoot and instructionRoot");
-  if (surface !== "claude" && surface !== "codex") throw pathError("unsupported-surface", `unsupported registration surface: ${surface}`);
+  if (!SURFACE_SET.has(surface)) throw pathError("unsupported-surface", `unsupported registration surface: ${surface}`);
   if (!sameRoot(productRoot, instructionRoot)) throw pathError("root-confusion", `${surface} productRoot and instructionRoot must be the same canonical path`);
 }
 
 function requiredPackageFiles(surface) {
+  if (surface === "antigravity") return ["plugin.json"];
   return surface === "claude"
     ? [".claude-plugin/plugin.json", ".claude-plugin/marketplace.json"]
     : [".codex-plugin/plugin.json", ".agents/plugins/marketplace.json"];
@@ -79,6 +82,7 @@ function requiredPackageFiles(surface) {
 function requiredRegistrationSourceFiles(surface, profile) {
   const markers = requiredPackageFiles(surface);
   if (surface === "claude") return [...markers, "CLAUDE.md", "settings.json", "all-about-agents/statusline.json", "statusline/statusline.mjs", "statusline/track-tool.mjs", "statusline/statusline.ps1", "statusline/statusline.sh"];
+  if (surface === "antigravity") return [...markers, "GEMINI.md", ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.md`)];
   if (surface === "codex") return [...markers, "AGENTS.md", "config.toml", ...(profile === "template" ? ["terra-max.config.toml"] : []), ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.toml`)];
   return markers;
 }
@@ -246,6 +250,15 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push(processAction("codex-plugin-install", "codex", ["plugin", "add", "all-about-agents@all-about-agents", "--json"], pkg, "CODEX_HOME", "json"));
     actions.push(processAction("codex-plugin-list", "codex", ["plugin", "list", "--available", "--json"], pkg, "CODEX_HOME", "json", false));
     actions.push(manualAction("codex-hooks-trust", "Open `/hooks` in Codex and review/trust the registered hook only if the product presents that step."));
+  } else if (surface === "antigravity") {
+    // GEMINI.md is not a superset of the live file the way CLAUDE.md is: an
+    // operator may keep unrelated always-on sections there. Refuse rather than
+    // replace. See docs/plans/2026-09-19-restore-antigravity.md decision A6.
+    actions.push(deployFile("antigravity-instructions-deploy", "GEMINI.md", "GEMINI.md", { guard: "no-clobber" }, instruction));
+    actions.push(processAction("antigravity-plugin-validate", "agy", ["plugin", "validate", pkg], pkg, null, "none", false));
+    actions.push(processAction("antigravity-plugin-install", "agy", ["plugin", "install", pkg], pkg, null, "none"));
+    actions.push(processAction("antigravity-plugin-list", "agy", ["plugin", "list"], pkg, null, "json", false));
+    actions.push(manualAction("antigravity-desktop-slot", "Copy plugin.json, skills/, and agents/ into <workspace>/.agents/plugins/all-about-agents/ for Antigravity Desktop; see docs/manual-desktop.md."));
   }
 
   const plan = {
@@ -481,12 +494,14 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
 }
 
 export function resolveNativeProductRoot(surface, { env = process.env, homeDir = homedir(), platform = process.platform } = {}) {
+  if (surface === "antigravity") return resolveGeminiHome({ env, homeDir, platform });
   if (surface === "claude") return resolveClaudeConfigDir({ env, homeDir, platform });
   if (surface === "codex") return resolveCodexHome({ env, homeDir, platform });
   return null;
 }
 
 export function resolveNativeInstructionRoot(surface, { env = process.env, homeDir = homedir(), platform = process.platform } = {}) {
+  if (surface === "antigravity") return resolveGeminiHome({ env, homeDir, platform });
   if (surface === "claude") return resolveClaudeConfigDir({ env, homeDir, platform });
   if (surface === "codex") return resolveCodexHome({ env, homeDir, platform });
   throw pathError("unsupported-surface", `unsupported registration surface: ${String(surface)}`);

@@ -8,6 +8,82 @@ All notable changes to all-about-agents. The format follows
 
 ### Added
 
+- `antigravity` is a supported surface again, alongside `claude` and `codex`.
+  `--surface antigravity` renders a plugin the `agy` CLI reads directly:
+  `plugin.json` at the package root, `skills/{skill}/SKILL.md`,
+  `agents/{role}.md`, and `GEMINI.md`. `register --apply` runs
+  `agy plugin validate`, `agy plugin install`, and `agy plugin list`.
+  This reverses decision D6 of the 2026-09-18 simplification, which cut the
+  surface on effort grounds rather than a technical limit. See
+  `docs/plans/2026-09-19-restore-antigravity.md` and
+  `docs/compatibility/antigravity.md`.
+
+  Three consequences for an existing machine:
+
+  - `--surface all` now means three surfaces. A rerun renders one more package
+    and, with a single explicit root, adds `<root>/antigravity` beside the two
+    existing namespaces. Sibling packages are untouched.
+  - `GEMINI.md` is deployed with a no-clobber guard, unlike `CLAUDE.md`. The
+    Claude render is a superset of the live file, so overwriting is safe there;
+    the Antigravity render is not, because the Gemini home may hold always-on
+    sections this package does not own. A differing destination reports
+    `manual-required` and nothing is written.
+  - Antigravity documents no environment variable for its home, so a dry-run
+    would resolve to the operator's live `~/.gemini`. The installer therefore
+    defines `AAA_ANTIGRAVITY_ROOT` for qualification runs. It is this
+    repository's variable, not the product's.
+
+  The package renders no hooks and no status line. Antigravity has no
+  `SessionStart` event, so the `using-all-about-agents` routing contract is
+  inlined into `GEMINI.md` instead of injected; it is the first surface where
+  that is necessary. The removed adapters' status line pointed at a plugin path
+  the product never creates.
+
+  The old two-surface design (`agy` plus `antigravity-2`) is not restored. One
+  neutral payload replaces both, which removes the shared-plugin-root collision
+  that design caused. `tests/static/surface-scope.test.mjs` still forbids the
+  old adapter paths, and still forbids the commands, workflows, and quarantine
+  that D6 also cut.
+
+- `GEMINI.md` at the repository root is the Antigravity contributor entry point,
+  beside `AGENTS.md` and `CLAUDE.md`. `tests/static/contributor-entrypoints.test.mjs`
+  now holds all three to the same minimum protocol instead of spot-checking one.
+- `docs/evaluations/research-antigravity.md` records the primary-source product
+  observations for `agy 1.2.7`: the command contract, the plugin package shape,
+  the missing `SessionStart` event, the model list, and what was not run. The
+  adapter capability records and the manifest cite it, matching how the other
+  two surfaces carry their evidence.
+- `core/schemas/capability.schema.json` accepts `antigravity` as a surface. It
+  did not, and `tests/static/capabilities.test.mjs` enumerated two surfaces, so
+  `adapters/antigravity/capabilities.json` was never schema-validated. The test
+  now covers every supported surface.
+- The operator-facing guides name the third surface where it changes what to do:
+  global instructions and their destinations, native registration and
+  verification, sync and update, cross-tool quality, known limitations, the
+  evaluation method, both platform setup pages, and companion tooling. The
+  Caveman section of `docs/setup/companion-tooling.md` gained the Antigravity
+  route, which previously could not be written down here.
+
+- `npm run setup` refuses a surface subset inside a package root this repository
+  already manages as a whole (`surface-subset-in-managed-root`). `--surface all`
+  keeps one managed state at the root, while a subset writes a second one inside
+  `<root>/<surface>`; registration prefers the nested state, so the two drift
+  apart on the next render and the surface fails with a hash mismatch. Manage a
+  root with `--surface all` or with subsets, never both.
+- A registration step that exits 0 while refusing a guarded file is no longer
+  summarized as a plain success. `register --apply` reports `manual-required`
+  for a no-clobber destination that already differs, and `setup` now names those
+  steps in its report, so a refused `GEMINI.md` or `config.toml` deploy is
+  visible instead of hidden behind the exit code.
+
+- The supported surface list now has a single source,
+  `adapters/shared/surfaces.mjs`. It had been duplicated across eleven modules,
+  so adding a surface by hand would almost certainly have missed one.
+  `installers/lib/audit-log.mjs` keeps its own copy on purpose: that file is
+  embedded verbatim into every rendered package as `hooks/audit-log.mjs`, where
+  no repository path resolves. Its list stays `claude` and `codex` because only
+  those surfaces render the hooks that write audit events.
+
 - `docs/setup/companion-tooling.md` now covers Caveman: what it does not ship (no
   lifecycle hook of its own), where the skills live, how to wire a `SessionStart`
   activation hook for Claude Code and Codex, and how to verify it with a live

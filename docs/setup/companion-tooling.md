@@ -130,9 +130,8 @@ operator-owned folder:
 ~/.config/caveman/config.json       {"defaultMode": "full"}
 ```
 
-Copy that folder to the new machine, then wire each product. The full
-procedure, including hosts outside this repository's scope, is kept next to the
-files in `~/.caveman/README.md`.
+Copy that folder to the new machine, then wire each product. A longer copy of
+the same procedure is kept next to the files in `~/.caveman/README.md`.
 
 Claude Code reads a `SessionStart` hook straight from user settings. Merge this
 into `~/.claude/settings.json`; do not replace the file, which also holds your
@@ -180,6 +179,33 @@ codex plugin marketplace add ~/.caveman/codex-plugin
 codex plugin add caveman@caveman
 ```
 
+Antigravity has no hook to use. Its lifecycle events are `PreToolUse`,
+`PostToolUse`, `PreInvocation`, `PostInvocation`, and `Stop`; there is no
+`SessionStart`. Hooks written into `~/.gemini/settings.json` or
+`~/.gemini/antigravity-cli/settings.json` did not fire in testing.
+
+Put the text in the always-loaded instruction file instead. Back it up first,
+then append a delimited section so it can be removed in one cut:
+
+```text
+## Caveman mode (always on)
+
+CAVEMAN MODE ACTIVE - level: full
+
+<body of ~/.claude/skills/caveman/SKILL.md, YAML frontmatter stripped>
+```
+
+That file is also where this repository deploys the Antigravity global
+instructions, and the deploy is guarded: `register --apply` reports
+`manual-required` rather than replacing a file that already differs. So the
+caveman section survives a registration, and after a package update the two
+bodies are merged by hand. Keep the marker heading so a later edit or removal
+stays one operation.
+
+Trade-off: the level here is **static**. Claude Code and Codex follow
+`~/.config/caveman/config.json` live; this copy is edited by hand. Setting
+`{"defaultMode": "off"}` does not reach Antigravity.
+
 ### Verify
 
 Ask the product itself, in a fresh session:
@@ -187,6 +213,7 @@ Ask the product itself, in a fresh session:
 ```text
 claude -p "Is caveman mode active? Name the level."
 codex exec "One short line: is caveman mode active and at what level?"
+agy -p "One short line: is caveman mode active and at what level?"
 ```
 
 A hook that is written but never fires is the common failure, and only a live

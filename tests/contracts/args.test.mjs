@@ -27,7 +27,7 @@ test("T046 creates every owned artifact", async () => {
 test("parseArgs selects install, all surfaces, portable profile, and dry-run by default", () => {
   assert.deepEqual(parseArgs([]), {
     action: "install",
-    surfaces: ["claude", "codex"],
+    surfaces: ["antigravity", "claude", "codex"],
     profile: "portable",
     mode: "dry-run",
     destinationRoot: null,
@@ -39,7 +39,7 @@ test("parseArgs selects install, all surfaces, portable profile, and dry-run by 
 
 test("parseArgs accepts every public action, surface, profile, mode, root, and format", () => {
   for (const action of ["install", "doctor", "validate", "diff", "eval"]) {
-    for (const surface of ["claude", "codex"]) {
+    for (const surface of ["antigravity", "claude", "codex"]) {
       const parsed = parseArgs([action, "--surface", surface, "--profile", "template", "--apply", "--destination-root", "fixture", "--format", "json"]);
       assert.equal(parsed.action, action);
       assert.deepEqual(parsed.surfaces, [surface]);
@@ -49,7 +49,7 @@ test("parseArgs accepts every public action, surface, profile, mode, root, and f
       assert.equal(parsed.format, "json");
     }
   }
-  assert.deepEqual(parseArgs(["--surface", "all"]).surfaces, ["claude", "codex"]);
+  assert.deepEqual(parseArgs(["--surface", "all"]).surfaces, ["antigravity", "claude", "codex"]);
 });
 
 test("parseArgs accepts register with one surface and package root, and defaults to dry-run", () => {

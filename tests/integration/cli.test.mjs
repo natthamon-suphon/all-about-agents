@@ -75,7 +75,7 @@ test("register binds real single-surface and namespaced multi-surface packages t
     const aggregateRoot = resolve(root, "aggregate");
     const aggregateInstall = await capture(["install", "--surface", "all", "--profile", "template", "--statusline-name", "State binding", "--destination-root", aggregateRoot, "--apply", "--format", "json"]);
     assert.equal(aggregateInstall.code, 0, aggregateInstall.stderr);
-    for (const surface of ["claude", "codex"]) {
+    for (const surface of ["antigravity", "claude", "codex"]) {
       const result = await capture(["register", "--surface", surface, "--profile", "template", "--package-root", resolve(aggregateRoot, surface), "--format", "json"], { productRoot });
       assert.equal(result.code, 0, `${surface}: ${result.stderr}`);
       const report = jsonOutput(result);
@@ -183,30 +183,36 @@ test("validate all reports both profiles and all public adapter surfaces", async
   assert.equal(result.code, 0, result.stderr);
   const report = jsonOutput(result);
   assert.deepEqual(report.profiles, ["portable", "template"]);
-  assert.deepEqual(report.surfaces, ["claude", "codex"]);
+  assert.deepEqual(report.surfaces, ["antigravity", "claude", "codex"]);
   assert.equal(report.status, "pass");
 });
 
-test("two-surface production plans preflight completely before any write", async () => {
+test("multi-surface production plans preflight completely before any write", async () => {
   await withTempRoot(async (root) => {
     const previousClaude = process.env.CLAUDE_CONFIG_DIR;
     const previousCodex = process.env.CODEX_HOME;
+    const previousAntigravity = process.env.AAA_ANTIGRAVITY_ROOT;
     process.env.CLAUDE_CONFIG_DIR = resolve(root, "claude");
     process.env.CODEX_HOME = resolve(root, "codex");
+    process.env.AAA_ANTIGRAVITY_ROOT = resolve(root, "antigravity");
     try {
       const entries = await renderPlans({
         action: "install",
         mode: "apply",
         profile: "portable",
-        surfaces: ["claude", "codex"],
+        surfaces: ["antigravity", "claude", "codex"],
         destinationRoot: null,
         statuslineName: "",
         format: "json"
       }, process.cwd());
-      assert.equal(entries.length, 2);
-      const invalid = entries[1].plan.actions.find((action) => ["create", "replace", "unchanged"].includes(action.kind));
+      assert.equal(entries.length, 3);
+      // Corrupt one named surface, not a positional entry, so adding a surface
+      // does not silently retarget this check.
+      const corrupted = entries.find((entry) => entry.plan.surface === "codex");
+      assert.ok(corrupted);
+      const invalid = corrupted.plan.actions.find((action) => ["create", "replace", "unchanged"].includes(action.kind));
       assert.ok(invalid);
-      entries[1].contents.delete(invalid.relativePath);
+      corrupted.contents.delete(invalid.relativePath);
       let writes = 0;
       const fileSystemByRoot = new Map(entries.map((entry) => [entry.root, {
         contents: entry.contents,
@@ -223,11 +229,14 @@ test("two-surface production plans preflight completely before any write", async
       assert.equal(writes, 0);
       assert.equal(await access(resolve(root, "claude")).then(() => true, () => false), false);
       assert.equal(await access(resolve(root, "codex")).then(() => true, () => false), false);
+      assert.equal(await access(resolve(root, "antigravity")).then(() => true, () => false), false);
     } finally {
       if (previousClaude === undefined) delete process.env.CLAUDE_CONFIG_DIR;
       else process.env.CLAUDE_CONFIG_DIR = previousClaude;
       if (previousCodex === undefined) delete process.env.CODEX_HOME;
       else process.env.CODEX_HOME = previousCodex;
+      if (previousAntigravity === undefined) delete process.env.AAA_ANTIGRAVITY_ROOT;
+      else process.env.AAA_ANTIGRAVITY_ROOT = previousAntigravity;
     }
   });
 });
@@ -238,7 +247,7 @@ test("all-surface atomic preflight attributes a late namespaced failure without 
       action: "install",
       mode: "apply",
       profile: "portable",
-      surfaces: ["claude", "codex"],
+      surfaces: ["antigravity", "claude", "codex"],
       destinationRoot: root,
       statuslineName: "preflight",
       format: "json"

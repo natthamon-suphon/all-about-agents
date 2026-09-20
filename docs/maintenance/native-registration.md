@@ -142,6 +142,43 @@ state fails closed. Review the Git source and commit before you trust a package.
 
 ## Native actions by product
 
+### Antigravity (`agy`)
+
+The plan deploys one file into the Gemini home and then registers the plugin:
+
+```text
+agy plugin validate "<PACKAGE_ROOT>"
+agy plugin install "<PACKAGE_ROOT>"
+agy plugin list
+```
+
+`agy plugin install` takes a plain directory. Unlike Codex it does not clone the
+source, so `<PACKAGE_ROOT>` needs no Git repository.
+
+`GEMINI.md` is the only deployed file, and it is **not** overwritten. It carries
+`guard: "no-clobber"`: when the destination exists and differs from the managed
+source, the action reports `manual-required` and writes nothing. A live
+`~/.gemini/GEMINI.md` can hold always-on sections this package does not own, and
+the Antigravity render is not a superset of them the way `CLAUDE.md` is. Merge
+the managed body by hand when that happens.
+
+No hooks and no status line are registered. No session-start event can be
+named for this surface with current evidence, so the routing contract is
+inlined into `GEMINI.md` instead of injected. See
+[the product contract evidence](../evaluations/research-antigravity.md).
+
+`agy plugin list` output is `registered` evidence. There is no separate trust
+step. For `active` and `runtime verified`, start a fresh session **from a
+directory that has no `.agents/` folder**; inside a workspace that carries its
+own copy of the package, a correct answer cannot say which copy was loaded.
+
+Antigravity Desktop is not registered by this plan. Copy `plugin.json`,
+`skills/`, and `agents/` into `<workspace>/.agents/plugins/all-about-agents/`
+and verify by asking Desktop directly; it has no headless mode.
+
+The installed plugin is a copy and does not follow later renders. Re-run
+registration after every package update.
+
 ### Claude Code
 
 The fixed registration plan first overwrites these approved files in

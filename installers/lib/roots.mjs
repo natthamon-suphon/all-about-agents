@@ -1,8 +1,11 @@
 import { lstatSync, realpathSync } from "node:fs";
+
+import { SURFACE_HOME_DIRECTORY, SURFACE_ROOT_ENV } from "../../adapters/shared/surfaces.mjs";
 import { homedir } from "node:os";
 import { posix, win32 } from "node:path";
+import { SURFACE_SET } from "../../adapters/shared/surfaces.mjs";
 
-const SURFACES = new Set(["claude", "codex"]);
+const SURFACES = SURFACE_SET;
 
 /** A stable error for unavailable or unsafe automatic root discovery. */
 export class RootResolutionError extends Error {
@@ -157,14 +160,15 @@ export function resolveDestinationRoot({ surface, override = null, env = process
   if (!env || typeof env !== "object" || Array.isArray(env)) fail("invalid-environment", "env must be an object");
   const pathModule = moduleFor(platform);
   const home = validateHome(homeDir, pathModule);
-  const environmentName = surface === "claude" ? "CLAUDE_CONFIG_DIR" : surface === "codex" ? "CODEX_HOME" : null;
+  const environmentName = SURFACE_ROOT_ENV[surface] ?? null;
+  const homeDirectory = SURFACE_HOME_DIRECTORY[surface] ?? null;
   let selected = override;
   if (selected !== null && selected !== undefined) {
     selected = selected;
   } else if (environmentName && typeof env[environmentName] === "string" && env[environmentName].trim() !== "") {
     selected = env[environmentName];
-  } else if (environmentName) {
-    selected = pathModule.join(home, surface === "claude" ? ".claude" : ".codex");
+  } else if (homeDirectory) {
+    selected = pathModule.join(home, homeDirectory);
   } else {
     fail("manual-discovery-required", `${surface} has no verified automatic persistent root; provide an explicit destination root for manual/disposable installation`);
   }
@@ -172,10 +176,4 @@ export function resolveDestinationRoot({ surface, override = null, env = process
   return assertSafeDestinationRoot(root, { platform, homeDir: home, allowedProductRoots: [root] });
 }
 
-/**
- * Resolve the shared documented Gemini instruction home without creating it
- * or reading any product settings. An explicit override is intended for a
- * disposable package root; it is still subjected to the same fail-closed
- * destination checks as the native home.
- */
 export { isContained, inspectExistingAncestors };

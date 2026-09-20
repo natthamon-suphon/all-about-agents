@@ -1,5 +1,4 @@
-const SURFACES = Object.freeze(["claude", "codex"]);
-const SURFACE_SET = new Set(SURFACES);
+import { SURFACES, SURFACE_SET } from "../../adapters/shared/surfaces.mjs";
 const ACTIONS = new Set(["install", "doctor", "validate", "diff", "eval", "register"]);
 const PROFILES = new Set(["portable", "template"]);
 const FORMATS = new Set(["text", "json"]);

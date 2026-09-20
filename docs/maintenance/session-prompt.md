@@ -1,6 +1,6 @@
 # Session prompt for the same quality
 
-Copy the prompt below into a new Claude Code or Codex session. Replace the
+Copy the prompt below into a new Antigravity, Claude Code, or Codex session. Replace the
 values inside angle brackets.
 
 ````text

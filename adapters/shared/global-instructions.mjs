@@ -71,3 +71,49 @@ export function renderCodexGlobalInstructions(core, { canonicalRules } = {}) {
     renderPresentationCatalog(loaded.presentation)
   ].join("\n"));
 }
+
+const ANTIGRAVITY_ROUTING_SKILL = "using-all-about-agents";
+
+function skillBody(core, skillId) {
+  const records = Array.isArray(core.skills) ? core.skills : [];
+  const record = records.find((entry) => (entry?.id ?? entry?.name) === skillId);
+  const content = typeof record?.content === "string" ? record.content : "";
+  if (content.trim().length === 0) throw new TypeError(`core.skills must provide content for ${skillId}`);
+  if (!content.startsWith("---\n")) return content.trim();
+  const end = content.indexOf("\n---", 4);
+  return (end < 0 ? content : content.slice(end + 5)).trim();
+}
+
+/**
+ * Render Antigravity's global body.
+ *
+ * Claude and Codex receive the routing contract from the SessionStart bootstrap
+ * hook. Antigravity has no SessionStart event, so its always-loaded instruction
+ * file is the only carrier and the bootstrap skill is inlined here instead.
+ * See docs/plans/2026-09-19-restore-antigravity.md decision A7.
+ */
+export function renderAntigravityGlobalInstructions(core, { canonicalRules } = {}) {
+  const loaded = ensureCore(core);
+  const rules = canonicalRules === undefined ? loaded.rules : ensureRecords(canonicalRules, "canonicalRules");
+  if (!loaded.presentation || typeof loaded.presentation !== "object") throw new TypeError("core.presentation is required for Antigravity rendering");
+  return normalizeBody([
+    renderSharedGlobalInstructions(loaded).trimEnd(),
+    "",
+    "---",
+    "# All About Agents for Antigravity",
+    "",
+    "## Routing contract",
+    "",
+    "This contract is inlined rather than injected by a session-start hook. It",
+    "is the body of the `using-all-about-agents` skill and it applies to every",
+    "session.",
+    "",
+    skillBody(loaded, ANTIGRAVITY_ROUTING_SKILL),
+    "",
+    ...renderRules(rules),
+    "",
+    "## Presentation",
+    "",
+    renderPresentationCatalog(loaded.presentation)
+  ].join("\n"));
+}

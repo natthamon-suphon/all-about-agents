@@ -39,8 +39,11 @@ test("disposable evaluation paths are ignored and contain no tracked artifacts",
   assert.equal(trackedPaths.trim(), "");
 });
 
+const GLOBAL_INSTRUCTION_FILES = { antigravity: "GEMINI.md", claude: "CLAUDE.md", codex: "AGENTS.md" };
+
 test("all supported surfaces retain their package manifest and global output contract", async () => {
-  for (const surface of ["claude", "codex"]) {
+  const { SURFACES } = await import("../../adapters/shared/surfaces.mjs");
+  for (const surface of SURFACES) {
     const manifestPath = resolve(process.cwd(), `installers/manifests/${surface}.json`);
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     assert.equal(manifest.surface, surface);
@@ -48,6 +51,6 @@ test("all supported surfaces retain their package manifest and global output con
     assert.ok(manifest.ownedPaths.length > 0, `${surface} manifest ownership cannot be empty`);
     const output = manifest.components.globalInstructions;
     const packageName = typeof output === "string" ? output : output?.package;
-    assert.equal(packageName, surface === "claude" ? "CLAUDE.md" : "AGENTS.md");
+    assert.equal(packageName, GLOBAL_INSTRUCTION_FILES[surface]);
   }
 });
