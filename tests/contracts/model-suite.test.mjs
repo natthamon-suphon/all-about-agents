@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { checkPreconditions, evaluateCase, redact, resolveCaseTimeoutMs, runSuite } from "../model/run-trigger-suite.mjs";
+import { buildCasePrompt, checkPreconditions, evaluateCase, parseSkillTrailer, redact, resolveCaseTimeoutMs, runSuite } from "../model/run-trigger-suite.mjs";
 
 const root = process.cwd();
 
@@ -21,16 +21,79 @@ test("trigger suite exists, is manual, spawns without a shell, and stays out of 
   for (const skill of suite.skills) JSON.parse(readFileSync(resolve(root, "core/evals/skill-routing", `${skill}.json`), "utf8"));
 });
 
-test("case evaluation reads the announce format and the case kind", () => {
-  const announce = "Using skill **brainstorming 🧠** — the request changes behavior.\n\nWhat problem should the feature solve?";
-  assert.equal(evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-TRIGGER-feature-design" }, resultText: announce }).status, "PASS");
+test("case evaluation reads the routing trailer and the case kind", () => {
+  const routed = "The request changes behavior, so the design comes first.\n\nskill: brainstorming";
+  const unrouted = "The listing is short.\n\nskill: none";
+  assert.equal(evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-TRIGGER-feature-design" }, resultText: routed }).status, "PASS");
   assert.equal(evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-TRIGGER-feature-design" }, resultText: "Sure, here is the code." }).status, "FAIL");
-  assert.equal(evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-NONTRIGGER-trivial-readonly" }, resultText: "The file has 12 lines." }).status, "PASS");
-  assert.equal(evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-NONTRIGGER-trivial-readonly" }, resultText: announce }).status, "FAIL");
+  assert.equal(evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-NONTRIGGER-trivial-readonly" }, resultText: unrouted }).status, "PASS");
+  assert.equal(evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-NONTRIGGER-trivial-readonly" }, resultText: routed }).status, "FAIL");
   const pressure = { skill: "brainstorming", caseSpec: { id: "BR-PRESSURE-code-immediately" }, forbiddenPressurePhrases: ["I have implemented"] };
-  assert.equal(evaluateCase({ ...pressure, resultText: `${announce}\nI have implemented it anyway.` }).status, "FAIL");
-  assert.equal(evaluateCase({ ...pressure, resultText: announce }).status, "PASS");
-  assert.equal(evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-OTHER" }, resultText: announce }).status, "FAIL");
+  assert.equal(evaluateCase({ ...pressure, resultText: `I have implemented it anyway.\n\nskill: brainstorming` }).status, "FAIL");
+  assert.equal(evaluateCase({ ...pressure, resultText: routed }).status, "PASS");
+  assert.equal(evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-OTHER" }, resultText: routed }).status, "FAIL");
+});
+
+test("a missing trailer is a distinct failure from routing to the wrong skill", () => {
+  const trigger = { skill: "brainstorming", caseSpec: { id: "BR-TRIGGER-feature-design" } };
+  const missing = evaluateCase({ ...trigger, resultText: "A design is needed before any edit." });
+  assert.equal(missing.status, "FAIL");
+  assert.match(missing.reason, /trailer/u, "an ignored instruction must not read as a routing verdict");
+  const wrong = evaluateCase({ ...trigger, resultText: "skill: test-driven-development" });
+  assert.equal(wrong.status, "FAIL");
+  assert.match(wrong.reason, /test-driven-development/u, "the reason must name the skill that was chosen instead");
+});
+
+test("a nontrigger case passes when the trailer names any skill other than its own", () => {
+  const nontrigger = { skill: "test-driven-development", caseSpec: { id: "TD-NONTRIGGER-doc-only-change" } };
+  assert.equal(evaluateCase({ ...nontrigger, resultText: "skill: none" }).status, "PASS");
+  assert.equal(evaluateCase({ ...nontrigger, resultText: "skill: brainstorming" }).status, "PASS", "the case asserts this skill stays unrouted, not that no skill is chosen");
+  assert.equal(evaluateCase({ ...nontrigger, resultText: "skill: test-driven-development" }).status, "FAIL");
+});
+
+test("a router skill is scored by whether the skill check routed, not by naming itself", () => {
+  const router = { skill: "using-all-about-agents", isRouter: true };
+  const trigger = { id: "UA-TRIGGER-fresh-implementation" };
+  assert.equal(evaluateCase({ ...router, caseSpec: trigger, resultText: "skill: brainstorming" }).status, "PASS", "routing onward is what a bootstrap trigger case asserts");
+  assert.equal(evaluateCase({ ...router, caseSpec: trigger, resultText: "skill: using-all-about-agents" }).status, "PASS");
+  assert.equal(evaluateCase({ ...router, caseSpec: trigger, resultText: "skill: none" }).status, "FAIL", "no route means the skill check did not happen");
+  const nontrigger = { id: "UA-NONTRIGGER-already-dispatched-worker" };
+  assert.equal(evaluateCase({ ...router, caseSpec: nontrigger, resultText: "skill: none" }).status, "PASS");
+  assert.equal(evaluateCase({ ...router, caseSpec: nontrigger, resultText: "skill: brainstorming" }).status, "FAIL", "a dispatched worker must not restart bootstrap routing at all");
+  const pressure = { id: "UA-PRESSURE-vendor-path-assumption" };
+  assert.equal(evaluateCase({ ...router, caseSpec: pressure, resultText: "skill: using-all-about-agents" }).status, "PASS");
+  assert.equal(evaluateCase({ ...router, caseSpec: pressure, resultText: "skill: brainstorming" }).status, "FAIL", "the portable-routing rule lives in the router, so the strict answer stays strict");
+});
+
+test("a route to a skill outside this package is named as such in the reason", () => {
+  const packageSkills = new Set(["brainstorming", "test-driven-development"]);
+  const outside = evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-PRESSURE-code-immediately" }, resultText: "skill: surgical-patch", packageSkills });
+  assert.equal(outside.status, "FAIL");
+  assert.match(outside.reason, /not a skill of this package/u, "a red caused by the machine's other skills must not read as a package defect");
+  const inside = evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-PRESSURE-code-immediately" }, resultText: "skill: test-driven-development", packageSkills });
+  assert.doesNotMatch(inside.reason, /not a skill of this package/u);
+});
+
+test("the trailer question is scoped to this package's skills", () => {
+  assert.match(buildCasePrompt("Determine the next step."), /all-about-agents/u, "an unscoped question invites a skill this package does not own");
+});
+
+test("the trailer parser is the last skill line and tolerates markdown around it", () => {
+  assert.equal(parseSkillTrailer("skill: brainstorming"), "brainstorming");
+  assert.equal(parseSkillTrailer("**skill:** `brainstorming`"), "brainstorming");
+  assert.equal(parseSkillTrailer("Skill: all-about-agents:brainstorming"), "brainstorming", "the namespaced id names the same skill");
+  assert.equal(parseSkillTrailer("skill: none"), "none");
+  assert.equal(parseSkillTrailer("skill: brainstorming\n\nskill: none"), "none", "the final trailer wins");
+  assert.equal(parseSkillTrailer("Any process skill: brainstorming applies here."), null, "prose that happens to contain the word is not a trailer");
+  assert.equal(parseSkillTrailer("No trailer at all."), null);
+  assert.equal(parseSkillTrailer(""), null);
+});
+
+test("every case prompt carries the trailer instruction that the scorer reads", () => {
+  const built = buildCasePrompt("Determine the next step before editing.");
+  assert.match(built, /Determine the next step before editing\./u, "the case prompt must survive unchanged");
+  assert.match(built, /^skill: /mu, "the instruction must show the exact line the parser accepts");
+  assert.equal(parseSkillTrailer(`${built}\nskill: brainstorming`), "brainstorming");
 });
 
 test("redaction removes home paths and email addresses from stored excerpts", () => {
@@ -73,8 +136,11 @@ test("a fake claude executable drives PASS and FAIL classification per case", as
       assert.equal(executable, "claude");
       assert.equal(args[0], "-p", "the prompt travels as a structured argument, never through a shell");
       const prompt = args[1];
-      const announced = /trivial|read-only|bounded read-only|status or file listing/iu.test(prompt) ? "The listing is short." : "Using skill **brainstorming 🧠** — a behavior change needs a design first.";
-      return { ...ok, stdout: JSON.stringify({ result: announced }) };
+      assert.match(prompt, /^skill: /mu, "every case prompt must carry the trailer instruction");
+      const answer = /trivial|read-only|bounded read-only|status or file listing/iu.test(prompt)
+        ? "The listing is short.\n\nskill: none"
+        : "A behavior change needs a design first.\n\nskill: brainstorming";
+      return { ...ok, stdout: JSON.stringify({ result: answer }) };
     };
     const preconditions = async () => ({ ok: true, reasons: [], packageVersion: "2.0.0", configDir: sandbox });
     const { summary } = await runSuite({ run, preconditions, suitePath, outputDir });
@@ -93,18 +159,15 @@ test("preconditions report a missing claude executable as a reason", async () =>
   assert.ok(result.reasons.some((reason) => /claude executable is unavailable/u.test(reason)));
 });
 
-test("announcement scoring follows the shipped canonical name and emoji contract", () => {
-  const brain = { skill: "brainstorming", emoji: "🧠" };
-  const shipped = "🧠 `all-about-agents:brainstorming` — a library swap is a design change.";
-  const legacy = "Using skill **brainstorming 🧠** — the request changes behavior.";
-  const mentionOnly = "**No. `brainstorming` is not required here.** The skill says so itself.";
+test("naming a skill in prose is not routing to it", () => {
+  const brain = { skill: "brainstorming" };
   const trigger = { id: "BR-TRIGGER-spike-question" };
-  assert.equal(evaluateCase({ ...brain, caseSpec: trigger, resultText: shipped }).status, "PASS", "the shipped announcement format must score as announced");
-  assert.equal(evaluateCase({ ...brain, caseSpec: trigger, resultText: legacy }).status, "PASS", "an earlier announcement format still carries name and emoji");
-  assert.equal(evaluateCase({ ...brain, caseSpec: trigger, resultText: mentionOnly }).status, "FAIL", "naming a skill while declining it is not an announcement");
-  assert.equal(evaluateCase({ ...brain, caseSpec: { id: "BR-NONTRIGGER-trivial-readonly" }, resultText: mentionOnly }).status, "PASS", "a nontrigger case may name the skill to explain why it stays unused");
-  const separated = "🧠 An unrelated heading\n\nA later paragraph mentions brainstorming without announcing it.";
-  assert.equal(evaluateCase({ ...brain, caseSpec: trigger, resultText: separated }).status, "FAIL", "the emoji must share the announcement line with the name");
+  const declined = "**No. `brainstorming` is not required here.** The skill says so itself.\n\nskill: none";
+  const announcedOnly = "🧠 `all-about-agents:brainstorming` — a library swap is a design change.";
+  assert.equal(evaluateCase({ ...brain, caseSpec: trigger, resultText: declined }).status, "FAIL", "a declining answer must not score as routed because it names the skill");
+  assert.equal(evaluateCase({ ...brain, caseSpec: { id: "BR-NONTRIGGER-trivial-readonly" }, resultText: declined }).status, "PASS");
+  assert.equal(evaluateCase({ ...brain, caseSpec: trigger, resultText: announcedOnly }).status, "FAIL", "the retired emoji banner is no longer what the suite scores");
+  assert.equal(evaluateCase({ ...brain, caseSpec: trigger, resultText: `${announcedOnly}\n\nskill: brainstorming` }).status, "PASS");
 });
 
 test("the case timeout is configurable so a slow session is not scored as a routing failure", () => {

@@ -136,7 +136,7 @@
           "Stop"
         ],
         "sessionStart": false,
-        "inheritedFrom": "adapters/agy/capabilities.json at 8cbfd3b^"
+        "inheritedFrom": "the removed agy adapter capability record; docs/evaluations/research-antigravity.md holds the exact git command"
       },
       "notes": "INFERRED, not re-verified. The event list and the absence of SessionStart come from the removed agy adapter's 2026-08-31 record for agy 1.1.22. agy 1.2.7 publishes no hook documentation through its CLI, so the list could not be re-checked. Because no event can be named with current evidence, this adapter renders no hook files and the routing contract is inlined into GEMINI.md instead."
     },

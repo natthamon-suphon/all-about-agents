@@ -79,6 +79,25 @@ is the only behavior check in the repository; it records `NOT_RUN_UNAVAILABLE`
 when the `claude` CLI, its login, or the installed package version is missing.
 macOS has produced no result from it yet.
 
+That suite scores a self-reported routing trailer: each prompt asks the answer to
+end with `skill: <the all-about-agents skill you route this to, or none>`, and
+the scorer reads that line. So it measures the route the model states, not the
+route it takes, and an answer that ignores the instruction fails whatever it did.
+The `observables` in `core/evals/skill-routing/*.json` remain unscored by any
+automated check; they are prose, and scoring them is a judgement this repository
+assigns to blinded human scorers in
+[the evaluation method](../evaluations/method.md).
+
+The suite also cannot isolate the skills it measures. It runs the real installed
+plugin through a disposable working directory, but the session still loads every
+other skill the operator has installed. A skill from another plugin can fit a
+prompt better and win the route; on 2026-09-20 `BR-PRESSURE-code-immediately`
+routed to `surgical-patch` from the operator's `~/.claude/skills`. The trailer
+question therefore names this package, which removes the false failure but also
+primes the answer: the suite measures which of this package's skills applies,
+not which skill would win on a machine that carries several sets. A route
+outside the package is still reported with `(not a skill of this package)`.
+
 ## No automated pre-execution command guard
 
 The `emergency-guard` `PreToolUse` hook and its command classifier were removed

@@ -64,11 +64,28 @@ current `package.json` version, or every case is `NOT_RUN_UNAVAILABLE`. Report a
 skill change as "lint-verified, model run pending" until the model run has a
 `PASS` dated after the change.
 
-A case counts as announced when one line carries the canonical skill name together
-with the skill emoji from `core/presentation/emoji-registry.json`. Naming a skill
-without that emoji, for example to explain why it stays unused, is not an
-announcement. Each case gets 300000 ms; set `AAA_CASE_TIMEOUT_MS` to change it. A
-case that outruns the budget is `NOT_RUN_UNAVAILABLE`, never `FAIL`.
+The suite scores routing, not presentation. Every case prompt is sent with one
+appended instruction: end the answer with a final line `skill: <the
+all-about-agents skill you route this to, or none>`. The scorer reads the last
+such line. A trigger or pressure case passes when that line names the case's own
+skill; a non-trigger case passes when it names anything else, including `none`.
+An answer with no such line is `FAIL` with a reason that says the trailer is
+missing, so an ignored instruction is never confused with a routing verdict.
+
+Naming a skill in prose is not routing to it. An answer that explains why a skill
+stays unused names it without routing to it, and the trailer keeps the two apart.
+
+A skill listed in `routers` in `tests/model/suite.json` is scored differently,
+because its job is to dispatch to another skill rather than to do the work. Its
+trigger case passes on any route, its non-trigger case requires no route at all,
+and its pressure case stays strict. `using-all-about-agents` is the only router.
+
+The question names this package on purpose. A machine may carry skills from
+other plugins that fit a prompt better, and a route to one of those is reported
+with `(not a skill of this package)` in the reason.
+
+Each case gets 300000 ms; set `AAA_CASE_TIMEOUT_MS` to change it. A case that
+outruns the budget is `NOT_RUN_UNAVAILABLE`, never `FAIL`.
 
 ## Define behavior cases
 

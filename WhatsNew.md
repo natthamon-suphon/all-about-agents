@@ -33,10 +33,11 @@ All notable changes to all-about-agents. The format follows
     defines `AAA_ANTIGRAVITY_ROOT` for qualification runs. It is this
     repository's variable, not the product's.
 
-  The package renders no hooks and no status line. Antigravity has no
-  `SessionStart` event, so the `using-all-about-agents` routing contract is
-  inlined into `GEMINI.md` instead of injected; it is the first surface where
-  that is necessary. The removed adapters' status line pointed at a plugin path
+  The package renders no hooks and no status line. No session-start event can be
+  named with current evidence: the recorded event list is inherited from the
+  2026-08-31 evaluation of `agy 1.1.22` and was not re-verified on 1.2.7. So the
+  `using-all-about-agents` routing contract is inlined into `GEMINI.md` instead
+  of injected; it is the first surface where that is necessary. The removed adapters' status line pointed at a plugin path
   the product never creates.
 
   The old two-surface design (`agy` plus `antigravity-2`) is not restored. One
@@ -105,6 +106,55 @@ All notable changes to all-about-agents. The format follows
   refuses a home directory, a live product root, this repository, or any directory
   without a rendered package marker, and it never deletes inside the product roots.
   See `docs/maintenance/sync-and-update.md`.
+
+### Changed
+
+- `npm run test:model` now scores routing instead of the announcement banner.
+  Each case prompt carries one appended instruction: end with a final line
+  `skill: <canonical skill name, or none>`. A trigger or pressure case passes
+  when that line names its own skill, a non-trigger case passes when it names
+  anything else, and a missing line is a `FAIL` whose reason says the trailer is
+  missing, so an ignored instruction never reads as a routing verdict.
+
+  The previous scorer required the canonical name and the registered emoji on
+  one line. Measured on this machine, 11 of 17 cases failed that check while the
+  answers routed correctly in prose, and only 1 of 17 stored excerpts contained
+  any registered emoji. The banner is a presentation rule from
+  `core/instructions/global-operating-rules.md`; these cases run under
+  `--permission-mode plan` and ask a meta-question, so no material action occurs
+  and the rule that requires a banner before the first material action does not
+  apply. The suite now measures the thing it claims to test, and
+  `core/presentation/emoji-registry.json` is no longer read by it.
+
+  This supersedes the assertion designed at
+  `docs/plans/2026-09-18-simplify-to-claude-codex.md:366`, which specified
+  `Using skill **<skill>` as the trigger-case contract.
+
+  Two assertions were wrong in a way the old scorer could not show, and the
+  first real run exposed both:
+
+  - A router skill was asserted to name itself. `using-all-about-agents`
+    dispatches to another skill, so on a trigger case the correct answer is the
+    skill it routes to, and the old assertion could never pass. `suite.json`
+    now carries `routers`, and a router's trigger case passes on any route,
+    its non-trigger case requires no route at all (which is stricter than
+    before, and is what `restartBootstrap: false` in the case file asks for),
+    and its pressure case stays strict because the rule under pressure lives in
+    the router itself.
+  - The trailer question was unscoped, so an answer could name a skill from
+    another plugin installed on the machine. `BR-PRESSURE-code-immediately`
+    routed to `surgical-patch`, which lives in the operator's `~/.claude/skills`
+    and not in this package. The question now names this package, and a route
+    outside it is reported as such in the failure reason.
+
+  Trade-offs: the trailer is self-reported, so the suite measures a stated route
+  rather than an observed one, and a model that ignores the instruction fails.
+  Scoping the question primes the answer toward this package, so the suite
+  measures which of its own skills applies, not which skill wins on a machine
+  that carries several sets. The `observables` in
+  `core/evals/skill-routing/*.json` stay unscored; they are English prose and
+  need a judge, which `docs/evaluations/method.md` assigns to blinded human
+  scorers.
 
 ### Fixed
 

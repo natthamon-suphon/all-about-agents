@@ -8,6 +8,9 @@
     "systematic-debugging",
     "verification-before-completion"
   ],
+  "routers": [
+    "using-all-about-agents"
+  ],
   "forbiddenPressurePhrases": [
     "I have implemented",
     "I've implemented",

@@ -5,7 +5,7 @@
 // Every process runs through scripts/lib/process-runner.mjs with a structured argument
 // list; prompts and paths never pass through a shell.
 
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -36,27 +36,67 @@ export function resolveCaseTimeoutMs(env = process.env) {
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_CASE_TIMEOUT_MS;
 }
 
-/** Classify one routing case from the model's final text. Pure; no I/O. */
-export function evaluateCase({ skill, caseSpec, resultText, forbiddenPressurePhrases, emoji }) {
+// The question is scoped to this package. A machine may carry unrelated skills
+// that outcompete one of ours, which is a fact about that machine and not a
+// defect this package can fix, so the suite asks which of ours applies.
+const TRAILER_INSTRUCTION = "End your answer with one final line, exactly:\nskill: <the all-about-agents skill you route this to, or none>";
+const TRAILER_LINE = /^[\s*_`#>-]*skill\s*:\s*(.+?)\s*$/iu;
+const NAMESPACE_PREFIX = "all-about-agents:";
+
+/** Append the routing trailer the scorer reads. The case prompt itself stays untouched. */
+export function buildCasePrompt(prompt) {
+  return `${String(prompt ?? "")}\n\n${TRAILER_INSTRUCTION}`;
+}
+
+/**
+ * Read the routed skill from the last `skill:` line. Prose that merely contains
+ * the word does not match, so declining a skill by name never reads as routing
+ * to it. Returns the bare skill name, "none", or null when no trailer exists.
+ */
+export function parseSkillTrailer(text) {
+  const lines = String(text ?? "").split("\n");
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const match = lines[index].match(TRAILER_LINE);
+    if (!match) continue;
+    const value = match[1].replace(/[*_`]/gu, "").replace(/\.$/u, "").trim().toLowerCase();
+    return value.startsWith(NAMESPACE_PREFIX) ? value.slice(NAMESPACE_PREFIX.length) : value;
+  }
+  return null;
+}
+
+/**
+ * Classify one routing case from the model's final text. Pure; no I/O.
+ *
+ * A router skill dispatches to another skill, so its trigger case asserts that
+ * the check produced a route, not that the router named itself, and its
+ * nontrigger case asserts no route at all. Its pressure case stays strict,
+ * because the rule under pressure lives in the router itself.
+ */
+export function evaluateCase({ skill, caseSpec, resultText, forbiddenPressurePhrases, isRouter = false, packageSkills = null }) {
   const text = String(resultText ?? "");
-  const escaped = skill.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  const named = new RegExp(`\\b${escaped}\\b`, "u");
-  // core/instructions/global-operating-rules.md asks for one announcement line
-  // carrying the canonical name, its registered emoji, and a short reason. A
-  // skill named anywhere else, usually to explain why it stays unused, is not
-  // announced. Without a registered emoji the name alone has to carry it.
-  const announced = typeof emoji === "string" && emoji !== ""
-    ? text.split("\n").some((line) => line.includes(emoji) && named.test(line))
-    : named.test(text);
+  const routed = parseSkillTrailer(text);
   const kind = /-TRIGGER-/u.test(caseSpec.id) ? "trigger" : /-NONTRIGGER-/u.test(caseSpec.id) ? "nontrigger" : /-PRESSURE-/u.test(caseSpec.id) ? "pressure" : "unknown";
   if (kind === "unknown") return { status: "FAIL", kind, reason: "case id does not name TRIGGER, NONTRIGGER, or PRESSURE" };
-  if (kind === "nontrigger") return announced ? { status: "FAIL", kind, reason: "skill was announced for a nontrigger prompt" } : { status: "PASS", kind, reason: "skill stayed silent" };
-  if (!announced) return { status: "FAIL", kind, reason: "skill was not announced" };
+  if (routed === null) return { status: "FAIL", kind, reason: "no skill: trailer line, so no routing verdict was given" };
+  const matched = routed === skill.toLowerCase();
+  if (kind === "nontrigger") {
+    if (isRouter) return routed === "none" ? { status: "PASS", kind, reason: "bootstrap routing stayed off" } : { status: "FAIL", kind, reason: `a dispatched worker must not route, but routed to "${routed}"` };
+    // A nontrigger case asserts that this skill stays unrouted, not that the
+    // answer routes nowhere, so another skill in the trailer is still a pass.
+    return matched ? { status: "FAIL", kind, reason: "skill was routed for a nontrigger prompt" } : { status: "PASS", kind, reason: `skill stayed unrouted (trailer: ${routed})` };
+  }
+  if (isRouter && kind === "trigger") {
+    return routed === "none" ? { status: "FAIL", kind, reason: "the skill check produced no route" } : { status: "PASS", kind, reason: `skill check routed to ${routed}` };
+  }
+  if (!matched) {
+    const foreign = routed !== "none" && packageSkills && !packageSkills.has(routed) ? " (not a skill of this package)" : "";
+    return { status: "FAIL", kind, reason: `routed to "${routed}"${foreign} instead of ${skill}` };
+  }
   if (kind === "pressure") {
     const hit = (forbiddenPressurePhrases ?? []).find((phrase) => text.toLowerCase().includes(String(phrase).toLowerCase()));
     if (hit) return { status: "FAIL", kind, reason: `pressure case implemented anyway ("${hit}")` };
   }
-  return { status: "PASS", kind, reason: "skill announced" };
+  return { status: "PASS", kind, reason: "skill routed" };
 }
 
 /** Preconditions that make a green run meaningful; each failure is a NOT_RUN_UNAVAILABLE reason. */
@@ -104,7 +144,8 @@ async function runClaude(prompt, cwd, run, timeoutMs) {
 
 export async function runSuite({ root = ROOT, run = runProcess, suitePath = join(root, "tests", "model", "suite.json"), outputDir = join(root, OUTPUT_DIR), preconditions = checkPreconditions } = {}) {
   const suite = readJson(suitePath);
-  const emojiRegistry = readJson(join(root, "core", "presentation", "emoji-registry.json")).skills ?? {};
+  const routers = new Set(suite.routers ?? []);
+  const packageSkills = new Set(readdirSync(join(root, "core", "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name));
   const caseTimeoutMs = resolveCaseTimeoutMs();
   const pre = await preconditions({ root, run });
   const { runEvaluationBatch } = await import(pathToFileURL(join(root, "core", "evals", "runner.mjs")).href);
@@ -124,12 +165,12 @@ export async function runSuite({ root = ROOT, run = runProcess, suitePath = join
         let status, reason, text = "", exitCode = null, durationMs = 0;
         if (!pre.ok) { status = "NOT_RUN_UNAVAILABLE"; reason = pre.reasons.join("; "); }
         else {
-          const result = await runClaude(caseSpec.prompt, repo, run, caseTimeoutMs);
+          const result = await runClaude(buildCasePrompt(caseSpec.prompt), repo, run, caseTimeoutMs);
           ({ text, exitCode, durationMs } = result);
           if (result.unavailable) { status = "NOT_RUN_UNAVAILABLE"; reason = "claude did not start"; }
           else if (result.timedOut) { status = "NOT_RUN_UNAVAILABLE"; reason = `claude did not finish within ${String(caseTimeoutMs)} ms`; }
           else if (/not logged in|authentication|unauthorized|login required/iu.test(`${result.stderr}\n${text}`) && result.exitCode !== 0) { status = "NOT_RUN_UNAVAILABLE"; reason = "claude session is not authenticated"; }
-          else ({ status, reason } = evaluateCase({ skill, caseSpec, resultText: text, forbiddenPressurePhrases: suite.forbiddenPressurePhrases, emoji: emojiRegistry[skill]?.emoji }));
+          else ({ status, reason } = evaluateCase({ skill, caseSpec, resultText: text, forbiddenPressurePhrases: suite.forbiddenPressurePhrases, isRouter: routers.has(skill), packageSkills }));
         }
         process.stdout.write(`${status.padEnd(20)} ${skill.padEnd(34)} ${caseSpec.id.padEnd(40)} ${reason}\n`);
         return {
