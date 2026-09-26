@@ -93,8 +93,13 @@ Create an explicit disposable root with `mktemp`. The installer is authoritative
 and may overwrite differing regular files under this root without a backup, so do not use a
 live `~/.claude`, `~/.codex`, or other product directory.
 
+macOS reaches `$TMPDIR` and `/tmp` through a symlink (`/var` and `/tmp` point
+into `/private`), and the installer refuses a root with a symlinked ancestor.
+Each command below resolves the new root with `pwd -P` so the installer gets
+its real path.
+
 ```sh
-CLAUDE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/all-about-agents-claude.XXXXXX")"
+CLAUDE_ROOT="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/all-about-agents-claude.XXXXXX")" && pwd -P)"
 
 bash ./installers/install.sh doctor --surface claude --destination-root "$CLAUDE_ROOT" --format json
 bash ./installers/install.sh install --surface claude --profile portable --destination-root "$CLAUDE_ROOT" --statusline-name "<YOUR_NAME>" --dry-run --format json
@@ -117,14 +122,14 @@ control or ANSI characters.
 Use a separate root when inspecting each non-Claude package:
 
 ```sh
-CODEX_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/all-about-agents-codex.XXXXXX")"
+CODEX_ROOT="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/all-about-agents-codex.XXXXXX")" && pwd -P)"
 
 bash ./installers/install.sh install --surface codex --destination-root "$CODEX_ROOT" --dry-run
 bash ./installers/install.sh install --surface codex --destination-root "$CODEX_ROOT" --apply
 ```
 
 ```sh
-ANTIGRAVITY_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/all-about-agents-antigravity.XXXXXX")"
+ANTIGRAVITY_ROOT="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/all-about-agents-antigravity.XXXXXX")" && pwd -P)"
 
 bash ./installers/install.sh install --surface antigravity --destination-root "$ANTIGRAVITY_ROOT" --dry-run
 bash ./installers/install.sh install --surface antigravity --destination-root "$ANTIGRAVITY_ROOT" --apply
@@ -136,7 +141,7 @@ enable hooks automatically.
 To render every package in one disposable tree, use one more explicit root:
 
 ```sh
-ALL_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/all-about-agents-all.XXXXXX")"
+ALL_ROOT="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/all-about-agents-all.XXXXXX")" && pwd -P)"
 bash ./installers/install.sh install --surface all --destination-root "$ALL_ROOT" --statusline-name "<YOUR_NAME>" --dry-run
 bash ./installers/install.sh install --surface all --destination-root "$ALL_ROOT" --statusline-name "<YOUR_NAME>" --apply
 ```

@@ -350,3 +350,10 @@ test("all generated package snapshots retain complete deterministic ownership ma
     }
   }
 });
+
+test("macOS setup resolves every disposable root without a symlinked ancestor", async () => {
+  const guide = await textAt("docs/setup/macos.md");
+  const roots = guide.split("\n").filter((line) => /^[A-Z_]+="\$\(.*mktemp -d/u.test(line));
+  assert.ok(roots.length > 0, "macOS setup must create at least one disposable root");
+  for (const line of roots) assert.match(line, /&& pwd -P\)"$/u, `root is not resolved through pwd -P: ${line}`);
+});
