@@ -80,14 +80,19 @@ export async function assertContainedOutputDir(outputDir) {
     { logical: resolve(repositoryRoot, "tests", ".tmp"), intendedParent: repositoryRoot }
   ];
   const temporaryRoot = resolve(tmpdir());
+  // A platform may expose the temporary directory through a symlinked spelling
+  // (macOS reaches /var/folders through /var -> private/var), so accept the
+  // canonical spelling too. The real-path pass below still gates both.
+  const canonicalTemporaryRoot = (await nearestExistingParent(temporaryRoot)).real;
+  const temporaryStop = isWithin(target, temporaryRoot) ? temporaryRoot : canonicalTemporaryRoot;
   const repositoryCandidates = repositoryRoots.filter(({ logical }) => isWithin(target, logical));
   const allowedByRepository = repositoryCandidates.length > 0;
-  const allowedByTemporary = isWithin(target, temporaryRoot) && target.toLowerCase().split(/[\\/]/u).includes("eval-runs");
+  const allowedByTemporary = isWithin(target, temporaryStop) && target.toLowerCase().split(/[\\/]/u).includes("eval-runs");
   if (!allowedByRepository && !allowedByTemporary) throw new Error("outputDir must be a contained evaluation directory");
   for (const { intendedParent } of repositoryCandidates) {
     if (await hasSymlinkComponent(target, intendedParent)) throw new Error("outputDir must be a contained evaluation directory");
   }
-  if (allowedByTemporary && await hasSymlinkComponent(target, temporaryRoot)) {
+  if (allowedByTemporary && await hasSymlinkComponent(target, temporaryStop)) {
     throw new Error("outputDir must be a contained evaluation directory");
   }
   const existingParent = await nearestExistingParent(target);
