@@ -173,6 +173,8 @@ test("all materialized surface packages pass the presentation safety scan", asyn
         profile,
         statuslineName: "",
         platform: "win32",
+        homeDir: "C:/Users/tester",
+        env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude", CODEX_HOME: "C:/disposable/codex" },
         targetRuntime: surface === "codex" ? "cli" : undefined
       });
       const result = materializeRenderResult(rendered);

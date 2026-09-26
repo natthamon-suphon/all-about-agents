@@ -21,7 +21,17 @@ test("image-generation protocol validates authority, prerequisites, model, and s
   assert.doesNotMatch(skill, /gemini-3-pro-image-preview/iu);
 });
 
-test("Python runtime keeps credentials in headers and rejects malformed image data", async () => {
+// macOS ships only python3, and Windows usually has python or the py launcher.
+// The Windows Store python3 alias exits 9009, so a candidate counts only when it runs.
+function firstAvailablePython() {
+  for (const [command, prefix] of [["python3", []], ["python", []], ["py", ["-3"]]]) {
+    const probe = spawnSync(command, [...prefix, "--version"], { encoding: "utf8" });
+    if (!probe.error && probe.status === 0) return { command, prefix };
+  }
+  return null;
+}
+
+test("Python runtime keeps credentials in headers and rejects malformed image data", async (t) => {
   const scriptUrl = new URL(`../../../core/skills/${id}/scripts/generate_image.py`, import.meta.url);
   const script = await read("scripts/generate_image.py");
   assert.match(script, /x-goog-api-key/u);
@@ -53,7 +63,12 @@ assert request.get_header("X-goog-api-key") == "top-secret"
 assert "top-secret" not in request.full_url and "?key=" not in request.full_url
 assert "top-secret" not in m.safe_http_message(403, "top-secret sensitive body")
 `;
-  const result = spawnSync("python", ["-B", "-c", probe], { encoding: "utf8" });
+  const python = firstAvailablePython();
+  if (python === null) {
+    t.skip("no Python 3 interpreter (python3, python, or py -3) is available");
+    return;
+  }
+  const result = spawnSync(python.command, [...python.prefix, "-B", "-c", probe], { encoding: "utf8" });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 });
 

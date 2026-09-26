@@ -1,23 +1,23 @@
 import assert from "node:assert/strict";
-import { chmod, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import test, { after } from "node:test";
 
 import { MAX_OVERLAY_BYTES, mergeSettingsOverlay } from "../../installers/lib/settings-overlay.mjs";
 import { hashBytes } from "../../installers/lib/hash.mjs";
+import { canonicalTmpdir, makeTempRoot } from "../helpers/temp-root.mjs";
 
 const GENERATED_TEMP_ROOTS = new Set();
 
 async function generatedTempRoot(prefix) {
-  const root = await mkdtemp(join(tmpdir(), prefix));
+  const root = await makeTempRoot(prefix);
   GENERATED_TEMP_ROOTS.add(root);
   return root;
 }
 
 after(async () => {
   for (const root of [...GENERATED_TEMP_ROOTS]) {
-    if (resolve(dirname(root)) !== resolve(tmpdir()) || !/^aaa-(?:overlay|outside)-/u.test(basename(root))) throw new Error("refusing unsafe settings-overlay fixture cleanup");
+    if (resolve(dirname(root)) !== await canonicalTmpdir() || !/^aaa-(?:overlay|outside)-/u.test(basename(root))) throw new Error("refusing unsafe settings-overlay fixture cleanup");
     await rm(root, { recursive: true, force: true });
   }
 });

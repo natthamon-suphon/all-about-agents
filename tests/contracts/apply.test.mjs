@@ -271,7 +271,7 @@ test("applyPlan replaces only the exact planned bytes and refuses a stale destin
 
 test("applyPlan completes unchanged content without mutating that destination", async () => {
   await withTempRoot(async (root) => {
-    await writeFile(join(root, "same.txt"), "same");
+    await writeFile(join(root, "same.txt"), "same", { mode: 0o600 });
     const plan = planFor(root, [["same.txt", "same"]]);
     const calls = [];
     const fileSystem = fsFor([["same.txt", "same"]], {

@@ -29,7 +29,9 @@ test("hashBytes uses exact Uint8Array bytes and lower-case SHA-256", () => {
 test("buildPlan creates, replaces, and leaves exact-byte matches unchanged in sorted order", async () => {
   await withTempRoot(async (root) => {
     await writeFile(join(root, "replace.txt"), Uint8Array.from([65, 10]));
-    await writeFile(join(root, "same.txt"), Uint8Array.from([0, 255]));
+    // The planner enforces DEFAULT_FILE_MODE for a payload file with no mode,
+    // so create the byte-identical fixture with that mode rather than the umask.
+    await writeFile(join(root, "same.txt"), Uint8Array.from([0, 255]), { mode: 0o600 });
     const payload = payloadFor([
       { relativePath: "z-create.txt", content: bytes("new"), mode: null },
       { relativePath: "replace.txt", content: bytes("replacement"), mode: null },

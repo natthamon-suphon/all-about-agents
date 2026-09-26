@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
 
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
+import { makeTempRoot } from "../helpers/temp-root.mjs";
 
 let reportModule;
 let reportSchema;
@@ -139,7 +140,7 @@ test("quality report validates malformed input and duplicate checks", () => {
 });
 
 test("quality report writes only to an explicit contained destination", async (t) => {
-  const root = await mkdtemp(join(tmpdir(), "aaa-quality-report-"));
+  const root = await makeTempRoot("aaa-quality-report-");
   t.after(() => rm(root, { recursive: true, force: true }));
   const report = reportModule.createQualityReport(baseInput());
 

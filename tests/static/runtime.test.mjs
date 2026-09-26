@@ -173,3 +173,17 @@ test("CLI returns exit code 1 when repository validation fails", async () => {
     await rm(root, { force: true, recursive: true });
   }
 });
+
+test("disposable test roots contain no symlinked ancestor", async () => {
+  const { realpath } = await import("node:fs/promises");
+  const { makeTempRoot, withTempRoot } = await import("../helpers/temp-root.mjs");
+  const made = await makeTempRoot("aaa-canonical-");
+  try {
+    assert.equal(made, await realpath(made), "makeTempRoot must return its canonical path");
+  } finally {
+    await rm(made, { force: true, recursive: true });
+  }
+  await withTempRoot(async (root) => {
+    assert.equal(root, await realpath(root), "withTempRoot must pass its canonical path");
+  });
+});

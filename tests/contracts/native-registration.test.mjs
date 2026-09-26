@@ -1,24 +1,24 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve, relative } from "node:path";
 import test, { after } from "node:test";
 
 import { planNativeRegistration, runNativeRegistration, resolveNativeInstructionRoot } from "../../installers/lib/native-registration.mjs";
 import { renderClaudeStatuslineCommand } from "../../adapters/claude/adapter.mjs";
 import { hashBytes } from "../../installers/lib/hash.mjs";
+import { canonicalTmpdir, makeTempRoot } from "../helpers/temp-root.mjs";
 
 const GENERATED_TEMP_ROOTS = new Set();
 
 async function generatedTempRoot(prefix) {
-  const root = await mkdtemp(join(tmpdir(), prefix));
+  const root = await makeTempRoot(prefix);
   GENERATED_TEMP_ROOTS.add(root);
   return root;
 }
 
 after(async () => {
   for (const root of [...GENERATED_TEMP_ROOTS]) {
-    if (resolve(dirname(root)) !== resolve(tmpdir()) || !basename(root).startsWith("aaa-t06-")) throw new Error("refusing unsafe native-registration fixture cleanup");
+    if (resolve(dirname(root)) !== await canonicalTmpdir() || !basename(root).startsWith("aaa-t06-")) throw new Error("refusing unsafe native-registration fixture cleanup");
     await rm(root, { recursive: true, force: true });
   }
 });

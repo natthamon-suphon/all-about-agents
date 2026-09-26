@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
 import reportSchema from "../../installers/schemas/quality-report.schema.json" with { type: "json" };
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
+import { makeTempRoot } from "../helpers/temp-root.mjs";
 
 let qualityModule;
 try {
@@ -196,7 +196,7 @@ test("quality gate skill mode validates its argument and fails on a missing arti
 });
 
 test("quality gate writes no file by default and writes only an explicit contained report", async (t) => {
-  const root = await mkdtemp(join(tmpdir(), "aaa-quality-gate-"));
+  const root = await makeTempRoot("aaa-quality-gate-");
   t.after(() => rm(root, { recursive: true, force: true }));
   const report = await qualityModule.runQualityGate({
     mode: "quick",

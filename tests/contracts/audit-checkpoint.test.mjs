@@ -180,7 +180,7 @@ test("every adapter production render consumes the audit and checkpoint contract
   const packages = [
     {
       surface: "claude",
-      result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
+      result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, platform: "win32" }),
       auditPath: "hooks/activity-audit.json",
       checkpointPath: "hooks/checkpoint.json",
       hooksPath: "hooks/hooks.json",
@@ -218,7 +218,7 @@ test("every adapter production render consumes the audit and checkpoint contract
 test("Claude and Codex activity/checkpoint wrappers fail open on oversized stdin", async () => {
   const core = await loadCore(process.cwd());
   const packages = [
-    { surface: "claude", result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }) },
+    { surface: "claude", result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, platform: "win32" }) },
     { surface: "codex", result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", targetRuntime: "cli" }) }
   ];
   for (const item of packages) {

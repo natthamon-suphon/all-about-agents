@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -10,6 +10,7 @@ import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
 import { MAX_STDIN_BYTES, runBootstrap } from "../../core/hooks/bootstrap.mjs";
 import { NATIVE_PHASES } from "../../adapters/shared/native-state.mjs";
+import { makeTempRoot } from "../helpers/temp-root.mjs";
 
 const requiredOutputs = [
   "core/hooks/bootstrap.json",
@@ -51,7 +52,7 @@ async function materialize(result, packageRoot) {
 }
 
 async function executeRendered(result, { surface, runtimePath, skillPath, configPath, input }) {
-  const packageRoot = await mkdtemp(join(tmpdir(), `t013-${surface}-`));
+  const packageRoot = await makeTempRoot(`t013-${surface}-`);
   try {
     await materialize(result, packageRoot);
     const runtime = join(packageRoot, ...runtimePath.split("/"));
@@ -106,7 +107,7 @@ test("automatic renderers consume the canonical core bootstrap contract", async 
   const canonicalContract = await readFile(root("core/hooks/bootstrap.json"), "utf8");
   const packages = [
     {
-      result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
+      result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, platform: "win32" }),
       configPath: "hooks/bootstrap.json",
       hooksPath: "hooks/hooks.json"
     },
@@ -203,7 +204,7 @@ test("canonical behavior is vendor-neutral while each template owns its native c
 
 test("rendered hook configs consume their parsed native templates and declare runtime availability", async () => {
   const core = await loadCore(process.cwd());
-  const claude = renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" });
+  const claude = renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, platform: "win32" });
   const claudeHooks = JSON.parse(fileMap(claude).get("hooks/hooks.json"));
   assert.equal(claudeHooks.hooks.SessionStart[0].matcher, "startup|clear|compact");
   assert.deepEqual(claudeHooks.hooks.SessionStart[0].hooks[0].args.slice(1), ["--surface", "claude", "--skill-path", "${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md", "--config-path", "${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json"]);
@@ -253,7 +254,7 @@ test("production runtime uses structured JSON serialization and explicit inputs 
 test("portable package materialization keeps slash-neutral relative paths", async () => {
   const source = await readFile(root("tests/contracts/bootstrap-hooks.test.mjs"), "utf8");
   assert.doesNotMatch(source, /relativePath\.replaceAll\(/u);
-  const packageRoot = await mkdtemp(join(tmpdir(), "t013-paths-"));
+  const packageRoot = await makeTempRoot("t013-paths-");
   try {
     await materialize({ files: [{ relativePath: "nested/portable.txt", content: new TextEncoder().encode("portable") }] }, packageRoot);
     assert.equal(await readFile(join(packageRoot, "nested", "portable.txt"), "utf8"), "portable");

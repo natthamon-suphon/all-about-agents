@@ -158,6 +158,8 @@ test("every rendered surface file is declared by its manifest ownership patterns
         profile,
         statuslineName: "",
         platform: "win32",
+        homeDir: "C:/Users/tester",
+        env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude", CODEX_HOME: "C:/disposable/codex" },
         targetRuntime: surface === "codex" ? "cli" : undefined
       });
       const uncovered = result.files.map((file) => file.relativePath).filter((path) => !manifestOwns(manifest, path));
