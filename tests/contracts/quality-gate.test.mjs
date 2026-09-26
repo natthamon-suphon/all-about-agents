@@ -94,7 +94,8 @@ test("quick gate wires every approved mutation to a failing contract", () => {
     ["break a documented maintenance command", ["documentation-contracts", "tests/static/maintenance-docs.test.mjs"]],
     ["change AGENTS.md back to symlink mode", ["documentation-contracts", "tests/static/contributor-entrypoints.test.mjs"]],
     ["break all-surface preflight", ["installer-contracts", "tests/integration/cli.test.mjs"]],
-    ["weaken release evidence", ["release-contracts", "tests/lint/release-gates.test.mjs"]]
+    ["weaken release evidence", ["release-contracts", "tests/lint/release-gates.test.mjs"]],
+    ["break the claude.ai pack limits", ["focused-contracts", "tests/contracts/claude-ai-pack.test.mjs"]]
   ]);
 
   for (const [mutation, [checkId, testFile]] of mutations) {

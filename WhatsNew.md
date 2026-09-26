@@ -8,6 +8,18 @@ All notable changes to all-about-agents. The format follows
 
 ### Added
 
+- A claude.ai skill pack in `claude-ai/`: six skills for one flow of work in
+  claude.ai chat and Cowork. `aaa-interview` interviews and keeps a live
+  record; `aaa-brief` writes a formal brief; `aaa-tasks` breaks work into
+  checked tasks; `aaa-run` works through them and stops only for risk;
+  `aaa-review` reviews every output and document; and `aaa-research` writes
+  a sourced report, primary sources first. The skills hand off through
+  documents, because claude.ai skills cannot call each other.
+  `npm run export:claude-ai` validates the claude.ai limits and writes one
+  deterministic ZIP per skill to the gitignored `.aaa/claude-ai/`. The pack is
+  not rendered for Claude Code, Codex, or Antigravity. See
+  `docs/setup/claude-ai.md` and `docs/plans/2026-09-26-claude-ai-skill-pack.md`.
+
 - `antigravity` is a supported surface again, alongside `claude` and `codex`.
   `--surface antigravity` renders a plugin the `agy` CLI reads directly:
   `plugin.json` at the package root, `skills/{skill}/SKILL.md`,

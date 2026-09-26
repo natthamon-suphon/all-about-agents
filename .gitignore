@@ -17,4 +17,5 @@ triage/
 !/core/evals/
 !/core/evals/**
 .aaa/eval-runs/
+.aaa/claude-ai/
 tests/.tmp/

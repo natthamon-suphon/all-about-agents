@@ -76,6 +76,7 @@ test("package metadata declares ESM Node support without dependencies", async ()
   }
   assert.deepEqual(Object.keys(packageJson.scripts).sort(), [
     "doctor",
+    "export:claude-ai",
     "quality:full",
     "quality:quick",
     "quality:skill",
