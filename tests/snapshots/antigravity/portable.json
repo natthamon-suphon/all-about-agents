@@ -1,9 +1,9 @@
 {
-  "fileCount": 81,
+  "fileCount": 79,
   "files": [
     {
       "relativePath": "GEMINI.md",
-      "sha256": "65edca6643d8294e73bec9f50c805fd4926bea8132cc2c00caa79064b39c2eee",
+      "sha256": "915b264f034f38653679f66c01b7453e64b51a8ec2aa3779e126acebcce354ff",
       "mode": null
     },
     {
@@ -150,16 +150,6 @@
       "relativePath": "skills/loop-me/SKILL.md",
       "sha256": "13256b6e7e47a2f93e6c65cb440b9d12c1cc722229afac5d58e7b255e498f679",
       "mode": null
-    },
-    {
-      "relativePath": "skills/nano-image-generator/SKILL.md",
-      "sha256": "a9de65b7a45e93138781ff4aebdfbf7c8288b937a79d8e247c32f80664185222",
-      "mode": null
-    },
-    {
-      "relativePath": "skills/nano-image-generator/scripts/generate_image.py",
-      "sha256": "a1f9e8b5fca9b0c6399b72679635a7424b16ba94c8cce9c82414d762ac9a0cb6",
-      "mode": 493
     },
     {
       "relativePath": "skills/performance-profiling-and-benchmarking/SKILL.md",
@@ -410,7 +400,7 @@
   "ownership": [
     {
       "relativePath": "GEMINI.md",
-      "sha256": "65edca6643d8294e73bec9f50c805fd4926bea8132cc2c00caa79064b39c2eee"
+      "sha256": "915b264f034f38653679f66c01b7453e64b51a8ec2aa3779e126acebcce354ff"
     },
     {
       "relativePath": "README.md",
@@ -527,14 +517,6 @@
     {
       "relativePath": "skills/loop-me/SKILL.md",
       "sha256": "13256b6e7e47a2f93e6c65cb440b9d12c1cc722229afac5d58e7b255e498f679"
-    },
-    {
-      "relativePath": "skills/nano-image-generator/SKILL.md",
-      "sha256": "a9de65b7a45e93138781ff4aebdfbf7c8288b937a79d8e247c32f80664185222"
-    },
-    {
-      "relativePath": "skills/nano-image-generator/scripts/generate_image.py",
-      "sha256": "a1f9e8b5fca9b0c6399b72679635a7424b16ba94c8cce9c82414d762ac9a0cb6"
     },
     {
       "relativePath": "skills/performance-profiling-and-benchmarking/SKILL.md",

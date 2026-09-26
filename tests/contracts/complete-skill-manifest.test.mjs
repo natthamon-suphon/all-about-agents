@@ -54,12 +54,12 @@ function manifestProjection(core, result, prefix) {
   };
 }
 
-test("canonical inventory and loaded core contain all 28 public names exactly once", async () => {
+test("canonical inventory and loaded core contain all 27 public names exactly once", async () => {
   const core = await loadCore(process.cwd());
-  assert.equal(core.inventory.skills.length, 28);
-  assert.equal(new Set(core.inventory.skills).size, 28);
-  assert.equal(core.inventory.skillSources.length, 28);
-  assert.equal(new Set(core.inventory.skillSources.map((entry) => entry.name)).size, 28);
+  assert.equal(core.inventory.skills.length, 27);
+  assert.equal(new Set(core.inventory.skills).size, 27);
+  assert.equal(core.inventory.skillSources.length, 27);
+  assert.equal(new Set(core.inventory.skillSources.map((entry) => entry.name)).size, 27);
   assert.deepEqual([...core.inventory.skillSources.map((entry) => entry.name)].sort(), [...core.inventory.skills].sort());
   assert.deepEqual([...core.skills.map((entry) => entry.id)].sort(), [...core.inventory.skills].sort());
 });

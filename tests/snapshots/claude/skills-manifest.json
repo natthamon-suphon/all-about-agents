@@ -1,8 +1,8 @@
 {
-  "companionCount": 41,
-  "pathCount": 69,
-  "pathsSha256": "2501ffca1bab0e067689134ffb6f03d6c9145e24f2708557fc5d9a5b23713a62",
-  "skillCount": 28,
+  "companionCount": 40,
+  "pathCount": 67,
+  "pathsSha256": "ddb204fd474e8c57a055fb7a603f043c05975d4e09904e4059596672841bb3b5",
+  "skillCount": 27,
   "skills": [
     "brainstorming",
     "codebase-design",
@@ -13,7 +13,6 @@
     "improve-codebase-architecture",
     "interviewing",
     "loop-me",
-    "nano-image-generator",
     "performance-profiling-and-benchmarking",
     "receiving-code-review",
     "requesting-code-review",
@@ -33,5 +32,5 @@
     "writing-skills",
     "zero-downtime-migrations"
   ],
-  "uniquePathCount": 69
+  "uniquePathCount": 67
 }

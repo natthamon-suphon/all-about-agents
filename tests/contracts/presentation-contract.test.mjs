@@ -24,7 +24,6 @@ const expected = {
     "improve-codebase-architecture": "🏛️",
     "interviewing": "🎤",
     "loop-me": "🔁",
-    "nano-image-generator": "🖼️",
     "performance-profiling-and-benchmarking": "⏱️",
     "receiving-code-review": "📥",
     "requesting-code-review": "📤",
@@ -107,7 +106,7 @@ test("presentation files exist, have the exact approved counts, and validate", a
   const progressContract = JSON.parse(await readFile(resolve(root, "core/presentation/progress-contract.json"), "utf8"));
   assert.deepEqual(emojiRegistry, { schemaVersion: 1, ...registryFromExpected() });
   assert.deepEqual(Object.fromEntries(Object.entries(emojiRegistry).filter(([key]) => key !== "schemaVersion").map(([key, values]) => [key, Object.keys(values).length])), {
-    skills: 28, roles: 7, subagents: 1, hooks: 3, profiles: 2
+    skills: 27, roles: 7, subagents: 1, hooks: 3, profiles: 2
   });
   assert.deepEqual(validatePresentationContract({ emojiRegistry, progressContract, canonical: canonicalFromExpected() }), { valid: true, errors: [] });
   const schema = JSON.parse(await readFile(resolve(root, "core/schemas/presentation.schema.json"), "utf8"));
@@ -218,6 +217,6 @@ test("loadCore exposes the shared presentation contract", async () => {
   const core = await loadCore(root);
   assert.deepEqual(Object.keys(core.presentation).sort(), ["emojiRegistry", "progressContract"]);
   assert.equal(core.presentation.emojiRegistry.schemaVersion, 1);
-  assert.equal(Object.keys(core.presentation.emojiRegistry.skills).length, 28);
+  assert.equal(Object.keys(core.presentation.emojiRegistry.skills).length, 27);
   assert.equal(Object.keys(core.presentation.emojiRegistry.roles).length, 7);
 });

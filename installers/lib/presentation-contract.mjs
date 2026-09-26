@@ -13,7 +13,6 @@ const APPROVED_EMOJI = Object.freeze({
     "improve-codebase-architecture": "🏛️",
     "interviewing": "🎤",
     "loop-me": "🔁",
-    "nano-image-generator": "🖼️",
     "performance-profiling-and-benchmarking": "⏱️",
     "receiving-code-review": "📥",
     "requesting-code-review": "📤",

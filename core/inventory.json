@@ -12,7 +12,6 @@
     "improve-codebase-architecture",
     "interviewing",
     "loop-me",
-    "nano-image-generator",
     "performance-profiling-and-benchmarking",
     "receiving-code-review",
     "requesting-code-review",
@@ -132,18 +131,6 @@
       "source": "skills/loop-me/SKILL.md",
       "assets": [],
       "scripts": [],
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Current public skill retained in the unified baseline."
-      }
-    },
-    {
-      "name": "nano-image-generator",
-      "source": "skills/nano-image-generator/SKILL.md",
-      "assets": [],
-      "scripts": [
-        "skills/nano-image-generator/scripts/generate_image.py"
-      ],
       "auditDisposition": {
         "status": "stable",
         "reason": "Current public skill retained in the unified baseline."
@@ -665,22 +652,6 @@
     {
       "path": "core/skills/loop-me/SKILL.md",
       "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
-      "path": "core/skills/nano-image-generator/SKILL.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
-      "path": "core/skills/nano-image-generator/scripts/generate_image.py",
-      "kind": "asset",
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."

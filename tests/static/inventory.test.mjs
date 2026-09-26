@@ -84,8 +84,6 @@ core/skills/improve-codebase-architecture/HTML-REPORT.md
 core/skills/improve-codebase-architecture/SKILL.md
 core/skills/interviewing/SKILL.md
 core/skills/loop-me/SKILL.md
-core/skills/nano-image-generator/SKILL.md
-core/skills/nano-image-generator/scripts/generate_image.py
 core/skills/performance-profiling-and-benchmarking/SKILL.md
 core/skills/performance-profiling-and-benchmarking/profiling-recipes.md
 core/skills/receiving-code-review/SKILL.md
@@ -153,7 +151,7 @@ test("T002 creates every owned artifact", async () => {
 
 test("inventory records exactly the current public skill names", async () => {
   const inventory = JSON.parse(await readFile(resolve(process.cwd(), "core/inventory.json"), "utf8"));
-  assert.equal(inventory.skills.length, 28);
+  assert.equal(inventory.skills.length, 27);
   assert.deepEqual(inventory.skills, [
     "brainstorming",
     "codebase-design",
@@ -164,7 +162,6 @@ test("inventory records exactly the current public skill names", async () => {
     "improve-codebase-architecture",
     "interviewing",
     "loop-me",
-    "nano-image-generator",
     "performance-profiling-and-benchmarking",
     "receiving-code-review",
     "requesting-code-review",

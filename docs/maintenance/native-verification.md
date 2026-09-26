@@ -52,7 +52,7 @@ agy plugin validate "<PACKAGE_ROOT>"
 ```
 
 `agy plugin validate` is read-only and prints one processed count per
-component. A package of this repository must report 28 skills and 7 agents,
+component. A package of this repository must report 27 skills and 7 agents,
 with commands, mcpServers, and hooks all skipped.
 
 A validator result is `validated`. It does not by itself prove `registered`,

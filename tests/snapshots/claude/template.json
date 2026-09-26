@@ -1,5 +1,5 @@
 {
-  "fileCount": 104,
+  "fileCount": 102,
   "paths": [
     ".claude-plugin/marketplace.json",
     ".claude-plugin/plugin.json",
@@ -51,8 +51,6 @@
     "skills/improve-codebase-architecture/SKILL.md",
     "skills/interviewing/SKILL.md",
     "skills/loop-me/SKILL.md",
-    "skills/nano-image-generator/SKILL.md",
-    "skills/nano-image-generator/scripts/generate_image.py",
     "skills/performance-profiling-and-benchmarking/SKILL.md",
     "skills/performance-profiling-and-benchmarking/profiling-recipes.md",
     "skills/receiving-code-review/SKILL.md",
@@ -170,7 +168,7 @@
     "rules/implementation-quality.md": "6dbf1f9481442264336f2f489350a1951d382e7e316e6e7e24ffb15396f9b027",
     "rules/long-task-state.md": "62d1c22e14fa00a01136894dad2336e1d3c059b104e3e64eeb2d66bd3755b2af",
     "rules/multi-agent-ownership.md": "b346e37ce93910abc0a4a967190502b223d0ec249095988bf3b42ce14e09c2d5",
-    "rules/presentation.md": "4b23c1683f62ab067330d55a1c4bbd611bcde8dd2b50ca63c207bc38a654b726",
+    "rules/presentation.md": "804b52eaa3b544808d256b027c2f5b99d6c65f2d137abaa1d6e4cc250e66e971",
     "rules/secrets-and-untrusted-input.md": "34fa94b423656d23166eed4b0683868c18bd0bf5e1309cb0d594d63701b2e80e",
     "skills/brainstorming/SKILL.md": "c3957bf7ceed5c166b0ca2e8ca9e09313c9a2765ff59a221a472ec91a9e08f5e",
     "skills/brainstorming/scripts/frame-template.html": "4c3b7d94265cf0f8de437191dcbadccca4106d785591caf89e7c818ff153bc93",
@@ -191,8 +189,6 @@
     "skills/improve-codebase-architecture/SKILL.md": "523e0d3d9ceadc475f9d6eb0177c644780452eea493ada2f123f83ffb3828a9f",
     "skills/interviewing/SKILL.md": "fd4114abe845db359325195a35e327dbd975490b1c8448021bbcc290b1278770",
     "skills/loop-me/SKILL.md": "13256b6e7e47a2f93e6c65cb440b9d12c1cc722229afac5d58e7b255e498f679",
-    "skills/nano-image-generator/SKILL.md": "a9de65b7a45e93138781ff4aebdfbf7c8288b937a79d8e247c32f80664185222",
-    "skills/nano-image-generator/scripts/generate_image.py": "a1f9e8b5fca9b0c6399b72679635a7424b16ba94c8cce9c82414d762ac9a0cb6",
     "skills/performance-profiling-and-benchmarking/SKILL.md": "201e3038354f166d35ca3761a0fbc0cdb91f0284438fd501e2def67ea9788e77",
     "skills/performance-profiling-and-benchmarking/profiling-recipes.md": "af1378f0d9ea828b13a253acda0ce32f2439c5bc2bdca89bc995838edfc14e5e",
     "skills/receiving-code-review/SKILL.md": "25101a5db6b0c715206c42d796ee5945945a3f75cdc9346acf77d507502ce8ba",

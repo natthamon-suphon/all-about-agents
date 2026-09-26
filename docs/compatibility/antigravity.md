@@ -51,7 +51,7 @@ plugin.json                 name and description only, at the package root
 GEMINI.md                   canonical rules, inlined routing contract, presentation
 README.md                   install summary
 agents/<role>.md            7 roles, Markdown with YAML frontmatter
-skills/<skill>/SKILL.md     28 skills and their companion files
+skills/<skill>/SKILL.md     27 skills and their companion files
 docs/manual-desktop.md      the Desktop workspace-slot procedure
 ```
 

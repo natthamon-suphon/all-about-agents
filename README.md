@@ -8,7 +8,7 @@ product, register an account, or claim that a product session has passed.
 
 | Path | Responsibility |
 | --- | --- |
-| `core/` | Vendor-neutral records: 28 skills, 7 roles, 9 rules, hooks, and evaluations. |
+| `core/` | Vendor-neutral records: 27 skills, 7 roles, 9 rules, hooks, and evaluations. |
 | `profiles/` | `portable` and `template` policy profiles. |
 | `adapters/` | Antigravity, Claude, and Codex renderers, manifests, native mappings, and limitations. |
 | `installers/` | Root resolution, validation, deterministic planning, atomic writes, managed state, and launchers. |

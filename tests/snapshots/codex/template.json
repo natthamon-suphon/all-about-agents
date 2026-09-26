@@ -1,5 +1,5 @@
 {
-  "fileCount": 162,
+  "fileCount": 158,
   "files": [
     {
       "relativePath": ".agents/plugins/marketplace.json",
@@ -100,16 +100,6 @@
       "relativePath": ".agents/skills/loop-me/SKILL.md",
       "sha256": "13256b6e7e47a2f93e6c65cb440b9d12c1cc722229afac5d58e7b255e498f679",
       "mode": null
-    },
-    {
-      "relativePath": ".agents/skills/nano-image-generator/SKILL.md",
-      "sha256": "a9de65b7a45e93138781ff4aebdfbf7c8288b937a79d8e247c32f80664185222",
-      "mode": null
-    },
-    {
-      "relativePath": ".agents/skills/nano-image-generator/scripts/generate_image.py",
-      "sha256": "a1f9e8b5fca9b0c6399b72679635a7424b16ba94c8cce9c82414d762ac9a0cb6",
-      "mode": 493
     },
     {
       "relativePath": ".agents/skills/performance-profiling-and-benchmarking/SKILL.md",
@@ -403,7 +393,7 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "b8bb47b8e810d9441e52802a53106599c9d137d0496101a3e732aaacedb7792b",
+      "sha256": "b75ff92390621eddd97cbebdc7be6e3da81d3e40f790ec9be2d6e023304a6487",
       "mode": null
     },
     {
@@ -550,16 +540,6 @@
       "relativePath": "skills/loop-me/SKILL.md",
       "sha256": "13256b6e7e47a2f93e6c65cb440b9d12c1cc722229afac5d58e7b255e498f679",
       "mode": null
-    },
-    {
-      "relativePath": "skills/nano-image-generator/SKILL.md",
-      "sha256": "a9de65b7a45e93138781ff4aebdfbf7c8288b937a79d8e247c32f80664185222",
-      "mode": null
-    },
-    {
-      "relativePath": "skills/nano-image-generator/scripts/generate_image.py",
-      "sha256": "a1f9e8b5fca9b0c6399b72679635a7424b16ba94c8cce9c82414d762ac9a0cb6",
-      "mode": 493
     },
     {
       "relativePath": "skills/performance-profiling-and-benchmarking/SKILL.md",
@@ -894,14 +874,6 @@
       "sha256": "13256b6e7e47a2f93e6c65cb440b9d12c1cc722229afac5d58e7b255e498f679"
     },
     {
-      "relativePath": ".agents/skills/nano-image-generator/SKILL.md",
-      "sha256": "a9de65b7a45e93138781ff4aebdfbf7c8288b937a79d8e247c32f80664185222"
-    },
-    {
-      "relativePath": ".agents/skills/nano-image-generator/scripts/generate_image.py",
-      "sha256": "a1f9e8b5fca9b0c6399b72679635a7424b16ba94c8cce9c82414d762ac9a0cb6"
-    },
-    {
       "relativePath": ".agents/skills/performance-profiling-and-benchmarking/SKILL.md",
       "sha256": "201e3038354f166d35ca3761a0fbc0cdb91f0284438fd501e2def67ea9788e77"
     },
@@ -1135,7 +1107,7 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "b8bb47b8e810d9441e52802a53106599c9d137d0496101a3e732aaacedb7792b"
+      "sha256": "b75ff92390621eddd97cbebdc7be6e3da81d3e40f790ec9be2d6e023304a6487"
     },
     {
       "relativePath": "config.toml",
@@ -1252,14 +1224,6 @@
     {
       "relativePath": "skills/loop-me/SKILL.md",
       "sha256": "13256b6e7e47a2f93e6c65cb440b9d12c1cc722229afac5d58e7b255e498f679"
-    },
-    {
-      "relativePath": "skills/nano-image-generator/SKILL.md",
-      "sha256": "a9de65b7a45e93138781ff4aebdfbf7c8288b937a79d8e247c32f80664185222"
-    },
-    {
-      "relativePath": "skills/nano-image-generator/scripts/generate_image.py",
-      "sha256": "a1f9e8b5fca9b0c6399b72679635a7424b16ba94c8cce9c82414d762ac9a0cb6"
     },
     {
       "relativePath": "skills/performance-profiling-and-benchmarking/SKILL.md",

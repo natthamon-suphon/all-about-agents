@@ -38,7 +38,7 @@ test("Codex clean-profile materializes declared destinations and is idempotent",
     const first = await installFromUnrelatedCwd(root, destination);
     assert.equal(first.status, "complete");
     const core = await loadCore(process.cwd());
-    assert.equal(core.skills.length, 28);
+    assert.equal(core.skills.length, 27);
     assert.equal(core.roles.length, 7);
     assert.equal(core.rules.length, 9);
 

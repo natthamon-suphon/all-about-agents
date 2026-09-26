@@ -196,7 +196,7 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
   const core = await loadCore(process.cwd());
   const checks = [];
   const surfaceEvidence = [];
-  assert.equal(core.skills.length, 28);
+  assert.equal(core.skills.length, 27);
   assert.equal(core.roles.length, CANONICAL_ROLE_IDS.length);
   assert.equal(core.rules.length, 9);
   const validationResult = parseCliJson(await captureCli(["validate", "--scope", "all", "--format", "json"]), 0, "Gate 0 validate --scope all");

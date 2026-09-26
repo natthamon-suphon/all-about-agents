@@ -9,12 +9,11 @@ const collisionSets = [
   { id: "verification-review", samples: 5, candidates: ["verification-before-completion", "requesting-code-review"], boundary: "fresh execution evidence or independent critique" },
   { id: "planning-execution", samples: 5, candidates: ["writing-plans", "executing-plans"], boundary: "write an approved plan or execute one" },
   { id: "debugging-tdd", samples: 5, candidates: ["systematic-debugging", "test-driven-development"], boundary: "diagnose existing failure or implement new behavior" },
-  { id: "architecture-survey-design", samples: 5, candidates: ["improve-codebase-architecture", "codebase-design"], boundary: "portfolio survey or one module boundary" },
-  { id: "image-alternatives", samples: 5, candidates: ["nano-image-generator"], nonSkillAlternative: "code-native SVG, HTML, CSS, canvas, or an existing vector system", boundary: "raster generation or code-native visual" }
+  { id: "architecture-survey-design", samples: 5, candidates: ["improve-codebase-architecture", "codebase-design"], boundary: "portfolio survey or one module boundary" }
 ];
 
-test("critical collision matrix defines seven bounded sets and five fresh samples", () => {
-  assert.equal(collisionSets.length, 7);
+test("critical collision matrix defines six bounded sets and five fresh samples", () => {
+  assert.equal(collisionSets.length, 6);
   for (const collision of collisionSets) {
     assert.ok(collision.candidates.length > 0);
     assert.ok(collision.boundary.length > 10);
@@ -38,12 +37,4 @@ test("each collision candidate has trigger and nontrigger evidence with distinct
     const values = collision.candidates.map((id) => descriptions.get(id));
     assert.equal(new Set(values).size, values.length, `${collision.id}: descriptions must differ`);
   }
-});
-
-test("image generation collision keeps code-native visuals outside the raster skill", async () => {
-  const evaluation = JSON.parse(await readFile(resolve(process.cwd(), "core/evals/skill-routing/nano-image-generator.json"), "utf8"));
-  const nontrigger = evaluation.cases.find((entry) => entry.id === "NI-NONTRIGGER-code-native-SVG");
-  assert.ok(nontrigger);
-  assert.match(JSON.stringify(nontrigger), /SVG|code-native/iu);
-  assert.match(collisionSets.at(-1).nonSkillAlternative, /SVG|HTML|CSS|canvas|vector/iu);
 });

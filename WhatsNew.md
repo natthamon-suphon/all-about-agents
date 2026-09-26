@@ -168,6 +168,14 @@ All notable changes to all-about-agents. The format follows
   need a judge, which `docs/evaluations/method.md` assigns to blinded human
   scorers.
 
+### Removed
+
+- The `nano-image-generator` skill, its Gemini image script, routing eval,
+  lint test, inventory and emoji entries, and its collision set. The
+  portfolio is now 27 skills, and the inventory schema pins 27. Its user
+  instructions called `python`, which does not exist on macOS, and the owner
+  chose to drop the skill rather than fix it.
+
 ### Fixed
 
 - `npm run test:model` scored the announcement by a literal `Using skill **<skill>`
