@@ -1,4 +1,3 @@
-Microsoft.PowerShell_profile.ps1: Cannot dot-source this command because it was defined in a different language mode. To invoke this command without importing its contents, omit the '.' operator.
 # Writing Good Tests
 
 **Load this reference when:** writing or changing tests, adding mocks, or

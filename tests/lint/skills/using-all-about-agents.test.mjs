@@ -156,3 +156,10 @@ test("core loader accepts the canonical skill and links its routing cases", asyn
   assert.deepEqual(skill.evaluationCases, requiredCaseIds);
   assert.deepEqual(core.evals.find((entry) => entry.id === "using-all-about-agents-routing")?.cases.map((entry) => entry.id), requiredCaseIds);
 });
+
+test("codex reference never auto-commits and cites real step numbers", async () => {
+  const reference = await readFile(resolve(process.cwd(), "core/skills/using-all-about-agents/references/codex-tools.md"), "utf8");
+  assert.doesNotMatch(reference, /commits all work/iu);
+  assert.doesNotMatch(reference, /Step 0/u);
+  assert.match(reference, /explicit/iu);
+});

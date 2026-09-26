@@ -20,15 +20,21 @@ Subagent (general-purpose):
 
     [PLAN_OR_REQUIREMENTS]
 
-    ## Git Range to Review
+    ## Change to Review
 
-    **Base:** [BASE_SHA]
-    **Head:** [HEAD_SHA]
+    [REVIEW_PACKAGE]
+
+    Review exactly this package. A commit SHA is optional; use the command that
+    matches the package form:
 
     ```bash
-    git diff --stat [BASE_SHA]..[HEAD_SHA]
+    git diff                                  # unstaged changes
+    git diff --cached                         # staged changes
+    git diff --stat [BASE_SHA]..[HEAD_SHA]    # commit range, when commits exist
     git diff [BASE_SHA]..[HEAD_SHA]
     ```
+
+    For an artifact or file list, read the listed paths.
 
     ## Read-Only Review
 
@@ -128,8 +134,8 @@ Subagent (general-purpose):
 **Placeholders:**
 - `[DESCRIPTION]` — brief summary of what was built
 - `[PLAN_OR_REQUIREMENTS]` — what it should do (plan file path, task text, or requirements)
-- `[BASE_SHA]` — starting commit
-- `[HEAD_SHA]` — ending commit
+- `[REVIEW_PACKAGE]` — the package form and its scope: unstaged diff, staged diff, commit range, or artifact/file list (SHA is optional)
+- `[BASE_SHA]`, `[HEAD_SHA]` — only for a commit range: the starting and ending commits
 
 **Reviewer returns:** Strengths, Issues (Critical / Important / Minor), Recommendations, Assessment
 

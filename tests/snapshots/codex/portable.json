@@ -133,7 +133,7 @@
     },
     {
       "relativePath": ".agents/skills/requesting-code-review/code-reviewer.md",
-      "sha256": "b2f2ec7596925fe52dac158fdfbca19b3a7d779d619c481e6706a6c0001662d3",
+      "sha256": "5943b22864a7dbd8df63ae8595249622702900250c1265fe28f8afcd0b968515",
       "mode": null
     },
     {
@@ -163,12 +163,12 @@
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/implementer-prompt.md",
-      "sha256": "946601616a6f76ab3f165ef98377390968f1ec124ecef87422bc3553404e0332",
+      "sha256": "234d21da12b0a215833a7fd6ce0287d937d1afb804cdbfed7e655aa7dc4fe06d",
       "mode": null
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/re-review-prompt.md",
-      "sha256": "e1d8e0e65e58ccde6dc920843da9148d23e65aeb0f8932bcc30be1341a703c4c",
+      "sha256": "00343518dc58d892888ff4ca4b0d0dab1496cd2b6daad4aad468f3af74223ac1",
       "mode": null
     },
     {
@@ -203,7 +203,7 @@
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/task-reviewer-prompt.md",
-      "sha256": "e3b4a1bfe7cd55ed0459e5ca9cdddb6ff086c345b99e9097036db6a18545729e",
+      "sha256": "47c5e993b7cf1f5889fda63d3e9b98d4ed92f4b7e2291690c3bc7f2633551ac6",
       "mode": null
     },
     {
@@ -253,7 +253,7 @@
     },
     {
       "relativePath": ".agents/skills/test-driven-development/writing-good-tests.md",
-      "sha256": "59fa8700582255f43410c001e23298c14094cb2605bde5135a653162069da5d3",
+      "sha256": "d5885f833c1d23f6781f1e510f1a6df317efb633603de32eeacbc285ec825464",
       "mode": null
     },
     {
@@ -278,7 +278,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/codex-tools.md",
-      "sha256": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68",
+      "sha256": "5e7ee700f0d2d7c3593871cc253b71ab7bec7a8afe9aeb7a76280973d28f6601",
       "mode": null
     },
     {
@@ -583,7 +583,7 @@
     },
     {
       "relativePath": "skills/requesting-code-review/code-reviewer.md",
-      "sha256": "b2f2ec7596925fe52dac158fdfbca19b3a7d779d619c481e6706a6c0001662d3",
+      "sha256": "5943b22864a7dbd8df63ae8595249622702900250c1265fe28f8afcd0b968515",
       "mode": null
     },
     {
@@ -613,12 +613,12 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/implementer-prompt.md",
-      "sha256": "946601616a6f76ab3f165ef98377390968f1ec124ecef87422bc3553404e0332",
+      "sha256": "234d21da12b0a215833a7fd6ce0287d937d1afb804cdbfed7e655aa7dc4fe06d",
       "mode": null
     },
     {
       "relativePath": "skills/subagent-driven-development/re-review-prompt.md",
-      "sha256": "e1d8e0e65e58ccde6dc920843da9148d23e65aeb0f8932bcc30be1341a703c4c",
+      "sha256": "00343518dc58d892888ff4ca4b0d0dab1496cd2b6daad4aad468f3af74223ac1",
       "mode": null
     },
     {
@@ -653,7 +653,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/task-reviewer-prompt.md",
-      "sha256": "e3b4a1bfe7cd55ed0459e5ca9cdddb6ff086c345b99e9097036db6a18545729e",
+      "sha256": "47c5e993b7cf1f5889fda63d3e9b98d4ed92f4b7e2291690c3bc7f2633551ac6",
       "mode": null
     },
     {
@@ -703,7 +703,7 @@
     },
     {
       "relativePath": "skills/test-driven-development/writing-good-tests.md",
-      "sha256": "59fa8700582255f43410c001e23298c14094cb2605bde5135a653162069da5d3",
+      "sha256": "d5885f833c1d23f6781f1e510f1a6df317efb633603de32eeacbc285ec825464",
       "mode": null
     },
     {
@@ -728,7 +728,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/codex-tools.md",
-      "sha256": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68",
+      "sha256": "5e7ee700f0d2d7c3593871cc253b71ab7bec7a8afe9aeb7a76280973d28f6601",
       "mode": null
     },
     {
@@ -914,7 +914,7 @@
     },
     {
       "relativePath": ".agents/skills/requesting-code-review/code-reviewer.md",
-      "sha256": "b2f2ec7596925fe52dac158fdfbca19b3a7d779d619c481e6706a6c0001662d3"
+      "sha256": "5943b22864a7dbd8df63ae8595249622702900250c1265fe28f8afcd0b968515"
     },
     {
       "relativePath": ".agents/skills/research/SKILL.md",
@@ -938,11 +938,11 @@
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/implementer-prompt.md",
-      "sha256": "946601616a6f76ab3f165ef98377390968f1ec124ecef87422bc3553404e0332"
+      "sha256": "234d21da12b0a215833a7fd6ce0287d937d1afb804cdbfed7e655aa7dc4fe06d"
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/re-review-prompt.md",
-      "sha256": "e1d8e0e65e58ccde6dc920843da9148d23e65aeb0f8932bcc30be1341a703c4c"
+      "sha256": "00343518dc58d892888ff4ca4b0d0dab1496cd2b6daad4aad468f3af74223ac1"
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/scripts/review-package",
@@ -970,7 +970,7 @@
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/task-reviewer-prompt.md",
-      "sha256": "e3b4a1bfe7cd55ed0459e5ca9cdddb6ff086c345b99e9097036db6a18545729e"
+      "sha256": "47c5e993b7cf1f5889fda63d3e9b98d4ed92f4b7e2291690c3bc7f2633551ac6"
     },
     {
       "relativePath": ".agents/skills/systematic-debugging/SKILL.md",
@@ -1010,7 +1010,7 @@
     },
     {
       "relativePath": ".agents/skills/test-driven-development/writing-good-tests.md",
-      "sha256": "59fa8700582255f43410c001e23298c14094cb2605bde5135a653162069da5d3"
+      "sha256": "d5885f833c1d23f6781f1e510f1a6df317efb633603de32eeacbc285ec825464"
     },
     {
       "relativePath": ".agents/skills/threat-modeling-and-security/SKILL.md",
@@ -1030,7 +1030,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/codex-tools.md",
-      "sha256": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68"
+      "sha256": "5e7ee700f0d2d7c3593871cc253b71ab7bec7a8afe9aeb7a76280973d28f6601"
     },
     {
       "relativePath": ".agents/skills/using-git-worktrees/SKILL.md",
@@ -1274,7 +1274,7 @@
     },
     {
       "relativePath": "skills/requesting-code-review/code-reviewer.md",
-      "sha256": "b2f2ec7596925fe52dac158fdfbca19b3a7d779d619c481e6706a6c0001662d3"
+      "sha256": "5943b22864a7dbd8df63ae8595249622702900250c1265fe28f8afcd0b968515"
     },
     {
       "relativePath": "skills/research/SKILL.md",
@@ -1298,11 +1298,11 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/implementer-prompt.md",
-      "sha256": "946601616a6f76ab3f165ef98377390968f1ec124ecef87422bc3553404e0332"
+      "sha256": "234d21da12b0a215833a7fd6ce0287d937d1afb804cdbfed7e655aa7dc4fe06d"
     },
     {
       "relativePath": "skills/subagent-driven-development/re-review-prompt.md",
-      "sha256": "e1d8e0e65e58ccde6dc920843da9148d23e65aeb0f8932bcc30be1341a703c4c"
+      "sha256": "00343518dc58d892888ff4ca4b0d0dab1496cd2b6daad4aad468f3af74223ac1"
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/review-package",
@@ -1330,7 +1330,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/task-reviewer-prompt.md",
-      "sha256": "e3b4a1bfe7cd55ed0459e5ca9cdddb6ff086c345b99e9097036db6a18545729e"
+      "sha256": "47c5e993b7cf1f5889fda63d3e9b98d4ed92f4b7e2291690c3bc7f2633551ac6"
     },
     {
       "relativePath": "skills/systematic-debugging/SKILL.md",
@@ -1370,7 +1370,7 @@
     },
     {
       "relativePath": "skills/test-driven-development/writing-good-tests.md",
-      "sha256": "59fa8700582255f43410c001e23298c14094cb2605bde5135a653162069da5d3"
+      "sha256": "d5885f833c1d23f6781f1e510f1a6df317efb633603de32eeacbc285ec825464"
     },
     {
       "relativePath": "skills/threat-modeling-and-security/SKILL.md",
@@ -1390,7 +1390,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/codex-tools.md",
-      "sha256": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68"
+      "sha256": "5e7ee700f0d2d7c3593871cc253b71ab7bec7a8afe9aeb7a76280973d28f6601"
     },
     {
       "relativePath": "skills/using-git-worktrees/SKILL.md",

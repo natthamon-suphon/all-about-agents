@@ -185,3 +185,18 @@ test("core loader exposes subagent-driven-development metadata and routing links
   assert.deepEqual(skill.evaluationCases, requiredCases);
   assert.deepEqual(core.evals.find((entry) => entry.id === "subagent-driven-development-routing")?.cases.map((entry) => entry.id), requiredCases);
 });
+
+test("worker prompts never commit on their own and cite the real model policy heading", async () => {
+  const directory = resolve(process.cwd(), "core/skills/subagent-driven-development");
+  const skill = await readFile(join(directory, "SKILL.md"), "utf8");
+  assert.match(skill, /^## Model and review policy$/mu);
+  const implementer = await readFile(join(directory, "implementer-prompt.md"), "utf8");
+  assert.doesNotMatch(implementer, /Commit your work/iu);
+  assert.match(implementer, /Do not commit/iu);
+  for (const name of ["implementer-prompt.md", "task-reviewer-prompt.md", "re-review-prompt.md"]) {
+    const prompt = await readFile(join(directory, name), "utf8");
+    assert.doesNotMatch(prompt, /Model Selection/u, `${name} cites a heading that does not exist`);
+  }
+  const reReview = await readFile(join(directory, "re-review-prompt.md"), "utf8");
+  assert.doesNotMatch(reReview, /cheap/iu, "re-review must not downshift the model");
+});

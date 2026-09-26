@@ -66,3 +66,11 @@ test("core loader exposes requesting-code-review metadata", async () => {
   assert.deepEqual(skill.evaluationCases, requiredCases);
   assert.deepEqual(core.evals.find((entry) => entry.id === `${skillId}-routing`)?.cases.map((entry) => entry.id), requiredCases);
 });
+
+test("reviewer template accepts every review package form, not only a commit range", async () => {
+  const template = await readFile(new URL(`../../../core/skills/${skillId}/code-reviewer.md`, import.meta.url), "utf8");
+  assert.doesNotMatch(template, /## Git Range to Review/u);
+  assert.match(template, /\[REVIEW_PACKAGE\]/u);
+  assert.match(template, /git diff --cached/u);
+  assert.match(template, /SHA is optional/iu);
+});

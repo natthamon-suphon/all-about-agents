@@ -71,3 +71,9 @@ test("core loader exposes test-driven-development metadata and routing links", a
   assert.deepEqual(skill.evaluationCases, requiredCases);
   assert.deepEqual(core.evals.find((entry) => entry.id === `${skillId}-routing`)?.cases.map((entry) => entry.id), requiredCases);
 });
+
+test("writing-good-tests companion starts with its title, not captured shell noise", async () => {
+  const companion = await readFile(new URL("../../../core/skills/test-driven-development/writing-good-tests.md", import.meta.url), "utf8");
+  assert.match(companion, /^# Writing Good Tests\n/u);
+  assert.doesNotMatch(companion, /PowerShell_profile|Cannot dot-source/u);
+});
