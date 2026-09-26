@@ -47,3 +47,25 @@ jobs:
         run: |
           bash -n installers/install.sh
           bash installers/install.sh validate --scope all --format json
+
+  full-suite:
+    name: Full test suite (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Use Node.js 22.12
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.12.0
+          package-manager-cache: false
+
+      - name: Run the full node:test suite
+        run: node --test

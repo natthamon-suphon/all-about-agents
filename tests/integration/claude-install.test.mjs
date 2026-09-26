@@ -110,3 +110,12 @@ test("Claude Windows statusline command runs through Git Bash and PowerShell", {
     assert.ok(executed > 0, "at least one Windows shell route must be available");
   });
 });
+
+test("CI runs the full node:test suite on Windows and macOS", async () => {
+  const workflow = await readFile(resolve(process.cwd(), ".github/workflows/installer-matrix.yml"), "utf8");
+  const job = workflow.split(/^  (?=[a-z][a-z0-9-]*:\s*$)/mu).find((block) => block.startsWith("full-suite:"));
+  assert.ok(job, "installer-matrix.yml must define a full-suite job");
+  assert.match(job, /- windows-latest/u);
+  assert.match(job, /- macos-latest/u);
+  assert.match(job, /^\s+run: node --test\s*$/mu);
+});
