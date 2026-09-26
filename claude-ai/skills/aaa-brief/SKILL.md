@@ -58,7 +58,8 @@ template's section order:
 6. Requirements (REQ#)
 7. Constraints
 8. Success criteria
-9. Decisions (D#)
+9. Decisions (D#): choices made between options, each with the reason given
+   (or "reason not given")
 10. Risks
 11. Assumptions (A#)
 12. Open questions (O#), including research items (R#)
@@ -74,6 +75,9 @@ template's section order:
   Never answer it yourself.
 - Add nothing new: no features, numbers, targets, names, or dates that the
   source does not contain.
+- Put each fact in one section only. A stated fact is a requirement, a
+  constraint, or background. It becomes a decision only when the user chose
+  it over another option.
 
 ## 4. When the user asks you to add or remove
 

@@ -8,7 +8,7 @@ the observable pass and fail signals.
 - Earlier turns: the user and Claude discussed a weekend cooking class for kids. Stated: goal is to teach 8-12 year olds basic cooking; place is the user's café on Saturdays; max 10 kids; budget 5,000 baht for tools. Open: price per child was not decided.
 - Prompt: "Summarize what we just discussed into a formal document."
 - Expected: writes `02-brief.md` from the chat, with every section, the header table, and a source trace.
-- Pass: the stated facts appear with source "chat"; price per child is an open question; sections nobody discussed say "Not discussed".
+- Pass: the stated facts appear with source "chat"; price per child is an open question; sections nobody discussed say "Not discussed"; each fact appears in one section only, and Decisions holds only choices made between options (or says "Not discussed").
 - Fail: invents a price, a schedule, or a menu; or skips the source trace.
 
 ### aaa-brief-TRIGGER-2

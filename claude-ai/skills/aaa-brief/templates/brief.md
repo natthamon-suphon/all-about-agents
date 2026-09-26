@@ -48,8 +48,10 @@ Who it is for, with sources.
 
 ## 9. Decisions
 
-| D# | Decision | Reason | Source |
-| --- | --- | --- | --- |
+Only choices made between options. If there were none, write "Not discussed."
+
+| D# | Decision | Options considered | Reason given | Source |
+| --- | --- | --- | --- | --- |
 
 ## 10. Risks
 

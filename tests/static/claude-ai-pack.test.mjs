@@ -10,7 +10,7 @@ const packRoot = resolve(root, "claude-ai");
 const EXPECTED_SKILLS = ["aaa-interview", "aaa-brief", "aaa-tasks", "aaa-run", "aaa-review", "aaa-research"];
 const REQUIRED_PHRASES = {
   "aaa-interview": ["one question", "01-interview-record.md", "stop rule", "R#", "anything else"],
-  "aaa-brief": ["02-brief.md", "Not discussed", "source trace", "inferred", "v2"],
+  "aaa-brief": ["02-brief.md", "Not discussed", "source trace", "inferred", "v2", "one section only"],
   "aaa-tasks": ["03-tasks.md", "done check", "needs approval", "parallel-safe", "Not yet specified"],
   "aaa-run": ["done check", "three times", "needs approval", "check not run", "irreversible"],
   "aaa-review": ["04-review.md", "self-review", "needs your decision", "not checked", "Attempted"],

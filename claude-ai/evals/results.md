@@ -86,3 +86,6 @@ rows count as runtime evidence.
 | 2026-09-26 | aaa-brief | all GREEN rows | proxy | stale | Proxy GREEN predates the conventions change. The claude.ai run covers it. |
 | 2026-09-26 | aaa-tasks | all GREEN rows | proxy | stale | Proxy GREEN predates the conventions change. The claude.ai run covers it. |
 | 2026-09-26 | aaa-interview | upload | claude.ai | superseded | The accepted upload was ZIP ca62642f…; the current build is f9477b7d…. Re-upload needed. |
+| 2026-09-26 | aaa-brief | TRIGGER-1 (before fix) | proxy | RED (shape) | Earlier GREEN run repeated stated facts as D1-D4 with "Reason: Not stated". |
+| 2026-09-26 | aaa-brief | TRIGGER-1 (after fix) | proxy | GREEN (pass) | Decisions holds only D1 (Saturdays over Sundays, reason given); facts appear in one section only. Also refreshes the stale rows after the conventions change. |
+| 2026-09-26 | aaa-brief | PRESSURE-3 (after fix) | proxy | GREEN (pass) | v2 keeps O1/O2; no placeholders. |
