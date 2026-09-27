@@ -201,6 +201,13 @@ All notable changes to all-about-agents. The format follows
 - A case that outruns its budget is `NOT_RUN_UNAVAILABLE`, not `FAIL`: a slow
   session is an environment fact, not a routing verdict. The budget moved from a
   fixed 180000 ms to 300000 ms and reads `AAA_CASE_TIMEOUT_MS` when it is set.
+- `subagent-driven-development` built its review package from commits only.
+  The skill's default is to not commit, so the package held an empty diff and
+  a task could still be reviewed and completed. `review-package.js` now takes
+  `WORKTREE` as the head to package uncommitted work, and `--snapshot` prints a
+  tree id to use as the per-task base. Both write Git objects only, with no
+  commit, ref, index, or working-tree change. An empty package is refused with
+  exit 3 and no file.
 
 ## [2.1.1] - 2026-09-19
 

@@ -198,7 +198,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/SKILL.md",
-      "sha256": "743cebf6d304d3897b15140d6f697e0a51eb7d8546ff3e6a2bbf2b5b4d593de4",
+      "sha256": "49b3f4131d402ffcca8acd4cc7ac679b5f8d857aeece25dadc0dedb224f015be",
       "mode": null
     },
     {
@@ -208,17 +208,17 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/re-review-prompt.md",
-      "sha256": "00343518dc58d892888ff4ca4b0d0dab1496cd2b6daad4aad468f3af74223ac1",
+      "sha256": "9bd4fb23592217004b70a10169f261b6b6f5355d3c9fc4c35d90d2ae1fe44758",
       "mode": null
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/review-package",
-      "sha256": "8439bb55b6c04263ef50f1ff88aed3598997308e8f58e6494e722f5552c91444",
+      "sha256": "1a89050591dca146794ca041d91c2a48e0e3b0e629b04715f39ec65cb4eb81c7",
       "mode": 493
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/review-package.js",
-      "sha256": "93c8b56601f5501b3ba2c4d8d6841b1377aa85a0b4045beda8ceea7d68995271",
+      "sha256": "f59a9fbbf5898f8f0f93b7240a121e5c7e9ca5901d788eaa773ca2f6900cc89a",
       "mode": 493
     },
     {
@@ -243,7 +243,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/task-reviewer-prompt.md",
-      "sha256": "47c5e993b7cf1f5889fda63d3e9b98d4ed92f4b7e2291690c3bc7f2633551ac6",
+      "sha256": "e5ff62c75cde27c03d1d6835e753cf7387fb310d29178e96572e3ecf3087c796",
       "mode": null
     },
     {
@@ -556,7 +556,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/SKILL.md",
-      "sha256": "743cebf6d304d3897b15140d6f697e0a51eb7d8546ff3e6a2bbf2b5b4d593de4"
+      "sha256": "49b3f4131d402ffcca8acd4cc7ac679b5f8d857aeece25dadc0dedb224f015be"
     },
     {
       "relativePath": "skills/subagent-driven-development/implementer-prompt.md",
@@ -564,15 +564,15 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/re-review-prompt.md",
-      "sha256": "00343518dc58d892888ff4ca4b0d0dab1496cd2b6daad4aad468f3af74223ac1"
+      "sha256": "9bd4fb23592217004b70a10169f261b6b6f5355d3c9fc4c35d90d2ae1fe44758"
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/review-package",
-      "sha256": "8439bb55b6c04263ef50f1ff88aed3598997308e8f58e6494e722f5552c91444"
+      "sha256": "1a89050591dca146794ca041d91c2a48e0e3b0e629b04715f39ec65cb4eb81c7"
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/review-package.js",
-      "sha256": "93c8b56601f5501b3ba2c4d8d6841b1377aa85a0b4045beda8ceea7d68995271"
+      "sha256": "f59a9fbbf5898f8f0f93b7240a121e5c7e9ca5901d788eaa773ca2f6900cc89a"
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace",
@@ -592,7 +592,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/task-reviewer-prompt.md",
-      "sha256": "47c5e993b7cf1f5889fda63d3e9b98d4ed92f4b7e2291690c3bc7f2633551ac6"
+      "sha256": "e5ff62c75cde27c03d1d6835e753cf7387fb310d29178e96572e3ecf3087c796"
     },
     {
       "relativePath": "skills/systematic-debugging/SKILL.md",

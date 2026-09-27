@@ -96,7 +96,7 @@ test("review-package passes an untrusted Git ref as one argument without shell e
     });
 
     assert.equal(result.status, 2, result.stderr);
-    assert.match(result.stderr, /bad (?:BASE|HEAD) commit:/u);
+    assert.match(result.stderr, /bad (?:BASE|HEAD) commit or tree:/u);
     await assert.rejects(access(marker), { code: "ENOENT" });
   } finally {
     await rm(root, { force: true, recursive: true });
@@ -142,6 +142,132 @@ test("review-package keeps its valid review text and summary format", async () =
     assert.match(review, /## Diff\n/u);
   } finally {
     await rm(root, { force: true, recursive: true });
+  }
+});
+
+async function uncommittedRepo(prefix) {
+  const root = await mkdtemp(join(tmpdir(), prefix));
+  const tools = await mkdtemp(join(tmpdir(), `${prefix}tools-`));
+  const git = (args) => {
+    const result = spawnSync("git", args, { cwd: root, encoding: "utf8", shell: false });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  git(["init", "--quiet"]);
+  git(["config", "user.name", "AAA Test"]);
+  git(["config", "user.email", "aaa-test@example.invalid"]);
+  await writeFile(join(root, "plan.md"), "# Test plan\n", "utf8");
+  await writeFile(join(root, "sample.txt"), "one\n", "utf8");
+  git(["add", "plan.md", "sample.txt"]);
+  git(["commit", "--quiet", "-m", "first"]);
+  const script = join(tools, "review-package.cjs");
+  await writeFile(script, await readFile(reviewPackagePath, "utf8"), "utf8");
+  const run = (args) => spawnSync(process.execPath, [script, ...args], { cwd: root, encoding: "utf8", shell: false });
+  const cleanup = async () => {
+    await rm(root, { force: true, recursive: true });
+    await rm(tools, { force: true, recursive: true });
+  };
+  return { root, tools, git, run, cleanup, base: git(["rev-parse", "HEAD"]) };
+}
+
+test("review-package packages uncommitted work against the recorded base without touching the index", async () => {
+  const repo = await uncommittedRepo("aaa-review-worktree-");
+  try {
+    await writeFile(join(repo.root, "sample.txt"), "one\ntwo\n", "utf8");
+    await writeFile(join(repo.root, "fresh.txt"), "fresh line\n", "utf8");
+    const statusBefore = repo.git(["status", "--porcelain"]);
+    const outFile = join(repo.tools, "review.diff");
+    const result = repo.run([join(repo.root, "plan.md"), repo.base, "WORKTREE", outFile]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /wrote .*review[.]diff: 0 commit\(s\), [0-9]+ bytes/u);
+    const review = await readFile(outFile, "utf8");
+    assert.match(review, /## Commits\n\(none: uncommitted working tree\)/u);
+    assert.match(review, /^\+two$/mu);
+    assert.match(review, /fresh[.]txt/u);
+    assert.match(review, /^\+fresh line$/mu);
+    assert.equal(repo.git(["status", "--porcelain"]), statusBefore);
+    assert.equal(repo.git(["diff", "--cached", "--name-only"]), "");
+  } finally {
+    await repo.cleanup();
+  }
+});
+
+test("review-package refuses an empty package instead of writing one", async () => {
+  const repo = await uncommittedRepo("aaa-review-empty-");
+  try {
+    for (const head of ["HEAD", "WORKTREE"]) {
+      const outFile = join(repo.tools, `review-${head}.diff`);
+      const result = repo.run([join(repo.root, "plan.md"), repo.base, head, outFile]);
+      assert.equal(result.status, 3, `${head} must exit 3 on an empty change`);
+      assert.match(result.stderr, /empty review package/u);
+      await assert.rejects(access(outFile), { code: "ENOENT" });
+    }
+  } finally {
+    await repo.cleanup();
+  }
+});
+
+test("review-package --snapshot records a per-task base so earlier uncommitted tasks stay out", async () => {
+  const repo = await uncommittedRepo("aaa-review-snapshot-");
+  try {
+    await writeFile(join(repo.root, "sample.txt"), "one\ntask one line\n", "utf8");
+    const statusBefore = repo.git(["status", "--porcelain"]);
+    const snapshot = repo.run(["--snapshot"]);
+    assert.equal(snapshot.status, 0, snapshot.stderr);
+    const snapshotId = snapshot.stdout.trim();
+    assert.match(snapshotId, /^[0-9a-f]{40,64}$/u);
+    assert.equal(repo.git(["status", "--porcelain"]), statusBefore);
+    assert.equal(repo.git(["diff", "--cached", "--name-only"]), "");
+    await writeFile(join(repo.root, "task-two.txt"), "task two line\n", "utf8");
+    const outFile = join(repo.tools, "task-two.diff");
+    const result = repo.run([join(repo.root, "plan.md"), snapshotId, "WORKTREE", outFile]);
+    assert.equal(result.status, 0, result.stderr);
+    const review = await readFile(outFile, "utf8");
+    assert.match(review, /task-two[.]txt/u);
+    assert.doesNotMatch(review, /task one line/u);
+  } finally {
+    await repo.cleanup();
+  }
+});
+
+test("the skill and review prompts cover the no-commit review path", async () => {
+  const directory = resolve(process.cwd(), "core/skills/subagent-driven-development");
+  const skill = await readFile(join(directory, "SKILL.md"), "utf8");
+  assert.match(skill, /--snapshot/u);
+  assert.match(skill, /WORKTREE/u);
+  assert.match(skill, /empty review package/iu);
+  for (const name of ["task-reviewer-prompt.md", "re-review-prompt.md"]) {
+    const prompt = await readFile(join(directory, name), "utf8");
+    assert.match(prompt, /If Head is `WORKTREE`, report the\s+missing diff file and stop/u, `${name} must stop without a range fallback`);
+  }
+  assert.match(skill, /ledger, briefs, and reports\s+in the plan's `sdd\/` folder/u);
+});
+
+test("review-package keeps tracked-but-ignored files and recorded modes in a WORKTREE package", async () => {
+  const repo = await uncommittedRepo("aaa-review-tracked-");
+  try {
+    repo.git(["config", "core.fileMode", "false"]);
+    await writeFile(join(repo.root, "keep.log"), "kept\n", "utf8");
+    await writeFile(join(repo.root, "run.sh"), "echo run\n", "utf8");
+    repo.git(["add", "keep.log", "run.sh"]);
+    repo.git(["update-index", "--chmod=+x", "run.sh"]);
+    await writeFile(join(repo.root, ".gitignore"), "*.log\n", "utf8");
+    repo.git(["add", ".gitignore"]);
+    repo.git(["commit", "--quiet", "-m", "tracked ignored and executable"]);
+    const base = repo.git(["rev-parse", "HEAD"]);
+    const refsBefore = repo.git(["for-each-ref"]);
+    const unchanged = repo.run([join(repo.root, "plan.md"), base, "WORKTREE", join(repo.tools, "unchanged.diff")]);
+    assert.equal(unchanged.status, 3, `an unchanged tree must be empty: ${unchanged.stderr}`);
+    await writeFile(join(repo.root, "keep.log"), "kept\nedited\n", "utf8");
+    const outFile = join(repo.tools, "edited.diff");
+    const edited = repo.run([join(repo.root, "plan.md"), base, "WORKTREE", outFile]);
+    assert.equal(edited.status, 0, edited.stderr);
+    const review = await readFile(outFile, "utf8");
+    assert.match(review, /^\+edited$/mu);
+    assert.doesNotMatch(review, /run[.]sh|old mode|deleted file/u);
+    assert.equal(repo.git(["for-each-ref"]), refsBefore);
+  } finally {
+    await repo.cleanup();
   }
 });
 

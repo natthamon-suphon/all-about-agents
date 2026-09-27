@@ -40,8 +40,10 @@ Subagent (general-purpose):
     change. The diff's context lines ARE the changed files: do not Read a
     changed file separately unless a hunk you must judge is cut off
     mid-function — and say so in your report. Do not re-run git commands.
-    If the diff file is missing, fetch the diff yourself:
+    If the diff file is missing and Head is a commit, fetch the diff yourself:
     `git diff --stat [BASE_SHA]..[HEAD_SHA]` and `git diff [BASE_SHA]..[HEAD_SHA]`.
+    If Head is `WORKTREE`, report the missing diff file and stop: a
+    working-tree package cannot be rebuilt read-only.
     Do not crawl the broader codebase. Inspect code outside the diff only
     to evaluate a concrete risk you can name — one focused check per named
     risk, and name both the risk and what you checked in your report.
@@ -175,11 +177,13 @@ Subagent (general-purpose):
   are already in this template)
 - `[REPORT_FILE]` — REQUIRED: the file the implementer wrote its detailed
   report to
-- `[BASE_SHA]` — commit before this task
-- `[HEAD_SHA]` — current commit
+- `[BASE_SHA]` — commit before this task, or the `--snapshot` tree id
+  recorded before it
+- `[HEAD_SHA]` — current commit, or `WORKTREE` when the task's work is
+  uncommitted
 - `[DIFF_FILE]` — REQUIRED: the path the controller wrote the review
-  package to (`scripts/review-package PLAN_FILE BASE HEAD` prints the unique
-  path it wrote; the package never enters the controller's context)
+  package to (`node scripts/review-package.js PLAN_FILE BASE HEAD|WORKTREE`
+  prints the unique path it wrote; the package never enters the controller's context)
 
 **Reviewer returns:** Spec Compliance verdict (✅/❌/⚠️), Strengths, Issues
 (Critical/Important/Minor), Task quality verdict

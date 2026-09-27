@@ -8,6 +8,11 @@ if command -v node >/dev/null 2>&1; then
   exec node "${SCRIPT_DIR}/review-package.js" "$@"
 fi
 
+if [ "${1:-}" = "--snapshot" ] || [ "${3:-}" = "WORKTREE" ]; then
+  echo "review-package: --snapshot and WORKTREE need node" >&2
+  exit 2
+fi
+
 if [ $# -lt 3 ] || [ $# -gt 4 ]; then
   echo "usage: review-package PLAN_FILE BASE HEAD [OUTFILE]" >&2
   exit 2
@@ -18,8 +23,12 @@ base=$2
 head=$3
 [ -f "$plan" ] || { echo "no such plan file: $plan" >&2; exit 2; }
 
-git rev-parse --verify --quiet "$base" >/dev/null || { echo "bad BASE: $base" >&2; exit 2; }
-git rev-parse --verify --quiet "$head" >/dev/null || { echo "bad HEAD: $head" >&2; exit 2; }
+git rev-parse --verify --quiet --end-of-options "${base}^{commit}" >/dev/null 2>&1 || { echo "bad BASE commit: $base" >&2; exit 2; }
+git rev-parse --verify --quiet --end-of-options "${head}^{commit}" >/dev/null 2>&1 || { echo "bad HEAD commit: $head" >&2; exit 2; }
+if git diff --quiet "$base" "$head"; then
+  echo "empty review package: nothing changed between ${base} and ${head}; do not dispatch a review" >&2
+  exit 3
+fi
 
 if [ $# -eq 4 ]; then
   out=$4

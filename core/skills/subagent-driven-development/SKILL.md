@@ -36,7 +36,9 @@ write, and preserve evidence and review gates even when speed is requested.
 5. Create or verify a durable ledger for this plan. Record the base revision,
    task state, worker and reviewer status, exact files, commands and observed
    results, findings, and one next action. On resume, reconcile the ledger with
-   the worktree before replaying any task.
+   the worktree before replaying any task. Keep the ledger, briefs, and reports
+   in the plan's `sdd/` folder, which ignores itself, or outside the
+   repository, so they never enter a `WORKTREE` review package.
 
 ## Dispatch and ownership
 
@@ -84,9 +86,12 @@ conflict found later gets a ruling and the plan continues.
   cannot know, your resolution of any ambiguity in the brief, and the report
   path with its contract. Exact values live only in the brief. Never make a
   worker read the whole plan or pasted prior-task summaries.
-- Record the base revision before every dispatch; review packages and fix-round
-  diffs need it, and `HEAD~1` silently drops all but the last commit of a
-  multi-commit task.
+- Record the base before every dispatch and before every fix round; review
+  packages and fix-round diffs need it. With commit authority the base is the
+  commit, because `HEAD~1` silently drops all but the last commit of a
+  multi-commit task. Without it, run `node scripts/review-package.js
+  --snapshot` and record the printed tree id; it writes Git objects only, with
+  no commit, ref, index, or working-tree change.
 - Small tasks of the same kind (for example three one-line renames in one
   module) may be batched into one dispatch with one brief and one review when
   their write scopes are disjoint from every other task; the batch gets one
@@ -104,8 +109,10 @@ for cleanup, a deadline, or cost pressure. If the strongest approved model is
 unavailable, stop and report the missing capability instead of silently
 downshifting.
 
-After each worker completes, create a review package from the recorded base
-revision and dispatch a task reviewer. The reviewer must issue separate
+After each worker completes, create a review package from the recorded base to
+`HEAD` for committed work or to `WORKTREE` for uncommitted work, and dispatch a
+task reviewer. An empty review package means the worker changed nothing: stop
+and investigate, and never review or complete a task on it. The reviewer must issue separate
 spec-compliance and task-quality verdicts. A clean worker self-review is not a
 review gate. After all tasks pass, dispatch one strongest-approved-model
 whole-branch review that includes the ledger's deferred findings.
