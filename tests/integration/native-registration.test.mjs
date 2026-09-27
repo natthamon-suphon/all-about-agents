@@ -49,15 +49,6 @@ async function auditTreeContainment(root, directory = root) {
   }
 }
 
-async function removeDisposableRoot(target, { remove = rm } = {}) {
-  await remove(target, {
-    recursive: true,
-    force: true,
-    maxRetries: 5,
-    retryDelay: 100
-  });
-}
-
 async function withDisposableRoot(callback) {
   const createdRoot = await mkdtemp(join(tmpdir(), "aaa-t07-native-"));
   const root = await realpath(createdRoot);
@@ -71,23 +62,10 @@ async function withDisposableRoot(callback) {
     const canonicalRoot = await realpath(createdRoot);
     assertContained(canonicalTemp, canonicalRoot, "canonical cleanup target");
     await auditTreeContainment(canonicalRoot);
-    await removeDisposableRoot(createdRoot);
+    await rm(createdRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     assert.equal(await pathExists(createdRoot), false, "disposable root must be removed after the check");
   }
 }
-
-test("T10 disposable native cleanup retries transient Windows lock errors", async () => {
-  let observed = null;
-  await removeDisposableRoot("disposable-root", {
-    remove: async (target, options) => {
-      observed = { target, options };
-    }
-  });
-  assert.deepEqual(observed, {
-    target: "disposable-root",
-    options: { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }
-  });
-});
 
 async function captureAaa(args, runtime = {}) {
   let stdout = "";
@@ -527,12 +505,6 @@ test("T07 helper redacts tokens and user paths before diagnostics", () => {
   assert.equal(output.includes("1234567890abcdef"), false);
 });
 
-test("T07 helper routes statusline to the host-native launcher", () => {
-  assert.equal(launcherForPlatform("win32"), "statusline/statusline.ps1");
-  assert.equal(launcherForPlatform("linux"), "statusline/statusline.sh");
-  assert.equal(launcherForPlatform("darwin"), "statusline/statusline.sh");
-});
-
 test("T07 helper bounds launcher output and reports overflow", async () => {
   await withDisposableRoot(async (root) => {
     const result = await spawnWithInput({
@@ -756,10 +728,4 @@ test("T07 Codex registration uses only an isolated CODEX_HOME and exact installe
       await assertMarkers(installedRoot, CODEX_HOOK_FILES);
     });
   });
-});
-
-test("T07 real product-root metadata comparison is outside the disposable safety boundary", (t) => {
-  const reason = "status=NOT_RUN reason=the harness does not read live product roots; all observed writes are confined to disposable roots";
-  t.diagnostic(reason);
-  t.skip(reason);
 });

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 import { loadCore } from "../../installers/lib/load-core.mjs";
@@ -17,11 +17,6 @@ const ruleIds = [
   "long-task-state"
 ];
 
-const requiredOutputs = ruleIds.map((id) => `core/rules/${id}/rule.json`).concat([
-  "tests/contracts/rules.test.mjs",
-  "core/evals/scenarios/rule-precedence.json"
-]);
-
 const permanentInvariants = {
   "authority-and-scope": "Distinguish answer, read-only review, implementation, external side effects, and exact user authorization.",
   "evidence-and-truth": "Do not invent; verify current facts and changed state; report uncertainty and `not run`.",
@@ -33,13 +28,6 @@ const permanentInvariants = {
   "multi-agent-ownership": "Delegate only when useful, isolate context and writes, prohibit overlapping writers, and require independent evidence review.",
   "long-task-state": "Maintain a durable task ledger, checkpoint before compaction, and resume from verified filesystem state."
 };
-
-test("T005 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
 
 test("T005 creates exactly the nine canonical rule IDs", async () => {
   const entries = await Promise.all(ruleIds.map(async (id) => {

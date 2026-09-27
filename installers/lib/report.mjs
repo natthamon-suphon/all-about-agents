@@ -49,11 +49,6 @@ export function failedAction(action, reason) {
   return { ...action, reason };
 }
 
-export function serializeApplyResult(result) {
-  if (!validateApplyResult(result)) throw new TypeError("invalid ApplyResult");
-  return `${JSON.stringify(result)}\n`;
-}
-
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue);
   if (value instanceof Uint8Array) return [...value];

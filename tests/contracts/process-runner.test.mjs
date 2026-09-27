@@ -2,16 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
 
-let runProcess;
-try {
-  ({ runProcess } = await import("../../scripts/lib/process-runner.mjs"));
-} catch (error) {
-  if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
-}
-
-test("process runner exposes the shell-free public interface", () => {
-  assert.equal(typeof runProcess, "function", "runProcess must be exported");
-});
+import { runProcess } from "../../scripts/lib/process-runner.mjs";
 
 test("process runner preserves spaces, quotes, and shell metacharacters as one argument", async () => {
   const literal = `space \"quote\" & ; $() \`tick\` ${randomUUID()}`;

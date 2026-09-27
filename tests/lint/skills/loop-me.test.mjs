@@ -5,16 +5,6 @@ import test from "node:test";
 const skillId = "loop-me";
 const requiredCases = ["LM-TRIGGER-explicit-workflow-grill", "LM-NONTRIGGER-normal-feature", "LM-PRESSURE-endless-questioning", "LM-TRIGGER-grill-request-no-name"];
 
-test("T020 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(
-    await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 const skillPath = new URL("../../../core/skills/loop-me/SKILL.md", import.meta.url);
 const evaluationPath = new URL("../../../core/evals/skill-routing/loop-me.json", import.meta.url);
 
@@ -100,14 +90,4 @@ test("loop-me routing evaluation defines four complete critical cases", async ()
   assert.equal(unnamed.expected.directGrillRequest, true);
   assert.equal(unnamed.expected.oneQuestionAtATime, true);
   assert.equal(unnamed.expected.specificationReadyStop, true);
-});
-
-test("core loader exposes loop-me metadata and routing links", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  assert.deepEqual(core.evals.find((entry) => entry.id === "loop-me-routing")?.cases.map((entry) => entry.id), requiredCases);
 });

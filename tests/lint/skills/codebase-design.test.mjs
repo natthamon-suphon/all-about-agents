@@ -9,14 +9,6 @@ async function readSkill(relativePath = "SKILL.md") {
   return readFile(new URL(`../../../core/skills/${skillId}/${relativePath}`, import.meta.url), "utf8");
 }
 
-test("T037 exposes its routing evidence", async () => {
-  const skill = await readSkill();
-  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 test("codebase-design preserves the deep-module vocabulary and evidence gate", async () => {
   const skill = await readSkill();
   assert.match(skill, /survey[^.]*belongs to `improve-codebase-architecture`/iu);

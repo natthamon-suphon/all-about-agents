@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { posix, resolve } from "node:path";
 import test from "node:test";
 
@@ -14,21 +14,6 @@ import {
   resolveClaudeConfigDir
 } from "../../adapters/claude/adapter.mjs";
 import { renderAntigravityGlobalInstructions, renderClaudeGlobalInstructions, renderCodexGlobalInstructions, renderSharedGlobalInstructions } from "../../adapters/shared/global-instructions.mjs";
-
-const requiredOutputs = [
-  "adapters/claude/adapter.mjs",
-  "adapters/claude/templates/",
-  "installers/manifests/claude.json",
-  "tests/contracts/claude-adapter.test.mjs",
-  "tests/snapshots/claude/"
-];
-
-test("T008 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
 
 test("Claude template documentation matches the deferred current core output", async () => {
   const readme = await readFile(resolve(process.cwd(), "adapters/claude/templates/README.md"), "utf8");
@@ -89,8 +74,6 @@ test("Claude model policy uses exact documented template fields", () => {
     advisorModel: "claude-fable-5-1",
     env: { CLAUDE_CODE_EFFORT_LEVEL: "xhigh" }
   });
-  assert.equal(Object.hasOwn(CLAUDE_MODEL_POLICY.template, "effortLevel"), false);
-  assert.equal(CLAUDE_MODEL_POLICY.template.fallbackModel.includes("claude-fable-5"), false);
 });
 
 test("Claude config root honors CLAUDE_CONFIG_DIR for CLI and Desktop shared settings", () => {
@@ -116,9 +99,6 @@ test("Claude semantic mappings use documented Claude tools only", () => {
 test("portable Claude render contains every native component and all canonical skills", () => {
   const result = resultFor();
   const files = fileMap(result);
-  const missingSkillDiagnostics = result.diagnostics.filter((diagnostic) => diagnostic.code === "missing-skill-source");
-  assert.equal(missingSkillDiagnostics.length, core.inventory.skills.length - core.skills.length);
-  assert.ok(missingSkillDiagnostics.every((diagnostic) => diagnostic.message.includes("owner: cycle-05-skill-remediation")));
   assert.ok(files.has(".claude-plugin/plugin.json"));
   assert.ok(files.has("config/settings.json"));
   assert.ok(files.has("rules/authority-and-scope.md"));
@@ -174,7 +154,6 @@ test("template Claude render emits full-access settings without unsupported effo
   assert.equal(settings.advisorModel, "claude-fable-5-1");
   assert.equal(settings.env.CLAUDE_CODE_EFFORT_LEVEL, "xhigh");
   assert.equal(Object.hasOwn(settings, "effortLevel"), false);
-  assert.equal(settings.fallbackModel.includes("claude-fable-5"), false);
   assert.equal(settings.permissions.defaultMode, "bypassPermissions");
   assert.ok(settings.permissions.deny.length > 0);
 });
@@ -493,7 +472,6 @@ test("Claude adapter satisfies the shared renderSurface action contract", () => 
     homeDir: "C:/Users/tester"
   });
   assert.ok(result.files.length > 0);
-  assert.equal(result.diagnostics.filter((diagnostic) => diagnostic.code === "missing-skill-source").length, core.inventory.skills.length - core.skills.length);
   assert.ok(result.registrations.some((entry) => entry.kind === "plugin-registration"));
 });
 

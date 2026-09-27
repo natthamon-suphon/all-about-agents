@@ -9,14 +9,6 @@ async function readSkill(relativePath = "SKILL.md") {
   return readFile(new URL(`../../../core/skills/${skillId}/${relativePath}`, import.meta.url), "utf8");
 }
 
-test("T038 exposes its routing evidence", async () => {
-  const skill = await readSkill();
-  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 test("architecture improvement is an evidence-first survey with a design boundary", async () => {
   const skill = await readSkill();
   assert.match(skill, /Skill Gate Protocol/iu);

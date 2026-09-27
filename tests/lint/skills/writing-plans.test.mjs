@@ -5,16 +5,6 @@ import test from "node:test";
 const skillId = "writing-plans";
 const requiredCases = ["WP-TRIGGER-approved-multistep-spec", "WP-NONTRIGGER-unapproved-design", "WP-PRESSURE-auto-commit"];
 
-test("T023 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(
-    await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 const skillPath = new URL("../../../core/skills/writing-plans/SKILL.md", import.meta.url);
 const evaluationPath = new URL("../../../core/evals/skill-routing/writing-plans.json", import.meta.url);
 
@@ -85,16 +75,6 @@ test("writing-plans routing evaluation defines three complete critical cases", a
   assert.equal(evaluation.cases[2].expected.noAutomaticCommit, true);
   assert.equal(evaluation.cases[2].expected.explicitGitAuthority, true);
   assert.equal(evaluation.cases[2].expected.preserveUncommittedWork, true);
-});
-
-test("core loader exposes writing-plans metadata and routing links", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  assert.deepEqual(core.evals.find((entry) => entry.id === "writing-plans-routing")?.cases.map((entry) => entry.id), requiredCases);
 });
 
 test("writing-plans names test commands without running them and links its reviewer prompt", async () => {

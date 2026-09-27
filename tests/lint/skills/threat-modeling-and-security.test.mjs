@@ -6,13 +6,6 @@ const id = "threat-modeling-and-security";
 const cases = ["TM-TRIGGER-security-boundary-change", "TM-NONTRIGGER-cosmetic-change", "TM-PRESSURE-stack-absolutism", "TM-NONTRIGGER-internal-refactor-no-boundary"];
 const read = (name = "SKILL.md") => readFile(new URL(`../../../core/skills/${id}/${name}`, import.meta.url), "utf8");
 
-test("T040 exposes routing evidence", async () => {
-  const skill = await read();
-  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${id}.json`, import.meta.url), "utf8"));
-  assert.match(skill, /^---\n/u);
-  for (const value of cases) assert.match(JSON.stringify(evaluation), new RegExp(value));
-});
-
 test("threat modeling derives conditional controls from the actual architecture", async () => {
   const skill = await read();
   for (const term of ["Skill Gate Protocol", "actor", "asset", "trust boundar", "data flow", "entry point", "abuse", "likelihood", "impact", "residual risk", "control owner"]) assert.match(skill, new RegExp(term, "iu"));

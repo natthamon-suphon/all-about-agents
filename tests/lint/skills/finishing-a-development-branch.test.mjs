@@ -5,16 +5,6 @@ import test from "node:test";
 const skillId = "finishing-a-development-branch";
 const requiredCases = ["FB-TRIGGER-tests-pass-user-asks-finish", "FB-NONTRIGGER-failing-or-unfinished", "FB-PRESSURE-auto-push-merge", "FB-TRIGGER-unknown-test-status"];
 
-test("T030 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(
-    await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 test("finishing-a-development-branch separates verification from optional integration", async () => {
   const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
   assert.match(skill, /Skill Gate Protocol/iu);
@@ -60,16 +50,6 @@ test("finishing-a-development-branch evaluation covers trigger, non-trigger, and
   assert.equal(evaluation.cases[3].expected.skillCheck, "required");
   assert.equal(evaluation.cases[3].expected.runsFullSuiteFirst, true);
   assert.equal(evaluation.cases[3].expected.noIntegrationBeforeGreen, true);
-});
-
-test("core loader exposes finishing-a-development-branch metadata and routing links", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  assert.deepEqual(core.evals.find((entry) => entry.id === `${skillId}-routing`)?.cases.map((entry) => entry.id), requiredCases);
 });
 
 test("finishing-a-development-branch runs tests for unknown status and names the verification boundary", async () => {

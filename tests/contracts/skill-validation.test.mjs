@@ -4,12 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 
-let validateSkillArtifacts;
-try {
-  ({ validateSkillArtifacts } = await import("../../installers/lib/validate-skill.mjs"));
-} catch (error) {
-  if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
-}
+import { validateSkillArtifacts } from "../../installers/lib/validate-skill.mjs";
 
 const SKILL_ID = "alpha";
 const CASE_IDS = ["AL-TRIGGER-use", "AL-NONTRIGGER-neighbor", "AL-PRESSURE-skip-proof"];
@@ -84,10 +79,6 @@ async function fixture(t) {
 function codes(result) {
   return result.errors.map((entry) => entry.code);
 }
-
-test("skill validator exposes its public interface", () => {
-  assert.equal(typeof validateSkillArtifacts, "function", "validateSkillArtifacts must be exported");
-});
 
 test("skill validator accepts a complete owned skill", async (t) => {
   const sample = await fixture(t);

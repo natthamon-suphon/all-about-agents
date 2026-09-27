@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { access, lstat, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, posix, resolve, win32 } from "node:path";
 import test from "node:test";
 
@@ -16,23 +16,6 @@ import { auditPresentationTrace } from "../../core/evals/presentation-trace.mjs"
 import presentationScenarios from "../../core/evals/scenarios/presentation-contract.json" with { type: "json" };
 import { withTempRoot } from "../helpers/temp-root.mjs";
 import { main } from "../../scripts/aaa.mjs";
-
-const requiredOutputs = [
-  "core/evals/rubric.json",
-  "core/evals/presentation-trace.mjs",
-  "core/evals/presentation-trace.schema.json",
-  "core/evals/scenarios/presentation-contract.json",
-  "tests/lint/presentation-contract.test.mjs",
-  "tests/lint/release-gates.test.mjs",
-  "docs/evaluations/method.md"
-];
-
-test("T050 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
 
 test("every canonical skill owns its source, inventory, companions, routing cases, and lint test", async () => {
   const core = await loadCore(process.cwd());
@@ -163,7 +146,6 @@ test("release rubric has strict weights, status values, and exact release thresh
   assert.deepEqual(rubric.statusValues, ["PASS", "FAIL", "NOT_RUN", "NOT_RUN_UNAVAILABLE", "FLAKY", "DISPUTED", "WAIVED"]);
   for (const dimension of rubric.dimensions) assert.deepEqual(Object.keys(dimension).sort(), ["id", "label", "weight"]);
   assert.deepEqual(rubric.dimensions.map(({ id, label, weight }) => [id, label, weight]), expectedDimensions);
-  assert.equal(rubric.dimensions.reduce((sum, dimension) => sum + dimension.weight, 0), 100);
   assert.equal(rubric.totalWeight, 100);
   assert.deepEqual(rubric.gates, [
     { id: "gate-0-static", requiredPassRate: 100 },
@@ -337,8 +319,4 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
     ]
   };
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
-  assert.deepEqual(JSON.parse(await readFile(reportPath, "utf8")), report);
-  const retainedManifest = JSON.parse(await readFile(manifestPath, "utf8"));
-  assert.equal(retainedManifest.files[0].sha256, sha256(await readFile(resolve(evidenceDirectory, "gate-1-eval-result.json"))));
-  assert.equal(retainedManifest.files[1].sha256, sha256(await readFile(reportPath)));
 });

@@ -9,21 +9,6 @@ import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
 
-const requiredOutputs = [
-  ".github/workflows/installer-matrix.yml",
-  "tests/integration/claude-install.test.mjs",
-  "tests/integration/codex-install.test.mjs",
-  "tests/integration/all-surfaces.test.mjs",
-  "tests/fixtures/user-profiles/"
-];
-
-test("T049 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
-
 test("Claude clean-profile install works from an unrelated working directory", async () => {
   await withTempRoot(async (root) => {
     const unrelated = resolve(root, "unrelated");

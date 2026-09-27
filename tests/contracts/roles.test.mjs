@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { access, cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
-import { writeFileSync } from "node:fs";
+import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
@@ -22,7 +21,6 @@ const ROLE_IDS = [
   "security-reviewer"
 ];
 
-const ROLE_ROOT = resolve(process.cwd(), "core/roles");
 const EMITTED_NATIVE_TOOL_VOCABULARY = Object.freeze({
   claude: new Set(Object.values(CLAUDE_SEMANTIC_MAPPINGS).flat()),
   codex: new Set(["read-only", "workspace-write", "danger-full-access"])
@@ -38,13 +36,6 @@ async function mutateRole(root, roleId, mutate) {
 async function copyCoreFixture(root) {
   await cp(resolve(process.cwd(), "core"), resolve(root, "core"), { recursive: true });
 }
-
-test("T012 creates one metadata and prompt artifact for every canonical role", async () => {
-  for (const roleId of ROLE_IDS) {
-    await access(resolve(ROLE_ROOT, roleId, "role.json"));
-    await access(resolve(ROLE_ROOT, roleId, "prompt.md"));
-  }
-});
 
 test("canonical roles load with distinct prompts and explicit evidence contracts", async () => {
   const core = await loadCore(process.cwd());
@@ -96,8 +87,8 @@ function parseNativeArtifact(surface, content) {
 
 function executeNativeArtifact(surface, content, writeTrap) {
   const artifact = parseNativeArtifact(surface, content);
-  if (artifact.writeTools.length > 0) writeTrap.writeFile(`${surface}/artifact`, "artifact-exposed-write");
-  if (artifact.dispatchTools.length > 0) writeTrap.invokeSubagent(`${surface}/dispatch`, "artifact-exposed-dispatch");
+  if (artifact.writeTools.length > 0) writeTrap.writeFile();
+  if (artifact.dispatchTools.length > 0) writeTrap.invokeSubagent();
   return artifact;
 }
 
@@ -108,27 +99,16 @@ function cloneCoreWithRole(core, roleId, mutate) {
   };
 }
 
-test("rendered role artifacts drive the write trap, including a negative mutable-artifact control", async () => {
+test("rendered role artifacts reach the write trap only for the implementer, with live negative controls", async () => {
   const core = await loadCore(process.cwd());
   const renders = [
     ["claude", renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
     ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
   ];
-  const temp = await mkdtemp(resolve(tmpdir(), "aaa-t012-artifact-executor-"));
   const writeTrap = {
-    calls: [],
-    writeFile(path, operation) {
-      const target = resolve(temp, `${path.replaceAll("/", "-")}.txt`);
-      writeFileSync(target, operation, "utf8");
-      this.calls.push({ path, operation, target });
-      throw new Error("write-trapped");
-    },
-    invokeSubagent(path, operation) {
-      this.calls.push({ path, operation });
-      throw new Error("dispatch-trapped");
-    }
+    writeFile() { throw new Error("write-trapped"); },
+    invokeSubagent() { throw new Error("dispatch-trapped"); }
   };
-  try {
   for (const [surface, result] of renders) {
     const files = textFiles(result);
     for (const roleId of ROLE_IDS.filter((id) => id !== "implementer")) {
@@ -142,15 +122,9 @@ test("rendered role artifacts drive the write trap, including a negative mutable
     assert.throws(() => executeNativeArtifact(surface, implementerArtifact, writeTrap), /write-trapped/u, `${surface}/implementer`);
     assert.ok(parsedImplementer.tools.every((tool) => EMITTED_NATIVE_TOOL_VOCABULARY[surface].has(tool)), `${surface}/implementer emitted an undeclared native tool`);
   }
-  assert.equal(writeTrap.calls.length, renders.length, "every documented implementer write artifact should reach the write seam");
-  assert.ok(await access(writeTrap.calls[0].target).then(() => true).catch(() => false), "artifact executor must attempt a real temporary filesystem write");
-  const negativeTrap = { calls: [], writeFile(path, operation) { this.calls.push({ path, operation }); throw new Error("write-trapped"); }, invokeSubagent(path, operation) { this.calls.push({ path, operation }); throw new Error("dispatch-trapped"); } };
-  assert.throws(() => executeNativeArtifact("claude", "---\ntools:\n  - Write\n---\n", negativeTrap), /write-trapped/u);
-  assert.throws(() => executeNativeArtifact("claude", "---\ntools:\n  - Agent\n---\n", negativeTrap), /dispatch-trapped/u);
-  assert.equal(negativeTrap.calls.length, 2, "negative controls must prove write and dispatch traps are live");
-  } finally {
-    await rm(temp, { recursive: true, force: true });
-  }
+  // Negative controls: the parser must see a write and a dispatch tool, or the checks above pass vacuously.
+  assert.throws(() => executeNativeArtifact("claude", "---\ntools:\n  - Write\n---\n", writeTrap), /write-trapped/u);
+  assert.throws(() => executeNativeArtifact("claude", "---\ntools:\n  - Agent\n---\n", writeTrap), /dispatch-trapped/u);
 });
 
 test("role loading rejects a broad implementer scope", async () => {

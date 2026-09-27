@@ -12,17 +12,14 @@ const collisionSets = [
   { id: "architecture-survey-design", candidates: ["improve-codebase-architecture", "codebase-design"] }
 ];
 
-test("each collision candidate has trigger and nontrigger evidence with distinct descriptions", async () => {
+test("each collision candidate has a distinct description", async () => {
   const ids = [...new Set(collisionSets.flatMap((entry) => entry.candidates))];
   const descriptions = new Map();
   for (const id of ids) {
     const skill = await readFile(resolve(process.cwd(), `core/skills/${id}/SKILL.md`), "utf8");
-    const evaluation = JSON.parse(await readFile(resolve(process.cwd(), `core/evals/skill-routing/${id}.json`), "utf8"));
     const description = /^description:\s*(.+)$/mu.exec(skill)?.[1]?.trim();
     assert.ok(description, id);
     descriptions.set(id, description);
-    assert.ok(evaluation.cases.some((entry) => /TRIGGER/u.test(entry.id) && !/NONTRIGGER/u.test(entry.id)), `${id}: trigger`);
-    assert.ok(evaluation.cases.some((entry) => /NONTRIGGER/u.test(entry.id)), `${id}: nontrigger`);
   }
   for (const collision of collisionSets) {
     const values = collision.candidates.map((id) => descriptions.get(id));

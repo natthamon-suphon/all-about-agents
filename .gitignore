@@ -15,9 +15,6 @@ triage/
 /evals/
 !/core/evals/
 !/core/evals/**
-# Local skill and tool records (.aaa/<topic>/). The two explicit lines are
-# pinned by tests and are covered by .aaa/.
+# Local skill records (.aaa/<topic>/), test:model runs, and claude.ai exports.
 .aaa/
-.aaa/eval-runs/
-.aaa/claude-ai/
 tests/.tmp/

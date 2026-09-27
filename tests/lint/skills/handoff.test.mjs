@@ -8,16 +8,6 @@ const requiredCases = ["HO-TRIGGER-explicit-handoff", "HO-NONTRIGGER-normal-prog
 const boundary = "`handoff` records a pause or transfer when the human asks for one; `session-compaction-resilience` keeps long-task state that must survive compaction. Both use the same record shape.";
 const canonicalStates = /pending,\s+in\s+progress,\s+completed,\s+blocked,\s+failed,\s+not\s+run,\s+skipped/u;
 
-test("T028 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(
-    await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 test("handoff keeps the canonical workflow semantic and vendor-neutral", async () => {
   const skill = await readFile(resolve(process.cwd(), "core/skills/handoff/SKILL.md"), "utf8");
   assert.match(skill, /^name:\s*handoff\s*$/mu);
@@ -73,16 +63,4 @@ test("handoff evaluation defines the three critical routing cases", async () => 
   assert.equal(evaluation.cases[2].expected.noClaudeSpecificShell, true);
   assert.equal(evaluation.cases[2].expected.noShellInterpolation, true);
   assert.equal(evaluation.cases[2].expected.redactSecrets, true);
-});
-
-test("core loader exposes handoff metadata and routing links", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  const evaluation = core.evals.find((entry) => entry.id === "handoff-routing");
-  assert.ok(evaluation);
-  assert.deepEqual(evaluation.cases.map((entry) => entry.id), requiredCases);
 });

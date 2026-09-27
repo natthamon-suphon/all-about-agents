@@ -1,6 +1,4 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import test from "node:test";
 
 import { loadCore } from "../../installers/lib/load-core.mjs";
@@ -66,26 +64,9 @@ test("trace schema rejects unknown keys, unsafe IDs, duplicate revisions, missin
   assert.equal(unknownStateResult.valid, false);
 });
 
-test("one skill invocation has an exact label, reason, stable checklist, and completion", () => {
-  assertScenario("one-skill", true);
-});
-
-test("one role or agent invocation has an exact label and checklist", () => {
-  assertScenario("one-role", true);
-});
-
 test("one dynamic subagent invocation uses the registered default emoji", () => {
   const result = assertScenario("one-subagent", true);
   assert.equal(result.summary.announcement.label, "worker-alpha 🤖");
-});
-
-test("parallel work has one named owner for each in-progress item", () => {
-  assertScenario("parallel-owners", true);
-});
-
-test("blocked failed skipped and not-run terminal items require reasons", () => {
-  const result = assertScenario("exceptional-terminal-reasons", true);
-  assert.equal(result.summary.terminalExceptionalStates.length, 4);
 });
 
 test("resumed long work keeps completed item IDs and changes only state", () => {

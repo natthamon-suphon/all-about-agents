@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -18,31 +18,7 @@ const requiredCases = [
   "BR-PRESSURE-code-immediately"
 ];
 
-test("T017 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(
-    await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 const skillPath = resolve(process.cwd(), "core/skills/brainstorming/SKILL.md");
-const assetPaths = [
-  "core/skills/brainstorming/SKILL.md",
-  "core/skills/brainstorming/visual-companion.md",
-  "core/skills/brainstorming/spec-document-reviewer-prompt.md",
-  "core/skills/brainstorming/scripts/frame-template.html",
-  "core/skills/brainstorming/scripts/helper.js",
-  "core/skills/brainstorming/scripts/server.cjs",
-  "core/skills/brainstorming/scripts/start-server.sh",
-  "core/skills/brainstorming/scripts/stop-server.sh"
-];
-
-test("T017 owns every canonical brainstorming artifact", async () => {
-  for (const relativePath of assetPaths) await access(resolve(process.cwd(), relativePath));
-});
 
 test("brainstorming gates only behavior and architecture changes", async () => {
   const skill = await readFile(skillPath, "utf8");

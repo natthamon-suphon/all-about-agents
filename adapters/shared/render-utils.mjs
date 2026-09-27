@@ -85,11 +85,3 @@ export function renderToml(value) {
   tableLines(value, [], lines);
   return ensureTrailingNewline(lines.join("\n"));
 }
-
-// Upper-case aliases make the format names match common API spelling without
-// introducing a second implementation.
-export const renderJSON = renderJson;
-export const renderTOML = renderToml;
-export const renderTextDocument = renderText;
-export const renderJsonDocument = renderJson;
-export const renderTomlDocument = renderToml;

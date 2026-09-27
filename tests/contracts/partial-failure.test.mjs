@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createApplyResult, serializeApplyResult, validateApplyResult } from "../../installers/lib/report.mjs";
+import { createApplyResult, validateApplyResult } from "../../installers/lib/report.mjs";
 
 const hash = "0".repeat(64);
 const action = (kind, relativePath, reason = "ok") => ({
@@ -20,6 +20,5 @@ test("ApplyResult reports completed, failed, and not-attempted actions exactly",
     notAttempted: [action("create", "c.txt")]
   });
   assert.equal(validateApplyResult(result), true);
-  assert.deepEqual(JSON.parse(serializeApplyResult(result)), result);
   assert.throws(() => createApplyResult({ status: "partial", completed: [{ kind: "create" }] }), /invalid ApplyResult/u);
 });

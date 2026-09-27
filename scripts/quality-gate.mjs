@@ -31,7 +31,7 @@ const QUICK_CHECKS = Object.freeze([
     "tests/contracts/quality-gate.test.mjs",
     "tests/contracts/claude-ai-pack.test.mjs"
   ]),
-  check("static-contracts", process.execPath, ["--test", "tests/static/runtime.test.mjs", "tests/static/repository-layout.test.mjs", "tests/static/claude-ai-pack.test.mjs"]),
+  check("static-contracts", process.execPath, ["--test", "tests/static/runtime.test.mjs", "tests/static/repository-layout.test.mjs", "tests/static/claude-ai-pack.test.mjs", "tests/static/capabilities.test.mjs"]),
   check("documentation-contracts", process.execPath, [
     "--test",
     "tests/static/documentation.test.mjs",

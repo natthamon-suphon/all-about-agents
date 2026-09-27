@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { access, mkdtemp, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -9,57 +9,12 @@ import { main } from "../../scripts/aaa.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
 import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
-const requiredOutputs = [
-  ".gitignore",
-  "package.json",
-  "scripts/aaa.mjs",
-  "tests/helpers/temp-root.mjs",
-  "tests/static/runtime.test.mjs",
-  "tests/static/repository-layout.test.mjs"
-];
-
-test("T001 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
-
 test("current Node runtime is at least 22.12.0", () => {
   const [major, minor] = process.versions.node.split(".").map(Number);
   assert.ok(
     major > 22 || (major === 22 && minor >= 12),
     `Node 22.12.0 or newer is required; found ${process.versions.node}`
   );
-});
-
-test("node:test is available as the test runner", () => {
-  assert.equal(typeof test, "function");
-});
-
-test("Unicode paths round-trip through the filesystem", async () => {
-  const root = await mkdtemp(join(tmpdir(), "aaa-runtime-"));
-  const filePath = join(root, "Δοκιμή-🚀.txt");
-  try {
-    await writeFile(filePath, "こんにちは, мир, مرحبا", "utf8");
-    assert.equal(await readFile(filePath, "utf8"), "こんにちは, мир, مرحبا");
-  } finally {
-    await rm(root, { force: true, recursive: true });
-  }
-});
-
-test("same-directory rename provides an atomic handoff", async () => {
-  const root = await mkdtemp(join(tmpdir(), "aaa-runtime-"));
-  const temporaryPath = join(root, "result.tmp");
-  const finalPath = join(root, "result.json");
-  try {
-    await writeFile(temporaryPath, '{"ok":true}', "utf8");
-    await rename(temporaryPath, finalPath);
-    assert.equal(await readFile(finalPath, "utf8"), '{"ok":true}');
-    await assert.rejects(access(temporaryPath), { code: "ENOENT" });
-  } finally {
-    await rm(root, { force: true, recursive: true });
-  }
 });
 
 test("package metadata declares ESM Node support without dependencies", async () => {
@@ -91,6 +46,7 @@ test("package metadata declares ESM Node support without dependencies", async ()
     "test:static",
     "validate"
   ]);
+  assert.equal(packageJson.scripts["test:static"], "node --test tests/static/*.test.mjs", "test:static must run only its folder");
   assert.equal(packageJson.scripts["test:contracts"], "node --test tests/contracts/*.test.mjs", "test:contracts must run only its folder");
   assert.equal(packageJson.scripts["test:integration"], "node --test tests/integration/*.test.mjs", "test:integration must run only its folder");
 });

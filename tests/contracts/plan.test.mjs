@@ -23,7 +23,6 @@ const payloadFor = (files) => ({
 test("hashBytes uses exact Uint8Array bytes and lower-case SHA-256", () => {
   const expected = createHash("sha256").update(Uint8Array.from([0, 255, 10])).digest("hex");
   assert.equal(hashBytes(Uint8Array.from([0, 255, 10])), expected);
-  assert.match(expected, /^[0-9a-f]{64}$/u);
   assert.throws(() => hashBytes("text"), /Uint8Array/u);
 });
 

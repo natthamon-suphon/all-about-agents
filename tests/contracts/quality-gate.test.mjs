@@ -5,14 +5,8 @@ import { test } from "node:test";
 
 import reportSchema from "../../installers/schemas/quality-report.schema.json" with { type: "json" };
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
+import * as qualityModule from "../../scripts/quality-gate.mjs";
 import { makeTempRoot } from "../helpers/temp-root.mjs";
-
-let qualityModule;
-try {
-  qualityModule = await import("../../scripts/quality-gate.mjs");
-} catch (error) {
-  if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
-}
 
 const SHA = "c".repeat(40);
 
@@ -45,12 +39,6 @@ function runner({ failCheck = null, unavailableCheck = null, oversizedCheck = nu
 }
 
 const fixedClock = () => new Date("2026-08-31T07:00:00.000Z");
-
-test("quality gate exposes its public interface", () => {
-  assert.equal(typeof qualityModule?.selectChecks, "function");
-  assert.equal(typeof qualityModule?.runQualityGate, "function");
-  assert.equal(typeof qualityModule?.main, "function");
-});
 
 test("quality gate selects a stable quick subset, full superset, and focused skill checks", () => {
   const quick = qualityModule.selectChecks({ mode: "quick" });

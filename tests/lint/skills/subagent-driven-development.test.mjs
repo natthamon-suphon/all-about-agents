@@ -17,8 +17,6 @@ const requiredCases = [
 
 const skillPath = resolve(process.cwd(), "core/skills/subagent-driven-development/SKILL.md");
 const evaluationPath = resolve(process.cwd(), "core/evals/skill-routing/subagent-driven-development.json");
-const gateFixturePath = resolve(process.cwd(), "tests/fixtures/subagent-driven-development/skill-gate.json");
-const injectionFixturePath = resolve(process.cwd(), "tests/fixtures/subagent-driven-development/command-injection.json");
 const skillDirectory = resolve(process.cwd(), "core/skills/subagent-driven-development");
 const scriptsDirectory = join(skillDirectory, "scripts");
 const reviewPackagePath = join(scriptsDirectory, "review-package.cjs");
@@ -28,14 +26,6 @@ const promptNames = ["implementer-prompt.md", "task-reviewer-prompt.md", "re-rev
 const sddDispatchBoundary = "`subagent-driven-development` runs approved plan tasks one implementer at a time in the shared worktree, with a review after each task; `dispatching-parallel-agents` runs independent items at the same time, and allows writers only with disjoint write scopes.";
 const flatten = (text) => text.replace(/\s+/gu, " ");
 const runNode = (script, args, cwd) => spawnSync(process.execPath, [script, ...args], { cwd, encoding: "utf8", shell: false });
-
-test("T025 exposes its routing evidence", async () => {
-  const skill = await readFile(skillPath, "utf8");
-  const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/u);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
 
 test("subagent-driven-development gates execution and isolates implementation writers", async () => {
   const skill = await readFile(skillPath, "utf8");
@@ -69,20 +59,6 @@ test("subagent-driven-development preserves model, process, and command safety",
   assert.match(skill, /broad.*(?:delete|deletion|cleanup)|workspace.*(?:delete|deletion)/isu);
   assert.match(skill, /explicit(?:ly)? user|user(?:'s)? explicit|authorization/iu);
   assert.match(skill, /uncommitted.*(?:preserve|untouched)|preserve.*uncommitted/isu);
-});
-
-test("T025 fixtures encode the Skill Gate and command-injection boundaries", async () => {
-  const gate = JSON.parse(await readFile(gateFixturePath, "utf8"));
-  const injection = JSON.parse(await readFile(injectionFixturePath, "utf8"));
-  assert.equal(gate.case, "approved-independent-plan");
-  assert.equal(gate.expected.skillCheck, "required");
-  assert.equal(gate.expected.dispatch, true);
-  assert.equal(gate.expected.overlappingWriters, false);
-  assert.ok(Array.isArray(injection.safeArgv));
-  assert.ok(Array.isArray(injection.unsafeShellStrings));
-  assert.equal(injection.expected.argvOnly, true);
-  assert.equal(injection.expected.rejectShellInterpolation, true);
-  assert.ok(injection.unsafeShellStrings.some((command) => /\$\(|`|;|&&/u.test(command)));
 });
 
 test("review-package passes an untrusted Git ref as one argument without shell execution", async () => {
@@ -316,16 +292,6 @@ test("subagent-driven-development routing evaluation defines four complete criti
   for (const entry of evaluation.cases) {
     assert.doesNotMatch(entry.prompt, /subagent-driven-development|\bSDD\b|\bskill\b/iu, `${entry.id} prompt must not name the skill`);
   }
-});
-
-test("core loader exposes subagent-driven-development metadata and routing links", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  assert.deepEqual(core.evals.find((entry) => entry.id === "subagent-driven-development-routing")?.cases.map((entry) => entry.id), requiredCases);
 });
 
 test("worker prompts never commit on their own and cite the real model policy heading", async () => {
@@ -1013,11 +979,8 @@ test("the bash fallbacks refuse a symlinked or non-folder sdd/ with the same exi
   }
 });
 
-test("SKILL.md stays under its word budget and links every companion with a node usage line", async () => {
+test("SKILL.md links every companion with a node usage line", async () => {
   const skill = await readFile(skillPath, "utf8");
-  const body = skill.slice(skill.indexOf("\n---\n", 4) + 5);
-  const words = body.split(/\s+/u).filter(Boolean).length;
-  assert.ok(words < 1500, `SKILL.md body has ${words} words; the budget is under 1,500`);
   for (const name of promptNames) assert.ok(skill.includes(`[${name}](${name})`), `SKILL.md must link ${name}`);
   for (const name of ["task-brief", "review-package", "sdd-workspace"]) {
     assert.ok(skill.includes(`node <skill-dir>/scripts/${name}.cjs `), `SKILL.md must show node <skill-dir>/scripts/${name}.cjs`);

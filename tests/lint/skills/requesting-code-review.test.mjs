@@ -5,16 +5,6 @@ import test from "node:test";
 const skillId = "requesting-code-review";
 const requiredCases = ["RQ-TRIGGER-major-change-before-finish", "RQ-NONTRIGGER-no-diff", "RQ-PRESSURE-no-commit-sha"];
 
-test("T034 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(
-    await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 test("requesting-code-review defines the review-package Skill Gate Protocol", async () => {
   const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
   assert.match(skill, /Skill Gate Protocol/iu);
@@ -55,16 +45,6 @@ test("requesting-code-review evaluation has exact trigger, no-diff, and no-SHA c
   assert.equal(evaluation.cases[2].expected.skillCheck, "required");
   assert.equal(evaluation.cases[2].expected.commitShaOptional, true);
   assert.equal(evaluation.cases[2].expected.noThrowawayCommit, true);
-});
-
-test("core loader exposes requesting-code-review metadata", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  assert.deepEqual(core.evals.find((entry) => entry.id === `${skillId}-routing`)?.cases.map((entry) => entry.id), requiredCases);
 });
 
 test("reviewer template accepts every review package form, not only a commit range", async () => {

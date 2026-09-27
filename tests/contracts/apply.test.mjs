@@ -14,25 +14,6 @@ import reportSchema from "../../installers/schemas/report.schema.json" with { ty
 import planSchema from "../../installers/schemas/plan.schema.json" with { type: "json" };
 import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
-const requiredOutputs = [
-  "installers/lib/apply.mjs",
-  "installers/lib/state.mjs",
-  "installers/lib/atomic-write.mjs",
-  "installers/lib/report.mjs",
-  "installers/schemas/state.schema.json",
-  "installers/schemas/report.schema.json",
-  "tests/contracts/apply.test.mjs",
-  "tests/contracts/state.test.mjs",
-  "tests/contracts/partial-failure.test.mjs"
-];
-
-test("T047 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
-
 const bytes = (value) => new TextEncoder().encode(value);
 const planFor = (root, files, previousState = null) => buildPlan({
   destinationRoot: root,
@@ -68,7 +49,6 @@ test("applyPlan validates every rendered byte before its first destination write
 
 test("operation preflight prepares all selected surfaces or returns no prepared writes", async () => {
   const { preflightOperation } = await import("../../installers/lib/apply.mjs");
-  assert.equal(typeof preflightOperation, "function");
   await withTempRoot(async (root) => {
     const claudeRoot = join(root, "claude");
     const codexRoot = join(root, "codex");

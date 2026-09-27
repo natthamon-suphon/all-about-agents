@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { access, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 
@@ -35,20 +34,6 @@ async function materialize(files, root) {
     await writeFile(target, file.content);
   }
 }
-
-const requiredOutputs = [
-  "adapters/claude/templates/statusline/statusline.mjs",
-  "adapters/claude/templates/statusline/track-tool.mjs",
-  "tests/contracts/statusline.test.mjs",
-  "tests/fixtures/statusline/"
-];
-
-test("T016 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
 
 test("sanitizeTerminalText removes ANSI, controls, and newline injection while retaining Unicode", () => {
   const value = "ไทย \u001b]8;;https://evil.example\u0007quoted\nbranch\r\u001b[31mmodel\u001b[0m";
@@ -242,19 +227,6 @@ test("Claude production render owns cross-platform statusline launchers", async 
   assert.match(files.get("statusline/statusline.ps1"), /statusline[.]mjs/u);
   assert.match(files.get("statusline/statusline.sh"), /exec node/u);
   assert.equal(JSON.parse(files.get("config/statusline.json")).displayName, "ทีม Claude");
-});
-
-test("generated statusline package imports and renders both owned modules", async () => {
-  const core = await loadCore(process.cwd());
-  const result = renderClaude({ core, profile: "portable", statuslineName: "", ...PINNED_RENDER });
-  await withTempRoot(async (root) => {
-    await materialize(result.files, root);
-    const statusline = await import(pathToFileURL(join(root, "statusline/statusline.mjs")).href);
-    const tracker = await import(pathToFileURL(join(root, "statusline/track-tool.mjs")).href);
-    const output = await statusline.renderStatusline({}, { configRoot: root, logRoot: join(root, "logs") });
-    assert.equal(output.split("\n").length, 4);
-    await tracker.trackToolEvent({ session_id: "generated-session", tool_name: "Agent", tool_input: { subagent_type: "reviewer" } }, { logDir: join(root, "logs") });
-  });
 });
 
 test("a statusline deployed apart from the plugin shows the plugin tracker's agents and skills", async () => {

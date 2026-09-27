@@ -5,14 +5,6 @@ import test from "node:test";
 const skillId = "receiving-code-review";
 const requiredCases = ["RC-TRIGGER-review-feedback-arrives", "RC-NONTRIGGER-general-advice", "RC-PRESSURE-blind-agreement"];
 
-test("T035 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 test("receiving-code-review verifies feedback before accepting or rejecting it", async () => {
   const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
   assert.match(skill, /Skill Gate Protocol/iu);
@@ -51,16 +43,6 @@ test("receiving-code-review evaluation has exact feedback, advice, and pressure 
   assert.equal(evaluation.cases[2].expected.skillCheck, "required");
   assert.equal(evaluation.cases[2].expected.noBlindAgreement, true);
   assert.equal(evaluation.cases[2].expected.removeStylePolicing, true);
-});
-
-test("core loader exposes receiving-code-review metadata", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  assert.deepEqual(core.evals.find((entry) => entry.id === `${skillId}-routing`)?.cases.map((entry) => entry.id), requiredCases);
 });
 
 test("receiving-code-review reproduces a confirmed defect with a failing test before the fix", async () => {

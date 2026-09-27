@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, mkdir, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import test from "node:test";
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
@@ -40,13 +40,6 @@ async function loadCapability(surface) {
   return JSON.parse(await readFile(path, "utf8"));
 }
 
-test("capability records exist for every supported surface", async () => {
-  for (const surface of surfaces) {
-    await access(resolve(process.cwd(), `adapters/${surface}/capabilities.json`));
-  }
-  await access(resolve(process.cwd(), "core/schemas/capability.schema.json"));
-});
-
 test("manifest ownership is complete, sorted, unique, and names the global output", async () => {
   for (const surface of surfaces) {
     const manifest = JSON.parse(await readFile(resolve(process.cwd(), `installers/manifests/${surface}.json`), "utf8"));
@@ -59,24 +52,6 @@ test("manifest ownership is complete, sorted, unique, and names the global outpu
     assert.equal(packageName, manifestGlobalNames.get(surface));
     assert.ok(manifest.ownedPaths.some((path) => path === packageName), `${surface} manifest must own ${packageName}`);
     assert.doesNotMatch(JSON.stringify(manifest), /\p{Extended_Pictographic}/u, `${surface} manifest machine data must not contain emoji`);
-  }
-});
-
-test("capability records use the strict shared record shape", async () => {
-  for (const surface of surfaces) {
-    const record = await loadCapability(surface);
-    assert.equal(record.surface, surface);
-    assert.match(record.checkedAt, /^\d{4}-\d{2}-\d{2}$/);
-    assert.ok(typeof record.productVersion === "string");
-    assert.ok(Array.isArray(record.capabilities));
-    assert.ok(record.capabilities.length > 0);
-    for (const capability of record.capabilities) {
-      for (const key of ["feature", "support", "stability", "source", "checkedAt", "productVersion"]) {
-        assert.ok(Object.hasOwn(capability, key), `${surface} capability missing ${key}`);
-      }
-      assert.ok(capability.source.length > 0);
-      assert.match(capability.checkedAt, /^\d{4}-\d{2}-\d{2}$/);
-    }
   }
 });
 
@@ -185,6 +160,7 @@ test("every adapter record validates and active claims retain evidence", async (
   const schema = JSON.parse(await readFile(resolve(process.cwd(), "core/schemas/capability.schema.json"), "utf8"));
   for (const surface of surfaces) {
     const record = await loadCapability(surface);
+    assert.equal(record.surface, surface);
     const result = validateSchema({ schema, value: record, sourcePath: `adapters/${surface}/capabilities.json` });
     assert.equal(result.valid, true, `${surface}: ${JSON.stringify(result.errors)}`);
     for (const capability of record.capabilities) {

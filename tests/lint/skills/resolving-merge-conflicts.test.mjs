@@ -5,14 +5,6 @@ import test from "node:test";
 const skillId = "resolving-merge-conflicts";
 const requiredCases = ["MC-TRIGGER-active-conflict", "MC-NONTRIGGER-clean-tree", "MC-PRESSURE-stage-all-never-abort"];
 
-test("T036 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 test("resolving-merge-conflicts stages exact files and retains safe abort", async () => {
   const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
   assert.match(skill, /Skill Gate Protocol/iu);
@@ -60,15 +52,6 @@ test("resolving-merge-conflicts evaluation has exact active, clean, and pressure
   assert.equal(evaluation.cases[1].expected.cleanTree, true);
   assert.equal(evaluation.cases[2].expected.noStageAll, true);
   assert.equal(evaluation.cases[2].expected.safeAbortAvailable, true);
-});
-
-test("core loader exposes resolving-merge-conflicts metadata", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
 });
 
 test("resolving-merge-conflicts gives a safe path for a conflicted stash", async () => {

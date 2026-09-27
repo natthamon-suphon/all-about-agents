@@ -8,30 +8,6 @@ import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 
 const execFileAsync = promisify(execFile);
 
-const requiredOutputs = [
-  "core/inventory.json",
-  "core/instructions/global-operating-rules.md",
-  "core/presentation/emoji-registry.json",
-  "core/presentation/progress-contract.json",
-  "core/schemas/presentation.schema.json",
-  "core/schemas/inventory.schema.json",
-  "adapters/claude/capabilities.json",
-  "adapters/codex/capabilities.json",
-  "core/schemas/capability.schema.json",
-  "tests/static/inventory.test.mjs",
-  "tests/static/capabilities.test.mjs",
-  "tests/static/presentation-safety.test.mjs",
-  "scripts/aaa.mjs",
-  "installers/lib/validate-schema.mjs",
-  "core/evals/runner.mjs",
-  "core/evals/result-envelope.schema.json",
-  "core/evals/presentation-trace.mjs",
-  "core/evals/presentation-trace.schema.json",
-  "core/evals/scenarios/presentation-contract.json",
-  "tests/lint/presentation-contract.test.mjs",
-  "tests/static/eval-runner.test.mjs"
-];
-
 const expectedBaselineFiles = new Map([
   ["core/instructions/global-operating-rules.md", { kind: "source", status: "stable" }],
   ["core/presentation/emoji-registry.json", { kind: "metadata", status: "stable" }],
@@ -135,13 +111,6 @@ core/evals/scenarios/presentation-contract.json
 tests/lint/presentation-contract.test.mjs
 `.trim().split(/\r?\n/u);
 
-test("T002 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
-
 test("inventory records exactly the current public skill names", async () => {
   const inventory = JSON.parse(await readFile(resolve(process.cwd(), "core/inventory.json"), "utf8"));
   assert.equal(inventory.skills.length, 27);
@@ -191,14 +160,7 @@ test("inventory validates against its strict schema and accounts for existing so
 
 test("inventory preserves the reconciled canonical and quarantine path contract", async () => {
   const inventory = JSON.parse(await readFile(resolve(process.cwd(), "core/inventory.json"), "utf8"));
-  function assertBaselinePaths(value) {
-    assert.deepEqual(value.sourceFiles.map((entry) => entry.path), expectedBaselinePaths);
-  }
-
-  assertBaselinePaths(inventory);
-  const substituted = JSON.parse(JSON.stringify(inventory));
-  substituted.sourceFiles[0].path = "baseline/substituted-unlisted-path";
-  assert.throws(() => assertBaselinePaths(substituted));
+  assert.deepEqual(inventory.sourceFiles.map((entry) => entry.path), expectedBaselinePaths);
   for (const path of expectedBaselinePaths) await access(resolve(process.cwd(), path));
   const sourceFiles = new Map(inventory.sourceFiles.map((entry) => [entry.path, entry]));
   for (const [path, expected] of expectedBaselineFiles) {

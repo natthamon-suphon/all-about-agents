@@ -12,16 +12,6 @@ const requiredCases = [
 const boundary = "`handoff` records a pause or transfer when the human asks for one; `session-compaction-resilience` keeps long-task state that must survive compaction. Both use the same record shape.";
 const canonicalStates = /pending,\s+in\s+progress,\s+completed,\s+blocked,\s+failed,\s+not\s+run,\s+skipped/u;
 
-test("T029 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(
-    await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 test("session-compaction-resilience names the canonical long-task sequence", async () => {
   const skill = await readFile(resolve(process.cwd(), "core/skills/session-compaction-resilience/SKILL.md"), "utf8");
   assert.match(skill, /canonical long-task sequence/iu);
@@ -84,14 +74,4 @@ test("session-compaction-resilience evaluation covers trigger, non-trigger, and 
   assert.equal(evaluation.cases[2].expected.noAutomaticGitAction, true);
   assert.equal(evaluation.cases[2].expected.noAutomaticDependencyInstall, true);
   assert.equal(evaluation.cases[2].expected.explicitLiveAuthority, true);
-});
-
-test("core loader exposes session-compaction-resilience metadata and routing links", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  assert.deepEqual(core.evals.find((entry) => entry.id === "session-compaction-resilience-routing")?.cases.map((entry) => entry.id), requiredCases);
 });

@@ -1,26 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile, rm } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { test } from "node:test";
 
+import reportSchema from "../../installers/schemas/quality-report.schema.json" with { type: "json" };
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
+import * as reportModule from "../../scripts/lib/quality-report.mjs";
 import { makeTempRoot } from "../helpers/temp-root.mjs";
-
-let reportModule;
-let reportSchema;
-try {
-  reportModule = await import("../../scripts/lib/quality-report.mjs");
-} catch (error) {
-  if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
-}
-try {
-  reportSchema = (await import("../../installers/schemas/quality-report.schema.json", {
-    with: { type: "json" }
-  })).default;
-} catch (error) {
-  if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
-}
 
 const baseInput = () => ({
   mode: "quick",
@@ -47,13 +34,6 @@ const baseInput = () => ({
       durationMs: 15
     }
   ]
-});
-
-test("quality report exposes its public interface and JSON schema", () => {
-  assert.equal(typeof reportModule?.createQualityReport, "function");
-  assert.equal(typeof reportModule?.formatQualityReport, "function");
-  assert.equal(typeof reportModule?.writeQualityReport, "function");
-  assert.equal(typeof reportSchema, "object");
 });
 
 test("quality report is schema-valid, ordered, and redacted", () => {
@@ -196,5 +176,4 @@ test("quality report rejects an existing symlink destination before write", asyn
     () => reportModule.writeQualityReport(report, { repositoryRoot: root, outputPath, fileSystem }),
     /symlink|reparse/iu
   );
-  assert.equal(dirname(outputPath), root);
 });

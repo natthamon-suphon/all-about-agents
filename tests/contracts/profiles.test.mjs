@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 
@@ -9,14 +9,6 @@ import { renderCodex } from "../../adapters/codex/adapter.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 import { PROFILE_MODEL_POLICY_REFS, resolveProfile } from "../../profiles/profile-contract.mjs";
-
-const requiredOutputs = [
-  "profiles/portable/profile.json",
-  "profiles/template/profile.json",
-  "profiles/profile-contract.mjs",
-  "core/schemas/profile.schema.json",
-  "tests/contracts/profiles.test.mjs"
-];
 
 const root = process.cwd();
 const core = await loadCore(root);
@@ -45,10 +37,6 @@ function skillPath(surface, skill) {
   if (surface === "claude" || surface === "antigravity") return `skills/${skill}/SKILL.md`;
   return `.agents/skills/${skill}/SKILL.md`;
 }
-
-test("T045 creates every owned artifact", async () => {
-  for (const relativePath of requiredOutputs) await access(resolve(root, relativePath));
-});
 
 test("portable and template records satisfy the strict vendor-neutral schema", () => {
   for (const [id, profile] of Object.entries(profiles)) {

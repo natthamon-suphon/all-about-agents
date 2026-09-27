@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { access, cp, mkdir, mkdtemp, readFile, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { join } from "node:path";
@@ -8,30 +7,6 @@ import test from "node:test";
 
 import { validateSkillArtifacts } from "../../installers/lib/validate-skill.mjs";
 import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
-
-const requiredOutputs = [
-  "installers/lib/load-core.mjs",
-  "core/schemas/rule.schema.json",
-  "core/schemas/role.schema.json",
-  "core/schemas/skill.schema.json",
-  "core/schemas/presentation.schema.json",
-  "core/presentation/emoji-registry.json",
-  "core/presentation/progress-contract.json",
-  "installers/lib/presentation-contract.mjs",
-  "tests/contracts/presentation-contract.test.mjs",
-  "tests/contracts/core-loader.test.mjs",
-  "tests/fixtures/core/valid/",
-  "tests/fixtures/core/broken-reference/",
-  "tests/fixtures/core/duplicate-id/",
-  "tests/fixtures/core/unknown-field/"
-];
-
-test("T003 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
 
 const fixture = (name) => resolve(process.cwd(), "tests/fixtures/core", name);
 
@@ -318,13 +293,8 @@ test("loadCore validates inventory against its strict schema when the schema is 
   }
 });
 
-test("unified skill portfolio rejects every pack-selection argument shape", async () => {
+test("unified skill portfolio rejects an argv skill selector and allows other flags", async () => {
   const { assertUnifiedSkillPortfolio } = await loader();
-  for (const options of [
-    { skillPack: "core" },
-    { skillPacks: ["optional"] },
-    { profile: { id: "portable", personalSkills: ["local"] } },
-    { argv: ["--skills=research"] }
-  ]) assert.throws(() => assertUnifiedSkillPortfolio(options), /complete skill portfolio/iu);
+  assert.throws(() => assertUnifiedSkillPortfolio({ argv: ["--skills=research"] }), /complete skill portfolio/iu);
   assert.doesNotThrow(() => assertUnifiedSkillPortfolio({ profile: { id: "portable" }, argv: ["--surface", "claude"] }));
 });

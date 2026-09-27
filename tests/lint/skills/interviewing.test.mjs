@@ -5,16 +5,6 @@ import test from "node:test";
 const skillId = "interviewing";
 const requiredCases = ["IN-TRIGGER-open-design-decisions", "IN-NONTRIGGER-discoverable-answer", "IN-PRESSURE-ask-many-at-once"];
 
-test("T018 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(
-    await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 const skillPath = new URL("../../../core/skills/interviewing/SKILL.md", import.meta.url);
 const evaluationPath = new URL("../../../core/evals/skill-routing/interviewing.json", import.meta.url);
 
@@ -76,14 +66,4 @@ test("interviewing evaluation defines three complete critical routing cases", as
   assert.equal(evaluation.cases[2].expected.batchQuestions, false);
   assert.equal(evaluation.cases[2].expected.inferHumanAnswer, false);
   assert.equal(evaluation.cases[2].expected.pressureResistance, true);
-});
-
-test("core loader exposes interviewing metadata and routing links", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  assert.deepEqual(core.evals.find((entry) => entry.id === "interviewing-routing")?.cases.map((entry) => entry.id), requiredCases);
 });

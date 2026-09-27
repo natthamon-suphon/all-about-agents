@@ -15,13 +15,6 @@ const scripts = ["render-graphs.mjs"];
 const companions = [...assets, ...scripts];
 const read = (name = "SKILL.md") => readFile(new URL(`../../../core/skills/${id}/${name}`, import.meta.url), "utf8");
 
-test("T043 exposes routing evidence", async () => {
-  const skill = await read();
-  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${id}.json`, import.meta.url), "utf8"));
-  assert.match(skill, /^---\n/u);
-  for (const value of cases) assert.match(JSON.stringify(evaluation), new RegExp(value));
-});
-
 test("skill authoring enforces behavioral RED GREEN REFACTOR and progressive disclosure", async () => {
   const skill = await read();
   for (const term of ["Skill Gate Protocol", "RED", "GREEN", "REFACTOR", "behavior", "routing", "pressure", "progressive disclosure", "not run"]) assert.match(skill, new RegExp(term, "iu"));

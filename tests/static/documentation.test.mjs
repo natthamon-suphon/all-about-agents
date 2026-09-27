@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { access, readFile, readdir, stat } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 
@@ -20,8 +20,7 @@ const requiredOutputs = [
   "docs/evaluations/native-windows-2026-08-31.md",
   "docs/limitations/known-limitations.md",
   "docs/maintenance/native-registration.md",
-  "docs/maintenance/native-verification.md",
-  "tests/static/documentation.test.mjs"
+  "docs/maintenance/native-verification.md"
 ];
 
 const documentationFiles = [
@@ -115,13 +114,8 @@ function isCanonicalInventoryPath(path) {
 
 function snapshotOwnership(snapshot) {
   if (Array.isArray(snapshot.ownership)) return snapshot.ownership;
-  return Object.entries(snapshot.ownershipHashes ?? snapshot.contentHashes ?? {}).map(([relativePath, sha256]) => ({ relativePath, sha256 }));
+  return Object.entries(snapshot.ownershipHashes ?? {}).map(([relativePath, sha256]) => ({ relativePath, sha256 }));
 }
-
-test("T051 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) await access(resolve(root, relativePath));
-});
 
 test("documentation is strict UTF-8, replacement-free, link-complete, and secret-free", async () => {
   const secretPatterns = [
@@ -156,6 +150,7 @@ test("T09 documents the dual layer, exact destinations, and receiving-machine or
   assert.match(global, /reason is one short sentence/iu);
   assert.match(global, /checklist[\s\S]{0,300}(?:pending|in progress|completed)/iu);
   assert.match(global, /prompt guidance[\s\S]{0,120}(?:not|no)[\s\S]{0,80}UI guarantee/iu);
+  assert.match(global, /not a UI guarantee/iu);
 
   assert.ok(sync.includes(flow), "sync guide omits the receiving-machine flow");
   assert.match(sync, /Git is the (?:cross-machine )?source of truth/iu);

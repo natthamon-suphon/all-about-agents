@@ -8,8 +8,6 @@ import {
   validateRenderResult
 } from "../../adapters/shared/adapter-contract.mjs";
 import {
-  renderJSON,
-  renderTOML,
   renderJson,
   renderText,
   renderToml
@@ -139,13 +137,11 @@ test("text, JSON, and TOML renderers are deterministic LF documents with one tra
   assert.equal(renderText("one\r\ntwo\n"), "one\ntwo\n");
   assert.equal(renderText("one\n\n"), "one\n");
   const value = { z: "last", a: { z: 2, a: 1 }, list: ["x", "y"] };
-  const jsonFirst = renderJson(value);
-  const jsonSecond = renderJSON(value);
-  assert.equal(jsonFirst, jsonSecond);
-  assert.equal(jsonFirst, `${jsonFirst.replace(/\n$/u, "")}\n`);
-  assert.equal(jsonFirst.includes("\r"), false);
+  const json = renderJson(value);
+  assert.equal(json, `${json.replace(/\n$/u, "")}\n`);
+  assert.equal(json.includes("\r"), false);
   const tomlFirst = renderToml({ z: "last", a: 1, table: { z: true, a: "value" } });
-  const tomlSecond = renderTOML({ table: { a: "value", z: true }, a: 1, z: "last" });
+  const tomlSecond = renderToml({ table: { a: "value", z: true }, a: 1, z: "last" });
   assert.equal(tomlFirst, tomlSecond);
   assert.equal(tomlFirst.endsWith("\n"), true);
   assert.equal(tomlFirst.includes("\r"), false);

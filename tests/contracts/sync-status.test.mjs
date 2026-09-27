@@ -1,12 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-let syncModule;
-try {
-  syncModule = await import("../../scripts/sync-status.mjs");
-} catch (error) {
-  if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
-}
+import * as syncModule from "../../scripts/sync-status.mjs";
 
 const SHA = "b".repeat(40);
 const forbiddenGitActions = new Set(["fetch", "pull", "merge", "rebase", "stash", "reset", "commit", "push"]);
@@ -41,12 +36,6 @@ function gitRunner({
   };
   return { run, calls };
 }
-
-test("sync status exposes its read-only public interface", () => {
-  assert.equal(typeof syncModule?.inspectSyncStatus, "function");
-  assert.equal(typeof syncModule?.formatSyncStatus, "function");
-  assert.equal(typeof syncModule?.main, "function");
-});
 
 test("sync status reports a clean up-to-date main checkout", async () => {
   const fixture = gitRunner();

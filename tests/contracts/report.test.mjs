@@ -13,8 +13,6 @@ test("formatDiffText renders a redacted mode-only change", () => {
     diff: ""
   }]);
   assert.equal(output, "diff --git a/hooks/run.mjs b/hooks/run.mjs\nold mode 100644\nnew mode 100755\n");
-  assert.match(output, /old mode 100644\nnew mode 100755/u);
-  assert.doesNotMatch(output, /secret|#!/u);
 });
 
 test("formatDiffText preserves deterministic redacted content diffs without mode noise", () => {
@@ -27,5 +25,4 @@ test("formatDiffText preserves deterministic redacted content diffs without mode
     diff: "--- a/settings.json\n+++ b/settings.json\n@@ -1 +1 @@\n-[REDACTED] sha256=old bytes=4\n+[REDACTED] sha256=new bytes=4"
   }]);
   assert.equal(output, "--- a/settings.json\n+++ b/settings.json\n@@ -1 +1 @@\n-[REDACTED] sha256=old bytes=4\n+[REDACTED] sha256=new bytes=4\n");
-  assert.doesNotMatch(output, /old mode|new mode|secret|token-value/u);
 });

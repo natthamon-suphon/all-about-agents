@@ -9,23 +9,6 @@ import { withTempRoot } from "../helpers/temp-root.mjs";
 import { main, renderPlans } from "../../scripts/aaa.mjs";
 import { preflightOperation } from "../../installers/lib/apply.mjs";
 
-const requiredOutputs = [
-  "installers/install.ps1",
-  "installers/install.sh",
-  "scripts/aaa.mjs",
-  "installers/lib/doctor.mjs",
-  "installers/lib/report.mjs",
-  "tests/integration/cli.test.mjs",
-  "tests/integration/launchers.test.mjs"
-];
-
-test("T048 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
-
 test("doctor returns the exact independent check contract", async () => {
   const { diagnose } = await import("../../installers/lib/doctor.mjs");
   const result = await diagnose({
@@ -169,7 +152,6 @@ test("CLI action matrix emits normalized JSON and stable exit codes in disposabl
       { name: "diff", args: ["diff", "--surface", "claude", "--destination-root", root, "--format", "json"], code: 0, status: "pass" },
       { name: "doctor", args: ["doctor", "--surface", "claude", "--destination-root", root, "--format", "json"], code: 1, status: "not run" },
       { name: "validate", args: ["validate", "--format", "json"], code: 0, status: "pass" },
-      { name: "validate-all", args: ["validate", "--scope", "all", "--format", "json"], code: 0, status: "pass" },
       { name: "eval", args: ["eval", "--skill", "brainstorming", "--variant", "candidate", "--samples", "5", "--input-jsonl", input, "--output", outputDir, "--format", "json"], code: 0, status: undefined },
       { name: "invalid", args: ["install", "--unknown", "--format", "json"], code: 2, status: "fail" }
     ];

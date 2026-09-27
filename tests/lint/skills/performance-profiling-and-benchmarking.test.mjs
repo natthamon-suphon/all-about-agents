@@ -6,13 +6,6 @@ const skillId = "performance-profiling-and-benchmarking";
 const requiredCases = ["PF-TRIGGER-latency-goal-proof", "PF-NONTRIGGER-no-performance-goal", "PF-PRESSURE-intuition-percentage", "PF-NONTRIGGER-regression-unknown-cause"];
 const readSkill = (name = "SKILL.md") => readFile(new URL(`../../../core/skills/${skillId}/${name}`, import.meta.url), "utf8");
 
-test("T039 exposes its routing evidence", async () => {
-  const skill = await readSkill();
-  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
-  assert.match(skill, /^---\n/u);
-  for (const id of requiredCases) assert.match(JSON.stringify(evaluation), new RegExp(id));
-});
-
 test("performance claims require workload-specific baseline, variance, and acceptance evidence", async () => {
   const skill = await readSkill();
   assert.match(skill, /Skill Gate Protocol/iu);

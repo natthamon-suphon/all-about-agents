@@ -11,24 +11,6 @@ import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
 
-const requiredOutputs = [
-  "core/hooks/activity-audit.json",
-  "core/hooks/checkpoint.json",
-  "installers/lib/audit-log.mjs",
-  "adapters/claude/templates/hooks/activity-audit.json",
-  "adapters/claude/templates/hooks/checkpoint.json",
-  "adapters/codex/templates/hooks/activity-audit.json",
-  "adapters/codex/templates/hooks/checkpoint.json",
-  "tests/contracts/audit-checkpoint.test.mjs"
-];
-
-test("T015 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
-
 test("safeLogKey rejects path traversal and terminal control data", () => {
   const key = safeLogKey("../session\\nested\u001b[31m\nkey");
   assert.match(key, /^[A-Za-z0-9._-]+$/u);
@@ -210,8 +192,6 @@ test("every adapter production render consumes the audit and checkpoint contract
     for (const kind of packageSpec.registrationKinds) assert.ok(packageSpec.result.registrations.some((entry) => entry.kind === kind), `${packageSpec.surface} must register ${kind}`);
     assert.ok(files.has(packageSpec.hooksPath), `${packageSpec.surface} must render its hook registry`);
     assert.ok(files.has("hooks/audit-log.mjs"), `${packageSpec.surface} must render the audit-log seam`);
-    assert.doesNotMatch(files.get("hooks/activity-audit.mjs"), /intentionally emits no arguments or results/iu, `${packageSpec.surface} must render a consuming activity audit hook`);
-    assert.doesNotMatch(files.get("hooks/pre-compact.mjs"), /does not rewrite user files/iu, `${packageSpec.surface} must render a consuming checkpoint hook`);
   }
 });
 

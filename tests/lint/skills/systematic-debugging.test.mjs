@@ -17,23 +17,6 @@ const skillDir = new URL(`../../../core/skills/${skillId}/`, import.meta.url);
 const readSkillFile = (name) => readFile(new URL(name, skillDir), "utf8");
 const debugPerfBoundary = "A failure or regression with an unknown cause goes to `systematic-debugging` first; measuring, profiling, or proving a performance change goes to `performance-profiling-and-benchmarking`.";
 
-test("T032 exposes its routing evidence", async () => {
-  const skill = await readSkillFile("SKILL.md");
-  const evaluation = JSON.parse(
-    await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
-test("systematic-debugging body stays under the word budget", async () => {
-  const skill = await readSkillFile("SKILL.md");
-  const body = skill.replace(/^---\n[\s\S]*?\n---\n/u, "");
-  const words = body.split(/\s+/u).filter(Boolean).length;
-  assert.ok(words < 1500, `SKILL.md body has ${words} words; keep it under 1500`);
-});
-
 test("systematic-debugging gates fixes on safe, minimal evidence", async () => {
   const skill = await readSkillFile("SKILL.md");
   const redFlags = await readSkillFile("red-flags.md");
@@ -230,17 +213,6 @@ test("find-polluter treats Windows npm.cmd and bun.EXE as package managers", { s
   }
 });
 
-test("systematic-debugging owns disposable shell fixtures", async () => {
-  const fixture = await readFile(new URL("../../../tests/fixtures/systematic-debugging/README.md", import.meta.url), "utf8");
-  assert.match(fixture, /disposable/iu);
-  assert.match(fixture, /space/iu);
-  for (const path of [
-    "../../../tests/fixtures/systematic-debugging/runner/fixture-runner.sh",
-    "../../../tests/fixtures/systematic-debugging/runner/clean test.sh",
-    "../../../tests/fixtures/systematic-debugging/runner/create pollution.sh",
-  ]) await readFile(new URL(path, import.meta.url));
-});
-
 test("systematic-debugging evaluation has exact trigger, non-trigger, and pressure contracts", async () => {
   const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
@@ -268,14 +240,4 @@ test("systematic-debugging evaluation has exact trigger, non-trigger, and pressu
   assert.equal(evaluation.cases[3].expected.noFailureToExplain, true);
   assert.equal(evaluation.cases[3].expected.routeTo, "performance-profiling-and-benchmarking");
   assert.equal("routesTo" in evaluation.cases[3].expected, false);
-});
-
-test("core loader exposes systematic-debugging metadata", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  assert.deepEqual(core.evals.find((entry) => entry.id === `${skillId}-routing`)?.cases.map((entry) => entry.id), requiredCases);
 });

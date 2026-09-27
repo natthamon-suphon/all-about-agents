@@ -1,27 +1,14 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, posix, resolve } from "node:path";
+import { join, posix, resolve } from "node:path";
 import test from "node:test";
 
 import { renderAntigravity } from "../../adapters/antigravity/adapter.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
 import { assertUnifiedSkillPortfolio, loadCore } from "../../installers/lib/load-core.mjs";
-
-const requiredOutputs = [
-  "tests/contracts/complete-skill-manifest.test.mjs",
-  "tests/lint/skill-collisions.test.mjs",
-  "tests/snapshots/antigravity/skills-manifest.json",
-  "tests/snapshots/claude/skills-manifest.json",
-  "tests/snapshots/codex/skills-manifest.json"
-];
-
-test("T044 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) await access(resolve(process.cwd(), relativePath));
-});
 
 const PINNED = Object.freeze({ env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude", CODEX_HOME: "C:/disposable/codex" }, homeDir: "C:/Users/tester", platform: "win32", targetRuntime: "cli", statuslineName: "" });
 const surfaceSpecs = [

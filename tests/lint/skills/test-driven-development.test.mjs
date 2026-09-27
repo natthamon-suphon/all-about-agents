@@ -5,16 +5,6 @@ import test from "node:test";
 const skillId = "test-driven-development";
 const requiredCases = ["TD-TRIGGER-feature-or-bugfix", "TD-NONTRIGGER-doc-only-change", "TD-PRESSURE-keep-prewritten-code"];
 
-test("T031 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(
-    await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 test("test-driven-development keeps the RED/GREEN contract at a usable seam", async () => {
   const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
   assert.match(skill, /Skill Gate Protocol/iu);
@@ -61,16 +51,6 @@ test("test-driven-development evaluation covers trigger, non-trigger, and pressu
   assert.equal(evaluation.cases[2].expected.noDestructiveDeletion, true);
   assert.equal(evaluation.cases[2].expected.retainRedGreenEvidence, true);
   assert.equal(evaluation.cases[2].expected.noMandatorySeamCeremony, true);
-});
-
-test("core loader exposes test-driven-development metadata and routing links", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  assert.deepEqual(core.evals.find((entry) => entry.id === `${skillId}-routing`)?.cases.map((entry) => entry.id), requiredCases);
 });
 
 test("writing-good-tests companion starts with its title, not captured shell noise", async () => {

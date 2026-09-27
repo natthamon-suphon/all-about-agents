@@ -155,10 +155,6 @@ test("every weekday date in the eval fixtures has a year and the right weekday",
   }
 });
 
-test("exported archives stay out of Git", async () => {
-  assert.match(await text(".gitignore"), /^\.aaa\/claude-ai\/$/mu);
-});
-
 test("the eval results log has its fixed columns", async () => {
   assert.match(await text("claude-ai/evals/results.md"), /^\| Date \| Skill \| Case \| Runner \| Result \| Notes \|$/mu);
 });

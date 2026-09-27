@@ -361,6 +361,19 @@ All notable changes to all-about-agents. The format follows
   portfolio is now 27 skills, and the inventory schema pins 27. Its user
   instructions called `python`, which does not exist on macOS, and the owner
   chose to drop the skill rather than fix it.
+- A test cleanup removed 92 test cases (939 to 847) that could not fail, only
+  checked that a file exists, repeated a stronger test of the same behavior,
+  or tested a helper inside the test file. The fixtures only those cases read
+  are gone too: `tests/fixtures/subagent-driven-development/`,
+  `tests/fixtures/using-git-worktrees/`, and `tests/fixtures/user-profiles/`.
+  So are the unused exports `serializeApplyResult` and the `render-utils`
+  aliases `renderJSON`, `renderTOML`, `renderJsonDocument`,
+  `renderTomlDocument`, and `renderTextDocument`. Guard tests that keep
+  removed features out stay. For each kind of removed duplicate, a sample
+  was checked: breaking the code it covered made a kept test fail. `npm run test:static` now
+  runs every static test, the quick gate also runs
+  `tests/static/capabilities.test.mjs`, and `.gitignore` keeps only `.aaa/`,
+  which already covered `.aaa/eval-runs/` and `.aaa/claude-ai/`.
 
 ### Fixed
 

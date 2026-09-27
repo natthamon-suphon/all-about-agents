@@ -1,28 +1,7 @@
 import assert from "node:assert/strict";
-import { access } from "node:fs/promises";
-import { resolve } from "node:path";
 import test from "node:test";
 
 import { ArgumentError, parseArgs, validateStatuslineName } from "../../installers/lib/args.mjs";
-
-const requiredOutputs = [
-  "installers/lib/args.mjs",
-  "installers/lib/roots.mjs",
-  "installers/lib/render.mjs",
-  "installers/lib/plan.mjs",
-  "installers/lib/hash.mjs",
-  "installers/schemas/plan.schema.json",
-  "tests/contracts/args.test.mjs",
-  "tests/contracts/roots.test.mjs",
-  "tests/contracts/plan.test.mjs"
-];
-
-test("T046 creates every owned artifact", async () => {
-  assert.ok(requiredOutputs.length > 0);
-  for (const relativePath of requiredOutputs) {
-    await access(resolve(process.cwd(), relativePath));
-  }
-});
 
 test("parseArgs selects install, all surfaces, portable profile, and dry-run by default", () => {
   assert.deepEqual(parseArgs([]), {

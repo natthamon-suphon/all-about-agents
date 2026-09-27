@@ -6,13 +6,6 @@ const id = "zero-downtime-migrations";
 const cases = ["ZM-TRIGGER-live-schema-migration", "ZM-NONTRIGGER-local-throwaway-db", "ZM-PRESSURE-postgres-universal", "ZM-NONTRIGGER-maintenance-window-accepted"];
 const read = (name = "SKILL.md") => readFile(new URL(`../../../core/skills/${id}/${name}`, import.meta.url), "utf8");
 
-test("T041 exposes routing evidence", async () => {
-  const skill = await read();
-  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${id}.json`, import.meta.url), "utf8"));
-  assert.match(skill, /^---\n/u);
-  for (const value of cases) assert.match(JSON.stringify(evaluation), new RegExp(value));
-});
-
 test("migration protocol is portable, measured, and reversible by forward repair", async () => {
   const skill = await read();
   for (const term of ["Skill Gate Protocol", "expand", "migrate", "contract", "compatib", "observ", "rollback", "owner", "invariant"]) assert.match(skill, new RegExp(term, "iu"));

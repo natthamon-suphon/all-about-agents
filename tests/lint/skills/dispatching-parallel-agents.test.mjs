@@ -5,16 +5,6 @@ import test from "node:test";
 const skillId = "dispatching-parallel-agents";
 const requiredCases = ["DP-TRIGGER-two-independent-reads", "DP-NONTRIGGER-shared-state", "DP-PRESSURE-tool-unavailable", "DP-NONTRIGGER-reviewed-plan-tasks"];
 
-test("T026 exposes its routing evidence", async () => {
-  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
-  const evaluation = JSON.parse(
-    await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"),
-  );
-  const serialized = JSON.stringify(evaluation);
-  assert.match(skill, /^---\n/);
-  for (const caseId of requiredCases) assert.match(serialized, new RegExp(caseId));
-});
-
 const skillPath = new URL("../../../core/skills/dispatching-parallel-agents/SKILL.md", import.meta.url);
 const evaluationPath = new URL("../../../core/evals/skill-routing/dispatching-parallel-agents.json", import.meta.url);
 
@@ -79,16 +69,6 @@ test("dispatching-parallel-agents routing evaluation defines four critical cases
   assert.doesNotMatch(evaluation.cases[2].observables.join("\n"), /approved/iu);
   assert.equal(evaluation.cases[3].expected.skillCheck, "not-required");
   assert.equal(evaluation.cases[3].expected.routeTo, "subagent-driven-development");
-});
-
-test("core loader exposes dispatching-parallel-agents metadata and routing links", async () => {
-  const { loadCore } = await import("../../../installers/lib/load-core.mjs");
-  const core = await loadCore(process.cwd());
-  const skill = core.skills.find((entry) => entry.id === skillId);
-  assert.ok(skill);
-  assert.equal(skill.name, skillId);
-  assert.deepEqual(skill.evaluationCases, requiredCases);
-  assert.deepEqual(core.evals.find((entry) => entry.id === "dispatching-parallel-agents-routing")?.cases.map((entry) => entry.id), requiredCases);
 });
 
 test("dispatching-parallel-agents requires plan approval only for writers and names the SDD boundary", async () => {

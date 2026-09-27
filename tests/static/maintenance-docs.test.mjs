@@ -150,25 +150,6 @@ test("maintenance guides define the complete shared workflow", async () => {
   ]) assert.match(verification, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "iu"), `verification guide omits ${value}`);
 });
 
-test("global instruction guide defines the shared source and dual-layer model", async () => {
-  const body = await text("docs/maintenance/global-instructions.md");
-  for (const value of [
-    "core/instructions/global-operating-rules.md",
-    "CLAUDE_CONFIG_DIR",
-    "CLAUDE.md",
-    "CODEX_HOME",
-    "AGENTS.md",
-    "Global layer",
-    "Project and plugin layer",
-    "brainstorming 🧠",
-    "Using skill",
-    "Checklist",
-    "reason",
-    "not a UI guarantee"
-  ]) assert.match(body, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "iu"), `global guide omits ${value}`);
-  assert.match(body, /CLAUDE\.local\.md[\s\S]{0,120}(?:private|project)[\s\S]{0,120}(?:not|never)[\s\S]{0,120}global/iu);
-});
-
 test("entry and platform docs link the maintenance workflow", async () => {
   const readme = await text("README.md");
   for (const target of ["CONTRIBUTING.md", ...maintenanceDocs]) {
