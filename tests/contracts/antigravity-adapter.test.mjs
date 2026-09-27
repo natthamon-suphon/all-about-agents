@@ -88,6 +88,30 @@ test("skills and roles use the layout agy plugin validate accepts", () => {
   assert.ok(files.has("skills/using-all-about-agents/references/adapter-capability-guidance.md"));
 });
 
+test("Desktop and IDE guidance copies into the documented global plugin slot only when agy is missing", async () => {
+  const globalSlot = "~/.gemini/config/plugins/all-about-agents/";
+  for (const profileId of ["portable", "template"]) {
+    const result = render(profileId);
+    const files = fileMap(result);
+    const manual = files.get("docs/manual-desktop.md");
+    const copyTarget = /```text\n([^\n]+)\n```/u.exec(manual)?.[1];
+    assert.equal(copyTarget, globalSlot, `${profileId} manual must copy into the global slot`);
+    assert.match(manual, /Antigravity Desktop/u);
+    assert.match(manual, /Antigravity IDE/u);
+    assert.match(manual, /agy plugin install/u);
+    assert.doesNotMatch(manual, /ASSUMPTION MADE|the Desktop target/u);
+    assert.ok(files.get("README.md").includes(globalSlot));
+    const step = result.registrations.find((entry) => entry.kind === "manual-step" && entry.id === "desktop-workspace-slot");
+    assert.ok(step.instruction.includes(globalSlot));
+    assert.match(step.instruction, /^Without agy/u);
+  }
+  const capabilities = JSON.parse(await readFile(resolve(process.cwd(), "adapters/antigravity/capabilities.json"), "utf8"));
+  const desktop = capabilities.capabilities.find((entry) => entry.feature === "desktop.discovery");
+  assert.notEqual(desktop.checkedAt, "2026-09-19", "the discovery record must be rechecked after the per-workspace assumption");
+  assert.doesNotMatch(desktop.notes, /ASSUMPTION MADE/u);
+  assert.match(desktop.notes, /Antigravity IDE/u);
+});
+
 test("emergency protection is recorded without writing the operator's permission settings", () => {
   for (const targetRuntime of ["cli", "desktop"]) {
     const result = render("template", targetRuntime);

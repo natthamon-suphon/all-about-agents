@@ -29,7 +29,7 @@ evidence only.
 T07 Windows checks observed Claude Code `2.1.251` and Codex CLI
 `0.151.0-alpha.7.2` for only the operations listed in the evaluation records.
 The Antigravity surface was checked separately on `agy 1.2.7` on 2026-09-19.
-Codex Desktop, Antigravity Desktop, native checks on macOS, authenticated model
+Codex Desktop, Antigravity Desktop and IDE loading, native checks on macOS, authenticated model
 transport outside the manual `npm run test:model` suite, hook trust, hook execution, permission blocking, persistence, and Gate 3 remain
 `NOT_RUN` or `NOT_RUN_UNAVAILABLE`.
 
@@ -39,7 +39,7 @@ transport outside the manual `npm run test:model` suite, hook trust, hook execut
 | --- | --- | --- |
 | [Claude Code](../compatibility/claude-code.md) | Package validation, disposable marketplace registration, plugin discovery, and both statusline fixtures passed on Windows. | Authenticated model and component use, hook trust and execution, Fable access, deny blocking, persistence, Desktop behavior, and native use on macOS are not qualified. |
 | [Codex](../compatibility/codex.md) | Marketplace add, plugin add, exact available-plugin discovery, and discovered hook-file checks passed in an isolated Windows CLI home. | `/hooks` trust, hook execution, authenticated model use, Desktop behavior, persistence, and native use on macOS are not qualified. Automatic fallback is unsupported. |
-| [Antigravity](../compatibility/antigravity.md) | `agy plugin validate`, `agy plugin install`, `agy plugin list`, and `agy agents` passed on `agy 1.2.7`, and a headless session named real skills and the inlined routing contract from outside any workspace copy. | Antigravity Desktop, native use on macOS, permission deny blocking, and persistence are not qualified. There is no hook or status line to qualify: none is rendered. |
+| [Antigravity](../compatibility/antigravity.md) | `agy plugin validate`, `agy plugin install`, `agy plugin list`, and `agy agents` passed on `agy 1.2.7`, and a headless session named real skills and the inlined routing contract from outside any workspace copy. | Antigravity Desktop and IDE loading (without `agy` their plugin copy is manual), native use on macOS, permission deny blocking, and persistence are not qualified. There is no hook or status line to qualify: none is rendered. |
 
 ## Safety and setup constraints
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "surface": "antigravity",
-  "product": "Antigravity CLI (agy) and Antigravity Desktop",
+  "product": "Antigravity CLI (agy), Antigravity Desktop, and Antigravity IDE",
   "productVersion": "1.2.7",
   "package": "all-about-agents",
   "pluginManifest": "plugin.json",

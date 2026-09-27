@@ -157,13 +157,13 @@
       "support": "unknown",
       "stability": "unknown",
       "source": "docs/evaluations/research-antigravity.md",
-      "checkedAt": "2026-09-19",
-      "productVersion": "1.2.7",
+      "checkedAt": "2026-09-27",
+      "productVersion": "Desktop 2.11.0; IDE 2.5.5",
       "value": {
         "workspace": "<workspace>/.agents/plugins/<plugin>/",
         "global": "~/.gemini/config/plugins/<plugin>/"
       },
-      "notes": "ASSUMPTION MADE: Desktop reads the per-workspace slot. The source is a 2026-09-03 note, not a check on the current build. Desktop has no headless mode, so this stays NOT_RUN_UNAVAILABLE until someone opens it and asks."
+      "notes": "Google's plugin documentation (checked 2026-09-27) says Antigravity Desktop and Antigravity IDE, two separate apps, both read the global plugin root and a workspace .agents/plugins/ folder; the IDE's built-in agy-customizations guide names the global root ~/.gemini/config/. agy plugin install fills the global slot; without agy the copy is manual. The versions are the last installed ones seen (Desktop on Windows 2026-08-31, IDE on macOS 2026-09-27). Neither app has a headless mode: loading is NOT_RUN_UNAVAILABLE until someone checks its Customizations view."
     }
   ]
 }

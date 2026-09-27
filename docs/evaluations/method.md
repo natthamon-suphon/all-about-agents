@@ -350,7 +350,7 @@ The Antigravity surface was checked separately on `agy 1.2.7` on 2026-09-19
 ([product contract evidence](research-antigravity.md)):
 package validation, install, plugin and agent discovery, and one headless
 session that named real skills and the inlined routing contract. Antigravity
-Desktop has no headless mode and stays `NOT_RUN_UNAVAILABLE`.
+Desktop and IDE have no headless mode and stay `NOT_RUN_UNAVAILABLE`.
 
 CI (`.github/workflows/installer-matrix.yml`) runs the clean-profile installer
 tests and the full `node --test` suite on `windows-latest` and `macos-latest`.

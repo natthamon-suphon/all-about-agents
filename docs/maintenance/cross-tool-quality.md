@@ -97,8 +97,9 @@ Restart `agy` after registration or package changes. Confirm the loaded
 `GEMINI.md` heading, that a `Routing contract` section is present, plugin and
 skill discovery, and that `agy agents` lists all seven roles. Run the check
 from a directory with no `.agents/` folder, or the answer cannot say which copy
-of the package was loaded. Antigravity Desktop has no headless mode; test it by
-hand or record it as `NOT_RUN_UNAVAILABLE`.
+of the package was loaded. Antigravity Desktop and IDE have no headless mode;
+check their Customizations view by hand or record them as
+`NOT_RUN_UNAVAILABLE`.
 
 ### Claude Code
 

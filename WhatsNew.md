@@ -226,6 +226,19 @@ from there, and the Antigravity manifest names it in its description.
     to Windows PowerShell (`powershell`) when `pwsh` is missing; the
     statusline byte-limit test can now fail.
 
+- Antigravity Desktop and Antigravity IDE, two separate apps, are now set up
+  through the documented global plugin slot
+  `~/.gemini/config/plugins/all-about-agents/` instead of a copy in each
+  workspace. Google's plugin documentation says every Antigravity app reads
+  that global root, and the IDE's built-in customization guide names the root
+  `~/.gemini/config/`. `agy plugin install` fills the slot; the
+  `antigravity-desktop-slot` step now says to copy by hand only when `agy` is
+  missing. The rendered `docs/manual-desktop.md`, the package README, the
+  `desktop.discovery` capability record, and the Antigravity pages say so. The
+  old per-workspace assumption is gone, and a dated addendum in
+  `docs/evaluations/research-antigravity.md` holds the sources. Whether either
+  app loaded the copy is still not claimed: neither has a headless mode.
+
 - The docs were checked line by line against the code. `New-Item` has no
   `-LiteralPath` parameter, so the Claude, Codex, and registration guides now
   use `-Path`. The Codex template README no longer says the portable profile

@@ -1,4 +1,4 @@
-# Antigravity CLI and Desktop compatibility
+# Antigravity CLI, Desktop, and IDE compatibility
 
 Sibling pages: [Claude Code](claude-code.md) and [Codex](codex.md).
 
@@ -11,7 +11,11 @@ it, `agy agents` listed all seven roles, and a headless `agy -p` session run
 from a directory with no `.agents/` folder named real skills and confirmed the
 inlined routing contract. That is `runtime verified` for the CLI.
 
-Antigravity Desktop remains `NOT_RUN_UNAVAILABLE`: it has no headless mode.
+Antigravity Desktop and Antigravity IDE are two more apps. Both read the global
+plugin slot that `agy plugin install` fills; without `agy`, the slot takes a
+manual copy. Whether either app loaded the plugin stays `NOT_RUN_UNAVAILABLE`,
+because neither has a headless mode. See
+[Antigravity Desktop and IDE](#antigravity-desktop-and-ide).
 
 Decision D6 of the 2026-09-18 plan removed the surface (commit `8cbfd3b`). The
 owner reversed that decision on 2026-09-19, and commit `e36b3d5` restored it. See
@@ -43,7 +47,7 @@ package was loaded.
 | Hooks | None rendered | No session-start event can be named with current evidence; the recorded event list is inherited from the 1.1.22 evaluation. Do not infer hook support from another product. |
 | Status line | None rendered | No statusline is rendered. The Claude-only `--statusline-name` option is refused with `--surface antigravity` (exit code 2); with `--surface all` it reaches Claude alone. The removed adapters pointed one at a path the product never creates. |
 | Permission deny rules | Recorded as a manual expectation only | This package never writes `antigravity-cli/settings.json`. |
-| Antigravity Desktop | `NOT_RUN_UNAVAILABLE` | No headless mode; the workspace slot is a manual copy. |
+| Antigravity Desktop and IDE | Loading `NOT_RUN_UNAVAILABLE` | Both read the documented global slot `~/.gemini/config/plugins/all-about-agents/`, which `agy plugin install` fills; without `agy` the copy is manual. Neither app has a headless mode. |
 
 ## What the package contains
 
@@ -53,7 +57,7 @@ GEMINI.md                   canonical rules, inlined routing contract, presentat
 README.md                   install summary
 agents/<role>.md            7 roles, Markdown with YAML frontmatter
 skills/<skill>/SKILL.md     27 skills and their companion files
-docs/manual-desktop.md      the Desktop workspace-slot procedure
+docs/manual-desktop.md      the Desktop and IDE global-slot procedure
 ```
 
 `plugin.json` must sit at the package **root**. Pointing `agy plugin validate`
@@ -134,23 +138,45 @@ documented on-disk key persists it.
 The package sets no model fallback. Automatic model fallback is unsupported and
 not claimed.
 
-## Antigravity Desktop
+## Antigravity Desktop and IDE
 
-Desktop is registered by hand. Copy `plugin.json`, `skills/`, and `agents/` into
-`<workspace>/.agents/plugins/all-about-agents/` and add `.agents/plugins/` to
-that workspace's ignore file.
+Antigravity Desktop (Antigravity 2, the `desktop` target of this adapter) and
+Antigravity IDE are separate apps. The Windows record of 2026-08-31 lists
+Desktop 2.11.0 and IDE 2.5.5 side by side; the macOS host had IDE 2.5.5 and no
+Desktop on 2026-09-27. Google's plugin documentation says every Antigravity
+app reads the global plugin root `~/.gemini/config/plugins/`, and Desktop and
+the IDE also read a workspace `.agents/plugins/` folder
+([Plugins](https://antigravity.google/docs/plugins)). The IDE's built-in
+`agy-customizations` guide names `~/.gemini/config/` as the machine-wide root
+and gives this priority order: a workspace `.agents/` copy, then entries
+declared in `skills.json` or `plugins.json`, then the global root, then the
+built-in skills, then globally declared entries. It says a higher-priority
+customization wins a naming conflict, with same-name skills as its example.
 
-ASSUMPTION MADE: Desktop reads the per-workspace slot rather than the shared
-plugin root. The source is a 2026-09-03 observation, not a check on the current
-Desktop build. Open Desktop and ask it to name a skill before treating the slot
-as active.
+`agy plugin install` fills `~/.gemini/config/plugins/all-about-agents/`, so a
+host with `agy` needs no other step. On a host without `agy`, copy
+`plugin.json`, `skills/`, and `agents/` there by hand, and replace an older
+copy instead of merging into it. Do not also keep a copy in
+`<workspace>/.agents/plugins/all-about-agents/`: the guide does not say how two
+copies of one plugin combine.
 
-The CLI and Desktop share `~/.gemini/config/plugins/`. In 2026-09 that was a
-collision because two adapters wrote different, surface-tagged payloads into one
-slot. This package is a single neutral payload, so both slots now carry the same
-files. Running the CLI with both present produced no duplicate or shadow warning
-in `~/.gemini/antigravity-cli/log/` on `agy 1.2.7`, which is an absence of
-evidence rather than proof that the product merges them cleanly.
+Outside a plugin, the IDE reads global rules from `~/.gemini/GEMINI.md`,
+`~/.gemini/AGENTS.md`, and `~/.gemini/config/rules/*.md`
+([Rules](https://antigravity.google/docs/rules?app=antigravity-ide)), and
+global skills from `~/.gemini/config/skills/`; the legacy
+`~/.gemini/antigravity/skills/` is still read
+([Skills](https://antigravity.google/docs/skills?app=antigravity-ide)).
+
+Neither app has a headless mode, so this repository does not claim that the
+plugin loaded. Check it in the Customizations panel (Desktop) or the
+Customizations dropdown of the agent side panel (IDE).
+
+The CLI, Desktop, and the IDE read one global folder. In 2026-09 that folder was
+a collision point, because two adapters wrote different, surface-tagged payloads
+into it; this package is one neutral payload. On `agy 1.2.7`, a run with a
+workspace copy present as well produced no duplicate or shadow warning in
+`~/.gemini/antigravity-cli/log/`. That is an absence of evidence, not proof
+that two copies merge cleanly.
 
 ## Keeping the install current
 

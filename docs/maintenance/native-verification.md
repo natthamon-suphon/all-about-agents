@@ -162,8 +162,9 @@ authorized decision and after reviewing the dry-run report.
    cannot say which copy was loaded, so the run proves nothing about the global
    install.
 
-7. Antigravity Desktop has no headless mode. Record it as
-   `NOT_RUN_UNAVAILABLE` unless someone opened it and asked the same question.
+7. Antigravity Desktop and Antigravity IDE have no headless mode. Record each
+   as `NOT_RUN_UNAVAILABLE` unless someone opened it and checked its
+   Customizations view or asked the same question.
 
 ### Claude Code
 

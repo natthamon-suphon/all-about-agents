@@ -113,3 +113,47 @@ files.
   surface.
 - macOS. No host was available.
 - Authenticated model transport and any model-quality claim.
+
+## Addendum 2026-09-27: Desktop and IDE plugin discovery
+
+This addendum records documentation, not a runtime check. The 2026-09-19
+findings above stay as they were.
+
+Antigravity Desktop (Antigravity 2, this adapter's `desktop` target) and
+Antigravity IDE are separate apps; `native-windows-2026-08-31.md` lists
+Desktop 2.11.0 and IDE 2.5.5 on one host. The macOS host had Antigravity IDE
+2.5.5 (`CFBundleShortVersionString` of the app bundle), no Desktop, and no
+`agy` CLI.
+
+Sources, read on 2026-09-27:
+
+- [Plugins](https://antigravity.google/docs/plugins): the page covers
+  Antigravity 2.0, the Antigravity CLI, and Antigravity IDE. The global
+  plugin root `~/.gemini/config/plugins/` applies to all of them, and 2.0 and
+  the IDE also read a workspace `.agents/plugins/`. The IDE view of the page
+  ([Plugins, IDE](https://antigravity.google/docs/plugins?app=antigravity-ide))
+  says the IDE needs no CLI to install a plugin and shows loaded parts in the
+  Customizations dropdown of the agent side panel.
+- [Skills](https://antigravity.google/docs/skills?app=antigravity-ide): global
+  skills live in `~/.gemini/config/skills/`, and the legacy
+  `~/.gemini/antigravity/skills/` is still supported. Workspace skills live in
+  `<workspace>/.agents/skills/`.
+- [Rules](https://antigravity.google/docs/rules?app=antigravity-ide): global
+  rules are `~/.gemini/AGENTS.md`, `~/.gemini/GEMINI.md`, and
+  `~/.gemini/config/rules/*.md`.
+- [Subagents](https://antigravity.google/docs/subagents?app=antigravity-ide):
+  global subagents live in `~/.gemini/config/agents/`, and a plugin's
+  `agents/` folder is read too.
+- The IDE's built-in `agy-customizations` skill (under
+  `~/.gemini/antigravity-ide/builtin/skills/`) names `~/.gemini/config/` as the
+  machine-wide root and gives the priority order: workspace `.agents/`, then
+  declared `skills.json` or `plugins.json` entries, then the global root, then
+  built-in skills, then globally declared entries. It says a higher-priority
+  customization wins a naming conflict, with same-name skills as its example.
+
+Consequence: the documentation contradicts the 2026-09-03 assumption that
+Desktop reads only a per-workspace slot. `agy plugin install` fills the global
+slot; on a host without `agy`, the package is copied there by hand.
+
+Not run: whether Desktop or the IDE loaded the copy. Neither app has a
+headless mode; the check is the app's Customizations view.

@@ -8,7 +8,7 @@
     },
     {
       "relativePath": "README.md",
-      "sha256": "010d1cbbb7d4cd67169deaa0e4aeb510ef35722c19bd82aabe3c26d733093d8e",
+      "sha256": "b341c93ab33eb8307fd14f6c60361b1b15e73b6da085cc6ac5c3f639d3634396",
       "mode": null
     },
     {
@@ -48,7 +48,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "0c8d144708852f99e8306b604dc6789e4199995637e3f4fc7e8c6087a8ea7085",
+      "sha256": "5fbc81c0d5b42848f4a0837eec43ef98edc81e9fed9a68642b07afd6b287d467",
       "mode": null
     },
     {
@@ -318,7 +318,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "918a14dd263b67efd1c3b9c300629d4f7eed293eb57d6800a723d8e5aa147d87",
+      "sha256": "0d29d3a381d3a01db2e893b5b0fcd4ee8bd55670ddd20e820780a42712ce65f6",
       "mode": null
     },
     {
@@ -399,7 +399,7 @@
     },
     {
       "relativePath": "README.md",
-      "sha256": "010d1cbbb7d4cd67169deaa0e4aeb510ef35722c19bd82aabe3c26d733093d8e"
+      "sha256": "b341c93ab33eb8307fd14f6c60361b1b15e73b6da085cc6ac5c3f639d3634396"
     },
     {
       "relativePath": "agents/architect.md",
@@ -431,7 +431,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "0c8d144708852f99e8306b604dc6789e4199995637e3f4fc7e8c6087a8ea7085"
+      "sha256": "5fbc81c0d5b42848f4a0837eec43ef98edc81e9fed9a68642b07afd6b287d467"
     },
     {
       "relativePath": "plugin.json",
@@ -647,7 +647,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "918a14dd263b67efd1c3b9c300629d4f7eed293eb57d6800a723d8e5aa147d87"
+      "sha256": "0d29d3a381d3a01db2e893b5b0fcd4ee8bd55670ddd20e820780a42712ce65f6"
     },
     {
       "relativePath": "skills/using-all-about-agents/references/codex-tools.md",
@@ -807,7 +807,7 @@
       "kind": "manual-step",
       "surface": "antigravity-desktop",
       "id": "desktop-workspace-slot",
-      "instruction": "Copy plugin.json, skills/, and agents/ into <workspace>/.agents/plugins/all-about-agents/; see docs/manual-desktop.md."
+      "instruction": "Without agy, copy plugin.json, skills/, and agents/ into ~/.gemini/config/plugins/all-about-agents/ for Antigravity Desktop and IDE; agy plugin install fills the same folder. See docs/manual-desktop.md."
     },
     {
       "kind": "manual-step",

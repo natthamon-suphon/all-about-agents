@@ -364,7 +364,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push(processAction("antigravity-plugin-validate", "agy", ["plugin", "validate", pkg], pkg, null, "none", false));
     actions.push(processAction("antigravity-plugin-install", "agy", ["plugin", "install", pkg], pkg, null, "none"));
     actions.push(processAction("antigravity-plugin-list", "agy", ["plugin", "list"], pkg, null, "json", false));
-    actions.push(manualAction("antigravity-desktop-slot", "Copy plugin.json, skills/, and agents/ into <workspace>/.agents/plugins/all-about-agents/ for Antigravity Desktop; see docs/manual-desktop.md."));
+    actions.push(manualAction("antigravity-desktop-slot", "Without agy, copy plugin.json, skills/, and agents/ into ~/.gemini/config/plugins/all-about-agents/ for Antigravity Desktop and IDE; agy plugin install fills the same folder. See docs/manual-desktop.md."));
   }
 
   const plan = {

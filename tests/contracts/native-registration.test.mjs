@@ -173,6 +173,15 @@ test("planner creates deterministic known actions for every surface", async () =
   }
 });
 
+test("the Antigravity plan points Desktop and IDE at the global plugin slot and the agy case", async () => {
+  const input = await fixture();
+  const slot = base(input, "antigravity").actions.find((action) => action.id === "antigravity-desktop-slot");
+  assert.equal(slot.kind, "manual");
+  assert.ok(slot.message.includes("~/.gemini/config/plugins/all-about-agents/"), slot.message);
+  assert.match(slot.message, /Without agy/u);
+  assert.match(slot.message, /agy plugin install fills the same folder/u);
+});
+
 test("planner records Claude trust as unavailable because no native trust step exists", async () => {
   const input = await fixture();
   const claude = base(input, "claude");

@@ -185,9 +185,13 @@ step. For `active` and `runtime verified`, start a fresh session **from a
 directory that has no `.agents/` folder**; inside a workspace that carries its
 own copy of the package, a correct answer cannot say which copy was loaded.
 
-Antigravity Desktop is not registered by this plan. Copy `plugin.json`,
-`skills/`, and `agents/` into `<workspace>/.agents/plugins/all-about-agents/`
-and verify by asking Desktop directly; it has no headless mode.
+Antigravity Desktop and Antigravity IDE read the same global slot,
+`~/.gemini/config/plugins/all-about-agents/`, which the `agy plugin install`
+step fills. On a host without `agy`, the manual step `antigravity-desktop-slot`
+applies: copy `plugin.json`, `skills/`, and `agents/` there by hand. An
+`--apply` run on such a host stops at the validate step, so read this step in
+the `--dry-run` report or in `docs/manual-desktop.md`. Then check the app's
+Customizations view; neither app has a headless mode.
 
 The installed plugin is a copy and does not follow later renders. Re-run
 registration after every package update.

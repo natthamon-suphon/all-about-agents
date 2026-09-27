@@ -155,7 +155,7 @@ function capabilityGuidance(semanticProfile) {
     "- There is no session-start event. The routing contract is inlined into `GEMINI.md` rather than injected, and this adapter renders no hook files.",
     "- This adapter renders no status line. The removed adapters built one from a plugin path the product never creates.",
     modelGuidance,
-    "- Antigravity Desktop discovery is a manual per-workspace step; see `docs/manual-desktop.md`.",
+    "- Antigravity Desktop and Antigravity IDE read the global plugin slot `~/.gemini/config/plugins/all-about-agents/`, which `agy plugin install` fills; without `agy`, copy this package there by hand, see `docs/manual-desktop.md`.",
     "",
     "If a selected Antigravity capability, path, syntax, or product surface is unavailable, report that condition and stop or ask for direction rather than inferring support.",
     ""
@@ -165,29 +165,37 @@ function capabilityGuidance(semanticProfile) {
 function desktopInstructions(semanticProfile) {
   const modelLines = semanticProfile.modelPolicies[ANTIGRAVITY_SURFACE] === "surface-default"
     ? ["The portable profile keeps the current Antigravity model and effort controls unchanged."]
-    : ["The template profile records `gemini-3.1-pro-high`. Select it in the Desktop model controls; no documented Desktop profile selector is assumed by this adapter."];
+    : ["The template profile records `gemini-3.1-pro-high`. Select it in the app's model controls; no documented Desktop or IDE profile selector is assumed by this adapter."];
   return ensureText([
-    "# Antigravity Desktop manual setup",
+    "# Antigravity Desktop and IDE manual setup",
     "",
-    "The `agy` CLI discovers this package through `agy plugin install`, which",
-    "copies it into the shared Gemini plugin root. Antigravity Desktop is not",
-    "driven by that command and is registered by hand.",
+    "Antigravity Desktop and Antigravity IDE are two apps. Google's plugin",
+    "documentation says both, like the `agy` CLI, read the global plugin root",
+    "`~/.gemini/config/plugins/`. `agy plugin install` copies this package",
+    "there, so a host with `agy` needs no other step.",
     "",
-    "Copy `plugin.json`, `skills/`, and `agents/` from this package into the",
-    "workspace you open in Desktop:",
+    "On a host without `agy`, copy `plugin.json`, `skills/`, and `agents/` from",
+    "this package into:",
     "",
     "```text",
-    "<workspace>/.agents/plugins/all-about-agents/",
+    "~/.gemini/config/plugins/all-about-agents/",
     "```",
     "",
-    "Add `.agents/plugins/` to that workspace's ignore file.",
+    "Replace an older copy there; do not merge into it. `GEMINI.md` is not part",
+    "of the plugin: registration deploys it to `~/.gemini/GEMINI.md`.",
+    "",
+    "Do not also keep a copy in `<workspace>/.agents/plugins/all-about-agents/`.",
+    "A workspace copy has a higher priority. The IDE's built-in guide says a",
+    "higher-priority customization wins a naming conflict, with same-name skills",
+    "as its example; it does not say how two copies of one plugin combine.",
     "",
     ...modelLines,
     "",
-    "ASSUMPTION MADE: Desktop reads the per-workspace slot rather than the shared",
-    "plugin root. The source is a 2026-09-03 observation, not a check on the",
-    "current Desktop build, and Desktop has no headless mode, so registration,",
-    "active state, and runtime evidence stay manual and are not claimed here.",
+    "Source: Google's Antigravity plugin documentation and the IDE's built-in",
+    "`agy-customizations` guide, both checked on 2026-09-27. Neither app has a",
+    "headless mode, so this render does not claim that the plugin loaded. Check",
+    "it in the Customizations panel (Desktop) or the Customizations dropdown of",
+    "the agent side panel (IDE).",
     ""
   ].join("\n"));
 }
@@ -218,9 +226,11 @@ function packageReadme(semanticProfile) {
     "otherwise registration reports `manual-required` and writes nothing, and",
     "the missing body must be merged by hand.",
     "",
-    "## Desktop",
+    "## Antigravity Desktop and IDE",
     "",
-    "See `docs/manual-desktop.md`.",
+    "Both apps read `~/.gemini/config/plugins/all-about-agents/`, which",
+    "`agy plugin install` fills. Without `agy`, copy `plugin.json`, `skills/`,",
+    "and `agents/` there by hand; see `docs/manual-desktop.md`.",
     ""
   ].join("\n"));
 }
@@ -374,7 +384,7 @@ export function renderAntigravity(input = {}) {
         kind: "manual-step",
         surface: "antigravity-desktop",
         id: "desktop-workspace-slot",
-        instruction: "Copy plugin.json, skills/, and agents/ into <workspace>/.agents/plugins/all-about-agents/; see docs/manual-desktop.md."
+        instruction: "Without agy, copy plugin.json, skills/, and agents/ into ~/.gemini/config/plugins/all-about-agents/ for Antigravity Desktop and IDE; agy plugin install fills the same folder. See docs/manual-desktop.md."
       },
       ...(semanticProfile.modelPolicies[ANTIGRAVITY_SURFACE] === "surface-default" ? [] : [{
         kind: "manual-step",
