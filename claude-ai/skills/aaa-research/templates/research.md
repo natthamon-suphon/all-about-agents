@@ -8,7 +8,7 @@
 | Date | YYYY-MM-DD |
 | Status | complete |
 | Language | the document language |
-| Sources | the web, plus any attachments |
+| Sources | the earlier document that holds the R# (if any), the web, attached files by name, and "this chat" if used |
 | Answers | R# and its question, from the earlier document that holds it, or "none" |
 
 ## 1. Question

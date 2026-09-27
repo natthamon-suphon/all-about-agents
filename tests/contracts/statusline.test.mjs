@@ -79,10 +79,19 @@ test("readStatuslineConfig is JSON-only, bounded, and fail-open", async () => {
       assert.deepEqual(readStatuslineConfig(root), { displayName: expected }, name);
     });
   }
-  await withTempRoot(async (root) => {
-    await writeConfig(root, JSON.stringify({ schemaVersion: 1, displayName: "a".repeat(10_000) }));
-    assert.deepEqual(readStatuslineConfig(root), { displayName: "" }, "a config above the byte bound is ignored");
-  });
+  // A short valid name plus padding isolates the 8,192-byte file bound from the 64-code-point name rule.
+  const configOfBytes = (bytes) => {
+    const empty = JSON.stringify({ schemaVersion: 1, displayName: "ok", padding: "" });
+    return JSON.stringify({ schemaVersion: 1, displayName: "ok", padding: "a".repeat(bytes - empty.length) });
+  };
+  for (const [bytes, expected, label] of [[8_192, "ok", "a config at the byte bound is read"], [8_193, "", "a config above the byte bound is ignored"]]) {
+    await withTempRoot(async (root) => {
+      const text = configOfBytes(bytes);
+      assert.equal(Buffer.byteLength(text), bytes);
+      await writeConfig(root, text);
+      assert.deepEqual(readStatuslineConfig(root), { displayName: expected }, label);
+    });
+  }
 });
 
 test("safeStatuslineLogKey preserves canonical ownership and separates hostile collisions", () => {

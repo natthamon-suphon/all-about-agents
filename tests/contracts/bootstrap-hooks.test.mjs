@@ -209,6 +209,7 @@ test("canonical behavior is vendor-neutral while each template owns its native c
   assert.equal(bootstrap.failureMode, "fail-open");
   assert.equal(bootstrap.failureDiagnostic, "Bootstrap skipped: malformed hook input; the session continues without injected context.");
   assert.equal(bootstrap.contentRef, "core/skills/using-all-about-agents/SKILL.md");
+  assert.match(bootstrap.description, /SessionStart[^.]*startup, clear, or compact/u, "bootstrap.mjs injects on these three sources, not only the first session");
   for (const field of ["surface", "event", "matchers", "firstSession", "firstSessionWhen", "input", "hookSpecificOutput", "injectSteps"]) assert.equal(Object.hasOwn(bootstrap, field), false, `core must not own vendor field ${field}`);
 
   const templates = [

@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { equalBytes } from "../../installers/lib/hash.mjs";
 import { renderForSurface } from "../../installers/lib/render.mjs";
 import { runProcess } from "../../scripts/lib/process-runner.mjs";
+import { TRIGGER_SUITE_PREFIX } from "./suite-age.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const DEFAULT_CASE_TIMEOUT_MS = 300_000;
@@ -56,16 +57,21 @@ export function buildCasePrompt(prompt) {
 /**
  * Read the routed skill from the last `skill:` line. Prose that merely contains
  * the word does not match, so declining a skill by name never reads as routing
- * to it. Only the first skill-name token counts, so "none - nothing applies"
- * reads as "none". Returns that token, or null when no trailer names one.
+ * to it. Only the first skill name counts, so "none - nothing applies" reads as
+ * "none". A bare namespace is not a name, so "all-about-agents: brainstorming"
+ * reads as "brainstorming". Returns that name, or null when no trailer names one.
  */
 export function parseSkillTrailer(text) {
   const lines = String(text ?? "").split("\n");
   for (let index = lines.length - 1; index >= 0; index -= 1) {
     const match = lines[index].match(TRAILER_LINE);
     if (!match) continue;
-    const token = match[1].toLowerCase().match(SKILL_TOKEN)?.[0] ?? null;
-    return token?.startsWith(NAMESPACE_PREFIX) ? token.slice(NAMESPACE_PREFIX.length) : token;
+    const value = match[1].toLowerCase();
+    const token = value.match(SKILL_TOKEN);
+    if (!token) return null;
+    if (!token[0].startsWith(NAMESPACE_PREFIX)) return token[0];
+    const name = token[0].slice(NAMESPACE_PREFIX.length) || value.slice(token.index + token[0].length).match(SKILL_TOKEN)?.[0];
+    return name || null;
   }
   return null;
 }
@@ -193,7 +199,10 @@ export async function runSuite({ root = ROOT, run = runProcess, suitePath = join
   const packageSkills = new Set(readdirSync(join(root, "core", "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name));
   const caseTimeoutMs = resolveCaseTimeoutMs();
   const pre = await preconditions({ root, run });
-  const { runEvaluationBatch } = await import(pathToFileURL(join(root, "core", "evals", "runner.mjs")).href);
+  const { assertContainedOutputDir, runEvaluationBatch } = await import(pathToFileURL(join(root, "core", "evals", "runner.mjs")).href);
+  // Each run gets its own folder, so a later run never replaces an earlier record.
+  const stamp = new Date().toISOString().replace(/[:.]/gu, "-");
+  const runDir = mkdtempSync(join(await assertContainedOutputDir(outputDir, root), `${TRIGGER_SUITE_PREFIX}${stamp}-`));
   const cases = [];
   for (const skill of suite.skills) {
     const routing = readJson(join(root, "core", "evals", "skill-routing", `${skill}.json`));
@@ -205,7 +214,8 @@ export async function runSuite({ root = ROOT, run = runProcess, suitePath = join
       cases,
       variant: "candidate",
       samples: cases.length,
-      outputDir,
+      outputDir: runDir,
+      repositoryRoot: root,
       executeSample: async ({ skill, caseSpec }, index) => {
         let status, reason, text = "", exitCode = null, durationMs = 0;
         if (!pre.ok) { status = "NOT_RUN_UNAVAILABLE"; reason = pre.reasons.join("; "); }
@@ -232,7 +242,7 @@ export async function runSuite({ root = ROOT, run = runProcess, suitePath = join
     const statuses = batch.results.map((entry) => entry.metadata.status);
     const summary = { total: statuses.length, pass: statuses.filter((s) => s === "PASS").length, fail: statuses.filter((s) => s === "FAIL").length, notRun: statuses.filter((s) => s === "NOT_RUN_UNAVAILABLE").length };
     process.stdout.write(`\nsummary: ${JSON.stringify(summary)}\n`);
-    return { batch, summary, preconditions: pre };
+    return { batch, summary, preconditions: pre, runDir };
   } finally {
     if (repo.dir) rmSync(repo.dir, { recursive: true, force: true });
   }

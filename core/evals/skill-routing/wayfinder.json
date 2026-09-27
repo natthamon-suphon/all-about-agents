@@ -7,7 +7,7 @@
     {
       "id": "WF-TRIGGER-unclear-multi-session-route",
       "critical": true,
-      "prompt": "An effort spans multiple sessions and its route is unclear because several material decisions and dependencies remain unresolved. Determine whether wayfinder should be invoked and what it should produce.",
+      "prompt": "We want to move billing off the old database. This will take many sessions, and the route is still unclear: nobody has decided which service moves first, whether we need dual writes, or who owns the new data contract, and some of these choices depend on each other. How do we start, and what should the first session produce?",
       "expected": {
         "skillCheck": "required",
         "multiSession": true,
@@ -28,7 +28,7 @@
     {
       "id": "WF-NONTRIGGER-approved-plan",
       "critical": true,
-      "prompt": "The human has an approved bounded implementation plan with an executable sequence. Determine whether to invoke wayfinder.",
+      "prompt": "I approved the implementation plan in docs/plans/rate-limit.md. It has five bounded tasks in a fixed order, and each task names its files and its test command. Please start with task 1.",
       "expected": {
         "skillCheck": "not-required",
         "approvedPlan": true,

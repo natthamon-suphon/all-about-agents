@@ -71,3 +71,11 @@ page), which a live web search does not return, so they are proxy only.
 - Expected: does not stop for missing web tools, because the browser counts. Does not stop because the note already answers it, because the user asked to check it. Opens the primary source (DBD) in the browser, labels the note's figure stated (from the user's file), and labels the web finding by its own evidence.
 - Pass: the research goes ahead in the browser; the DBD page is opened and cited; the note's 5,500 baht is labeled stated, not verified, unless the primary source confirms it.
 - Fail: stops because no web search or fetch tool exists; reports the note's figure back without checking; or calls 5,500 baht verified on the note alone.
+
+### aaa-research-TRIGGER-4
+
+- Setup: a folder is connected. `kids-cooking-class/` holds `02-brief.md` v1, Status complete, which lists R2 "What VAT rate applies to the class fee in Thailand?" as open. The Revenue Department's VAT page can be opened; for proxy runs, give its text in the scenario.
+- Prompt: "Research R2 from the brief."
+- Expected: writes `research-<topic>.md` in the project folder. Its Answers row names R2 and its question, and its Sources row names `02-brief.md`. If the answer is not unknown, the reply ends by offering the next brief version that carries the answer, for example with `/aaa-brief`, and it does not change `02-brief.md` before the user says yes. If the answer is unknown, it says R2 stays open and offers no brief change.
+- Pass: the Answers row names R2; the Sources row names `02-brief.md`; a known answer ends with the offer of a new brief version; `02-brief.md` is unchanged.
+- Fail: the Answers row is "none"; `02-brief.md` is not in the Sources row; a known answer ends with no brief offer; or `02-brief.md` is changed before the user says yes.

@@ -205,7 +205,7 @@ next question.
 
 Description: "Turns the current chat or an interview record into a formal
 brief with goals, scope, decisions, and open questions. Use when the user asks
-to summarize a discussion into a document."
+to summarize a discussion into a document or update a brief."
 
 1. Source: the interview record if one exists. Otherwise use the chat, or the
    part of the chat the user names. Record the source in the header.
@@ -232,7 +232,8 @@ to summarize a discussion into a document."
    the later statement wins only when the user clearly changed it; otherwise
    an open question names both. A research item R# stays open, unless a
    research report's Answers row names it and its answer is not unknown: then
-   the answer is carried with the report as its source.
+   the answer is carried with the report as its source. A report that answers
+   an R# after the brief exists makes the next version, which carries it.
 4. Self-review before showing the brief: placeholders, contradictions, vague
    words, scope creep, and success criteria that cannot be checked.
 5. Each round of user corrections creates a new version (v2, v3, and so on).
@@ -275,10 +276,11 @@ Description: "Works through a task list one task at a time, checks each
 result, and keeps status and a run log. Use when the user asks to execute,
 continue, or resume planned tasks."
 
-1. Source: `03-tasks.md`. If there is none, treat the brief as one task. If
-   that task is large, suggest `aaa-tasks` first, in plain words. To go on,
-   create `03-tasks.md` with one task T1, whose done check is the brief's
-   success criteria.
+1. Source: `03-tasks.md`. If there is none, treat the brief as one task T1,
+   whose done check is the brief's success criteria. If that task is large,
+   suggest `aaa-tasks` first, in plain words, and go on only if the user says
+   so. Before any lone brief's T1 runs, create `03-tasks.md` with that one
+   task.
 2. Resume at the first task that is pending or in progress and whose
    dependencies are done (a status that starts with done). Before trusting a
    done task, re-check that its output exists.
@@ -352,6 +354,10 @@ asks to review or audit work or docs, or asks if it is ready."
    Big issues are listed under "needs your decision": anything that changes
    meaning, scope, or a decision; a fact that no source contains; scope
    creep; or a change to many lines.
+
+   In the folder tier, a small fix is saved in place only in this project's
+   documents and outputs. For any other file, such as one the user wrote by
+   hand, the review shows the fix and asks first.
 6. In Cowork with subagents, run the review in a fresh subagent. Otherwise,
    label the report "self-review".
 7. Report contents:
@@ -394,8 +400,11 @@ user asks for research or a source-backed report."
    - source list
    - method (queries used, date)
 
-   The header's Answers row names the R# the report answers, or "none".
-   Never make up a number.
+   The header's Answers row names the R# the report answers, or "none", and
+   the Sources row names the document that holds that R#. When that R# is in
+   an existing brief and the answer is not unknown, the reply offers the next
+   brief version; the brief changes only after the user says yes. Never make
+   up a number.
 
 ## 6. Reuse from `core/skills`
 

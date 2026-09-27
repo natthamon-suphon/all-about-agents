@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "bootstrap",
-  "description": "Inject the canonical using-all-about-agents routing contract at a native first-session event.",
+  "description": "Inject the canonical using-all-about-agents routing contract on each native SessionStart event whose source is startup, clear, or compact.",
   "contentRef": "core/skills/using-all-about-agents/SKILL.md",
   "failureMode": "fail-open",
   "failureDiagnostic": "Bootstrap skipped: malformed hook input; the session continues without injected context."

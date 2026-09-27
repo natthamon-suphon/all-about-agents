@@ -67,6 +67,7 @@ test("using-git-worktrees routing evaluation defines the three critical cases", 
   for (const entry of evaluation.cases) {
     assert.equal(entry.critical, true, `${entry.id} must be critical`);
     assert.equal(typeof entry.prompt, "string");
+    assert.doesNotMatch(entry.prompt, /using-git-worktrees|\bskill\b/iu, `${entry.id} prompt must not name the skill`);
     assert.equal(typeof entry.expected, "object");
     assert.ok(Array.isArray(entry.observables) && entry.observables.length > 0);
   }

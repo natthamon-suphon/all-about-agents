@@ -38,8 +38,8 @@ All notable changes to all-about-agents. The format follows
   - `GEMINI.md` is deployed with a no-clobber guard, unlike `CLAUDE.md`. The
     Claude render is a superset of the live file, so overwriting is safe there;
     the Antigravity render is not, because the Gemini home may hold always-on
-    sections this package does not own. A differing destination reports
-    `manual-required` and nothing is written.
+    sections this package does not own. An existing file is never overwritten;
+    it counts as complete when it contains the managed body (see Fixed).
   - Antigravity documents no environment variable for its home, so a dry-run
     would resolve to the operator's live `~/.gemini`. The installer therefore
     defines `AAA_ANTIGRAVITY_ROOT` for qualification runs. It is this
@@ -83,11 +83,9 @@ All notable changes to all-about-agents. The format follows
   `<root>/<surface>`; registration prefers the nested state, so the two drift
   apart on the next render and the surface fails with a hash mismatch. Manage a
   root with `--surface all` or with subsets, never both.
-- A registration step that exits 0 while refusing a guarded file is no longer
-  summarized as a plain success. `register --apply` reports `manual-required`
-  for a no-clobber destination that already differs, and `setup` now names those
-  steps in its report, so a refused `GEMINI.md` or `config.toml` deploy is
-  visible instead of hidden behind the exit code.
+- A refused guarded file is no longer hidden behind a success: `setup` names
+  every manual step in its report (the final rule for `GEMINI.md` and
+  `config.toml` is under Fixed).
 
 - The supported surface list now has a single source,
   `adapters/shared/surfaces.mjs`. It had been duplicated across eleven modules,
@@ -110,13 +108,15 @@ All notable changes to all-about-agents. The format follows
   repository with a commit.
 
 - `npm run setup` (`scripts/setup.mjs`): one guarded pipeline for installing this
-  repository into the local products. `--mode fresh` clears every previous render
-  from the package root first; `--mode update` keeps the root and syncs it with the
-  current checkout. Both then render, commit the Codex plugin source when it
-  changed, remove and register each surface's plugin one surface at a time, and
-  list what each product reports. Planning is the default and `--apply` is required to mutate. The run
-  refuses a home directory, a live product root, this repository, or any directory
-  without a rendered package marker, and it never deletes inside the product roots.
+  repository into the local products. `--mode fresh` clears the previous render
+  of each selected surface first; `--mode update` keeps the root and syncs it with
+  the current checkout. Both then render, commit the Codex plugin source when it
+  changed, preview, remove, and register each surface's plugin one surface at a
+  time, and list what each product reports. Planning is the default and `--apply`
+  is required to mutate. Both modes refuse a home directory, a live product root,
+  this repository, a folder that contains or sits inside one of them, and any
+  root that holds entries this installer does not write; the run never deletes
+  inside the product roots.
   See `docs/maintenance/sync-and-update.md`.
 
 ### Changed
@@ -126,15 +126,18 @@ All notable changes to all-about-agents. The format follows
     `register --surface claude --apply` copies them to
     `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, a folder this package owns,
     so a user's own rule files are never touched. Files there are replaced on
-    update; an extra file is reported (`claude-rules-extra-files`), never
-    deleted; a symlinked folder is one manual step. Claude Code loads rules from
+    update; an extra `.md` file, folder, or link is reported
+    (`claude-rules-extra-files`), never deleted, and other files such as
+    `.DS_Store` are ignored; a symlinked folder is one manual step. Claude Code loads rules from
     subfolders. The registration record and the Claude docs say so.
   - `npm run setup` previews each registration (`register --dry-run`), then
     removes and registers that surface's plugin before it moves to the next
     surface, so a failed surface never leaves another product with no plugin;
     a failed preview stops the run before the removal. `--mode fresh` with a
     surface subset clears only the selected surface folders. A missing product binary is `not-run-unavailable` and the run
-    continues. A registration that ends `manual-required` does not stop the
+    continues, and the final text names the surfaces that were not run. A
+    registration that stops on a missing binary after a manual step, or that
+    ends `manual-required`, does not stop the
     run either: setup goes on, lists each manual step with its reason, and
     exits 1 with status `manual-required`. The reserved package roots now
     include `~/.gemini` and
@@ -174,6 +177,52 @@ All notable changes to all-about-agents. The format follows
     non-existent `--instruction-root` is gone; the Windows guide uses a new
     root name per run; "macOS or Linux" labels say macOS; `.aaa/` is ignored
     as a whole.
+
+- A third full review (round 3) was fixed in one pass:
+  - `docs/compatibility/claude.md` is now `docs/compatibility/claude-code.md`.
+    On a case-insensitive volume, the macOS default, Claude Code loaded the old
+    name as a nested `CLAUDE.md` whenever it read a file in that folder.
+  - `--destination-root` also moves the Antigravity root
+    (`AAA_ANTIGRAVITY_ROOT`) for the render, as it already did for Claude and
+    Codex.
+  - The rendered package READMEs and capability notes now match the code: the
+    Antigravity `GEMINI.md` no-clobber rule, the Codex instruction layers, what
+    differs between the Claude profiles, and the bootstrap hook sources
+    (`startup`, `clear`, `compact`).
+  - claude.ai pack: `aaa-review` edits in place only the project's own
+    documents and outputs, and asks before it changes any other file;
+    `aaa-research` offers the next brief version when its answer closes an R#
+    of an existing brief; `aaa-brief` updates from the latest version, not from
+    scratch, and its description now names updating a brief. `docs/setup/claude-ai.md` says to run the folder cases in a
+    throwaway folder. New cases: `aaa-review-TRIGGER-7`,
+    `aaa-research-TRIGGER-4`, `aaa-brief-TRIGGER-5`, and
+    `aaa-brief-TRIGGER-6`, which checks that the next step is offered once the
+    user accepts the brief.
+  - `subagent-driven-development`: the `WORKTREE` secret check matches exact
+    names, so `CredentialsProvider.java` or `.env.example` is no longer
+    refused, and it now also blocks `id_dsa`, `.git-credentials`, `.pgpass`,
+    `_netrc`, `credentials` with a common data extension such as `.json` or
+    `.yml`, `.env.local`, and names that end in `.env`.
+    The refusal says to stage a file that is not a secret, with the human's
+    authority. An empty package no longer creates `sdd/`, and the bash
+    fallbacks exit 2 on a bad `sdd/` folder, like the Node scripts.
+  - `render-graphs --overwrite` refuses a target that is a symlink or a hard
+    link.
+  - The routing eval prompts of `test-driven-development`, `wayfinder`,
+    `writing-plans`, `wait-what`, `using-git-worktrees`, and
+    `session-compaction-resilience` no longer name the skill they test, and
+    lint guards that. `loop-me` has a new case,
+    `LM-TRIGGER-grill-request-no-name`, whose prompt does not name it.
+  - `npm run test:model` writes each run to its own
+    `.aaa/eval-runs/trigger-suite-<UTC timestamp>-<suffix>/` folder instead of
+    overwriting one `result.json`, and `quality:full` shows the pass, fail, and
+    not-run counts of the newest run. A `result.json` from an older run at the
+    folder root is no longer read. The `skill:` trailer reads the skill name
+    after a bare `all-about-agents:`.
+  - Tests: the release-gate report takes its status from every gate; the
+    backup-path check reads each snapshot path; the PowerShell tests fall back
+    to Windows PowerShell (`powershell`) when `pwsh` is missing; the
+    statusline byte-limit test can now fail.
 
 - A second full review of the 27 core skills was fixed in one pass. The
   owner chose three defaults:
@@ -315,7 +364,7 @@ All notable changes to all-about-agents. The format follows
 
 ### Fixed
 
-- `npm run setup --mode fresh` could delete a parent folder: a package root
+- `npm run setup -- --mode fresh` could delete a parent folder: a package root
   such as `..` passed the equality-only reserved-root check, and the clear
   accepted any folder with any marker in any child. The root may no longer be,
   contain, or sit inside a reserved root (real paths, letter case ignored), and
@@ -336,7 +385,7 @@ All notable changes to all-about-agents. The format follows
   overwritten; before, a differing file was skipped and the run still reported
   complete. Codex product
   commands run without inherited `GIT_*` variables, and managed state rejects
-  control characters in owned paths.
+  owned paths with control characters, an empty segment, or a trailing slash.
 - `npm run setup` removed every plugin before it registered any, so the first
   failed register (for example a missing `agy`) left Claude and Codex with no
   plugin.

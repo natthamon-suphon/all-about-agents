@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const skillId = "loop-me";
-const requiredCases = ["LM-TRIGGER-explicit-workflow-grill", "LM-NONTRIGGER-normal-feature", "LM-PRESSURE-endless-questioning"];
+const requiredCases = ["LM-TRIGGER-explicit-workflow-grill", "LM-NONTRIGGER-normal-feature", "LM-PRESSURE-endless-questioning", "LM-TRIGGER-grill-request-no-name"];
 
 test("T020 exposes its routing evidence", async () => {
   const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
@@ -63,7 +63,7 @@ test("loop-me has a measurable ready stop and resists endless questioning", asyn
   assert.match(skill, /do not reopen|does not reopen/iu);
 });
 
-test("loop-me routing evaluation defines three complete critical cases", async () => {
+test("loop-me routing evaluation defines four complete critical cases", async () => {
   const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
   assert.equal(evaluation.skill, skillId);
@@ -92,6 +92,14 @@ test("loop-me routing evaluation defines three complete critical cases", async (
   assert.equal(evaluation.cases[2].expected.stopWhenReady, true);
   assert.equal(evaluation.cases[2].expected.endlessQuestioning, false);
   assert.equal(evaluation.cases[2].expected.pressureResistance, true);
+  const unnamed = evaluation.cases[3];
+  assert.doesNotMatch(unnamed.prompt, /loop-me|\bskill\b/iu, `${unnamed.id} prompt must not name the skill`);
+  assert.match(unnamed.prompt, /grill me\b[^.]*recurring workflow/iu);
+  assert.equal(unnamed.expected.skillCheck, "required");
+  assert.equal(unnamed.expected.explicitInvocation, false);
+  assert.equal(unnamed.expected.directGrillRequest, true);
+  assert.equal(unnamed.expected.oneQuestionAtATime, true);
+  assert.equal(unnamed.expected.specificationReadyStop, true);
 });
 
 test("core loader exposes loop-me metadata and routing links", async () => {

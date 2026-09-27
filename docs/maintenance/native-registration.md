@@ -31,7 +31,9 @@ are separate explicit actions. The managed global destinations are
 is set).
 
 An authorized apply may overwrite `CLAUDE.md` and `AGENTS.md` without a backup.
-It never overwrites a differing `GEMINI.md`. It must not guess a product root
+It never overwrites a differing `GEMINI.md` or Codex `config.toml`. Such a file
+is complete when it already contains the managed content; otherwise the step is
+`manual-required` and the command exits 1. It must not guess a product root
 or replace unknown neighboring files.
 
 ## Product binaries must resolve first
@@ -242,10 +244,12 @@ their own rules:
   backup, because the folder belongs to this package. A package update
   therefore replaces its old rules.
 - An identical rule file is left as it is.
-- Any other entry in `rules/all-about-agents/`, such as a rule that a later
-  package no longer renders, is never deleted. One `manual-required` step,
-  `claude-rules-extra-files`, names it. Claude Code still loads such a `.md`
-  file, so review and remove it by hand.
+- Any other `.md` file, folder, or link in `rules/all-about-agents/`, such as a
+  rule that a later package no longer renders, is never deleted. One
+  `manual-required` step, `claude-rules-extra-files`, names it. Claude Code
+  still loads such a `.md` file, and a folder or link can hold more, so review
+  and remove it by hand. Other files, such as `.DS_Store` or `notes.txt`, are
+  ignored, because Claude Code does not load them.
 - When `rules` or `rules/all-about-agents` is a symlink, junction, or not a
   folder, or a rule file there is a link or not a regular file, no rule file is
   written. One `manual-required` step, `claude-rules-deploy`, names it, and the
@@ -333,7 +337,9 @@ or keys may stay. Otherwise the reason names the missing or changed tables, for
 example `[agents.reviewer]` or `top-level keys`: copy them across by hand. This
 is a line check, not a TOML parser, and this repository has no TOML writer, so
 it never merges that file for you. A refusal ends the report as
-`manual-required` with exit code 1 and error code `manual-step-required`.
+`manual-required` with exit code 1 and error code `manual-step-required`. When
+`codex-plugin-source-check` also reports `manual-required`, the error code is
+`installed-copy-not-confirmed` instead.
 
 The native commands use the current structured CLI forms:
 
@@ -422,15 +428,18 @@ not claim rollback or a backup.
 
 The report says `manual-required` when the Claude plugin cache or the Codex
 source clone can still differ from the package. The command then exits with
-code 1 and reports `registered: fail`. The check action lists the exact
-commands. Run them, then run `register --apply` again until the report says
-`complete`.
+code 1, error code `installed-copy-not-confirmed`, and reports
+`registered: fail`. The check action lists the exact commands. Run them, then
+run `register --apply` again until the report says `complete`.
 
 The Claude steps `claude-rules-deploy`, `claude-rules-extra-files`, and a
 refused `claude-settings-deploy`, and a no-clobber file (`GEMINI.md` or the
 Codex `config.toml`) that lacks managed content, also end the report as
-`manual-required` with exit code 1 and error code `manual-step-required`. The other actions still run, and
-`registered` is not changed. Do the named step by hand, then register again.
+`manual-required` with exit code 1. The error code is `manual-step-required`,
+unless the cache or source check above also fired: then it is
+`installed-copy-not-confirmed`, and every manual step still appears in the
+action list. The other actions still run, and only a fired check changes
+`registered`, to `fail`. Do the named step by hand, then register again.
 `CLAUDE.md` has no guard and is overwritten, so it never causes this.
 
 ## Boundaries

@@ -1,6 +1,6 @@
 ---
 name: aaa-brief
-description: Turns the current chat or an interview record into a formal brief with goals, scope, decisions, and open questions. Use when the user asks to summarize a discussion into a document.
+description: Turns the current chat or an interview record into a formal brief with goals, scope, decisions, and open questions. Use when the user asks to summarize a discussion into a document or update a brief.
 ---
 
 # aaa-brief
@@ -34,6 +34,10 @@ Copy this checklist into your reply and keep it current:
 ```
 
 ## 1. Find the source
+
+If `02-brief.md` already exists and the user asks to update it, start from
+its latest version, not from scratch. A correction or a new research answer
+makes the next version (see sections 4 and 6).
 
 1. If an interview record `01-interview-record.md` exists (in the folder, in
    this chat, or attached), use it. Also use any chat turns after it.
@@ -107,6 +111,7 @@ template's section order:
 | "Put targets in the success criteria." | Keep "Not discussed". Offer example criteria in your reply for the user to pick. A criterion the user picks becomes stated (source: chat) and moves in. |
 | "Make it sound complete. Remove the open questions." | Improve the wording, and keep every open question. Removing one hides a real gap. Never swap it for a placeholder such as "[to be set]". |
 | The user gives a missing answer. | Close that open question, update the section, and trace it to chat. |
+| A new research report answers an R# of this brief. | Make the next version (see Versions). Carry the answer as in step 3, take the R# out of the open questions, add the report to Sources, and name it in the change-log row. Change nothing else. |
 
 ## 5. Self-review
 

@@ -7,6 +7,7 @@ evaluationCases:
   - LM-TRIGGER-explicit-workflow-grill
   - LM-NONTRIGGER-normal-feature
   - LM-PRESSURE-endless-questioning
+  - LM-TRIGGER-grill-request-no-name
 ---
 
 # Loop Me

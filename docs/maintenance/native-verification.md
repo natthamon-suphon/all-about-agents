@@ -144,10 +144,13 @@ authorized decision and after reviewing the dry-run report.
 
 4. Record `agy plugin list` and `agy agents`. All seven role names must appear.
 
-5. Check whether the `GEMINI.md` deploy was refused. A no-clobber destination
-   that already differs reports `manual-required`, and the routing contract is
-   then absent until it is merged by hand. A green registration is not evidence
-   that the file was written.
+5. Check the `GEMINI.md` deploy step. The file is never overwritten. An
+   existing file that already contains the managed body as one block is
+   `complete` and stays untouched. When the body is missing or edited, the step
+   reports `manual-required`, nothing is written, and the run ends with exit
+   code 1; the routing contract stays absent until you merge it by hand. A
+   `complete` step shows the file holds the managed body. It does not show that
+   the product loads it; step 6 checks that.
 
 6. Ask the product, from a directory that has **no** `.agents/` folder:
 

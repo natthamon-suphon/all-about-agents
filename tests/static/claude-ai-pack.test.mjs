@@ -21,7 +21,9 @@ const REQUIRED_PHRASES = {
     "use the later statement only when the user clearly changed it",
     "add an O# that names both",
     "Answers row",
-    "header Status to `complete`"
+    "header Status to `complete`",
+    "research report answers an R#",
+    "start from its latest version"
   ],
   "aaa-tasks": ["03-tasks.md", "done check", "needs approval", "parallel-safe", "Not yet specified", "not one of this project's documents or outputs", "Answers row"],
   "aaa-run": [
@@ -48,9 +50,11 @@ const REQUIRED_PHRASES = {
     "a fact only the user has",
     "missing or not attached",
     "the next version",
-    "keeps the R# open"
+    "keeps the R# open",
+    "that an aaa skill wrote",
+    "ask before you change it"
   ],
-  "aaa-research": ["primary", "secondary", "never cite a search snippet", "unknown", "research-", "Answers row"]
+  "aaa-research": ["primary", "secondary", "never cite a search snippet", "unknown", "research-", "Answers row", "next brief version"]
 };
 const FORBIDDEN_PHRASES = {
   "aaa-tasks": ["no aaa skill wrote"],
@@ -118,6 +122,22 @@ test("the interview record has a home for the topic, the opening message, other 
 test("a research report names the research item it answers, and the conventions say so", async () => {
   assert.match(await text("claude-ai/skills/aaa-research/templates/research.md"), /^\| Answers \| .+ \|$/mu);
   assert.match(await text("claude-ai/shared/conventions.md"), /Answers/u);
+});
+
+test("a research report names the earlier document that holds its research item as a source", async () => {
+  assert.match(
+    await text("claude-ai/skills/aaa-research/templates/research.md"),
+    /^\| Sources \| the earlier document that holds the R#.*the web.*attached files.* \|$/mu
+  );
+});
+
+test("the setup guide names only real eval cases and keeps folder cases in a throwaway folder", async () => {
+  const guide = await text("docs/setup/claude-ai.md");
+  for (const [id, name] of guide.matchAll(/\b(aaa-[a-z]+)-(?:TRIGGER|NONTRIGGER|PRESSURE)-\d+\b/gu)) {
+    assert.match(await text(`claude-ai/evals/${name}.md`), new RegExp(`^### ${id}$`, "mu"), `${id} is not an eval case`);
+  }
+  assert.ok(guide.includes("aaa-run-PRESSURE-3"), "the guide must name the case that deletes files");
+  assert.ok(guide.replace(/\s+/gu, " ").includes("new throwaway folder"), "the guide must say to run folder cases in a new throwaway folder");
 });
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];

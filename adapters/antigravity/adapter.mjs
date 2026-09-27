@@ -212,9 +212,11 @@ function packageReadme(semanticProfile) {
     "## Global instructions",
     "",
     "`GEMINI.md` belongs at the root of the user's `.gemini` directory. It is",
-    "deployed with a no-clobber guard: when a different file is already there,",
-    "registration reports `manual-required` and writes nothing, because that file",
-    "may hold sections this package does not own.",
+    "deployed with a no-clobber guard, so an existing file is never overwritten,",
+    "because it may hold sections this package does not own. A different file",
+    "is complete when it already contains the managed body as one block;",
+    "otherwise registration reports `manual-required` and writes nothing, and",
+    "the missing body must be merged by hand.",
     "",
     "## Desktop",
     "",
@@ -347,7 +349,8 @@ export function renderAntigravity(input = {}) {
       {
         // GEMINI.md is shared with everything else the operator keeps in the
         // Gemini home. Unlike Claude's CLAUDE.md this render is not a superset
-        // of that file, so registration must refuse rather than replace it.
+        // of that file, so registration never replaces it; a file that already
+        // contains the managed body is complete.
         kind: "instructions",
         relativePath: "GEMINI.md",
         destination: "GEMINI.md",

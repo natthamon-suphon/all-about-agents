@@ -46,10 +46,11 @@ The global `AGENTS.md` output is kept below the repository's 32 KiB Codex
 instruction gate and does not copy the shared global body into each skill or
 role prompt.
 
-The global layer is `<CODEX_HOME>/AGENTS.md`; project `AGENTS.override.md` or
-`AGENTS.md` and plugin rules are the more specific second layer. A visible
-name uses its registry emoji after the ID, then a short reason and a 2-to-7
-item checklist. This is prompt guidance, not a UI guarantee.
+The global layer is `<CODEX_HOME>/AGENTS.md`, which carries the shared global
+body and the canonical rules. Project `AGENTS.override.md` or `AGENTS.md` is
+the more specific second layer. A visible name uses its registry emoji after
+the ID, then a short reason and a 2-to-7 item checklist. This is prompt
+guidance, not a UI guarantee.
 
 For a receiving machine, use `pull -> validate -> render -> dry-run -> apply
 package -> dry-run registration -> explicit registration apply -> restart ->

@@ -1,6 +1,6 @@
 # Antigravity CLI and Desktop compatibility
 
-Sibling pages: [Claude Code](claude.md) and [Codex](codex.md).
+Sibling pages: [Claude Code](claude-code.md) and [Codex](codex.md).
 
 This page covers the Antigravity package and its native boundary. The observed
 runtime is the `agy` CLI `1.2.7` on Windows.
@@ -36,7 +36,7 @@ package was loaded.
 | Capability | Current evidence | Boundary |
 | --- | --- | --- |
 | Skills and roles | `agy plugin validate` reported 28 skills and 7 agents, before `nano-image-generator` was removed in `19f0b4f` (the package now has 27 skills and was not re-validated); a headless session named real skills and `agy agents` listed all seven | Desktop loading is not claimed. |
-| `GEMINI.md` | Deployed only when the destination does not already differ | On a machine with an existing file, the routing contract needs one manual merge. |
+| `GEMINI.md` | Written when absent; never overwritten; an existing file is complete when it already contains the managed body as one block | Otherwise registration reports `manual-required` with exit code 1, and the routing contract needs one manual merge. |
 | Plugin registration | `agy plugin install <dir>`, then `agy plugin list` and `agy agents` listed the package and all seven roles | The install is a copy; it does not follow later renders. |
 | Routing contract | Inlined into `GEMINI.md`; a headless session quoted its first heading | Whether the model follows the contract is a behavior question, not a discovery one. |
 | Hooks | None rendered | No session-start event can be named with current evidence; the recorded event list is inherited from the 1.1.22 evaluation. Do not infer hook support from another product. |
@@ -73,9 +73,11 @@ Registration first deploys `GEMINI.md` (see below), then runs
 resolve on `PATH`. When it does not, `register` still deploys `GEMINI.md`
 first, then stops at the validate step with error
 `native-executable-unavailable` and exit code 1. The report status is `partial`
-when `GEMINI.md` was written or already matched, and `failed` when the
-no-clobber guard refused it. `npm run setup` reports that step as
-`not-run-unavailable` and continues with the other surfaces.
+when `GEMINI.md` was written or already held the managed body, and `failed`
+when the no-clobber guard refused it. `npm run setup` reports that step as
+`not-run-unavailable` in the first case and `manual-required` in the second.
+Either way it continues with the other surfaces, and a `manual-required` step
+ends the run with exit code 1.
 
 `agy plugin install` takes a plain directory and needs no Git repository. That
 is the opposite of `codex plugin add`, which clones its source.

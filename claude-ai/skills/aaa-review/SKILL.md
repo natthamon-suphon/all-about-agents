@@ -112,8 +112,13 @@ document, message or post, code, research, data.
 
 When you are unsure, treat it as big. Apply small fixes in the tier the
 conventions choose: in the folder tier, edit the file in place without asking,
-because it is an update of a project file; in the file tier, give the
-corrected file; in the inline tier, show the corrected text.
+but only this project's documents and outputs, the files that an aaa skill
+wrote: a document with a fixed file name, or an output that `03-tasks.md`
+names. Any other file, such as one the user wrote by hand, is not a project
+file: list the fix under "Needs your decision" with before and after, and
+ask before you change it. In
+the file tier, give the corrected file; in the inline tier, show the
+corrected text.
 When you fix a document that has a change log, such as `02-brief.md`, raise
 its Version and add a change-log row. Never delete a file.
 

@@ -15,7 +15,7 @@ const requiredOutputs = [
   "docs/setup/macos.md",
   "docs/maintenance/global-instructions.md",
   "docs/compatibility/antigravity.md",
-  "docs/compatibility/claude.md",
+  "docs/compatibility/claude-code.md",
   "docs/compatibility/codex.md",
   "docs/evaluations/native-windows-2026-08-31.md",
   "docs/limitations/known-limitations.md",
@@ -229,7 +229,7 @@ test("compatibility documentation records automatic, manual, unsupported, and mo
   ];
   for (const relativePath of [
     "docs/compatibility/antigravity.md",
-    "docs/compatibility/claude.md",
+    "docs/compatibility/claude-code.md",
     "docs/compatibility/codex.md"
   ]) {
     const text = await textAt(relativePath);
@@ -241,7 +241,7 @@ test("cross-machine documentation records separate repository and native lifecyc
   const lifecycleTerms = ["rendered", "validated", "registered", "trusted", "active", "runtime verified"];
   const compatibility = [
     "docs/compatibility/antigravity.md",
-    "docs/compatibility/claude.md",
+    "docs/compatibility/claude-code.md",
     "docs/compatibility/codex.md"
   ];
   for (const relativePath of compatibility) {
@@ -272,7 +272,7 @@ test("documentation rejects stale native activation and fallback claims", async 
   const readmeApplyWarning = readme.indexOf("Warning: `--apply`");
   assert.ok(readmeApplyWarning >= 0 && readmeApplyWarning < readmeApplyCommand, "README warning must precede its write command");
   const codex = await textAt("docs/compatibility/codex.md");
-  const claude = await textAt("docs/compatibility/claude.md");
+  const claude = await textAt("docs/compatibility/claude-code.md");
   assert.match(claude, /`settings\.json` is merged, not replaced[\s\S]{0,160}every other key already in the file is preserved/iu);
   assert.doesNotMatch(readme, /denies active/iu);
   assert.match(readme, /rendered[\s\S]{0,160}native enforcement is not claimed/iu);
@@ -286,8 +286,16 @@ test("documentation rejects stale native activation and fallback claims", async 
   assert.match(codex, /codex --profile terra-max/u);
   assert.doesNotMatch(claude, /^\s*CLAUDE_CONFIG_DIR=<PRODUCT_ROOT>\s+node/mu);
   assert.doesNotMatch(codex, /^\s*CODEX_HOME=<PRODUCT_ROOT>\s+node/mu);
+  const registrationCommands = claude.match(/```text\n(claude plugin marketplace add[\s\S]*?)```/u);
+  assert.ok(registrationCommands, "Claude page omits the registration command block");
+  assert.doesNotMatch(registrationCommands[1], /plugin validate/u, "registration never runs claude plugin validate");
+  assert.match(claude, /optional[\s\S]{0,200}claude plugin validate "<PACKAGE_ROOT>" --strict/iu);
+  assert.match(readme, /`install --apply` refuses[\s\S]{0,400}`register`[^.]*environment[^.]*live home/iu);
+  assert.doesNotMatch(readme, /(?:^|\. )Only `--dry-run`, `doctor`, and `diff` may resolve/mu, "register also resolves its root from the environment");
 
   const method = await textAt("docs/evaluations/method.md");
+  assert.doesNotMatch(method, /plugin rules/iu);
+  assert.match(method, /nine core rules belong to the global layer/iu);
   assert.doesNotMatch(method, /Both statusline launchers run/iu);
   assert.match(method, /Windows statusline command[\s\S]{0,100}both profiles/iu);
   assert.doesNotMatch(method, /default apply is no-overwrite-safe/iu);

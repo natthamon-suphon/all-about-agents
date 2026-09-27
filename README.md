@@ -121,9 +121,13 @@ configuration is not changed. Claude reads `CLAUDE_CONFIG_DIR` and Codex reads
 defines `AAA_ANTIGRAVITY_ROOT` for qualification runs; it is not a product
 variable. Install, doctor, diff, and register all honor it; without it they
 resolve to the live Gemini home. `install --apply` refuses to run without `--destination-root`
-(`destination-root-required`), so the live roots are never written by
-automatic discovery. Only `--dry-run`, `doctor`, and `diff` may resolve a root
-from the environment.
+(`destination-root-required`), so install never writes a live root by
+automatic discovery. For install, only `--dry-run`, `doctor`, and `diff` may
+resolve a root from the environment. `register` always targets the product
+root: the environment root when it is set, otherwise the live home. For
+Antigravity only the `GEMINI.md` deploy follows `AAA_ANTIGRAVITY_ROOT`; the
+`agy` steps still write the live plugin folder (see
+[Antigravity](docs/compatibility/antigravity.md)).
 
 When `--surface all` is used with one explicit root, each package is placed in
 a surface namespace below that root: `<root>/antigravity`, `<root>/claude`,
@@ -152,7 +156,7 @@ Read the surface manifests for exact component paths and manual/native status:
 - [Claude manifest](installers/manifests/claude.json)
 - [Codex manifest](installers/manifests/codex.json)
 - [Antigravity compatibility](docs/compatibility/antigravity.md)
-- [Claude compatibility](docs/compatibility/claude.md)
+- [Claude compatibility](docs/compatibility/claude-code.md)
 - [Codex compatibility](docs/compatibility/codex.md)
 - [Known limitations](docs/limitations/known-limitations.md)
 - [Evaluation method and limitations](docs/evaluations/method.md)

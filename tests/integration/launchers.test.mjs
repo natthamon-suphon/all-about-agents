@@ -4,6 +4,11 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 
+// Windows PowerShell 5.1 has no --version switch, so the probe runs a command both accept.
+function firstPowerShell() {
+  return ["pwsh", "powershell"].find((executable) => spawnSync(executable, ["-NoProfile", "-NonInteractive", "-Command", "exit 0"], { cwd: process.cwd(), encoding: "utf8" }).status === 0) ?? null;
+}
+
 test("PowerShell and POSIX launchers forward argv without policy logic", async () => {
   const powershell = await readFile(resolve(process.cwd(), "installers", "install.ps1"), "utf8");
   const shell = await readFile(resolve(process.cwd(), "installers", "install.sh"), "utf8");
@@ -30,12 +35,9 @@ test("launchers preserve representative JSON output and exit-code parity", async
     return { status: result.status, action: stdout.action, statusValue: stdout.status };
   });
 
-  const pwshProbe = spawnSync("pwsh", ["--version"], { cwd: process.cwd(), encoding: "utf8" });
-  const powershellUnavailable = pwshProbe.status !== 0
-    ? `NOT_RUN_UNAVAILABLE: PowerShell launcher not run, pwsh unavailable (status ${pwshProbe.status ?? "spawn-error"})`
-    : null;
-  await t.test("PowerShell", { skip: powershellUnavailable || false }, async () => {
-    const runPowerShell = (args) => spawnSync("pwsh", ["-NoProfile", "-File", resolve(process.cwd(), "installers", "install.ps1"), ...args], { cwd: process.cwd(), encoding: "utf8" });
+  const powerShell = firstPowerShell();
+  await t.test("PowerShell", { skip: powerShell ? false : "NOT_RUN_UNAVAILABLE: PowerShell launcher not run, neither pwsh nor powershell is available" }, async () => {
+    const runPowerShell = (args) => spawnSync(powerShell, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", resolve(process.cwd(), "installers", "install.ps1"), ...args], { cwd: process.cwd(), encoding: "utf8" });
     assert.deepEqual(outcomes(runPowerShell), expected);
   });
 

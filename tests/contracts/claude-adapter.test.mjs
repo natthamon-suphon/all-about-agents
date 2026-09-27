@@ -35,6 +35,8 @@ test("Claude template documentation matches the deferred current core output", a
   assert.match(readme, /structural Claude plugin fixture/u);
   assert.match(readme, /explicit deferred files/u);
   assert.doesNotMatch(readme, /renders a complete Claude plugin package/u);
+  assert.doesNotMatch(readme, /differ only in/u, "the profiles also differ in guidance, records, and diagnostics");
+  for (const difference of [/settings overlay/u, /model and\s+`permissions\.defaultMode` lines/u, /emergency-protection/u, /fable-advisor-availability/u]) assert.match(readme, difference);
 });
 
 const core = await loadCore(process.cwd());

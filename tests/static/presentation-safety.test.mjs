@@ -34,6 +34,32 @@ function portablePath(label, value) {
   assert.equal(value.split("/").includes(".."), false, `${label} must not traverse: ${value}`);
 }
 
+const PATH_KEYS = new Set(["relativePath", "destination", "path"]);
+
+function pathValues(value, out = []) {
+  if (Array.isArray(value)) value.forEach((item) => pathValues(item, out));
+  else if (value && typeof value === "object") {
+    for (const [key, item] of Object.entries(value)) {
+      if (PATH_KEYS.has(key) && typeof item === "string") out.push(item);
+      else pathValues(item, out);
+    }
+  }
+  return out;
+}
+
+// Claude snapshots list paths and hash keys; Codex and Antigravity list file and ownership records.
+// Registration records of every surface name their destinations too.
+function assertNoBackupPath(label, snapshot) {
+  const listed = [
+    ...(snapshot.paths ?? []),
+    ...Object.keys(snapshot.ownershipHashes ?? {}),
+    ...pathValues([snapshot.files ?? [], snapshot.ownership ?? []])
+  ];
+  assert.ok(listed.length >= snapshot.fileCount && listed.length > 0, `${label} snapshot has no paths to check`);
+  const paths = [...listed, ...pathValues([snapshot.registrations ?? [], snapshot.registration ?? []])];
+  for (const path of paths) assert.equal(BACKUP_SUFFIX.test(path), false, `${label} snapshot names a backup artifact: ${path}`);
+}
+
 function scanMachineValue(label, value) {
   if (typeof value === "string") {
     assert.equal(EMOJI.test(value), false, `${label} contains emoji: ${value}`);
@@ -201,6 +227,11 @@ test("the safety scan rejects machine-id emoji and forbidden package content", a
   assert.throws(() => scanTomlMachineFields("fixture", 'name = "reviewer 👀"\n'), /emoji/u);
   assert.equal(PRIVATE_HOME.test("C:/Users/private-user/.codex/AGENTS.md"), true);
   assert.equal(BACKUP_SUFFIX.test("AGENTS.md.bak"), true);
+  assert.throws(() => assertNoBackupPath("fixture", { fileCount: 2, paths: ["AGENTS.md", "AGENTS.md.bak"] }), /backup artifact: AGENTS\.md\.bak/u);
+  assert.throws(() => assertNoBackupPath("fixture", { fileCount: 1, files: [{ relativePath: "GEMINI.md~" }] }), /backup artifact/u);
+  assert.throws(() => assertNoBackupPath("fixture", { fileCount: 1 }), /no paths/u);
+  assert.throws(() => assertNoBackupPath("fixture", { fileCount: 1, paths: ["GEMINI.md"], registrations: [{ actions: [{ destination: "GEMINI.md.bak" }] }] }), /backup artifact: GEMINI\.md\.bak/u);
+  assert.throws(() => assertNoBackupPath("fixture", { fileCount: 1, paths: ["CLAUDE.md"], registration: { relativePath: "CLAUDE.md.backup" } }), /backup artifact/u);
 });
 
 test("manifest and package snapshots contain no private home path or backup artifact", async () => {
@@ -210,7 +241,7 @@ test("manifest and package snapshots contain no private home path or backup arti
     for (const profile of PROFILES) {
       const snapshot = await readFile(resolve(process.cwd(), `tests/snapshots/${surface}/${profile}.json`), "utf8");
       assert.equal(PRIVATE_HOME.test(snapshot), false, `${surface}/${profile} snapshot leaks private home path`);
-      assert.equal(BACKUP_SUFFIX.test(snapshot), false, `${surface}/${profile} snapshot names a backup artifact`);
+      assertNoBackupPath(`${surface}/${profile}`, JSON.parse(snapshot));
     }
   }
 });

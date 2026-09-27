@@ -127,6 +127,16 @@ function rolePath(surface, roleId) {
   return `.codex/agents/${roleId}.toml`;
 }
 
+// Windows PowerShell 5.1 has no --version switch, so the probe runs a command both accept.
+function firstPowerShell() {
+  return ["pwsh", "powershell"].find((executable) => spawnSync(executable, ["-NoProfile", "-NonInteractive", "-Command", "exit 0"], { cwd: process.cwd(), encoding: "utf8" }).status === 0) ?? null;
+}
+
+function overallStatus(gates) {
+  if (gates.every((gate) => gate.status === "PASS")) return "PASS";
+  return gates.some((gate) => gate.status === "FAIL") ? "FAIL" : "NOT_RUN_UNAVAILABLE";
+}
+
 async function removeReleaseGateEvidence() {
   const expectedParent = resolve(process.cwd(), "tests", ".tmp");
   if (dirname(evidenceDirectory) !== expectedParent || basename(evidenceDirectory) !== "t050-release-gates") {
@@ -269,11 +279,11 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
     };
   });
 
-  const pwshProbe = spawnSync("pwsh", ["--version"], { cwd: process.cwd(), encoding: "utf8" });
+  const powerShell = firstPowerShell();
   let powershellLauncher = "NOT_RUN_UNAVAILABLE";
-  await t.test("PowerShell launcher", { skip: pwshProbe.status === 0 ? false : `NOT_RUN_UNAVAILABLE: pwsh unavailable (status ${pwshProbe.status ?? "spawn-error"})` }, () => {
+  await t.test("PowerShell launcher", { skip: powerShell ? false : "NOT_RUN_UNAVAILABLE: neither pwsh nor powershell is available" }, () => {
     powershellLauncher = "FAIL";
-    const launcher = spawnSync("pwsh", ["-NoProfile", "-File", resolve(process.cwd(), "installers", "install.ps1"), "validate", "--scope", "all", "--format", "json"], { cwd: process.cwd(), encoding: "utf8" });
+    const launcher = spawnSync(powerShell, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", resolve(process.cwd(), "installers", "install.ps1"), "validate", "--scope", "all", "--format", "json"], { cwd: process.cwd(), encoding: "utf8" });
     assert.equal(launcher.status, 0, launcher.stderr);
     assert.equal(JSON.parse(launcher.stdout).status, "pass");
     powershellLauncher = "PASS";
@@ -281,6 +291,12 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
   checks.push({ id: "cli-launcher-apply-diff-eval", status: powershellLauncher === "PASS" ? "PASS" : powershellLauncher, evidence: { ...gate1Evidence, powershellLauncher } });
 
   const rubric = JSON.parse(await readFile(rubricPath, "utf8"));
+  const gate1 = checks.at(-1);
+  const gates = [
+    { id: "gate-0-static", status: "PASS", passRate: 100, evidence: checks.slice(0, 2).map((check) => check.id) },
+    { id: "gate-1-deterministic", status: gate1.status, passRate: gate1.status === "PASS" ? 100 : null, evidence: gate1.evidence },
+    ...checks.slice(2).map((check) => ({ id: check.id, status: check.status, passRate: check.status === "PASS" ? 100 : null, evidence: check.evidence }))
+  ];
 
   const report = {
     schemaVersion: 1,
@@ -291,7 +307,7 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
     sampleId: "deterministic-run-1",
     scorer: "node-test",
     observedAt: new Date().toISOString(),
-    status: "PASS",
+    status: overallStatus(gates),
     releaseQualified: false,
     redacted: true,
     evidenceRefs: [
@@ -299,11 +315,7 @@ test("deterministic Gate 0/1 report proves portable seams without native claims"
       "tests/lint/release-gates.test.mjs",
       "tests/.tmp/t050-release-gates/gate-1-eval-result.json"
     ],
-    gates: [
-      { id: "gate-0-static", status: "PASS", passRate: 100, evidence: checks.slice(0, 2).map((check) => check.id) },
-      { id: "gate-1-deterministic", status: "PASS", passRate: 100, evidence: checks.at(-1).evidence },
-      ...checks.slice(2).map((check) => ({ id: check.id, status: check.status, passRate: check.status === "PASS" ? 100 : null, evidence: check.evidence }))
-    ],
+    gates,
     surfaces: surfaceEvidence,
     notRun: ["gate-2-native", "gate-3-external-sessions"].map((id) => ({ id, status: rubric.qualification[id].status, evidence: rubric.qualification[id].reason }))
   };

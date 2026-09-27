@@ -7,6 +7,7 @@ import { resolve, sep } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
 import { main, planSetup } from "../../scripts/setup.mjs";
 
@@ -244,10 +245,9 @@ test("a product root reached through a symlink is still refused as a package roo
     await mkdir(resolve(real, ".all-about-agents"), { recursive: true });
     const link = resolve(root, "codex-link");
     try {
-      await symlink(real, link, "dir");
+      await symlink(real, link, "junction");
     } catch (error) {
-      if (error?.code !== "EPERM" && error?.code !== "EACCES") throw error;
-      t.skip(`symlink unavailable: ${error.code}`);
+      skipIfLinkUnavailable(t, error);
       return;
     }
     const runner = recorder();
@@ -257,6 +257,30 @@ test("a product root reached through a symlink is still refused as a package roo
     assert.match(result.stdout + result.stderr, /unsafe-package-root/u);
     assert.equal(runner.calls.length, 0);
     assert.ok(existsSync(resolve(real, ".all-about-agents")));
+  });
+});
+
+test("update refuses a folder with entries the installer does not write and runs nothing", async () => {
+  await withTempRoot(async (root) => {
+    const target = resolve(root, "projects");
+    await mkdir(resolve(target, "codex", ".git"), { recursive: true });
+    await writeFile(resolve(target, "notes.txt"), "operator data\n", "utf8");
+    const runner = recorder();
+    const result = await runMain(["--mode", "update", "--package-root", target, "--apply"], { runProcess: runner.run });
+
+    assert.notEqual(result.code, 0);
+    assert.match(result.stdout + result.stderr, /not-a-package-root[^\n]*does not write: codex, notes\.txt;/u);
+    assert.equal(runner.calls.length, 0, "nothing may render into or commit inside an unrelated folder");
+    assert.deepEqual((await readdir(target)).sort(), ["codex", "notes.txt"]);
+    assert.deepEqual(await readdir(resolve(target, "codex")), [".git"]);
+
+    const empty = resolve(root, "empty");
+    await mkdir(empty, { recursive: true });
+    for (const accepted of [empty, resolve(root, "missing")]) {
+      const planned = await runMain(["--mode", "update", "--package-root", accepted], { runProcess: recorder().run });
+      assert.equal(planned.code, 0, `${accepted}: ${planned.stderr}${planned.stdout}`);
+      assert.match(planned.stdout, /codex-source-commit\s+pending/u, "a dry-run cannot expect a Codex source the render has not written yet");
+    }
   });
 });
 
@@ -413,29 +437,26 @@ test("a surface subset is refused inside a root this repository already manages 
   });
 });
 
-test("a registration that exits zero while refusing a guarded file is not reported as a plain success", async () => {
+test("a registration that exits zero with an optional manual step still names that step", async () => {
   await withTempRoot(async (root) => {
     const target = await packageRoot(root, ["antigravity", "claude", "codex"]);
 
-    const refusedDeploy = JSON.stringify({
+    const optionalStep = JSON.stringify({
       action: "register",
       status: "complete",
       actions: [
-        { id: "antigravity-instructions-deploy", kind: "file-copy", status: "manual-required" },
-        { id: "antigravity-plugin-install", kind: "process", status: "complete" }
+        { id: "antigravity-plugin-install", kind: "process", status: "complete" },
+        { id: "antigravity-desktop-slot", kind: "manual", status: "manual-required", message: "Copy plugin.json, skills/, and agents/ into the Desktop slot." }
       ]
     });
-    const runner = recorder({ "register --surface antigravity": { stdout: refusedDeploy } });
+    const runner = recorder({ "register --surface antigravity": { stdout: optionalStep } });
     const result = await runMain(["--mode", "update", "--surface", "all", "--package-root", target, "--apply", "--format", "json"], { runProcess: runner.run });
 
     const report = JSON.parse(result.stdout);
     const step = (report.steps ?? []).find((entry) => entry.id === "register-antigravity");
     assert.ok(step, "the antigravity registration must be reported");
-    assert.match(
-      step.reason ?? "",
-      /manual follow-up: antigravity-instructions-deploy/u,
-      "a refused no-clobber deploy must be visible in the summary, not hidden behind exit code 0"
-    );
+    assert.equal(step.status, "completed");
+    assert.match(step.reason ?? "", /manual follow-up: antigravity-desktop-slot \(Copy plugin\.json/u, "an optional manual step must stay visible behind exit code 0");
   });
 });
 
@@ -474,6 +495,49 @@ test("a missing product CLI is not run, and every later surface still removes an
     ], "each product must be previewed, then removed right before its own registration");
     const claudeRemoval = runner.calls.find((call) => call.executable === "claude" && call.args[1] === "uninstall");
     assert.deepEqual(claudeRemoval.args, ["plugin", "uninstall", "all-about-agents@all-about-agents", "--scope", "user", "--keep-data"], "the removal must keep the plugin's persistent data");
+
+    const text = await runMain(["--mode", "update", "--surface", "all", "--package-root", target, "--apply"], { runProcess: runner.run });
+    assert.equal(text.code, 0, "a missing product CLI is not a failure");
+    assert.match(text.stdout, /status=complete/u);
+    assert.match(text.stdout, /^Not run: antigravity\b/mu, "the summary must name the surface that was not registered");
+    assert.match(text.stdout, /^Next: restart claude, codex,/mu, "only the registered products are restarted");
+    assert.doesNotMatch(text.stdout, /restart the product/u);
+
+    // A subset install path also ends in `<surface> --apply --format json`.
+    const soloRunner = async (request) => (request.args.includes("install") ? recorder().run(request) : runner.run(request));
+    const alone = await runMain(["--mode", "update", "--surface", "antigravity", "--package-root", resolve(root, "antigravity-only"), "--apply"], { runProcess: soloRunner });
+    assert.equal(alone.code, 0, alone.stderr + alone.stdout);
+    assert.match(alone.stdout, /^Not run: antigravity\b/mu);
+    assert.match(alone.stdout, /^Next: no surface was registered;/mu, "nothing is restarted when no surface registered");
+  });
+});
+
+test("a missing product CLI after a refused no-clobber file ends setup manual-required and goes on", async () => {
+  await withTempRoot(async (root) => {
+    const target = await packageRoot(root, ["antigravity", "claude", "codex"]);
+    const refused = "GEMINI.md already exists and differs from the managed source, and it lacks managed content";
+    const agyMissing = JSON.stringify({
+      action: "register",
+      status: "failed",
+      actions: [
+        { id: "antigravity-instructions-deploy", kind: "file-copy", status: "manual-required", reason: refused },
+        { id: "antigravity-plugin-validate", kind: "process", status: "failed", reason: "agy is unavailable; install it and retry registration" }
+      ],
+      completed: [],
+      error: { code: "native-executable-unavailable", message: "agy is unavailable; install it and retry registration" }
+    });
+    const runner = recorder({ [registerApply("antigravity")]: { exitCode: 1, stdout: agyMissing } });
+    const result = await runMain(["--mode", "update", "--surface", "all", "--package-root", target, "--apply", "--format", "json"], { runProcess: runner.run });
+
+    assert.equal(result.code, 1, "an unwritten GEMINI.md must not end as success");
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "manual-required");
+    assert.deepEqual(report.notAttempted, []);
+    const steps = stepsById(report);
+    assert.equal(steps["register-antigravity"].status, "manual-required");
+    assert.match(steps["register-antigravity"].reason, /antigravity-instructions-deploy \(GEMINI\.md already exists[\s\S]*agy is unavailable/u, "the reason names the manual step and the missing CLI");
+    assert.equal(steps["register-claude"].status, "completed");
+    assert.equal(steps["register-codex"].status, "completed");
   });
 });
 
@@ -616,8 +680,7 @@ test("a symlinked surface marker does not make a folder clearable", async (t) =>
     try {
       await symlink(elsewhere, resolve(target, "claude", ".all-about-agents"), "junction");
     } catch (error) {
-      if (error?.code !== "EPERM" && error?.code !== "EACCES") throw error;
-      t.skip(`symlink unavailable: ${error.code}`);
+      skipIfLinkUnavailable(t, error);
       return;
     }
     const runner = recorder();
@@ -644,6 +707,8 @@ test("the help lists every surface the parser accepts", async () => {
   const result = await runMain(["--help"]);
   assert.equal(result.code, 0);
   assert.match(result.stdout, /--surface antigravity\|claude\|codex\|all\s/u);
+  assert.match(result.stdout, /fresh\s+Clear the previous render of each selected surface/u, "a subset run clears only its own surfaces");
+  assert.match(result.stdout, /refuse a package root that holds an entry this installer does not write/u);
 });
 
 test("the Codex source commit runs git without inherited GIT_* variables", async () => {
@@ -681,28 +746,32 @@ test("the whole root is refused over a per-surface managed state unless fresh cl
   });
 });
 
-test("the script runs when it is started through a symlink", async (t) => {
+test("the script runs when it is started through a file symlink", async (t) => {
   await withTempRoot(async (root) => {
     const link = resolve(root, "setup.mjs");
     try {
-      await symlink(SETUP_SCRIPT, link);
+      await symlink(SETUP_SCRIPT, link, "file");
     } catch (error) {
-      if (error?.code !== "EPERM" && error?.code !== "EACCES") throw error;
-      t.skip(`symlink unavailable: ${error.code}`);
+      skipIfLinkUnavailable(t, error);
       return;
     }
     const result = spawnSync(process.execPath, [link, "--help"], { encoding: "utf8", shell: false });
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /^Usage: node scripts\/setup\.mjs/u);
+  });
+});
 
+// A separate test, so a host that refuses file symlinks (Windows without
+// Developer Mode) still runs this junction case.
+test("the script runs from a linked checkout under --preserve-symlinks-main", async (t) => {
+  await withTempRoot(async (root) => {
     // With --preserve-symlinks-main the module URL keeps the link path, so both
     // sides of the comparison must be resolved.
     const linkedCheckout = resolve(root, "checkout");
     try {
       await symlink(resolve(SETUP_SCRIPT, "..", ".."), linkedCheckout, "junction");
     } catch (error) {
-      if (error?.code !== "EPERM" && error?.code !== "EACCES") throw error;
-      t.skip(`symlink unavailable: ${error.code}`);
+      skipIfLinkUnavailable(t, error);
       return;
     }
     try {

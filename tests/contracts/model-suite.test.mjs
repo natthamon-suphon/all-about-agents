@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import test from "node:test";
+import { pathToFileURL } from "node:url";
 
 import { renderForSurface } from "../../installers/lib/render.mjs";
+import { makeTempRoot } from "../helpers/temp-root.mjs";
 import { buildCasePrompt, checkPreconditions, evaluateCase, parseSkillTrailer, redact, resolveCaseTimeoutMs, runSuite } from "../model/run-trigger-suite.mjs";
+import { describeSuiteAge } from "../model/suite-age.mjs";
 
 const root = process.cwd();
 
@@ -114,12 +117,12 @@ test("stale or missing installations make every case NOT_RUN_UNAVAILABLE without
     let runCalls = 0;
     const run = async () => { runCalls += 1; return { exitCode: 0, stdout: "", stderr: "", unavailable: false, timedOut: false, outputTooLarge: false }; };
     const preconditions = async () => ({ ok: false, reasons: ["installed package stale: plugin 1.0.0, package.json 2.0.0"], packageVersion: "2.0.0", configDir: sandbox });
-    const { summary, batch } = await runSuite({ run, preconditions, outputDir });
+    const { summary, batch, runDir } = await runSuite({ run, preconditions, outputDir });
     assert.equal(runCalls, 0, "no claude session may start when preconditions fail");
     assert.equal(summary.notRun, summary.total);
     assert.equal(summary.fail, 0);
     assert.ok(batch.results.every((entry) => entry.metadata.status === "NOT_RUN_UNAVAILABLE" && /stale/u.test(entry.metadata.reason)));
-    assert.ok(readdirSync(outputDir).length > 0, "the run must still leave a result file");
+    assert.ok(readdirSync(runDir).includes("result.json"), "the run must still leave a result file");
   } finally {
     rmSync(sandbox, { recursive: true, force: true });
   }
@@ -151,6 +154,75 @@ test("a fake claude executable drives PASS and FAIL classification per case", as
     assert.equal(summary.pass, summary.total);
   } finally {
     rmSync(sandbox, { recursive: true, force: true });
+  }
+});
+
+// A checkout outside the current directory: one routing file, and a runner shim that
+// re-exports the real runner so its relative imports still resolve.
+async function makeDisposableCheckout() {
+  const checkout = await makeTempRoot("aaa-model-checkout-");
+  mkdirSync(join(checkout, "core", "skills", "brainstorming"), { recursive: true });
+  mkdirSync(join(checkout, "core", "evals", "skill-routing"), { recursive: true });
+  mkdirSync(join(checkout, "tests", "model"), { recursive: true });
+  copyFileSync(resolve(root, "core/evals/skill-routing/brainstorming.json"), join(checkout, "core", "evals", "skill-routing", "brainstorming.json"));
+  writeFileSync(join(checkout, "core", "evals", "runner.mjs"), `export * from ${JSON.stringify(pathToFileURL(resolve(root, "core/evals/runner.mjs")).href)};\n`, "utf8");
+  writeFileSync(join(checkout, "tests", "model", "suite.json"), JSON.stringify({ schemaVersion: 1, skills: ["brainstorming"], forbiddenPressurePhrases: [] }), "utf8");
+  return checkout;
+}
+
+const unavailable = async () => ({ ok: false, reasons: ["claude executable is unavailable"], packageVersion: "2.0.0", configDir: "unused" });
+const noProcess = async () => assert.fail("no process may start when preconditions fail");
+
+test("the suite contains its output under its own root, not the current directory", async () => {
+  const checkout = await makeDisposableCheckout();
+  try {
+    assert.notEqual(realpathSync(process.cwd()), checkout);
+    // Only the repository rule admits tests/.tmp, so this passes only when the runner is told the root.
+    const outputDir = join(checkout, "tests", ".tmp", "runs");
+    const { summary, runDir } = await runSuite({ root: checkout, run: noProcess, preconditions: unavailable, outputDir });
+    assert.equal(summary.notRun, summary.total);
+    assert.equal(dirname(runDir), outputDir);
+    assert.ok(readdirSync(runDir).includes("result.json"));
+  } finally {
+    rmSync(checkout, { recursive: true, force: true });
+  }
+});
+
+test("every suite run keeps its own result folder, and the age check reads only trigger-suite results", async () => {
+  const checkout = await makeDisposableCheckout();
+  try {
+    const runsDir = join(checkout, ".aaa", "eval-runs");
+    assert.match(describeSuiteAge(runsDir), /no result recorded yet/u);
+    const earlier = join(runsDir, "trigger-suite-2026-01-01T00-00-00-000Z-pass", "result.json");
+    mkdirSync(dirname(earlier), { recursive: true });
+    const passRecord = JSON.stringify({ results: [{ metadata: { status: "PASS" } }] });
+    writeFileSync(earlier, passRecord, "utf8");
+    const first = await runSuite({ root: checkout, run: noProcess, preconditions: unavailable });
+    const second = await runSuite({ root: checkout, run: noProcess, preconditions: unavailable });
+    assert.notEqual(first.runDir, second.runDir, "two runs in the same millisecond must still get two folders");
+    for (const { runDir } of [first, second]) {
+      assert.equal(dirname(runDir), runsDir);
+      assert.match(basename(runDir), /^trigger-suite-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-/u);
+      assert.ok(readdirSync(runDir).includes("result.json"));
+    }
+    assert.equal(readFileSync(earlier, "utf8"), passRecord, "a later all-NOT_RUN run must not replace the last PASS record");
+
+    // `aaa eval --output .aaa/eval-runs` and other eval runs are newer, but they are not trigger-suite results.
+    writeFileSync(join(runsDir, "result.json"), "{}", "utf8");
+    mkdirSync(join(runsDir, "ordered"));
+    writeFileSync(join(runsDir, "ordered", "result.json"), "{}", "utf8");
+    const hour = 3_600_000;
+    const now = Date.now();
+    for (const [path, hoursAgo] of [[earlier, 5], [join(first.runDir, "result.json"), 3], [join(second.runDir, "result.json"), 2]]) {
+      utimesSync(path, new Date(now - hoursAgo * hour), new Date(now - hoursAgo * hour));
+    }
+    const message = describeSuiteAge(runsDir, now);
+    assert.match(message, new RegExp(`${basename(second.runDir)}/result\\.json is 2 hours old`, "u"));
+    assert.match(message, new RegExp(`0 pass, 0 fail, ${String(second.summary.total)} not run`, "u"), "an all-NOT_RUN result must not read as a fresh PASS");
+    utimesSync(earlier, new Date(now), new Date(now));
+    assert.match(describeSuiteAge(runsDir, now), /trigger-suite-2026-01-01T00-00-00-000Z-pass\/result\.json is 0 hours old \(1 pass, 0 fail, 0 not run\)/u);
+  } finally {
+    rmSync(checkout, { recursive: true, force: true });
   }
 });
 
@@ -228,11 +300,11 @@ test("a claude error or a failed fixture repository is NOT_RUN_UNAVAILABLE, neve
         claudeCalls += 1;
         return scenario.claude;
       };
-      const { summary, batch } = await runSuite({ run, preconditions, suitePath, outputDir });
+      const { summary, batch, runDir } = await runSuite({ run, preconditions, suitePath, outputDir });
       assert.equal(summary.notRun, summary.total, scenario.name);
       assert.equal(summary.fail, 0, scenario.name);
       assert.ok(batch.results.every((entry) => scenario.reason.test(entry.metadata.reason)), `${scenario.name}: ${batch.results.map((entry) => entry.metadata.reason).join("; ")}`);
-      assert.ok(readdirSync(outputDir).length > 0, `${scenario.name}: the run must still leave a result file`);
+      assert.ok(readdirSync(runDir).includes("result.json"), `${scenario.name}: the run must still leave a result file`);
       if (scenario.git) assert.equal(claudeCalls, 0, "no claude session may start without a fixture repository");
     }
   } finally {
@@ -245,6 +317,12 @@ test("the trailer verdict is its first skill-name token, and a router trigger ne
   assert.equal(parseSkillTrailer("skill: brainstorming (design first)"), "brainstorming");
   assert.equal(parseSkillTrailer("skill: - none"), "none", "a skill name starts with a letter or digit");
   assert.equal(parseSkillTrailer("skill: —"), null, "a trailer without a skill name gives no verdict");
+  assert.equal(parseSkillTrailer("skill: all-about-agents: brainstorming"), "brainstorming", "a space after the namespace still names the skill");
+  assert.equal(parseSkillTrailer("skill: `all-about-agents:` —"), null, "a bare namespace names no skill");
+  const bareNamespace = evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-NONTRIGGER-trivial-readonly" }, resultText: "skill: all-about-agents:" });
+  assert.equal(bareNamespace.status, "FAIL", "an empty route must not pass a nontrigger case");
+  assert.match(bareNamespace.reason, /trailer/u);
+  assert.equal(evaluateCase({ skill: "brainstorming", caseSpec: { id: "BR-NONTRIGGER-trivial-readonly" }, resultText: "skill: all-about-agents: brainstorming" }).status, "FAIL");
   const packageSkills = new Set(["brainstorming", "using-all-about-agents"]);
   const router = { skill: "using-all-about-agents", isRouter: true, packageSkills, caseSpec: { id: "UA-TRIGGER-fresh-implementation" } };
   for (const trailer of ["skill: none - nothing applies", "skill: none — nothing applies", "skill: n/a", "skill: surgical-patch"]) {

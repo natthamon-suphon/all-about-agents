@@ -224,7 +224,12 @@ function extraRuleEntries(productRoot, renderedNames) {
     if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return [];
     throw pathError("destination-unreadable", `unable to list <CLAUDE_CONFIG_DIR>/${CLAUDE_RULES_FOLDER}`);
   }
-  return entries.filter((entry) => !renderedNames.has(entry.name)).map((entry) => `${CLAUDE_RULES_FOLDER}/${entry.name}${entry.isDirectory() ? "/" : ""}`).sort();
+  // Claude Code loads .md files recursively, so only a .md entry or a folder
+  // (a link may point at one) can add a rule; .DS_Store and the like cannot.
+  return entries
+    .filter((entry) => !renderedNames.has(entry.name) && (entry.name.endsWith(".md") || entry.isDirectory() || entry.isSymbolicLink()))
+    .map((entry) => `${CLAUDE_RULES_FOLDER}/${printable(entry.name)}${entry.isDirectory() ? "/" : ""}`)
+    .sort();
 }
 
 function textLines(text) {

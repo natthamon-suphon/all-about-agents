@@ -639,7 +639,8 @@ test("a linked Claude rules folder degrades to one manual step instead of blocki
 });
 
 test("a linked or non-file rule target degrades to the manual rules step before any write", async (t) => {
-  for (const kind of ["file-link", "directory"]) {
+  // The directory case needs no link, so it runs before a refused link skips.
+  for (const kind of ["directory", "file-link"]) {
     const input = await fixture();
     const namespace = join(input.productRoot, "rules", "all-about-agents");
     await mkdir(namespace, { recursive: true });
@@ -808,6 +809,39 @@ test("Claude registration owns only rules/all-about-agents and never touches the
   assert.equal(await readFile(join(namespace, "removed-rule.md"), "utf8"), "# A rule the package no longer renders\n");
   assert.match(formatNativeRegistrationText(updated), /^reason\tclaude-rules-extra-files\t.*removed-rule\.md/mu);
   assert.equal(await readFile(join(rulesRoot, "presentation.md"), "utf8"), "# The user's own presentation rule\n");
+});
+
+test("Claude rules extras count only the .md files and folders Claude Code loads", async () => {
+  const input = await fixture();
+  const namespace = join(input.productRoot, "rules", "all-about-agents");
+  await mkdir(namespace, { recursive: true });
+  await writeFile(join(namespace, ".DS_Store"), "finder metadata\n");
+  await writeFile(join(namespace, "notes.txt"), "my notes\n");
+  const quiet = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(quiet.status, "complete");
+  assert.equal(quiet.actions.some((action) => action.id === "claude-rules-extra-files"), false);
+
+  await writeFile(join(namespace, "old.md"), "# An old rule\n");
+  await mkdir(join(namespace, "subfolder"));
+  const extra = base(input, "claude").actions.find((action) => action.id === "claude-rules-extra-files");
+  assert.match(extra.message, /^2 entries are in rules\/all-about-agents\/ .*such as rules\/all-about-agents\/old\.md, rules\/all-about-agents\/subfolder\/\./u);
+  assert.doesNotMatch(extra.message, /\.DS_Store|notes\.txt/u);
+});
+
+test("Claude rules extras escape control characters in names before they reach stderr", async (t) => {
+  if (process.platform === "win32") {
+    t.skip("Windows file names cannot hold control characters");
+    return;
+  }
+  const input = await fixture();
+  const namespace = join(input.productRoot, "rules", "all-about-agents");
+  await mkdir(namespace, { recursive: true });
+  await writeFile(join(namespace, "evil\nerror\tforged.md"), "# A crafted name\n");
+  let stderr = "";
+  const code = await main(["register", "--surface", "claude", "--profile", "template", "--package-root", input.packageRoot, "--apply"], { write() {} }, { write: (value) => { stderr += value; } }, { productRoot: input.productRoot, runProcess: fakeProducts(input).run });
+  assert.equal(code, 1);
+  assert.equal(/[\u0000-\u001f\u007f-\u009f]/u.test(stderr.slice(0, -1)), false, stderr);
+  assert.ok(stderr.includes("rules/all-about-agents/evil\\u000aerror\\u0009forged.md"), stderr);
 });
 
 test("Claude registration reports manual-required while the plugin cache still holds an older copy", async () => {

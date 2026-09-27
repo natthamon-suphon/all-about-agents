@@ -7,7 +7,7 @@
     {
       "id": "WP-TRIGGER-approved-multistep-spec",
       "critical": true,
-      "prompt": "The human explicitly approved a design for a multi-step feature. Determine whether writing-plans should be invoked and what evidence the plan must contain.",
+      "prompt": "I signed off on the audit-log design in docs/specs/audit-log.md an hour ago. It needs several steps: a new table, a writer service, an API endpoint, and a settings page. Nobody has written code yet. What happens next, and what must that next document contain?",
       "expected": {
         "skillCheck": "required",
         "approvedDesign": true,

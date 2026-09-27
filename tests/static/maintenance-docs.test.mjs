@@ -18,7 +18,7 @@ const relatedDocs = [
   "docs/setup/windows.md",
   "docs/setup/macos.md",
   "docs/compatibility/antigravity.md",
-  "docs/compatibility/claude.md",
+  "docs/compatibility/claude-code.md",
   "docs/compatibility/codex.md",
   "docs/limitations/known-limitations.md",
   "docs/evaluations/method.md",
@@ -184,7 +184,7 @@ test("entry and platform docs link the maintenance workflow", async () => {
 
   for (const relativePath of [
     "docs/compatibility/antigravity.md",
-    "docs/compatibility/claude.md",
+    "docs/compatibility/claude-code.md",
     "docs/compatibility/codex.md"
   ]) {
     const body = await text(relativePath);
@@ -203,6 +203,21 @@ test("entry and platform docs link the maintenance workflow", async () => {
     assert.match(body, /native-registration\.md#dry-run-registration/u);
     assert.match(body, /native-registration\.md#apply-registration/u);
     assert.doesNotMatch(body, /^\s*node scripts\/aaa\.mjs register --surface <SURFACE>/mu);
+  }
+});
+
+test("no-clobber GEMINI.md docs state the containment rule and the exit-1 refusal", async () => {
+  for (const relativePath of [
+    "docs/maintenance/global-instructions.md",
+    "docs/maintenance/native-verification.md",
+    "docs/maintenance/sync-and-update.md",
+    "docs/compatibility/antigravity.md",
+    "docs/setup/companion-tooling.md"
+  ]) {
+    const body = await text(relativePath);
+    assert.match(body, /already\s+contains\s+the\s+managed\s+body[\s\S]{0,400}exit\s+code\s+1/iu, `${relativePath} omits the containment rule or the exit-1 refusal`);
+    assert.doesNotMatch(body, /differs(?:(?!lack|missing|contain)[^.|]){0,120}`manual-required`/iu, `${relativePath} still says any difference is refused`);
+    assert.doesNotMatch(body, /does\s+not\s+already\s+differ|rather\s+than\s+replacing\s+a\s+file\s+that\s+already\s+differs|green\s+registration\s+is\s+not\s+evidence/iu, `${relativePath} keeps the old no-clobber claim`);
   }
 });
 

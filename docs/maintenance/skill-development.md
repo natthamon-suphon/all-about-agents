@@ -58,7 +58,10 @@ text. Test what an agent does after reading it.
 fast and runs in every gate, and it proves nothing about what an agent does.
 `npm run test:model` runs the routing cases of the skills in
 `tests/model/suite.json` through real headless `claude -p` sessions and records
-`PASS`, `FAIL`, or `NOT_RUN_UNAVAILABLE` per case under `.aaa/eval-runs/`. It is
+`PASS`, `FAIL`, or `NOT_RUN_UNAVAILABLE` per case. Each run writes its own
+`.aaa/eval-runs/trigger-suite-<UTC timestamp>-<suffix>/result.json`, and
+`quality:full` reports the age and the pass, fail, and not-run counts of the
+newest one; it reads no other file there. It is
 manual: it needs an authenticated `claude` CLI and the installed plugin at the
 current `package.json` version whose cached `SKILL.md` files match a render of
 this checkout, or every case is `NOT_RUN_UNAVAILABLE`. Report a

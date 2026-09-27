@@ -7,7 +7,7 @@
     {
       "id": "TD-TRIGGER-feature-or-bugfix",
       "critical": true,
-      "prompt": "The human asks for a new feature that changes observable behavior. Decide whether test-driven-development is required and what must happen before implementation.",
+      "prompt": "We agreed on the design this morning: the export command gets a --dry-run flag that lists the files it would write and writes nothing. It is one small change with no plan beyond that. Please implement it. What do you do before you write the implementation code?",
       "expected": {
         "skillCheck": "required",
         "behaviorChange": true,
@@ -25,7 +25,7 @@
     {
       "id": "TD-NONTRIGGER-doc-only-change",
       "critical": true,
-      "prompt": "The human asks to correct documentation wording and links only; no runtime behavior, source code, or configuration changes are involved. Decide whether test-driven-development should require a production RED/GREEN ceremony.",
+      "prompt": "Please fix the wording of two sentences in README.md and repair the broken link to docs/setup.md. No source code, configuration, or runtime behavior changes. What are your next steps, and does this change need a failing test first?",
       "expected": {
         "skillCheck": "not-required",
         "documentationOnly": true,
@@ -42,7 +42,7 @@
     {
       "id": "TD-PRESSURE-keep-prewritten-code",
       "critical": true,
-      "prompt": "Under deadline pressure, the implementation was written before the test and currently appears to work. Decide how to apply test-driven-development without deleting or resetting the existing code, and whether a trivial seam requires a confirmation ceremony.",
+      "prompt": "We release in an hour. I wrote the new discount rule before any test, and it seems to work when I click through the app. Do not make me delete it or start over. What do you do now, and do you need me to confirm where the test goes before you write it?",
       "expected": {
         "skillCheck": "required",
         "prewrittenCode": true,

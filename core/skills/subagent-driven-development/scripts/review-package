@@ -31,12 +31,17 @@ head_sha=$(git rev-parse --verify --quiet --end-of-options "${head}^{commit}" 2>
 plan_dir=$(cd "$(dirname "$plan")" && pwd -P)
 dir="$plan_dir/sdd"
 bad_out() { echo "OUTFILE must be inside ${dir} and not start with '.': ${out}" >&2; exit 2; }
-refuse_linked_sdd() {
+refuse_bad_sdd() {
   if [ -L "$dir" ]; then
     echo "refusing a symlinked sdd/ folder: ${dir}" >&2
     exit 2
   fi
+  if [ -e "$dir" ] && [ ! -d "$dir" ]; then
+    echo "sdd/ is not a folder: ${dir}" >&2
+    exit 2
+  fi
 }
+refuse_bad_sdd
 if [ $# -eq 4 ]; then
   out=$4
   case ${out##*/} in .*) bad_out ;; esac
@@ -52,7 +57,7 @@ if git diff --quiet --no-ext-diff "$base_sha" "$head_sha" --; then
 fi
 
 "${SCRIPT_DIR}/sdd-workspace" "$plan" >/dev/null
-refuse_linked_sdd
+refuse_bad_sdd
 tmp=$(mktemp "$dir/.tmp-review.XXXXXX")
 trap 'rm -f "$tmp"' EXIT
 {
@@ -71,7 +76,7 @@ if [ -L "$out" ] || { [ -e "$out" ] && [ ! -f "$out" ]; }; then
   echo "refusing ${out}: not a regular file" >&2
   exit 2
 fi
-refuse_linked_sdd
+refuse_bad_sdd
 mv -f -- "$tmp" "$out"
 
 commits=$(git rev-list --count "${base_sha}..${head_sha}")

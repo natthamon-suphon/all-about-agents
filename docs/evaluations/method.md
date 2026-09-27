@@ -14,10 +14,12 @@ For the separate native mutation and lifecycle record, use
 
 The global behavior source is
 `core/instructions/global-operating-rules.md`. Every surface renders it
-into its documented global file. Project and plugin rules
-are a second, more specific layer. The presentation contract checks the emoji
-after each visible name, a short reason, and a 2-to-7 item checklist. This is
-model guidance, not a UI guarantee.
+into its documented global file. Project files are a second, more specific
+layer. The nine core rules belong to the global layer: Codex and Antigravity
+get them inside the global file, and Claude gets them as files in
+`<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`. The presentation contract
+checks the emoji after each visible name, a short reason, and a 2-to-7 item
+checklist. This is model guidance, not a UI guarantee.
 
 ## Status vocabulary and the no-fabrication rule
 

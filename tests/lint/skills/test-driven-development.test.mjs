@@ -45,6 +45,7 @@ test("test-driven-development evaluation covers trigger, non-trigger, and pressu
   for (const entry of evaluation.cases) {
     assert.equal(entry.critical, true, `${entry.id} must be critical`);
     assert.equal(typeof entry.prompt, "string");
+    assert.doesNotMatch(entry.prompt, /test-driven|\bTDD\b|\bskill\b/iu, `${entry.id} prompt must not name the skill`);
     assert.equal(typeof entry.expected, "object");
     assert.ok(Array.isArray(entry.observables) && entry.observables.length > 0);
   }

@@ -7,7 +7,7 @@
     {
       "id": "SC-TRIGGER-long-task-compaction",
       "critical": true,
-      "prompt": "An approved implementation spans many dependent steps and the session is approaching context compaction. Decide whether session-compaction-resilience is required, what durable state must be recorded before compaction, and how the next session should resume.",
+      "prompt": "We are on step 9 of an approved 20-step migration, and each step depends on the one before. The context window is almost full, so compaction is close. What do you record now, where, and how does the next session pick up the work?",
       "expected": {
         "skillCheck": "required",
         "longTask": true,
@@ -28,7 +28,7 @@
     {
       "id": "SC-NONTRIGGER-short-answer",
       "critical": true,
-      "prompt": "The human asks for a short factual answer and no multi-step work or context boundary is involved. Decide whether session-compaction-resilience should create durable state.",
+      "prompt": "What does HTTP status code 409 mean? One sentence is enough.",
       "expected": {
         "skillCheck": "not-required",
         "shortAnswer": true,

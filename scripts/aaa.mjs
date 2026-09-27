@@ -16,7 +16,7 @@ import { applyPreparedSurface, preflightOperation } from "../installers/lib/appl
 import { readManagedState, STATE_RELATIVE_PATH } from "../installers/lib/state.mjs";
 import { hashBytes } from "../installers/lib/hash.mjs";
 import { validateRenderResult } from "../adapters/shared/adapter-contract.mjs";
-import { isSurface } from "../adapters/shared/surfaces.mjs";
+import { isSurface, SURFACE_ROOT_ENV } from "../adapters/shared/surfaces.mjs";
 import { diagnose, SURFACES as DOCTOR_SURFACES } from "../installers/lib/doctor.mjs";
 import { formatDiffText, formatPlanText, serializeReport } from "../installers/lib/report.mjs";
 import { planNativeRegistration, runNativeRegistration, resolveNativeProductRoot, resolveNativeInstructionRoot, formatNativeRegistrationText } from "../installers/lib/native-registration.mjs";
@@ -188,8 +188,7 @@ function emitValidationResult(result, output, errorOutput) {
 
 function envForRoot(surface, root = null) {
   const env = { ...process.env };
-  if (root !== null && root !== undefined && surface === "claude") env.CLAUDE_CONFIG_DIR = root;
-  if (root !== null && root !== undefined && surface === "codex") env.CODEX_HOME = root;
+  if (root !== null && root !== undefined) env[SURFACE_ROOT_ENV[surface]] = root;
   return env;
 }
 

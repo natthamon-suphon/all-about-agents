@@ -160,7 +160,7 @@ performed by these commands.
 
 See the [repository overview](../../README.md), [surface manifests](../../installers/manifests/claude.json),
 [Antigravity compatibility notes](../compatibility/antigravity.md),
-[Claude compatibility notes](../compatibility/claude.md),
+[Claude compatibility notes](../compatibility/claude-code.md),
 [Codex compatibility notes](../compatibility/codex.md), and the
 [evaluation method and current limitations](../evaluations/method.md). After an
 approved install, follow [native registration](../maintenance/native-registration.md),

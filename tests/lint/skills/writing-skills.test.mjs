@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
+import { chmod, link, mkdir, readFile, symlink, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { skipIfLinkUnavailable } from "../../helpers/symlink.mjs";
 import { withTempRoot } from "../../helpers/temp-root.mjs";
 
 const id = "writing-skills";
@@ -132,5 +133,42 @@ test("render-graphs reports Graphviz output over the size limit as a size error"
     assert.equal(result.status, 1, result.stderr);
     assert.match(result.stderr, /^Error: Graphviz output is empty or exceeds the safe size limit\n$/u);
     assert.equal(existsSync(output), false);
+  });
+});
+
+test("render-graphs --overwrite replaces a regular file and never writes through a link", async (t) => {
+  if (process.platform === "win32") {
+    t.skip("win32: the fake dot is a POSIX shell script");
+    return;
+  }
+  await withTempRoot(async (root) => {
+    const dot = join(root, "fake-dot");
+    await writeFile(dot, "#!/bin/sh\n[ \"$1\" = -V ] && exit 0\ncat >/dev/null\nprintf '<svg/>'\n", "utf8");
+    await chmod(dot, 0o755);
+    await writeFile(join(root, "graph.dot"), "digraph { a -> b }\n", "utf8");
+    const output = join(root, "out");
+    await mkdir(output);
+    const outside = join(root, "outside.txt");
+    await writeFile(outside, "keep\n", "utf8");
+    const target = join(output, "graph.svg");
+    const overwrite = () => render(root, ["--overwrite", "--output-dir", output, "graph.dot"], dot);
+    try {
+      await symlink(outside, target);
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
+    for (const kind of ["symlink", "hard link"]) {
+      const result = overwrite();
+      assert.equal(result.status, 1, `${kind}: ${result.stderr}`);
+      assert.match(result.stderr, /^Error: refusing .*graph\.svg: not a regular file with one link\n$/u, kind);
+      assert.equal(await readFile(outside, "utf8"), "keep\n", kind);
+      await unlink(target);
+      if (kind === "symlink") await link(outside, target);
+    }
+    await writeFile(target, "old\n", "utf8");
+    const replaced = overwrite();
+    assert.equal(replaced.status, 0, replaced.stderr);
+    assert.equal(await readFile(target, "utf8"), "<svg/>");
   });
 });

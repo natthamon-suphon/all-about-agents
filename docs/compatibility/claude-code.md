@@ -149,9 +149,9 @@ organize rules into subdirectories"
 verified by the coordinator on 2026-09-27). The folder belongs to this
 package: a missing or differing rule file is written, and an identical one is
 kept. Nothing is written directly in `<CLAUDE_CONFIG_DIR>/rules/`, so the
-user's own rule files are never touched. An extra entry in the package folder
-is never deleted; the `claude-rules-extra-files` step reports it as
-`manual-required`. When `rules` or `rules/all-about-agents` is a symlink,
+user's own rule files are never touched. An extra `.md` file, folder, or link
+in the package folder is never deleted; the `claude-rules-extra-files` step
+reports it as `manual-required`. Other files, such as `.DS_Store`, are ignored. When `rules` or `rules/all-about-agents` is a symlink,
 junction, or not a folder, or a rule file there is a link or not a regular
 file, no rule file is written and the `claude-rules-deploy` step reports it as
 `manual-required`. Each of these steps ends the report as `manual-required`
@@ -160,12 +160,18 @@ Native marketplace and plugin registration run after those files are present.
 The package managed state, surface, profile, and owned hashes must match before
 any write.
 
-The fixed native commands are:
+The fixed native commands that registration runs are:
 
 ```text
 claude plugin marketplace add "<PACKAGE_ROOT>" --scope user
 claude plugin install all-about-agents@all-about-agents --scope user
 claude plugin list --json
+```
+
+Registration never runs the validator. As an optional check, run it yourself
+before registration. It gives `validated` only:
+
+```text
 claude plugin validate "<PACKAGE_ROOT>" --strict
 ```
 

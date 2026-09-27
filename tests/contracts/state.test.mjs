@@ -53,6 +53,17 @@ test("state rejects owned paths that contain control characters", () => {
   for (const relativePath of ["rules/evil\nrun.md", "rules/bell\u0007.md", "rules/escape\u001b[31m.md", "rules/c1\u009b.md"]) {
     assert.throws(() => buildManagedState({ repositoryVersion: "x", profile: "portable", surfaces: ["claude"], ownedPaths: [{ relativePath, sha256 }] }), /safe relativePath/u, JSON.stringify(relativePath));
     assert.equal(parseManagedState(JSON.stringify({ schemaVersion: 1, repositoryVersion: "x", profile: "portable", surfaces: ["claude"], ownedPaths: [{ relativePath, sha256 }] })), null);
+    const value = { schemaVersion: 1, repositoryVersion: "x", profile: "portable", surfaces: ["claude"], ownedPaths: [{ relativePath, sha256 }] };
+    assert.equal(validateSchema({ schema: stateSchema, value, sourcePath: "state.json" }).valid, false, JSON.stringify(relativePath));
+  }
+});
+
+test("the state schema rejects owned paths with an empty segment, like the parser", () => {
+  const sha256 = hashBytes(bytes("x"));
+  for (const relativePath of ["rules//a.md", "rules/"]) {
+    const value = { schemaVersion: 1, repositoryVersion: "x", profile: "portable", surfaces: ["claude"], ownedPaths: [{ relativePath, sha256 }] };
+    assert.equal(parseManagedState(JSON.stringify(value)), null, relativePath);
+    assert.equal(validateSchema({ schema: stateSchema, value, sourcePath: "state.json" }).valid, false, relativePath);
   }
 });
 

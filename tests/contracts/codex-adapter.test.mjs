@@ -149,6 +149,17 @@ test("Codex AGENTS.md composes the canonical body, labeled catalog, and rules", 
   assert.doesNotMatch(agents, /<\/?[A-Za-z][^>]*>|\u001b/iu);
 });
 
+test("Codex docs place the canonical rules in the global layer and project files in the second", async () => {
+  const readme = await readFile(resolve(process.cwd(), "adapters/codex/templates/README.md"), "utf8");
+  const capabilities = JSON.parse(await readFile(resolve(process.cwd(), "adapters/codex/capabilities.json"), "utf8")).capabilities;
+  const notes = capabilities.find((entry) => entry.feature === "instructions.global").notes;
+  for (const text of [readme, notes]) {
+    assert.doesNotMatch(text, /plugin rules/u, "the canonical rules are rendered into the global AGENTS.md, not a plugin layer");
+    assert.match(text, /canonical rules/u);
+    assert.match(text, /AGENTS\.override\.md/u);
+  }
+});
+
 test("Codex skill and role prompts carry no rendered preamble and keep machine identifiers", () => {
   const result = resultFor();
   const files = fileMap(result);

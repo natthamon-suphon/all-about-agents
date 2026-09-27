@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { lstatSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, extname, join, resolve } from "node:path";
 
 const MAX_SOURCE_BYTES = 1024 * 1024;
@@ -91,6 +91,9 @@ function writeOutput(target, content, overwrite) {
       throw error;
     }
   }
+  // ponytail: lstat, then write, leaves a race with a local writer in the output folder; write a temp file and rename if that matters.
+  const existing = lstatSync(target, { throwIfNoEntry: false });
+  if (existing && (!existing.isFile() || existing.nlink !== 1)) throw new RenderError(`refusing ${target}: not a regular file with one link`);
   writeFileSync(target, content, { flag: "w" });
 }
 

@@ -77,11 +77,14 @@ for qualification runs only; it is not a product variable.
 use it for installation.
 
 `GEMINI.md` is the one exception to that overwrite rule. Its deploy carries
-`guard: "no-clobber"`: when the destination already exists and differs from the
-managed source, registration reports `manual-required` and writes nothing. The
-Claude render is a superset of the live `CLAUDE.md`, so replacing it loses
-nothing; the Antigravity render is not a superset of a live `GEMINI.md`, which
-may hold operator sections this package does not own. Merge those by hand.
+`guard: "no-clobber"`, so an existing file is never overwritten. It is
+complete when it already contains the managed body as one contiguous block;
+your own sections before or after it stay. When the body is missing or one of
+its lines was edited, registration writes nothing, reports `manual-required`,
+and ends with exit code 1 (`manual-step-required`). The Claude render is a
+superset of the live `CLAUDE.md`, so replacing it loses nothing; the
+Antigravity render is not a superset of a live `GEMINI.md`, which may hold
+operator sections this package does not own. Merge the managed body by hand.
 
 Global files are managed files. An explicitly authorized native apply may
 overwrite the approved global file without a backup. It does not change

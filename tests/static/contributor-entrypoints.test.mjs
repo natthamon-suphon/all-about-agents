@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { lstat, readFile, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
@@ -98,4 +99,14 @@ test("every native entry point is a regular Git file on Windows and macOS checko
     const index = execFileSync("git", ["ls-files", "-s", "--", relativePath], { cwd: root, encoding: "utf8" }).trim();
     assert.match(index, /^100644\s/u, relativePath);
   }
+});
+
+// On a case-insensitive volume (APFS, NTFS) a nested docs/x/claude.md is read
+// as a CLAUDE.md, so its text loads as project instructions.
+test("only the root carries a native entry-point file name, in any case", () => {
+  const listed = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], { cwd: root, encoding: "utf8" });
+  const named = [...new Set(listed.split("\0"))]
+    .filter((path) => /(?:^|\/)(?:claude|agents|gemini)\.md$/iu.test(path) && existsSync(resolve(root, path)))
+    .sort();
+  assert.deepEqual(named, [...entrypoints].sort());
 });

@@ -16,7 +16,7 @@
         "destination": "$CODEX_HOME/AGENTS.md",
         "consumers": ["codex-cli", "codex-desktop"]
       },
-      "notes": "The canonical global body is rendered once at the start of AGENTS.md; project and plugin rules remain more specific layers."
+      "notes": "The canonical global body is rendered once at the start of AGENTS.md, followed by the canonical rules; project AGENTS.override.md or AGENTS.md is the more specific second layer."
     },
     {
       "feature": "presentation.invocation",

@@ -34,7 +34,7 @@ trust, hook execution, permission blocking, persistence, and Gate 3 remain
 
 | Surface | Observed or rendered | Still manual, unknown, or unavailable |
 | --- | --- | --- |
-| [Claude Code](../compatibility/claude.md) | Package validation, disposable marketplace registration, plugin discovery, and both statusline fixtures passed on Windows. | Authenticated model and component use, hook trust and execution, Fable access, deny blocking, persistence, Desktop behavior, and macOS are not qualified. |
+| [Claude Code](../compatibility/claude-code.md) | Package validation, disposable marketplace registration, plugin discovery, and both statusline fixtures passed on Windows. | Authenticated model and component use, hook trust and execution, Fable access, deny blocking, persistence, Desktop behavior, and macOS are not qualified. |
 | [Codex](../compatibility/codex.md) | Marketplace add, plugin add, exact available-plugin discovery, and discovered hook-file checks passed in an isolated Windows CLI home. | `/hooks` trust, hook execution, authenticated model use, Desktop behavior, persistence, and macOS are not qualified. Automatic fallback is unsupported. |
 | [Antigravity](../compatibility/antigravity.md) | `agy plugin validate`, `agy plugin install`, `agy plugin list`, and `agy agents` passed on `agy 1.2.7`, and a headless session named real skills and the inlined routing contract from outside any workspace copy. | Antigravity Desktop, macOS, permission deny blocking, and persistence are not qualified. There is no hook or status line to qualify: none is rendered. |
 

@@ -33,11 +33,19 @@ rules as files in `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`. Project
 instruction files remain the more specific second layer. Read
 [global instructions](global-instructions.md) for the complete model.
 
-`GEMINI.md` is the one destination that is never overwritten. When the file
-already exists and differs, registration reports `manual-required` and writes
-nothing, because a live Gemini home may hold operator sections this package
-does not own. On such a machine, keep the rendered file and append everything
-from the first heading it does not contain.
+Two destinations are never overwritten: `~/.gemini/GEMINI.md` and
+`<CODEX_HOME>/config.toml`. The product and the operator may keep their own
+content there. Registration writes such a file only when it is missing. An
+existing file is complete when it already contains the managed body. For
+`GEMINI.md` that is the whole rendered body as one block. For `config.toml` it
+is every managed table with all its managed lines, plus the managed top-level
+keys (a line-based check that assumes one key per line). Otherwise
+registration writes nothing to that file, reports it `manual-required` with
+the missing parts named, and ends with exit code 1. To fix it, merge the
+managed content by hand. In `GEMINI.md`, replace the old managed block with the
+whole rendered body, or append the body as one block when no managed block is
+there. In `config.toml`, add the missing tables and change the named lines, so
+each key still appears only once. Then register again.
 
 ## One-command setup
 
@@ -84,6 +92,11 @@ example a file, a `.git` folder, another repository, or a folder from a retired
 surface, refuses the whole clear: the run lists the unknown entries and deletes
 nothing. Remove them by hand, or choose another package root.
 
+`update` runs the same entry check before any step, so it never renders into,
+or runs `git add` and `git commit` inside, a folder that is not a package root.
+A package root that is missing or empty is accepted in both modes; the render
+creates it.
+
 It never deletes anything inside `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, or the
 Gemini home, so personal skills, settings, credentials, and history stay in
 place; registration then overwrites only the files the package owns. The run
@@ -117,6 +130,14 @@ A registration whose report names `native-executable-unavailable` is
 `not-run-unavailable` too, and the run goes on to the next surface. That
 registration may already have written files, for example `GEMINI.md`, before it
 reached the missing CLI; the step reason then counts the completed actions.
+When that registration had already reported a `manual-required` action before
+it stopped, for example a `GEMINI.md` it refused to write, the step is
+`manual-required` instead: its reason lists each manual step and then says
+which product CLI was missing, and the run ends `manual-required` with exit 1.
+A missing product CLI alone is not a failure: the run can still end `complete`
+with exit 0. The last lines of the text report then name the surfaces that were
+not run (`Not run: ...`) and ask you to restart only the products that
+registered.
 A registration that ends `manual-required` with error `manual-step-required`
 or `installed-copy-not-confirmed` has set up its product but left a step to
 you. That step is `manual-required`, its reason lists each manual step id with
@@ -133,8 +154,8 @@ dry-run reports the render as `pending` without planning it, because the root
 it would be planned against is cleared first. The run never pulls, merges, or commits in this repository; when the
 checkout is behind its upstream the report says so and leaves the pull to you.
 
-Registration still ends in manual steps the products own: restart the product,
-then confirm the hook under its own review screen. Verify with
+Registration still ends in manual steps the products own: restart each product
+that registered, then confirm the hook under its own review screen. Verify with
 `claude plugin list`, `codex plugin list`, `agy plugin list`, and
 `npm run test:model`.
 

@@ -24,6 +24,10 @@ if [ -L "$dir" ]; then
   echo "refusing a symlinked sdd/ folder: $dir" >&2
   exit 2
 fi
+if [ -e "$dir" ] && [ ! -d "$dir" ]; then
+  echo "sdd/ is not a folder: $dir" >&2
+  exit 2
+fi
 mkdir -p "$dir"
 [ -e "$dir/.gitignore" ] || [ -L "$dir/.gitignore" ] || (set -C; printf '*\n' > "$dir/.gitignore")
 cd "$dir" && pwd

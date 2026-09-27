@@ -71,6 +71,10 @@ test("the global instruction deploy refuses to clobber an unowned GEMINI.md", ()
   assert.equal(instructions.relativePath, "GEMINI.md");
   assert.equal(instructions.destination, "GEMINI.md");
   assert.equal(instructions.guard, "no-clobber", "a live GEMINI.md may hold sections this package does not own");
+  const readme = fileMap(render()).get("README.md");
+  assert.match(readme, /never overwritten/u);
+  assert.match(readme, /already contains the managed body as one block/u);
+  assert.doesNotMatch(readme, /when a different file is already there,\s+registration reports `manual-required`/u, "a differing file that contains the managed body is complete");
 });
 
 test("skills and roles use the layout agy plugin validate accepts", () => {

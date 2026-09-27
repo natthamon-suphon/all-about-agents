@@ -40,8 +40,8 @@ Copy this checklist into your reply and keep it current:
 
 - Write the question in one sentence, and the decision it helps with.
 - If the question is a research item R# from an earlier document, such as
-  `02-brief.md`, write that R# and its question in the report's Answers row.
-  Otherwise write "none".
+  `02-brief.md`, write that R# and its question in the report's Answers row,
+  and name that document in its Sources row. Otherwise write "none".
 - Check attachments and this chat first. If they already answer it, report
   that with its source and stop, unless the user asked you to verify it.
 - For a broad topic, split it into three to six sub-questions and research
@@ -111,6 +111,11 @@ sections:
 5. Gaps
 6. Sources
 7. Method: the queries you used and the date
+
+When the Answers row names an R# of an existing `02-brief.md` and the answer
+is not unknown, end your reply with an offer of the next brief version that
+carries the answer, for example with `/aaa-brief`. Change the brief only
+after the user says yes. An unknown answer keeps the R# open: say so.
 
 If the user asks for "just a number" or "no sources", still keep the labels.
 Give the shortest honest answer, for example "unknown: sources range from

@@ -66,6 +66,27 @@
         "Resists urgency, sunk-time, or persistence pressure while preserving the finished workflow artifact.",
         "Does not reopen decided branches or invent additional human answers."
       ]
+    },
+    {
+      "id": "LM-TRIGGER-grill-request-no-name",
+      "critical": true,
+      "prompt": "Every Monday I pull last week's support numbers, clean them up in a spreadsheet, and post a summary to the team channel. Grill me about this recurring workflow until someone could automate it without guessing.",
+      "expected": {
+        "skillCheck": "required",
+        "explicitInvocation": false,
+        "directGrillRequest": true,
+        "workflowScope": true,
+        "skillOwnsArtifact": true,
+        "useInterviewing": true,
+        "oneQuestionAtATime": true,
+        "recommendationAttached": true,
+        "specificationReadyStop": true
+      },
+      "observables": [
+        "Recognizes a direct request to be grilled about a recurring workflow as the loop-me trigger even though the human did not name loop-me.",
+        "Asks one material question at a time with a recommendation and records each decision in the workflow artifact that loop-me owns.",
+        "Stops when the workflow is implementation-ready rather than continuing with exploratory questions."
+      ]
     }
   ]
 }

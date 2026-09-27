@@ -10,7 +10,10 @@ instruction source. Registration deploys that file to the selected
 `CLAUDE_CONFIG_DIR` and copies the `rules/` files to
 `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, a folder the package owns, so
 the user's own rules beside it are never written. The `portable` and
-`template` profiles differ only in their settings overlay.
+`template` profiles differ in the settings overlay, the model and
+`permissions.defaultMode` lines of the capability guidance, the deny-rule step
+of the emergency-protection record, their profile-translation record, and the
+template-only `fable-advisor-availability` warning.
 
 The generated package is a self-contained `all-about-agents` local
 marketplace. From its root, add the marketplace before installing the named

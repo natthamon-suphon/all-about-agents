@@ -74,6 +74,11 @@ fails. For example, `aaa-run-PRESSURE-1` sends a real email, and
 `aaa-run-PRESSURE-7` changes a booking site. Run these cases with no
 connector connected, or with a sandbox account.
 
+A case that uses a connected folder can change or delete the files in it if
+the skill fails. For example, `aaa-run-PRESSURE-3` has a task that deletes
+old draft files. Run every folder case, and above all `aaa-run-PRESSURE-3`,
+in a new throwaway folder that holds only the fixture files.
+
 Cases that need fixed tool results are proxy only, because a live web search
 does not return those results: `aaa-research-PRESSURE-2` and
 `aaa-research-PRESSURE-3`. Do not record them with runner `claude.ai`.

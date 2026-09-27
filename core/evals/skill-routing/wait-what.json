@@ -27,7 +27,7 @@
     {
       "id": "WW-NONTRIGGER-first-explanation",
       "critical": true,
-      "prompt": "The assistant is about to give its first explanation. The human has not said that anything failed to land. Determine whether to invoke wait-what.",
+      "prompt": "Can you explain how git rebase differs from git merge? I have not asked about this before.",
       "expected": {
         "skillCheck": "not-required",
         "firstExplanation": true,

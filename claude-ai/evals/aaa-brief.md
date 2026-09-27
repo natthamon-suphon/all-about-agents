@@ -8,7 +8,7 @@ the observable pass and fail signals.
 - Earlier turns: the user and Claude discussed a weekend cooking class for kids. Stated: goal is to teach 8-12 year olds basic cooking; place is the user's café on Saturdays; max 10 kids; budget 5,000 baht for tools. Open: price per child was not decided.
 - Prompt: "Summarize what we just discussed into a formal document."
 - Expected: writes `02-brief.md` from the chat, with every section, the header table, and a source trace.
-- Pass: the stated facts appear with source "chat"; price per child is an open question; sections nobody discussed say "Not discussed"; each fact appears in one section only, and Decisions holds only choices made between options (or says "Not discussed"); the self-review line is in the reply, not inside the brief; the reply offers the next step (tasks or run).
+- Pass: the stated facts appear with source "chat"; price per child is an open question; sections nobody discussed say "Not discussed"; each fact appears in one section only, and Decisions holds only choices made between options (or says "Not discussed"); the self-review line is in the reply, not inside the brief; the brief's Status is draft and the reply asks for corrections.
 - Fail: invents a price, a schedule, or a menu; or skips the source trace.
 
 ### aaa-brief-TRIGGER-2
@@ -111,3 +111,19 @@ the observable pass and fail signals.
 - Expected: reads both reports by their Answers rows. R2's answer goes into the section it affects, such as Constraints or Risks, with its label and the source `(R2: research-insurance.md)`, and R2 is not listed as open. R3's answer is unknown, so R3 stays open and names `research-permit.md`. The Sources row names both reports.
 - Pass: the insurance answer appears with source `research-insurance.md`; R2 is not an open question; R3 is an open question; both reports are in the Sources row; no add-on price or permit rule is invented.
 - Fail: R2 stays open; the insurance answer has no source; R3 is closed or answered; or any price or permit rule appears that no source contains.
+
+### aaa-brief-TRIGGER-5
+
+- Earlier turns: a folder is connected. `kids-cooking-class/` holds `02-brief.md` v1, Status complete, which lists R2 "Does the café's insurance cover a children's class?" as open, and `research-insurance.md`, written after the brief. Its Answers row names R2; its short answer is "Not covered; an add-on is needed" (verified, with a link).
+- Prompt: "The insurance research is done. Update the brief."
+- Expected: saves the brief as v2. The answer goes into the section it affects, such as Constraints or Risks, with its label and the source `(R2: research-insurance.md)`. R2 is no longer an open question, the Sources row names the report, and a change-log row names it. Nothing else changes.
+- Pass: Version v2 with a change-log row that names `research-insurance.md`; R2 is not open; the answer is traced to the report; the Sources row names the report; no other section changes; no add-on price is invented.
+- Fail: a new v1 brief is written from scratch; R2 stays open; the answer has no source; or a price or any other fact appears that no source contains.
+
+### aaa-brief-TRIGGER-6
+
+- Earlier turns: Claude showed `02-brief.md` v1 for the kids cooking class, Status draft, and asked for corrections.
+- Prompt: "Looks good, no changes."
+- Expected: the user accepted the brief with no corrections, so its header Status becomes complete and the version stays v1. The reply then offers the next step: split the work into tasks with `/aaa-tasks`, or run it with `/aaa-run`.
+- Pass: Status is complete; Version is still v1; the reply offers tasks or run.
+- Fail: Status stays draft; a v2 is made with no correction; or the reply offers no next step.

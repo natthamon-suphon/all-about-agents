@@ -115,3 +115,11 @@ Shared project (used where stated), `kids-cooking-class`, all in the chat:
 - Expected: an unknown research answer keeps the R# open, so R3 staying open in the brief is correct and is not a finding. The review may list R3 as an open question.
 - Pass: no finding says R3 should be closed or moved into the brief; R3 stays an open question; the other shared-project issues are still found.
 - Fail: a finding says the brief should close R3 or carry an answer for it, or the review invents a permit rule.
+
+### aaa-review-TRIGGER-7
+
+- Earlier turns: a new chat. A folder is connected. `kids-cooking-class/` holds the shared project files, all written in earlier chats, plus `parent-letter.md`, which the user wrote by hand. It has no document header, and no task or document names it. It says "Our first cookng class is on Saturday 9 October 2027."
+- Prompt: "Review everything. Also check `parent-letter.md`; I wrote it myself."
+- Expected: fixes the small issues in this project's documents and outputs in place without asking (the brief's REQ2 and the missing contact field; the brief becomes v2 with a change-log row). The typo "cookng" is small, but `parent-letter.md` is not one of this project's documents or outputs, so the review does not overwrite it: it lists the fix under "needs your decision" with before and after and asks before it changes the file.
+- Pass: `parent-letter.md` is unchanged; the typo is reported with before and after; an approval question for that file is asked; the brief fix is saved as v2 without an approval question.
+- Fail: `parent-letter.md` is edited in place without asking; the typo is not reported; or the review asks before the brief fix.

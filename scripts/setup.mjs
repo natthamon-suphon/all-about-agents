@@ -176,11 +176,12 @@ function isFile(path) {
 }
 
 /**
- * Return the entries a fresh run may delete: the root managed state, one
- * folder per surface, and Finder metadata. Anything else means the root is not
- * only a package, so the whole clear is refused and nothing is deleted.
+ * Return the entries this installer writes at the package root: the root
+ * managed state, one folder per surface, and Finder metadata. Anything else
+ * means the root is not only a package, so both modes refuse it before any
+ * step runs: fresh deletes nothing, and update renders and commits nothing.
  */
-async function assertClearable(root) {
+async function assertOnlyPackageEntries(root) {
   if (!existsSync(root)) return [];
   const entries = (await readdir(root)).sort();
   const wholeRoot = entries.includes(STATE_DIRECTORY) && isDirectory(join(root, STATE_DIRECTORY));
@@ -314,7 +315,7 @@ async function runCommandStep(step, run) {
 
 // A registration ends `manual-required` with exit 1 when its product is set up
 // but a required step is left to the operator. Only these two codes mean that;
-// any other code fails closed.
+// any other code fails closed, except a missing product CLI (see below).
 const MANUAL_FOLLOW_UP_CODES = new Set(["manual-step-required", "installed-copy-not-confirmed"]);
 
 function manualFollowUps(report) {
@@ -327,10 +328,6 @@ function manualFollowUps(report) {
     });
 }
 
-// A registration can also exit 0 while refusing to write a guarded file: a
-// no-clobber destination that already differs reports `manual-required` and is
-// skipped. Reporting only the exit code hides that, and the operator is left
-// believing a file was deployed when it was not.
 async function reportRegistration(step, run) {
   const result = await run({ executable: step.executable, args: step.args, cwd: step.cwd });
   if (result.unavailable) return { status: "not-run-unavailable", reason: `${step.executable} is not on PATH` };
@@ -338,21 +335,24 @@ async function reportRegistration(step, run) {
 
   let report = null;
   try { report = JSON.parse(result.stdout); } catch { report = null; }
-  if (result.exitCode === 1 && report?.status === "manual-required" && MANUAL_FOLLOW_UP_CODES.has(report?.error?.code)) {
-    const followUps = manualFollowUps(report);
-    return { status: "manual-required", reason: `${String(followUps.length)} step(s) need a manual follow-up: ${followUps.join("; ")}` };
-  }
-  // A product CLI that is not installed is a gap in this host, not a broken
-  // package, so the run goes on to the next surface. Files written before the
-  // stop stay written, and the reason says so.
-  if (result.exitCode !== 0) {
-    const unavailable = report?.error?.code === "native-executable-unavailable";
-    const written = Array.isArray(report?.completed) ? report.completed.length : 0;
-    return { status: unavailable ? "not-run-unavailable" : "failed", reason: `${evidenceOf(result)}${written > 0 ? `; ${String(written)} earlier action(s) completed` : ""}` };
-  }
   const followUps = manualFollowUps(report);
+  const manual = `${String(followUps.length)} step(s) need a manual follow-up: ${followUps.join("; ")}`;
+  if (result.exitCode === 1 && report?.status === "manual-required" && MANUAL_FOLLOW_UP_CODES.has(report?.error?.code)) {
+    return { status: "manual-required", reason: manual };
+  }
+  if (result.exitCode !== 0) {
+    const written = Array.isArray(report?.completed) ? report.completed.length : 0;
+    const stop = `${evidenceOf(result)}${written > 0 ? `; ${String(written)} earlier action(s) completed` : ""}`;
+    if (report?.error?.code !== "native-executable-unavailable") return { status: "failed", reason: stop };
+    // A product CLI that is not installed is a gap in this host, not a broken
+    // package, so the run goes on to the next surface. A manual step recorded
+    // before the stop, such as a refused GEMINI.md, still needs the operator.
+    return followUps.length > 0 ? { status: "manual-required", reason: `${manual}; ${stop}` } : { status: "not-run-unavailable", reason: stop };
+  }
+  // Register exits 0 when only optional reminders are left, such as a restart,
+  // a hook review, or the Desktop slot. The reason still names them.
   if (followUps.length === 0) return { status: "completed", reason: null, evidence: (result.stdout || "").trim().split("\n").at(-1) ?? "" };
-  return { status: "completed", reason: `${String(followUps.length)} step(s) need a manual follow-up: ${followUps.join("; ")}` };
+  return { status: "completed", reason: manual };
 }
 
 // The preview plans the registration without writing. A plan that fails, for
@@ -406,7 +406,7 @@ async function previewInstall(step, run) {
 // A subset run renders and registers only its own surfaces, so it clears only
 // those folders; every other surface keeps its render and its registration.
 async function clearPackageRoot(root, apply, surfaces) {
-  const recognized = await assertClearable(root);
+  const recognized = await assertOnlyPackageEntries(root);
   const entries = surfaces.length === SURFACES.length ? recognized : recognized.filter((entry) => surfaces.includes(entry) || entry === FINDER_METADATA);
   if (entries.length === 0) return { status: "completed", reason: "the package root is already empty" };
   if (!apply) return { status: "pending", reason: `${String(entries.length)} entries would be removed` };
@@ -426,7 +426,11 @@ async function commitCodexSource(root, run, apply, mode, env) {
   // A fresh run replaces this tree before the commit step, so its current
   // state carries no information for the plan.
   if (!apply && mode === "fresh") return { status: "pending", reason: "the freshly rendered Codex source would be committed" };
-  if (!existsSync(cwd)) return { status: "failed", reason: `${cwd} does not exist; the install step must run first` };
+  if (!existsSync(cwd)) {
+    return apply
+      ? { status: "failed", reason: `${cwd} does not exist; the install step must run first` }
+      : { status: "pending", reason: "the render would create the Codex plugin source, then it would be committed" };
+  }
   if (!existsSync(join(cwd, ".git"))) {
     if (!apply) return { status: "pending", reason: "the Codex plugin source would be initialized and committed" };
     const init = await run({ executable: "git", args: ["init"], cwd, env: gitEnv });
@@ -483,7 +487,7 @@ function assertSurfaceSelectionMatchesRoot({ packageRoot, surfaces, mode }) {
 export async function runSetup(options, { runProcess = defaultRunProcess, env = process.env, homeDir = homedir(), repositoryRoot = REPOSITORY_ROOT } = {}) {
   assertPackageRootIsSafe(options.packageRoot, { homeDir, env, repositoryRoot });
   assertSurfaceSelectionMatchesRoot(options);
-  if (options.mode === "fresh") await assertClearable(options.packageRoot);
+  await assertOnlyPackageEntries(options.packageRoot);
   const statuslineName = options.statuslineName ?? (await renderedStatuslineName(options.packageRoot));
   const plan = planSetup({ ...options, statuslineName });
   const reports = [];
@@ -532,7 +536,13 @@ export async function runSetup(options, { runProcess = defaultRunProcess, env = 
   };
 }
 
+function registrationsWith(report, status) {
+  return report.surfaces.filter((surface) => report.steps.some((step) => step.id === `register-${surface}` && step.status === status));
+}
+
 function setupText(report) {
+  const notRun = registrationsWith(report, "not-run-unavailable");
+  const registered = registrationsWith(report, "completed");
   const lines = [
     `action=setup mode=${report.mode} apply=${String(report.apply)} status=${report.status}`,
     `package-root=${report.packageRoot} profile=${report.profile} surfaces=${report.surfaces.join(",")}`
@@ -541,10 +551,11 @@ function setupText(report) {
     lines.push(`  ${step.id.padEnd(24)} ${step.status}${step.reason ? ` — ${step.reason}` : ""}`);
   }
   if (report.notAttempted.length > 0) lines.push(`  not attempted: ${report.notAttempted.join(", ")}`);
+  if (notRun.length > 0) lines.push(`Not run: ${notRun.join(", ")} (see the reason above); install the missing program, then rerun the same command.`);
   lines.push(report.status === "dry-run"
     ? "Next: review the pending steps, then rerun the same command with --apply."
     : report.status === "complete"
-      ? "Next: restart the product, then confirm the plugin list and run npm run test:model."
+      ? registered.length > 0 ? `Next: restart ${registered.join(", ")}, then confirm the plugin list and run npm run test:model.` : "Next: no surface was registered; install the missing program, then rerun the same command."
       : report.status === "blocked"
         ? "Next: rerun with --mode fresh; this package root cannot be updated in place."
         : report.status === "manual-required"
@@ -556,8 +567,9 @@ function setupText(report) {
 const USAGE = `Usage: node scripts/setup.mjs --mode fresh|update [options]
 
 Modes:
-  fresh     Clear every previous render from the package root, then install and register
+  fresh     Clear the previous render of each selected surface from the package root, then install and register
   update    Keep the package root and sync it with this checkout, then register
+Both modes refuse a package root that holds an entry this installer does not write.
 
 Options:
   --package-root <path>   Package root (default: ~/.all-about-agents/package)

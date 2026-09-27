@@ -7,7 +7,7 @@
     {
       "id": "GW-TRIGGER-requested-isolation",
       "critical": true,
-      "prompt": "The human explicitly approved an implementation plan that requires a separate checkout. The current path is a normal Git repository. Determine whether using-git-worktrees should run and what must be verified before creating the worktree.",
+      "prompt": "I approved the plan for the payments refactor. It says the work must happen in a separate checkout so my current branch stays untouched. This folder is a normal Git repository, not a linked worktree. Please set up that isolated checkout. What do you check before you create it, and after?",
       "expected": {
         "skillCheck": "required",
         "requestIsolation": true,
@@ -27,7 +27,7 @@
     {
       "id": "GW-NONTRIGGER-current-isolated-worktree",
       "critical": true,
-      "prompt": "The requested implementation is already running in a linked Git worktree whose root, HEAD, branch, and cleanliness have been verified. No second checkout is requested. Determine whether using-git-worktrees should create another worktree.",
+      "prompt": "We are already inside a linked Git worktree for this task. Its root, HEAD, branch, and clean state were checked a minute ago, and nobody asked for a second checkout. Please continue with the next step of the task. Do you need to set anything up first?",
       "expected": {
         "skillCheck": "not-required",
         "alreadyLinkedWorktree": true,

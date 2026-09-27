@@ -136,6 +136,14 @@ test("no-root rendering passes the resolved environment root to the adapter", as
   });
 });
 
+test("an Antigravity destination root reaches the resolved config root record", async () => {
+  await withTempRoot(async (root) => {
+    const [entry] = await renderPlans({ surfaces: ["antigravity"], profile: "portable", statuslineName: "", destinationRoot: root }, process.cwd());
+    const resolvedRoot = entry.payload.registrations.find((registration) => registration.kind === "resolved-config-root");
+    assert.equal(resolvedRoot.path, root);
+  });
+});
+
 test("relative destination roots resolve from the repository working directory", async () => {
   const relativePath = `tests/.tmp/t048-relative-${randomUUID()}`;
   const expectedRoot = resolve(process.cwd(), relativePath);
@@ -344,12 +352,13 @@ test("diff reports a mode-only executable repair without exposing file content",
 });
 
 test("PowerShell launcher preserves normalized output and exit-code parity", async (t) => {
-  const probe = spawnSync("pwsh", ["--version"], { cwd: process.cwd(), encoding: "utf8" });
-  if (probe.status !== 0) {
-    t.skip(`NOT_RUN_UNAVAILABLE: pwsh unavailable (status ${probe.status ?? "spawn-error"})`);
+  // Windows PowerShell 5.1 has no --version switch, so the probe runs a command both accept.
+  const powerShell = ["pwsh", "powershell"].find((executable) => spawnSync(executable, ["-NoProfile", "-NonInteractive", "-Command", "exit 0"], { cwd: process.cwd(), encoding: "utf8" }).status === 0);
+  if (!powerShell) {
+    t.skip("NOT_RUN_UNAVAILABLE: neither pwsh nor powershell is available");
     return;
   }
-  const result = spawnSync("pwsh", ["-NoProfile", "-File", resolve(process.cwd(), "installers", "install.ps1"), "doctor", "--surface", "claude", "--destination-root", resolve(process.cwd(), "tests", ".tmp", "launcher-doctor"), "--format", "json"], { cwd: process.cwd(), encoding: "utf8" });
+  const result = spawnSync(powerShell, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", resolve(process.cwd(), "installers", "install.ps1"), "doctor", "--surface", "claude", "--destination-root", resolve(process.cwd(), "tests", ".tmp", "launcher-doctor"), "--format", "json"], { cwd: process.cwd(), encoding: "utf8" });
   assert.equal(result.status, 1, result.stderr);
   const report = JSON.parse(result.stdout);
   assert.equal(report.action, "doctor");

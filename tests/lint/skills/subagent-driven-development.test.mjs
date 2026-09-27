@@ -195,6 +195,24 @@ test("review-package refuses an empty package instead of writing one", async () 
       assert.match(result.stderr, /empty review package/u);
       await assert.rejects(access(outFile), { code: "ENOENT" });
     }
+    await assert.rejects(access(repo.sdd), { code: "ENOENT" }, "an empty package must not create sdd/");
+  } finally {
+    await repo.cleanup();
+  }
+});
+
+test("a WORKTREE package restores a missing sdd/.gitignore before it snapshots, so sdd/ files stay out", async () => {
+  const repo = await uncommittedRepo("aaa-review-sdd-ignore-");
+  try {
+    await mkdir(repo.sdd);
+    await writeFile(join(repo.sdd, "task-1-brief.md"), "old brief text\n", "utf8");
+    await writeFile(join(repo.root, "sample.txt"), "one\ntwo\n", "utf8");
+    const outFile = join(repo.sdd, "review.diff");
+    const result = repo.run([join(repo.root, "plan.md"), repo.base, "WORKTREE", outFile]);
+    assert.equal(result.status, 0, result.stderr);
+    const review = await readFile(outFile, "utf8");
+    assert.match(review, /^\+two$/mu);
+    assert.doesNotMatch(review, /old brief text|task-1-brief/u);
   } finally {
     await repo.cleanup();
   }
@@ -578,6 +596,35 @@ test("a WORKTREE package refuses untracked secret-like files and names only thei
   }
 });
 
+test("a WORKTREE package blocks exact secret names, not look-alikes, and names staging to include a file", async () => {
+  const repo = await uncommittedRepo("aaa-review-secret-names-");
+  try {
+    const plan = join(repo.root, "plan.md");
+    const lookAlikes = ["CredentialsProvider.java", "credentials.test.ts", ".env.example", ".env.sample", ".env.template", "vite.env.d.ts"];
+    for (const name of lookAlikes) await writeFile(join(repo.root, name), "not a secret\n", "utf8");
+    const allowed = repo.run([plan, repo.base, "WORKTREE", join(repo.sdd, "look-alikes.diff")]);
+    assert.equal(allowed.status, 0, allowed.stderr);
+
+    const secrets = ["id_dsa", ".git-credentials", ".pgpass", "_netrc", "prod.env", "credentials", "credentials.json", "credentials.yml", "credentials.toml", ".env.local"];
+    for (const name of secrets) await writeFile(join(repo.root, name), "do-not-print\n", "utf8");
+    const refused = repo.run([plan, repo.base, "WORKTREE"]);
+    assert.equal(refused.status, 2, refused.stderr);
+    const listed = /like secrets would enter the package: (.*?)\. /u.exec(refused.stderr)?.[1]?.split(", ");
+    assert.deepEqual(listed?.toSorted(), secrets.toSorted(), refused.stderr);
+    assert.match(refused.stderr, /`git add -- <path>`/u);
+    assert.match(refused.stderr, /human's authority/u);
+    assert.doesNotMatch(refused.stderr, /do-not-print/u);
+
+    for (const name of secrets.filter((entry) => entry !== "prod.env")) await rm(join(repo.root, name));
+    repo.git(["add", "--", "prod.env"]);
+    const staged = repo.run([plan, repo.base, "WORKTREE", join(repo.sdd, "staged.diff")]);
+    assert.equal(staged.status, 0, staged.stderr);
+    assert.match(await readFile(join(repo.sdd, "staged.diff"), "utf8"), /^\+\+\+ b\/prod[.]env$/mu);
+  } finally {
+    await repo.cleanup();
+  }
+});
+
 test("review-package never passes an option-like ref to git", async () => {
   const repo = await uncommittedRepo("aaa-review-option-ref-");
   try {
@@ -904,6 +951,64 @@ test("bash wrappers keep working when node is not on PATH", async (t) => {
     assert.equal(await readFile(join(repo.sdd, ".gitignore"), "utf8"), "custom\n");
   } finally {
     await repo.cleanup();
+    await shell.cleanup();
+  }
+});
+
+// Every script refuses a symlinked or non-folder sdd/ with exit 2 before any
+// task or diff check, so the node and bash paths agree on the exit code.
+async function assertSddRefusals(t, run) {
+  const repo = await uncommittedRepo("aaa-sdd-refusals-");
+  const outside = await mkdtemp(join(tmpdir(), "aaa-sdd-refusals-outside-"));
+  try {
+    await writeFile(join(repo.root, "sample.txt"), "one\ntwo\n", "utf8");
+    repo.git(["commit", "--quiet", "-am", "second"]);
+    const head = repo.git(["rev-parse", "HEAD"]);
+    const fileDirectory = join(repo.root, "file-sdd");
+    const linkDirectory = join(repo.root, "link-sdd");
+    for (const directory of [fileDirectory, linkDirectory]) {
+      await mkdir(directory);
+      await writeFile(join(directory, "plan.md"), "## Task 1: one\nbody\n", "utf8");
+    }
+    await writeFile(join(fileDirectory, "sdd"), "a file, not a folder\n", "utf8");
+    try {
+      await symlink(outside, join(linkDirectory, "sdd"), "junction");
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
+    for (const [directory, refusal] of [[fileDirectory, /^sdd\/ is not a folder: /mu], [linkDirectory, /^refusing a symlinked sdd\/ folder: /mu]]) {
+      const plan = join(directory, "plan.md");
+      for (const [name, args] of [["sdd-workspace", [plan]], ["task-brief", [plan, "1"]], ["task-brief", [plan, "9"]], ["review-package", [plan, repo.base, head]], ["review-package", [plan, head, head]]]) {
+        const label = `${name} ${args.slice(1).join(" ")} with ${directory}/sdd`;
+        const result = run(name, args, repo.root);
+        assert.equal(result.status, 2, `${label}: ${result.stderr}`);
+        assert.match(result.stderr, refusal, label);
+      }
+    }
+    assert.equal(await readFile(join(fileDirectory, "sdd"), "utf8"), "a file, not a folder\n");
+    assert.deepEqual(await readdir(outside), []);
+  } finally {
+    await repo.cleanup();
+    await rm(outside, { force: true, recursive: true });
+  }
+}
+
+test("the node scripts refuse a symlinked or non-folder sdd/ with exit 2 before task and diff checks", async (t) => {
+  await assertSddRefusals(t, (name, args, cwd) => runNode(join(scriptsDirectory, `${name}.cjs`), args, cwd));
+});
+
+test("the bash fallbacks refuse a symlinked or non-folder sdd/ with the same exit code as node", async (t) => {
+  const shell = await nodeFreeShell(t, ["bash", "git", "awk", "wc", "tr", "dirname", "mkdir", "mktemp", "mv", "rm"]);
+  if (!shell) return;
+  try {
+    const gitProbe = spawnSync(join(shell.bin, "git"), ["--version"], { env: shell.env, encoding: "utf8" });
+    if (gitProbe.status !== 0) {
+      t.skip(`git does not run with a stripped PATH: ${gitProbe.stderr.trim()}`);
+      return;
+    }
+    await assertSddRefusals(t, (name, args, cwd) => spawnSync(shell.bash, [join(scriptsDirectory, name), ...args], { cwd, env: shell.env, encoding: "utf8", shell: false }));
+  } finally {
     await shell.cleanup();
   }
 });

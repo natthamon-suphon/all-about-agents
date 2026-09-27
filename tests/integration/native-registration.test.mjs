@@ -399,7 +399,7 @@ async function runStatuslineLauncher(root, launcher, input, t, environmentOverri
     return null;
   }
   const args = process.platform === "win32"
-    ? ["-NoProfile", "-File", launcherPath]
+    ? ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", launcherPath]
     : [launcherPath];
   const result = await spawnWithInput({ executable: shell, args, cwd: root, env: environment, input });
   assert.equal(result.unavailable, false, `${launcher} shell became unavailable`);
@@ -412,7 +412,9 @@ async function runStatuslineLauncher(root, launcher, input, t, environmentOverri
 
 async function firstAvailable(executables, root, env) {
   for (const executable of executables) {
-    const probe = await runProcess({ executable, args: ["--version"], cwd: root, env, timeoutMs: 10_000, maxOutputBytes: 64 * 1024 });
+    // Windows PowerShell 5.1 has no --version switch, so every shell runs a no-op.
+    const args = executable === "sh" ? ["-c", "exit 0"] : ["-NoProfile", "-NonInteractive", "-Command", "exit 0"];
+    const probe = await runProcess({ executable, args, cwd: root, env, timeoutMs: 10_000, maxOutputBytes: 64 * 1024 });
     if (!probe.unavailable && !probe.outputTooLarge && probe.exitCode === 0) return executable;
   }
   return null;

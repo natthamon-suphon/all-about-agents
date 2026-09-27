@@ -20,7 +20,7 @@
           "antigravity-desktop"
         ]
       },
-      "notes": "A headless agy session quoted the first heading of the live file, so the product loads it. The destination is shared with operator-owned sections, so registration refuses to replace a differing file instead of overwriting it."
+      "notes": "A headless agy session quoted the first heading of the live file, so the product loads it. The destination is shared with operator-owned sections, so registration never overwrites a differing file: it is complete when the file already contains the managed body as one block, and manual-required otherwise."
     },
     {
       "feature": "skills.discovery",

@@ -199,10 +199,12 @@ CAVEMAN MODE ACTIVE - level: full
 ```
 
 That file is also where this repository deploys the Antigravity global
-instructions, and the deploy is guarded: `register --apply` reports
-`manual-required` rather than replacing a file that already differs. So the
-caveman section survives a registration, and after a package update the two
-bodies are merged by hand. Keep the marker heading so a later edit or removal
+instructions, and that file is never overwritten. `register --apply` counts it
+as complete when it already contains the managed body as one block, so a
+caveman section before or after that block is fine. When the managed body is
+missing or edited, it writes nothing, reports `manual-required`, and ends with
+exit code 1; merge the new body by hand. So the caveman section survives a
+registration either way. Keep the marker heading so a later edit or removal
 stays one operation.
 
 Trade-off: the level here is **static**. Claude Code and Codex follow

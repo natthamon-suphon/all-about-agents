@@ -1,6 +1,6 @@
 # Codex CLI and Desktop compatibility
 
-Sibling pages: [Antigravity](antigravity.md) and [Claude Code](claude.md).
+Sibling pages: [Antigravity](antigravity.md) and [Claude Code](claude-code.md).
 
 This page covers the Codex package and its native boundary. The observed
 runtime is Codex CLI `0.151.0-alpha.7.2` on Windows. The T07 disposable
@@ -112,7 +112,9 @@ sandbox settings, so an existing file is never replaced. It is complete when it
 already contains the managed content: every managed table with all of its key
 lines, plus the managed top-level keys; other tables may stay. Otherwise the
 step reports `manual-required`, names the missing tables to merge by hand, and
-the run ends with exit code 1 (`manual-step-required`).
+the run ends with exit code 1 (`manual-step-required`, or
+`installed-copy-not-confirmed` when `codex-plugin-source-check` also reports
+`manual-required`).
 
 The fixed current CLI commands are:
 
