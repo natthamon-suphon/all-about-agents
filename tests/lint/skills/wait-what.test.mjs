@@ -6,7 +6,8 @@ const skillId = "wait-what";
 const requiredCases = [
   "WW-TRIGGER-user-says-did-not-land",
   "WW-NONTRIGGER-first-explanation",
-  "WW-PRESSURE-language-switch"
+  "WW-PRESSURE-hurry-keeps-language",
+  "WW-TRIGGER-asks-for-another-language"
 ];
 
 test("T021 exposes its routing evidence", async () => {
@@ -42,16 +43,19 @@ test("wait-what requires an explicit non-landing signal before re-pitching", asy
   assert.doesNotMatch(skill, /(?:\.claude|\.codex|\.gemini|mcp__|WebSearch|WebFetch|spawn_agent|invoke_subagent)/iu);
 });
 
-test("wait-what preserves the session language under pressure", async () => {
+test("wait-what keeps the session language under pressure and switches only on request", async () => {
   const skill = await readFile(skillPath, "utf8");
-  assert.match(skill, /preserve|keep|same/iu);
-  assert.match(skill, /session language|language of the conversation/iu);
-  assert.match(skill, /do not (?:switch|force).*English|without forcing English/iu);
+  assert.match(skill, /keep the session language/iu);
+  assert.match(skill, /only when the human asks for (?:another|a different)\s+language/iu);
+  assert.match(skill, /(?:hurry|urgency|time pressure)[^.]*?\sis\s+not\s+a\s+language\s+request/iu);
   assert.match(skill, /concrete example/iu);
-  assert.match(skill, /pressure|insist|urgency/iu);
+  const body = skill.slice(skill.indexOf("\n---\n", 4) + "\n---\n".length).trim();
+  assert.ok(body.split(/\s+/u).length <= 500, "wait-what body must stay under 500 words");
+  assert.doesNotMatch(skill, /user pressure/iu);
+  assert.doesNotMatch(skill, /do not switch to English/iu);
 });
 
-test("wait-what routing evaluation defines three complete critical cases", async () => {
+test("wait-what routing evaluation defines four complete critical cases", async () => {
   const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
   assert.equal(evaluation.skill, skillId);
@@ -77,6 +81,14 @@ test("wait-what routing evaluation defines three complete critical cases", async
   assert.equal(evaluation.cases[2].expected.forceEnglish, false);
   assert.equal(evaluation.cases[2].expected.concreteExample, true);
   assert.equal(evaluation.cases[2].expected.pressureResistance, true);
+  assert.equal(evaluation.cases[2].expected.languageRequested, false);
+  assert.equal(evaluation.cases[3].expected.skillCheck, "required");
+  assert.equal(evaluation.cases[3].expected.explicitNonLandingSignal, true);
+  assert.equal(evaluation.cases[3].expected.languageRequested, true);
+  assert.equal(evaluation.cases[3].expected.replyLanguage, "English");
+  assert.equal(evaluation.cases[3].expected.preserveSessionLanguage, false);
+  assert.equal(evaluation.cases[3].expected.refuseLanguageRequest, false);
+  assert.equal(evaluation.cases[3].expected.concreteExample, true);
 });
 
 test("core loader exposes wait-what metadata and routing links", async () => {

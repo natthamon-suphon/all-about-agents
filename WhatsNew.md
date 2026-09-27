@@ -208,6 +208,11 @@ All notable changes to all-about-agents. The format follows
   tree id to use as the per-task base. Both write Git objects only, with no
   commit, ref, index, or working-tree change. An empty package is refused with
   exit 3 and no file.
+- `wait-what` kept the session language even when the human asked for another
+  one. It now switches when the human asks for another language, and a request
+  to hurry is still not a language request. The pressure case is now
+  `WW-PRESSURE-hurry-keeps-language`, and `WW-TRIGGER-asks-for-another-language`
+  is new.
 
 ## [2.1.1] - 2026-09-19
 

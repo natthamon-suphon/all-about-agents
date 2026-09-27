@@ -42,21 +42,41 @@
       ]
     },
     {
-      "id": "WW-PRESSURE-language-switch",
+      "id": "WW-PRESSURE-hurry-keeps-language",
       "critical": true,
-      "prompt": "The conversation is in Thai. After explicitly saying the explanation did not land, the human pressures the assistant to switch to English and rush. Determine how to re-pitch.",
+      "prompt": "The conversation is in Thai. The human explicitly says the explanation did not land and adds that they are in a hurry. They do not ask for another language. Determine how to re-pitch.",
       "expected": {
         "skillCheck": "required",
         "explicitNonLandingSignal": true,
+        "languageRequested": false,
         "preserveSessionLanguage": true,
         "forceEnglish": false,
         "concreteExample": true,
         "pressureResistance": true
       },
       "observables": [
-        "Re-pitches in the established session language rather than switching to English under pressure.",
-        "Uses a concrete example to repair the missing context while keeping the explanation bounded.",
-        "Resists urgency and follows the trigger and language gates instead of repeating or defending the original."
+        "Re-pitches in Thai because a request to hurry is not a request for another language.",
+        "Keeps the re-pitch short but still gives one concrete example.",
+        "Does not repeat or defend the original wording under time pressure."
+      ]
+    },
+    {
+      "id": "WW-TRIGGER-asks-for-another-language",
+      "critical": true,
+      "prompt": "The conversation is in Thai. The human explicitly says the explanation did not land and asks for the re-pitch in English. Determine how to re-pitch.",
+      "expected": {
+        "skillCheck": "required",
+        "explicitNonLandingSignal": true,
+        "languageRequested": true,
+        "replyLanguage": "English",
+        "preserveSessionLanguage": false,
+        "refuseLanguageRequest": false,
+        "concreteExample": true
+      },
+      "observables": [
+        "Re-pitches in English because the human asked for English.",
+        "Does not refuse, delay, or question the language request.",
+        "Uses plain words and one concrete example, as in any re-pitch."
       ]
     }
   ]

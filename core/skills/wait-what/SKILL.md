@@ -4,7 +4,8 @@ description: Use when the human explicitly says that the last explanation, answe
 evaluationCases:
   - WW-TRIGGER-user-says-did-not-land
   - WW-NONTRIGGER-first-explanation
-  - WW-PRESSURE-language-switch
+  - WW-PRESSURE-hurry-keeps-language
+  - WW-TRIGGER-asks-for-another-language
 ---
 
 # Wait, What?
@@ -14,8 +15,8 @@ human. This is a recovery skill, not a general instruction to simplify every
 answer.
 
 **Core principle:** rebuild the explanation around the missing context, keep
-the session's language, and make the idea concrete without defending the
-original wording.
+the session's language unless the human asks for another one, and make the
+idea concrete without defending the original wording.
 
 ## Trigger gate
 
@@ -38,9 +39,10 @@ means the assistant does not re-pitch.
    language in the session language, and anchor it with one concrete example.
    Use the project's own names consistently. Do not silently change the
    requested meaning.
-4. Keep the session language. Do not switch to English or force English when
-   the conversation is in another language. If the language is genuinely
-   unclear, ask one short language question rather than guessing.
+4. Keep the session language. Switch only when the human asks for another
+   language, and then re-pitch in the language they asked for. A request to
+   hurry is not a language request. If the language is genuinely unclear, ask
+   one short language question rather than guessing.
 5. Do not defend the original phrasing or repeat it louder. Do not apologize.
    Return to the normal conversation after the re-pitch. Invoke this skill again
    only after a new explicit non-landing signal.
@@ -52,12 +54,15 @@ If the session is in Thai and the human says, “ยังไม่เข้า�
 the missing context and use one concrete comparison, such as “ขั้นตอนนี้เหมือน
 การตรวจบัตรก่อนเข้าอาคาร” (“This step is like checking an ID before entering a
 building”). Do not force an English explanation just because the word “step”
-appeared in the earlier message.
+appeared in the earlier message. If the human asks for the re-pitch in
+English, give it in English.
 
 ## Red flags
 
 - Re-pitching after a first explanation without an explicit non-landing signal.
-- Switching the session to English under time, urgency, or user pressure.
+- Switching language because the human is in a hurry when they did not ask
+  for another language.
+- Refusing or delaying a language the human asked for.
 - Adding several unrelated explanations instead of repairing the smallest gap.
 - Defending, apologizing for, or merely repeating the original wording.
 - Guessing what the human meant or inventing context absent from the session.
