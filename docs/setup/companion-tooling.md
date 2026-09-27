@@ -83,7 +83,7 @@ To confirm the plugin is active in a session, read the flag file its
 `SessionStart` hook writes:
 
 ```text
-cat "$CLAUDE_CONFIG_DIR/.ponytail-active"
+cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.ponytail-active"
 ```
 
 `CLAUDE_CONFIG_DIR` defaults to `~/.claude`. The file holds the active level.

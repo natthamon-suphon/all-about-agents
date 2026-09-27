@@ -21,29 +21,35 @@ rendered -> validated -> registered -> trusted -> active -> runtime verified
 
 Gate 0 source checks and Gate 1 repository and installer checks establish
 deterministic rendering, validation, containment, redaction, and disposable
-root behavior. They do not establish native discovery or behavior.
+root behavior. They do not establish native discovery or behavior. CI
+(`.github/workflows/installer-matrix.yml`) runs the full `node --test` suite and
+the launcher smoke tests on Windows and macOS; that is Gate 0 and Gate 1
+evidence only.
 
 T07 Windows checks observed Claude Code `2.1.251` and Codex CLI
 `0.151.0-alpha.7.2` for only the operations listed in the evaluation records.
 The Antigravity surface was checked separately on `agy 1.2.7` on 2026-09-19.
-Codex Desktop, Antigravity Desktop, macOS, authenticated model transport, hook
-trust, hook execution, permission blocking, persistence, and Gate 3 remain
+Codex Desktop, Antigravity Desktop, native checks on macOS, authenticated model
+transport outside the manual `npm run test:model` suite, hook trust, hook execution, permission blocking, persistence, and Gate 3 remain
 `NOT_RUN` or `NOT_RUN_UNAVAILABLE`.
 
 ## Surface limits
 
 | Surface | Observed or rendered | Still manual, unknown, or unavailable |
 | --- | --- | --- |
-| [Claude Code](../compatibility/claude-code.md) | Package validation, disposable marketplace registration, plugin discovery, and both statusline fixtures passed on Windows. | Authenticated model and component use, hook trust and execution, Fable access, deny blocking, persistence, Desktop behavior, and macOS are not qualified. |
-| [Codex](../compatibility/codex.md) | Marketplace add, plugin add, exact available-plugin discovery, and discovered hook-file checks passed in an isolated Windows CLI home. | `/hooks` trust, hook execution, authenticated model use, Desktop behavior, persistence, and macOS are not qualified. Automatic fallback is unsupported. |
-| [Antigravity](../compatibility/antigravity.md) | `agy plugin validate`, `agy plugin install`, `agy plugin list`, and `agy agents` passed on `agy 1.2.7`, and a headless session named real skills and the inlined routing contract from outside any workspace copy. | Antigravity Desktop, macOS, permission deny blocking, and persistence are not qualified. There is no hook or status line to qualify: none is rendered. |
+| [Claude Code](../compatibility/claude-code.md) | Package validation, disposable marketplace registration, plugin discovery, and both statusline fixtures passed on Windows. | Authenticated model and component use, hook trust and execution, Fable access, deny blocking, persistence, Desktop behavior, and native use on macOS are not qualified. |
+| [Codex](../compatibility/codex.md) | Marketplace add, plugin add, exact available-plugin discovery, and discovered hook-file checks passed in an isolated Windows CLI home. | `/hooks` trust, hook execution, authenticated model use, Desktop behavior, persistence, and native use on macOS are not qualified. Automatic fallback is unsupported. |
+| [Antigravity](../compatibility/antigravity.md) | `agy plugin validate`, `agy plugin install`, `agy plugin list`, and `agy agents` passed on `agy 1.2.7`, and a headless session named real skills and the inlined routing contract from outside any workspace copy. | Antigravity Desktop, native use on macOS, permission deny blocking, and persistence are not qualified. There is no hook or status line to qualify: none is rendered. |
 
 ## Safety and setup constraints
 
 - Never guess a vendor path. An explicit `--destination-root` authorizes only
   that disposable or test root. `install --apply` without it fails closed with
-  `destination-root-required`; automatic root discovery serves only `--dry-run`,
-  `doctor`, and `diff`.
+  `destination-root-required`; for install, automatic root discovery serves
+  only `--dry-run`, `doctor`, and `diff`. `register` always targets the product
+  root: the environment root when it is set, otherwise the live home. For
+  Antigravity, `AAA_ANTIGRAVITY_ROOT` moves only the `GEMINI.md` destination;
+  `agy plugin install` always writes the live plugin folder.
 - Full-access profiles keep emergency denies. A product that has not been
   observed cannot be described as enforcing them.
 - The Claude `disableAllHooks` setting disables hooks globally. It does not
@@ -91,9 +97,12 @@ trust, hook execution, permission blocking, persistence, and Gate 3 remain
 
 The lint layer under `tests/lint/` checks skill text with regular expressions. It
 does not observe model behavior. The manual trigger suite (`npm run test:model`)
-is the only behavior check in the repository; it records `NOT_RUN_UNAVAILABLE`
-when the `claude` CLI, its login, or the installed package version is missing.
-macOS has produced no result from it yet.
+is the only behavior check in the repository. It records `NOT_RUN_UNAVAILABLE`
+when the `claude` CLI or its login is missing, when the installed plugin is
+absent or has another version, when its `SKILL.md` files differ from a render
+of this checkout, when the global `CLAUDE.md` is not deployed, when
+`git init` fails, or when a session times out, exits non-zero, or returns an
+error result. No macOS result from it is recorded in the repository yet.
 
 That suite scores a self-reported routing trailer: each prompt asks the answer to
 end with `skill: <the all-about-agents skill you route this to, or none>`, and

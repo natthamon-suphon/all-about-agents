@@ -5,6 +5,12 @@ change in `tests/static/repository-layout.test.mjs` (not mine).
 Evidence labels: **V** = verified in files or primary source, **I** = inferred,
 **U** = unknown.
 
+Status: dated analysis, not updated. Since then, the claude.ai pack it scoped
+was built in `claude-ai/` (see
+[the spec](../plans/2026-09-26-claude-ai-skill-pack.md)). Defects 1-6 in
+section 8 were fixed in `8836b48` (2026-09-26). `nano-image-generator` was
+removed, so the portfolio has 27 skills (`WhatsNew.md`, Unreleased).
+
 ---
 
 ## 1. The project in one page

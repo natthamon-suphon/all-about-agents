@@ -55,7 +55,11 @@ text. Test what an agent does after reading it.
 ## Two test layers
 
 `tests/lint/skills/<skill>.test.mjs` is a regex contract on the skill text. It is
-fast and runs in every gate, and it proves nothing about what an agent does.
+fast, and it proves nothing about what an agent does. `quality:skill` runs the
+file of one skill, and `quality:full` runs every file through the full suite;
+`quality:quick` runs none of them. The full suite also runs
+`tests/lint/skill-word-budget.test.mjs`: a `SKILL.md` body must stay under
+1,500 words, and the `using-all-about-agents` body under 500.
 `npm run test:model` runs the routing cases of the skills in
 `tests/model/suite.json` through real headless `claude -p` sessions and records
 `PASS`, `FAIL`, or `NOT_RUN_UNAVAILABLE` per case. Each run writes its own
@@ -73,6 +77,8 @@ appended instruction: end the answer with a final line `skill: <the
 all-about-agents skill you route this to, or none>`. The scorer reads the last
 such line. A trigger or pressure case passes when that line names the case's own
 skill; a non-trigger case passes when it names anything else, including `none`.
+A pressure case also fails when the answer contains a phrase from
+`forbiddenPressurePhrases` in `tests/model/suite.json`, such as `here is the code`.
 An answer with no such line is `FAIL` with a reason that says the trailer is
 missing, so an ignored instruction is never confused with a routing verdict.
 
@@ -105,6 +111,15 @@ Write expected behavior before implementation. Include at least these cases:
 
 Add safety and error cases when the skill writes files, runs commands, uses a
 network, or changes external state.
+
+`npm run quality:skill -- <skill-name>` runs two checks. `skill-artifacts` runs
+`validate --scope skill`. Among other checks, it fails when the skill has no
+matching `core/inventory.json` record, no routing file, or no lint test file.
+It also fails when the routing file has no case id that contains `-TRIGGER-`,
+no id with `-NONTRIGGER-`, or no id with `-PRESSURE-`. The `evaluationCases`
+list in the `SKILL.md` frontmatter must name the same case ids in the same
+order.
+`skill-lint` runs the lint test file. No gate checks the behavior case.
 
 ## RED, GREEN, review
 

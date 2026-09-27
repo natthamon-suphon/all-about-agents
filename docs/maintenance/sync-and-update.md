@@ -3,8 +3,7 @@
 Git is the cross-machine source of truth. A pull updates this repository only.
 It does not install files, register a plugin, change trust, or start a native
 session. Git actions and native mutations are separate.
-Check a clean worktree before a receiving-machine pull. The worktree must be
-clean before a receiving-machine pull.
+Check a clean worktree before a receiving-machine pull.
 
 The lifecycle is:
 
@@ -106,9 +105,10 @@ named by `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, or `AAA_ANTIGRAVITY_ROOT`) or this
 repository. The comparison uses real paths, so a link does not hide a product
 root, and ignores letter case, so `~/.Claude` is the same as `~/.claude`.
 
-The defaults are `~/.all-about-agents/package`, profile `template`, and every
-surface. Options: `--package-root`, `--profile`, `--surface`,
-`--statusline-name`, and `--format text|json`. When the display name is not
+`--mode fresh|update` is required. The defaults are
+`~/.all-about-agents/package`, profile `template`, and every surface. Options:
+`--package-root`, `--profile`, `--surface`, `--statusline-name`,
+`--dry-run | --apply`, and `--format text|json`. When the display name is not
 supplied, the name already rendered in the package root is reused.
 
 Manage one package root either as a whole with `--surface all`, or per surface
@@ -137,7 +137,8 @@ which product CLI was missing, and the run ends `manual-required` with exit 1.
 A missing product CLI alone is not a failure: the run can still end `complete`
 with exit 0. The last lines of the text report then name the surfaces that were
 not run (`Not run: ...`) and ask you to restart only the products that
-registered.
+registered. When no surface registered, the last line says so and asks you to
+install the missing program.
 A registration that ends `manual-required` with error `manual-step-required`
 or `installed-copy-not-confirmed` has set up its product but left a step to
 you. That step is `manual-required`, its reason lists each manual step id with
@@ -146,13 +147,19 @@ with status `manual-required` and exit code 1: do the listed steps, then rerun.
 Any other failed or blocked step stops the run, the remaining steps are listed
 as not attempted, and the exit code is 1.
 
+When no step fails, is blocked, or needs a manual step, the run status is
+`dry-run` for a plan-only run and `complete` for an applied one; both exit 0. `manual-required`, `blocked`, and `failed` exit 1. A refused
+package root ends `failed` with exit 1 before any step runs. A missing or
+invalid argument, such as no `--mode`, exits 2.
+
 An `update` dry-run plans the real render against the existing package root.
 When that plan reports `invalid-previous-state` or a rejected action, the step
 is `blocked` and names the remedy: a root written by an older repository
 version cannot be updated in place, so run `--mode fresh` instead. A `fresh`
 dry-run reports the render as `pending` without planning it, because the root
-it would be planned against is cleared first. The run never pulls, merges, or commits in this repository; when the
-checkout is behind its upstream the report says so and leaves the pull to you.
+it would be planned against is cleared first. The run never pulls, merges, or
+commits in this repository; when the checkout is behind its upstream the report
+says so and leaves the pull to you.
 
 Registration still ends in manual steps the products own: restart each product
 that registered, then confirm the hook under its own review screen. Verify with
@@ -268,13 +275,21 @@ longer renders. The installer cannot read that managed state, reports
 example `claude/commands/*.md`). Before rendering 2.x into such a root, remove the
 old surface directories and the root `.all-about-agents/` directory, keep the root
 path itself so the registered marketplace pointer stays valid, then render again.
+`node scripts/setup.mjs --mode fresh` does this clear for you only when the root
+holds no folder of a retired surface. Otherwise it lists the unknown entries and
+deletes nothing.
 
-Claude caches an installed plugin under its version directory. When `version`
-in `package.json` changed since the last registration, `claude plugin update`
-is not enough: run `claude plugin uninstall all-about-agents@all-about-agents --scope user --keep-data`
-and then `claude plugin install all-about-agents@all-about-agents --scope user` after the
-authorized `register --apply`. When only the marketplace pointer changed,
-`claude plugin update` is enough. `WhatsNew.md` lists the version history.
+Claude caches an installed plugin under its version directory, and an install
+with an unchanged `version` does not refresh that copy. After
+`claude plugin list --json`, the authorized `register --apply` runs the
+`claude-plugin-cache-check` step, which compares that copy with the package.
+When they differ or cannot be compared, it reports
+`manual-required` and lists
+`claude plugin uninstall all-about-agents@all-about-agents --scope user --keep-data`
+and then `claude plugin install all-about-agents@all-about-agents --scope user`.
+Run them with the same `CLAUDE_CONFIG_DIR`, then run `register --apply` again.
+`npm run setup` removes the installed plugin before each registration for this
+reason. `WhatsNew.md` lists the version history.
 
 1. Enter the repository root.
 

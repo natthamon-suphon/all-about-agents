@@ -1,5 +1,12 @@
 # Native Windows evidence — 2026-08-31
 
+Status: dated record, not updated. The `agy` and Antigravity Desktop adapters
+tested here were removed on 2026-09-19 (`8cbfd3b`, release 2.0.0). One new
+`antigravity` surface replaced them on 2026-09-20 (`e36b3d5`); its evidence is
+[research-antigravity.md](research-antigravity.md). The Claude plugin selector
+is now `all-about-agents@all-about-agents` (`9634977`). Counts and versions
+below are those of 2026-08-31.
+
 This record separates observations from unrun checks. It contains no account
 identifier, conversation identifier, prompt body, credential, or live settings
 content. The agy/Antigravity observations used

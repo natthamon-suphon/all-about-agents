@@ -23,6 +23,19 @@ npm run quality:quick
 npm run quality:full
 ```
 
+`quality:quick` runs these required checks: `repository-contracts`
+(`validate --scope all`), `focused-contracts`, `static-contracts`,
+`documentation-contracts`, `safety-contracts`, `installer-contracts`, and
+`release-contracts`. `quality:full` adds the required `full-test-suite`
+(`node --test`) and four optional checks: `model-suite-age`,
+`native-antigravity-version`, `native-claude-version`, and
+`native-codex-version`. `quality:skill` runs `skill-artifacts` and
+`skill-lint`. Every mode also records `node-version` and `git-metadata`.
+
+A required check that is not `PASS`, including `NOT_RUN_UNAVAILABLE`, fails
+the gate. An optional check never fails it. The command exits 0 when the gate
+passes, 1 when it fails, and 2 on an invalid argument.
+
 Run a focused test before these commands when one component changes. These
 checks do not establish native registration, trust, active sessions, or runtime
 behavior.

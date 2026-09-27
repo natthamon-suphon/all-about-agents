@@ -2,7 +2,8 @@
 
 Runner is `proxy` (a fresh read-only subagent in Claude Code, not claude.ai)
 or `claude.ai` (a manual run by the owner in a new chat). Only `claude.ai`
-rows count as runtime evidence. `export` rows record a ZIP build.
+rows count as runtime evidence. `export` rows record a ZIP build. `review`
+rows record a text change made in a review round, not a run.
 
 | Date | Skill | Case | Runner | Result | Notes |
 | --- | --- | --- | --- | --- | --- |

@@ -3,6 +3,11 @@
 Brainstorm input and evidence record behind [the simplification spec](2026-09-18-simplify-to-claude-codex.md).
 Date: 2026-09-18. Analysis only; the spec holds the decisions and phases.
 
+Status: dated record, not updated. The spec was implemented and released as
+2.0.0 and 2.1.0 on 2026-09-19 (`WhatsNew.md`). Decision 2 (cut Antigravity)
+was reversed by [Restore Antigravity](2026-09-19-restore-antigravity.md)
+(`e36b3d5`, 2026-09-20).
+
 Evidence labels: **verified** = read from the file or API named. **inferred** = follows
 from verified facts. **unknown** = not checked.
 

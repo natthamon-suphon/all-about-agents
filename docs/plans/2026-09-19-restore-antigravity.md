@@ -1,6 +1,9 @@
 # Restore Antigravity as a supported surface
 
 Status: phases 0-3 complete; runtime verified on agy 1.2.7, Windows
+Landed: `e36b3d5` (2026-09-20), recorded under `[Unreleased]` in `WhatsNew.md`.
+Later: an existing `GEMINI.md` that holds the managed body now counts as
+complete (A6 records the first rule; see `WhatsNew.md`, Unreleased, Fixed).
 Supersedes: decision D6 of `docs/plans/2026-09-18-simplify-to-claude-codex.md`
 
 ## 1. Why this reverses D6

@@ -2,9 +2,10 @@
 
 The adapter renders a deterministic Codex package from the canonical core.
 It writes a regular `AGENTS.md` whose first section is the shared canonical
-global body, followed by Codex rules and one compact presentation catalog.
-Repository skills live under `.agents/skills/`, and standalone custom-agent
-TOML files live under `.codex/agents/`.
+global body, followed by the canonical rules and one compact presentation
+catalog. Skills live under `skills/` for plugin discovery and are mirrored
+under `.agents/skills/` for direct installation. Standalone custom-agent TOML
+files live under `.codex/agents/`.
 
 Visible skill, agent, subagent, and hook entries use the canonical display
 name plus its registered emoji. Each prompt or action includes one short
@@ -23,10 +24,12 @@ for the scoped implementer. Relative paths resolve from the declaring
 The published docs do not show one combined registration example, so native
 client acceptance remains a later manual check.
 
-The shared `config.toml` overlay uses Sol with Max reasoning. The explicit
-`terra-max.config.toml` overlay contains the same role registrations plus only
-the documented Terra model and Max reasoning keys for its global policy; it is
-selected manually with the CLI profile mechanism.
+The `portable` profile's `config.toml` overlay sets no model or reasoning
+key. The `template` profile's overlay uses Sol with Max reasoning. Only the
+`template` profile renders the explicit `terra-max.config.toml` overlay. It
+contains the same role registrations plus only the documented Terra model and
+Max reasoning keys for its global policy; it is selected manually with the CLI
+profile mechanism.
 Desktop Terra/Max selection remains a manual model-control step.
 Codex does not claim an automatic Sol-to-Terra fallback.
 

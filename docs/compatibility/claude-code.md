@@ -6,7 +6,7 @@ This page describes the Claude package and its native boundary. The observed
 runtime is Claude Code `2.1.251` on Windows. The T07 disposable checks passed
 strict validation, local marketplace registration, plugin discovery, and both
 statusline profiles. Authenticated session behavior is still
-`NOT_RUN_UNAVAILABLE`.
+`NOT_RUN_UNAVAILABLE` outside the manual `npm run test:model` suite.
 
 ## Lifecycle and support
 
@@ -28,7 +28,7 @@ from another state.
 | Plugin registration | Disposable marketplace add, plugin install, and enabled-plugin discovery passed | Run the native registration steps for a new package. |
 | Statusline and display name | Native `statusLine` settings and platform launchers render; both disposable profiles produced the expected text | An installed live session and persistence are not claimed. |
 | Strict validation | `claude plugin validate "<PACKAGE_ROOT>" --strict` passed in the disposable check | A validator proves package shape, not model or hook behavior. |
-| Product session | `NOT_RUN_UNAVAILABLE` | No authenticated model session was run. |
+| Product session | `NOT_RUN_UNAVAILABLE` in T07 | The T07 check ran no authenticated session. The manual `npm run test:model` suite runs headless `claude -p` sessions, but it scores only the route the model states. |
 
 Plugin registration is manual, not automatic. The generated statusline accepts
 native JSON on stdin and writes only one statusline text result. The install
@@ -112,7 +112,7 @@ Use the dry-run first and use `--apply` only with exact authority.
 PowerShell:
 
 ```powershell
-New-Item -ItemType Directory -Force -LiteralPath "<PRODUCT_ROOT>" | Out-Null
+New-Item -ItemType Directory -Force -Path "<PRODUCT_ROOT>" | Out-Null
 $env:CLAUDE_CONFIG_DIR = "<PRODUCT_ROOT>"
 node scripts/aaa.mjs register --surface claude --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
 ```
@@ -151,9 +151,10 @@ package: a missing or differing rule file is written, and an identical one is
 kept. Nothing is written directly in `<CLAUDE_CONFIG_DIR>/rules/`, so the
 user's own rule files are never touched. An extra `.md` file, folder, or link
 in the package folder is never deleted; the `claude-rules-extra-files` step
-reports it as `manual-required`. Other files, such as `.DS_Store`, are ignored. When `rules` or `rules/all-about-agents` is a symlink,
-junction, or not a folder, or a rule file there is a link or not a regular
-file, no rule file is written and the `claude-rules-deploy` step reports it as
+reports it as `manual-required`. Other files, such as `.DS_Store`, are
+ignored. When `rules` or `rules/all-about-agents` is a symlink, junction, or
+not a folder, or a rule file there is a link or not a regular file, no rule
+file is written and the `claude-rules-deploy` step reports it as
 `manual-required`. Each of these steps ends the report as `manual-required`
 with exit code 1.
 Native marketplace and plugin registration run after those files are present.
@@ -167,6 +168,13 @@ claude plugin marketplace add "<PACKAGE_ROOT>" --scope user
 claude plugin install all-about-agents@all-about-agents --scope user
 claude plugin list --json
 ```
+
+Then `claude-plugin-cache-check` compares the copy Claude loads from
+`<CLAUDE_CONFIG_DIR>/plugins/cache` with the package. An install with an
+unchanged plugin version does not refresh that copy. When the two differ or
+cannot be compared, the step reports `manual-required` with the uninstall and
+install commands, and the run ends with exit code 1
+(`installed-copy-not-confirmed`).
 
 Registration never runs the validator. As an optional check, run it yourself
 before registration. It gives `validated` only:

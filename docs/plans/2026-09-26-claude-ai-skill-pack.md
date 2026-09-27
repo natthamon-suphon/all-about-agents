@@ -1,7 +1,7 @@
 # claude.ai skill pack (`aaa-*`)
 
-Status: built 2026-09-26; revised three times on 2026-09-27, after a
-pre-upload review, a pack review, and a full-repo review. All six
+Status: built 2026-09-26; revised four times on 2026-09-27, after a
+pre-upload review, a pack review, and two full-repo reviews. All six
 skills are validated (pack and export tests). Proxy results are in
 `claude-ai/evals/results.md`. An earlier aaa-interview build (ca62642f…) was
 registered on claude.ai and is superseded; no current build is uploaded.

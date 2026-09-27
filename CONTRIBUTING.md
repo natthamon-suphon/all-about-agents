@@ -76,12 +76,15 @@ npm run quality:full
 Use `quality:quick` during work. Use `quality:full` before a release or handoff.
 Record optional native checks as `NOT_RUN_UNAVAILABLE`.
 
-The text report keeps only the last 8,000 characters of a failing check. Before
-you report a `FAIL`, rerun the gate with `--output <PATH>` and read the failing
-test names from the JSON report, or run the named test file directly.
+The gate keeps only the last 8,000 characters of each check's output. The text
+report and the `--output <PATH>` JSON report hold the same text. Before you
+report a `FAIL`, run the named test file directly to see every failing test.
 
 Every release bumps `version` in `package.json` and adds a `WhatsNew.md` entry.
-Both plugin manifests read the version from `package.json`.
+The Claude and Codex plugin manifests read `version` from `package.json`. The
+Antigravity manifest names it in its description. A `version` bump changes
+those rendered files, so update `tests/snapshots/<surface>/*.json` by hand;
+the contract tests fail until the snapshots match.
 
 ## Git Authority
 

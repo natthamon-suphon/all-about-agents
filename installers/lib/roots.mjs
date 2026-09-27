@@ -163,14 +163,14 @@ export function resolveDestinationRoot({ surface, override = null, env = process
   const environmentName = SURFACE_ROOT_ENV[surface] ?? null;
   const homeDirectory = SURFACE_HOME_DIRECTORY[surface] ?? null;
   let selected = override;
-  if (selected !== null && selected !== undefined) {
-    selected = selected;
-  } else if (environmentName && typeof env[environmentName] === "string" && env[environmentName].trim() !== "") {
-    selected = env[environmentName];
-  } else if (homeDirectory) {
-    selected = pathModule.join(home, homeDirectory);
-  } else {
-    fail("manual-discovery-required", `${surface} has no verified automatic persistent root; provide an explicit destination root for manual/disposable installation`);
+  if (selected === null || selected === undefined) {
+    if (environmentName && typeof env[environmentName] === "string" && env[environmentName].trim() !== "") {
+      selected = env[environmentName];
+    } else if (homeDirectory) {
+      selected = pathModule.join(home, homeDirectory);
+    } else {
+      fail("manual-discovery-required", `${surface} has no verified automatic persistent root; provide an explicit destination root for manual/disposable installation`);
+    }
   }
   const root = candidatePath(selected, home, pathModule);
   return assertSafeDestinationRoot(root, { platform, homeDir: home, allowedProductRoots: [root] });

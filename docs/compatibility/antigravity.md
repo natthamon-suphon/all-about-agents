@@ -13,7 +13,8 @@ inlined routing contract. That is `runtime verified` for the CLI.
 
 Antigravity Desktop remains `NOT_RUN_UNAVAILABLE`: it has no headless mode.
 
-The surface was removed on 2026-09-18 and restored on 2026-09-19. See
+Decision D6 of the 2026-09-18 plan removed the surface (commit `8cbfd3b`). The
+owner reversed that decision on 2026-09-19, and commit `e36b3d5` restored it. See
 [the restoration plan](../plans/2026-09-19-restore-antigravity.md) for the
 decisions behind the shape of this package, and
 [the product contract evidence](../evaluations/research-antigravity.md) for the
@@ -40,7 +41,7 @@ package was loaded.
 | Plugin registration | `agy plugin install <dir>`, then `agy plugin list` and `agy agents` listed the package and all seven roles | The install is a copy; it does not follow later renders. |
 | Routing contract | Inlined into `GEMINI.md`; a headless session quoted its first heading | Whether the model follows the contract is a behavior question, not a discovery one. |
 | Hooks | None rendered | No session-start event can be named with current evidence; the recorded event list is inherited from the 1.1.22 evaluation. Do not infer hook support from another product. |
-| Status line | None rendered | No statusline is rendered, so the Claude-only `--statusline-name` option has no effect here. The removed adapters pointed one at a path the product never creates. |
+| Status line | None rendered | No statusline is rendered. The Claude-only `--statusline-name` option is refused with `--surface antigravity` (exit code 2); with `--surface all` it reaches Claude alone. The removed adapters pointed one at a path the product never creates. |
 | Permission deny rules | Recorded as a manual expectation only | This package never writes `antigravity-cli/settings.json`. |
 | Antigravity Desktop | `NOT_RUN_UNAVAILABLE` | No headless mode; the workspace slot is a manual copy. |
 
@@ -67,6 +68,10 @@ node scripts/aaa.mjs install --surface antigravity --destination-root "<ROOT>" -
 node scripts/aaa.mjs register --surface antigravity --package-root "<ROOT>" --dry-run
 node scripts/aaa.mjs register --surface antigravity --package-root "<ROOT>" --apply
 ```
+
+`register` defaults to the `portable` profile. Pass the same `--profile` that
+rendered the package; `npm run setup` renders `template` by default. A mismatch
+fails with `package-profile-mismatch`.
 
 Registration first deploys `GEMINI.md` (see below), then runs
 `agy plugin validate`, `agy plugin install`, and `agy plugin list`. `agy` must
@@ -152,7 +157,8 @@ evidence rather than proof that the product merges them cleanly.
 `agy plugin install` copies the package, so a new render reaches Antigravity
 only when registration runs again. `npm run setup -- --mode update --apply`
 does that: it removes and registers the plugin for each surface. After a manual
-`install --apply`, run `register --surface antigravity --apply` again.
+`install --apply`, run
+`register --surface antigravity --package-root "<ROOT>" --apply` again.
 
 Use [native registration](../maintenance/native-registration.md),
 [native verification](../maintenance/native-verification.md), and the

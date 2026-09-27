@@ -7,6 +7,11 @@ merged fast-forward into `main` on 2026-09-19 and released as `2.1.0`; the pre-i
 review pass added D10 and released `2.1.1` (`WhatsNew.md`).
 Phase reports are in section 14. Open: macOS evidence and a model-run result with the
 current package installed.
+Later changes, not folded into this spec: owner decision 2 and D6 were reversed by
+[Restore Antigravity](2026-09-19-restore-antigravity.md) (`e36b3d5`, 2026-09-20),
+which also narrows invariant I4. The phase 4b `Using skill **<skill>` assertion was
+replaced by a `skill:` trailer, and `npm run test:model` now writes one folder per
+run (`WhatsNew.md`, Unreleased).
 Date: 2026-09-18. Author machine: Windows. Companion analysis and decision log:
 [2026-09-18-repo-comparison.md](2026-09-18-repo-comparison.md).
 

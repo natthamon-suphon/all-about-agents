@@ -50,11 +50,15 @@ Confirm each binary you intend to register:
 
 ```powershell
 Get-Command agy, claude, codex -ErrorAction SilentlyContinue |
-  Select-Object Name, Source
+  Select-Object Name, CommandType, Source
 ```
 
-A product installed outside `PATH` still works; prepend its `bin` directory for
-the registration command only, rather than editing the machine `PATH`:
+Registration starts each binary without a shell. Inferred, not run on Windows:
+a `Source` that ends in `.cmd` or `.ps1` cannot start that way; see
+[known limitations](../limitations/known-limitations.md).
+
+A product installed outside `PATH` still works; prepend its `bin` directory in
+the current PowerShell session only, rather than editing the machine `PATH`:
 
 ```powershell
 $env:PATH = "<PRODUCT_BIN_DIRECTORY>;$env:PATH"
@@ -109,6 +113,10 @@ does not write files. Apply preflights the selected surface before the first
 write, uses atomic file replacement, and returns a non-zero exit code when the
 plan is rejected or incomplete.
 
+`doctor` ends with status `not run` and exit code 1 here. It starts no product
+and runs no capability probe, so those checks stay `not run`. Check that
+`root:claude` and `writable:claude` report `pass`.
+
 `--statusline-name` applies to Claude only. In an interactive install that
 includes Claude, omitting it prompts for the name; the non-interactive
 default is empty.
@@ -154,9 +162,10 @@ The all-surface tree is namespaced by surface (`antigravity/`, `claude/`, and
 
 The `template` profile may select a model/effort policy, but it does not grant
 permission to bypass emergency denies. Full-access output still carries the
-documented emergency deny controls. Native model selection, product discovery,
-and manual registration require the product-specific procedure; they are not
-performed by these commands.
+documented emergency deny controls: `permissions.deny` rules in the Claude
+`settings.json`, and a manual checklist for Codex and Antigravity. Native model
+selection, product discovery, and manual registration require the
+product-specific procedure; they are not performed by these commands.
 
 See the [repository overview](../../README.md), [surface manifests](../../installers/manifests/claude.json),
 [Antigravity compatibility notes](../compatibility/antigravity.md),

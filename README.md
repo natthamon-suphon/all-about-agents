@@ -14,6 +14,7 @@ product, register an account, or claim that a product session has passed.
 | `installers/` | Root resolution, validation, deterministic planning, atomic writes, managed state, and launchers. |
 | `scripts/aaa.mjs` | The repository CLI. |
 | `tests/` | Static, contract, lint, integration, and snapshot checks, plus the manual `test:model` trigger suite. |
+| `claude-ai/` | A separate six-skill pack for claude.ai chat and Cowork. It is not rendered for any surface. See [claude.ai skill pack](docs/setup/claude-ai.md). |
 
 Legacy files were removed in phase 1 of the simplification and remain in Git
 history. New work must use `core/`, `profiles/`, `adapters/`, and
@@ -74,11 +75,12 @@ Use these guides to keep the same source and quality on every machine:
 - [claude.ai skill pack](docs/setup/claude-ai.md)
 
 Design specs for multi-phase changes live in `docs/plans/YYYY-MM-DD-<name>.md` and are
-reviewed before phase 1 starts. Current:
-[Simplify to Claude + Codex](docs/plans/2026-09-18-simplify-to-claude-codex.md) with its
-[repository comparison](docs/plans/2026-09-18-repo-comparison.md), and
+reviewed before phase 1 starts. Each spec opens with a status line. Implemented
+specs: [Simplify to Claude + Codex](docs/plans/2026-09-18-simplify-to-claude-codex.md)
+with its [repository comparison](docs/plans/2026-09-18-repo-comparison.md);
 [Restore Antigravity](docs/plans/2026-09-19-restore-antigravity.md), which
-reverses that plan's decision D6.
+reverses that plan's decision D6; and the
+[claude.ai skill pack](docs/plans/2026-09-26-claude-ai-skill-pack.md).
 
 A pull updates only the repository. It does not install files into a coding
 tool. Installation always needs a separate, exact action.

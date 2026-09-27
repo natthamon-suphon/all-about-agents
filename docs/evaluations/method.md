@@ -132,9 +132,12 @@ following:
 
 - Claude Code strict validation and statusline fixture checks for both
   profiles, then isolated marketplace install and exact enabled-plugin
-  discovery for the template package. The Windows statusline command ran with
-  fixture stdin for both profiles. The POSIX launcher rendered; macOS runtime
-  was not run.
+  discovery for the template package. The statusline check runs the host
+  launcher: `statusline.ps1` on Windows and `statusline.sh` on macOS. In the
+  recorded run below, the Windows statusline command ran with fixture stdin
+  for both profiles. No macOS run with Claude Code or Codex installed is
+  recorded. The macOS CI job runs the harness without them, so its product
+  checks skip.
 - Codex marketplace add, plugin add, exact installed/enabled JSON discovery,
   and hook files inside the discovered installed package. All Codex state is
   under a disposable `CODEX_HOME`. Hook trust remains `NOT_RUN`.
@@ -159,13 +162,16 @@ the documented native `plugin add` operation clones its marketplace source.
 This Git repository exists only inside the temporary test root. Before
 cleanup, the test checks the canonical root, every path, and every symlink
 target. It removes roots after success and after an intentional failure. It
-never authenticates a model or reads a real product root. The real-root
-metadata comparison is therefore explicitly `NOT_RUN`, not a guessed pass.
+never authenticates a model or reads a real product root. A real-root
+metadata comparison is therefore `NOT_RUN`, not a guessed pass.
 
-The final Windows T07 command exited `0`: 37 tests, 35 passed, 0 failed, and
-2 were skipped as `NOT_RUN`. The observed CLI versions were Claude Code
-`2.1.251` and Codex CLI `0.151.0-alpha.7.2`. The two skipped checks were
-manual product controls and live-root metadata comparison.
+The Windows T07 run recorded in commit `e091e75` (2026-09-01) exited `0`:
+37 tests, 35 passed, 0 failed, and 2 were skipped as `NOT_RUN`. The observed
+CLI versions were Claude Code `2.1.251` and Codex CLI `0.151.0-alpha.7.2`.
+The two skipped checks were manual product controls and live-root metadata
+comparison. That harness also included `agy` checks. The `agy` checks were
+removed in `8cbfd3b` and the live-root comparison skip in `603a679`, so a
+current run reports other counts.
 
 Record exact product versions and separate `PASS`, `NOT_RUN`, and
 `NOT_RUN_UNAVAILABLE` results.
@@ -332,20 +338,28 @@ are never waived.
 
 ## Current environment limitation
 
-Current Windows evidence is partial. Earlier T049 evidence used Claude Code
-2.1.248. The final T07 harness used Claude Code 2.1.251 and passed strict
-validation, disposable registration/install, exact enabled-plugin discovery,
-and both statusline profiles. Codex CLI 0.151.0-alpha.7.2 passed disposable
+The recorded Windows evidence is partial and dated. Earlier T049 evidence
+(2026-08-31, [native Windows record](native-windows-2026-08-31.md)) used
+Claude Code 2.1.248. The final T07 harness (2026-09-01) used Claude Code
+2.1.251 and passed strict validation, disposable registration/install, exact
+enabled-plugin discovery, and both statusline profiles. Codex CLI 0.151.0-alpha.7.2 passed disposable
 marketplace registration, plugin install, exact installed discovery, and
 installed hook-file checks. The isolated CLI roots contained no credentials,
-and no macOS host was available.
-The Antigravity surface was checked separately on `agy 1.2.7` on 2026-09-19:
+and no macOS host was available for that run.
+The Antigravity surface was checked separately on `agy 1.2.7` on 2026-09-19
+([product contract evidence](research-antigravity.md)):
 package validation, install, plugin and agent discovery, and one headless
 session that named real skills and the inlined routing contract. Antigravity
 Desktop has no headless mode and stays `NOT_RUN_UNAVAILABLE`.
 
-Therefore authenticated execution on any surface, hook and permission behavior,
-persistence, Codex Desktop, Antigravity Desktop, macOS, and all unexecuted
+CI (`.github/workflows/installer-matrix.yml`) runs the clean-profile installer
+tests and the full `node --test` suite on `windows-latest` and `macos-latest`.
+The workflow installs no product CLI, so those runs are Gate 0 and Gate 1
+evidence, not Gate 2.
+
+Therefore authenticated execution outside the manual `npm run test:model`
+suite, hook and permission behavior, persistence, Codex Desktop, Antigravity
+Desktop, native checks on macOS, and all unexecuted
 Gate 2 checks and Gate 3 fresh-session evaluation remain `NOT_RUN_UNAVAILABLE`
 or `NOT_RUN`. Partial evidence cannot support
 a broader behavioral, routing, model-fallback, hook, or persistence release

@@ -26,7 +26,7 @@ the separate `trusted` step when Codex asks. A fresh session is needed for
 | `AGENTS.md`, skills, roles, and profiles | Package rendered; the disposable CLI loaded the base config and Terra profile | Role execution and Desktop loading are not claimed. |
 | Plugin registration | Disposable marketplace add, plugin add, and `plugin list --available --json` discovery passed | Trust and runtime execution remain separate. |
 | Hooks | Hook files were present in the discovered package | Hooks are not automatic. `/hooks` trust and hook execution were not run. |
-| Statusline display name | Codex has no native statusline contract in this package | Do not infer statusline setup from another product. |
+| Statusline display name | Codex has no native statusline contract in this package | `--statusline-name` is refused with `--surface codex` (exit code 2). Do not infer statusline setup from another product. |
 | Native session | `NOT_RUN_UNAVAILABLE` | No authenticated model or Desktop session was run. |
 
 ## Models, recovery, and permissions
@@ -57,11 +57,11 @@ unsupported. No automatic model fallback is claimed.
 codex --profile terra-max
 ```
 
-Full access does not remove the emergency-deny contract. The rendered policy
-keeps denies for `command(rm -rf)`, `command(sudo)`, `write_file(.git/)`, and
-`write_file(/home/user/.ssh)`. These are declarative permission rules; the
-package installs no `PreToolUse` command guard. Native deny behavior needs a
-product check.
+Full access does not remove the emergency-deny contract. The render records
+denies for `command(rm -rf)`, `command(sudo)`, `write_file(.git/)`, and
+`write_file(/home/user/.ssh)` as a manual checklist. No rendered Codex file
+carries them, so keep them in place by hand. The package installs no
+`PreToolUse` command guard. Native deny behavior needs a product check.
 
 ## Registration and trust
 
@@ -74,7 +74,7 @@ home. Use a disposable home and review the dry-run before an authorized apply.
 PowerShell:
 
 ```powershell
-New-Item -ItemType Directory -Force -LiteralPath "<PRODUCT_ROOT>" | Out-Null
+New-Item -ItemType Directory -Force -Path "<PRODUCT_ROOT>" | Out-Null
 $env:CODEX_HOME = "<PRODUCT_ROOT>"
 node scripts/aaa.mjs register --surface codex --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
 ```
@@ -123,6 +123,11 @@ codex plugin marketplace add "<PACKAGE_ROOT>" --json
 codex plugin add all-about-agents@all-about-agents --json
 codex plugin list --available --json
 ```
+
+Then `codex-plugin-source-check` runs `git` in `<PACKAGE_ROOT>`. Codex serves
+a clone of the last commit, so the root must be its own Git repository with no
+uncommitted change. Otherwise the step reports `manual-required`. For
+uncommitted changes it also prints the commit and reinstall commands.
 
 After a new or changed hook hash, restart Codex and open `/hooks`. Review or
 trust the hook only when Codex presents that step. A registered hook is not

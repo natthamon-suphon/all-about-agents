@@ -71,10 +71,15 @@ The adapters use the following exact destinations:
 
 Antigravity publishes no environment variable for its home, so the table has no
 variable column entry for it. This repository defines `AAA_ANTIGRAVITY_ROOT`
-for qualification runs only; it is not a product variable.
+to move that destination, for example to a disposable root. It is not a
+product variable: the `agy` commands still act on the live product.
 
 `CLAUDE.local.md` is a private project file, not a global destination. Do not
 use it for installation.
+
+Global files are managed files. An explicitly authorized native apply may
+overwrite the approved global file without a backup. It does not change
+project-specific files or unknown neighboring files.
 
 `GEMINI.md` is the one exception to that overwrite rule. Its deploy carries
 `guard: "no-clobber"`, so an existing file is never overwritten. It is
@@ -85,10 +90,6 @@ and ends with exit code 1 (`manual-step-required`). The Claude render is a
 superset of the live `CLAUDE.md`, so replacing it loses nothing; the
 Antigravity render is not a superset of a live `GEMINI.md`, which may hold
 operator sections this package does not own. Merge the managed body by hand.
-
-Global files are managed files. An explicitly authorized native apply may
-overwrite the approved global file without a backup. It does not change
-project-specific files or unknown neighboring files.
 
 ## Install and registration boundaries
 
@@ -113,12 +114,10 @@ Using skill **writing-plans 📝** — Turn the approved design into a plan.
 Invoking agent **verifier ✅** — Check the release evidence.
 ```
 
-Reason: each visible invocation has one short sentence. The reason is one short sentence.
-
-The name comes first, the emoji comes second, and the reason is one short
-sentence. IDs, filenames, frontmatter names, and JSON states never contain the
-emoji. Use the registry in `core/presentation/emoji-registry.json` for all
-known names. An unknown dynamic agent uses `🤖` after its real name.
+The name comes first and the emoji second. The reason is one short sentence.
+IDs, filenames, frontmatter names, and JSON states never contain the emoji. Use
+the registry in `core/presentation/emoji-registry.json` for all known names. An
+unknown dynamic agent uses `🤖` after its real name.
 
 ## Checklists and state changes
 

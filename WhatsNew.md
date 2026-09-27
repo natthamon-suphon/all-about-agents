@@ -2,7 +2,8 @@
 
 All notable changes to all-about-agents. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The version is the
-`version` field of `package.json`; both rendered plugin manifests read it from there.
+`version` field of `package.json`. The Claude and Codex plugin manifests read it
+from there, and the Antigravity manifest names it in its description.
 
 ## [Unreleased]
 
@@ -91,9 +92,10 @@ All notable changes to all-about-agents. The format follows
   `adapters/shared/surfaces.mjs`. It had been duplicated across eleven modules,
   so adding a surface by hand would almost certainly have missed one.
   `installers/lib/audit-log.mjs` keeps its own copy on purpose: that file is
-  embedded verbatim into every rendered package as `hooks/audit-log.mjs`, where
-  no repository path resolves. Its list stays `claude` and `codex` because only
-  those surfaces render the hooks that write audit events.
+  embedded verbatim into each Claude and Codex package as
+  `hooks/audit-log.mjs`, where no repository path resolves. Its list stays
+  `claude` and `codex` because only those surfaces render the hooks that write
+  audit events.
 
 - `docs/setup/companion-tooling.md` now covers Caveman: what it does not ship (no
   lifecycle hook of its own), where the skills live, how to wire a `SessionStart`
@@ -224,6 +226,14 @@ All notable changes to all-about-agents. The format follows
     to Windows PowerShell (`powershell`) when `pwsh` is missing; the
     statusline byte-limit test can now fail.
 
+- The docs were checked line by line against the code. `New-Item` has no
+  `-LiteralPath` parameter, so the Claude, Codex, and registration guides now
+  use `-Path`. The Codex template README no longer says the portable profile
+  sets a model, and the Codex page names its deny rules as a manual checklist.
+  The setup exit codes, the quality-gate check ids, and the `quality:skill`
+  rules are written down. Dated plans and evaluation records open with a
+  status line, and the snapshot READMEs say the snapshot JSON is edited by hand.
+
 - A second full review of the 27 core skills was fixed in one pass. The
   owner chose three defaults:
   - Skill records now default to `.aaa/<topic>/`, because Codex and
@@ -259,12 +269,13 @@ All notable changes to all-about-agents. The format follows
 - `register --apply` reports `manual-required` (exit 1) when Claude's plugin
   cache for the installed version differs from the package (a missing or
   changed file, a symlinked folder, or any extra file except Claude's
-  `.in_use/` markers and the hook logs under `hooks/audit/` and
-  `hooks/checkpoints/`), or when the Codex plugin's package root has
-  uncommitted changes or is not its own Git repository. The cache must sit
-  below `<product root>/plugins/cache`. The report prints the exact reinstall
-  commands, with control characters escaped and the package root shown as
-  `<PACKAGE_ROOT>`. See `docs/maintenance/native-registration.md`.
+  `.in_use/` markers, the hook logs under `hooks/audit/` and
+  `hooks/checkpoints/`, and the package's `.all-about-agents/state.json`), or
+  when the Codex plugin's package root has uncommitted changes or is not its
+  own Git repository. The cache must sit below `<product root>/plugins/cache`.
+  The report prints the exact reinstall commands, with control characters
+  escaped and the package root shown as `<PACKAGE_ROOT>`. See
+  `docs/maintenance/native-registration.md`.
 - Several descriptions were narrowed so their triggers no longer overlap:
   brainstorming, performance-profiling-and-benchmarking (goal and proof work;
   an unknown-cause regression goes to systematic-debugging),
@@ -372,8 +383,8 @@ All notable changes to all-about-agents. The format follows
   removed features out stay. For each kind of removed duplicate, a sample
   was checked: breaking the code it covered made a kept test fail. `npm run test:static` now
   runs every static test, the quick gate also runs
-  `tests/static/capabilities.test.mjs`, and `.gitignore` keeps only `.aaa/`,
-  which already covered `.aaa/eval-runs/` and `.aaa/claude-ai/`.
+  `tests/static/capabilities.test.mjs`, and `.gitignore` drops its
+  `.aaa/eval-runs/` and `.aaa/claude-ai/` lines, which `.aaa/` already covered.
 
 ### Fixed
 
@@ -389,16 +400,16 @@ All notable changes to all-about-agents. The format follows
   strings is refused (`settings-permission-list-invalid`): `settings.json` is
   not written and the step is `manual-required`.
 - Registration steps that leave rules or settings undeployed (a linked or
-  non-file rule target, extra files in the rules folder, a refused settings
-  merge) now end the report `manual-required` with exit 1. A Codex
-  `config.toml` or an Antigravity `GEMINI.md` that already exists counts as
-  complete when it contains the package's managed tables or body (extra
-  tables and sections may stay); when managed content is missing, the step
-  names it and ends `manual-required` with exit 1. Such a file is never
-  overwritten; before, a differing file was skipped and the run still reported
-  complete. Codex product
-  commands run without inherited `GIT_*` variables, and managed state rejects
-  owned paths with control characters, an empty segment, or a trailing slash.
+  non-file rule target, an extra `.md` file, folder, or link in the rules
+  folder, a refused settings merge) now end the report `manual-required` with
+  exit 1. A Codex `config.toml` or an Antigravity `GEMINI.md` that already
+  exists counts as complete when it contains the package's managed tables or
+  body (extra tables and sections may stay); when managed content is missing,
+  the step names it and ends `manual-required` with exit 1. Such a file is
+  never overwritten; before, a differing file was skipped and the run still
+  reported complete. Codex product commands run without inherited `GIT_*`
+  variables, and managed state rejects owned paths with control characters, an
+  empty segment, or a trailing slash.
 - `npm run setup` removed every plugin before it registered any, so the first
   failed register (for example a missing `agy`) left Claude and Codex with no
   plugin.
@@ -414,7 +425,7 @@ All notable changes to all-about-agents. The format follows
   promised a reconnect that cannot happen after a restart.
 - `render-graphs` let two inputs with the same name overwrite each other.
 - Tests no longer read the operator's own config or home, skip with a reason
-  when symlinks or `pwsh` are unavailable, and cover the Antigravity surface in
+  when symlinks or PowerShell are unavailable, and cover the Antigravity surface in
   the D9 root guard, presentation safety, and all-surface loops.
 - `brainstorming`: the visual companion always reported port 0, so its URL
   never opened. Each start now makes a new session key, kept only in a

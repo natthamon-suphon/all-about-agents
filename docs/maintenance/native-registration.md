@@ -114,8 +114,8 @@ that the product will discover or run the package.
    PowerShell:
 
    ```powershell
-   New-Item -ItemType Directory -Force -LiteralPath "<CLAUDE_PRODUCT_ROOT>" | Out-Null
-   New-Item -ItemType Directory -Force -LiteralPath "<CODEX_PRODUCT_ROOT>" | Out-Null
+   New-Item -ItemType Directory -Force -Path "<CLAUDE_PRODUCT_ROOT>" | Out-Null
+   New-Item -ItemType Directory -Force -Path "<CODEX_PRODUCT_ROOT>" | Out-Null
    $env:CLAUDE_CONFIG_DIR = "<CLAUDE_PRODUCT_ROOT>"
    node scripts/aaa.mjs register --surface claude --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
 
@@ -373,6 +373,9 @@ codex plugin remove all-about-agents@all-about-agents --json
 codex plugin add all-about-agents@all-about-agents --json
 ```
 
+When `git` is missing, or `git status` cannot read the folder, the check also
+reports `manual-required` with no commands.
+
 Registration never commits for you. Read the `git status --short` output
 before `git add -A`, run the commands with the same `CODEX_HOME`, then run
 `register --apply` again. The check cannot see a commit that Codex has not
@@ -398,8 +401,8 @@ a reviewed dry-run report.
 1. Set the isolated product root in PowerShell, then register Claude or Codex.
 
    ```powershell
-   New-Item -ItemType Directory -Force -LiteralPath "<CLAUDE_PRODUCT_ROOT>" | Out-Null
-   New-Item -ItemType Directory -Force -LiteralPath "<CODEX_PRODUCT_ROOT>" | Out-Null
+   New-Item -ItemType Directory -Force -Path "<CLAUDE_PRODUCT_ROOT>" | Out-Null
+   New-Item -ItemType Directory -Force -Path "<CODEX_PRODUCT_ROOT>" | Out-Null
    $env:CLAUDE_CONFIG_DIR = "<CLAUDE_PRODUCT_ROOT>"
    node scripts/aaa.mjs register --surface claude --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --apply --format json
 
