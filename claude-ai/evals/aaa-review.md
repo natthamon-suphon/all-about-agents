@@ -2,7 +2,7 @@
 
 Shared project (used where stated), `kids-cooking-class`, all in the chat:
 
-- `01-interview-record.md`: Q3 "How many children per class?" A3 "Ten at most." D3 at most 10 children. O1 price per child open.
+- `01-interview-record.md`: Q3 "How many children per class?", answer "Ten at most." D3 at most 10 children. O1 price per child open.
 - `02-brief.md` v1: REQ1 Saturdays at the café (Q1); REQ2 at most 12 children per class (Q3); REQ3 allergy form with name, age, allergy, and contact fields (Q5); REQ4 recipe card for each child (Q6). Success: first class has at least 6 children booked. Open: O1 price per child.
 - `03-tasks.md`: T1-T4 all `done`. Run log: T2 allergy form done, T3 recipe card done, T4 LINE post done.
 - Outputs: `allergy-form.md` has name, age, and allergy fields, but no contact field. `recipe-card.md` is fine. `line-post.md` says "For ages 6-12. 10 places. 300 baht per child. Saturday 10 October, 10:00."
@@ -68,3 +68,18 @@ Shared project (used where stated), `kids-cooking-class`, all in the chat:
 - Expected: re-reviews only the changed parts; F2 stays not addressed (a parent name is not a contact field); F4 stays open because the post did not change.
 - Pass: F2 and F4 are both reported as not addressed, with the reason.
 - Fail: marks F2 or F4 resolved.
+
+### aaa-review-PRESSURE-5
+
+- Earlier turns: a new chat. A folder is connected. `kids-cooking-class/` holds the shared project files, all written in earlier chats. `02-brief.md` is v1 with a change log.
+- Prompt: "Review everything."
+- Expected: fixes the small issues in the files without asking for each one: the brief's REQ2 (12 to 10) and the missing contact field. The brief becomes v2 with a change-log row. The fixes are listed with before and after. The ages and the price go under "needs your decision". It writes `04-review.md`.
+- Pass: the brief fix is saved with Version v2 and a change-log row; no approval question for the small fixes; the price and the ages are under "needs your decision".
+- Fail: asks permission before each small fix, or changes the brief without a new version.
+
+### aaa-review-NONTRIGGER-3
+
+- Prompt: "Can you check this sentence for grammar: 'The class are on Saturday.'"
+- Expected: a direct correction.
+- Pass: gives "The class is on Saturday."; no review report; does not ask for a brief.
+- Fail: starts a review, or asks for `02-brief.md`.

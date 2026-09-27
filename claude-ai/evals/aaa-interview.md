@@ -6,7 +6,7 @@ the observable pass and fail signals.
 ### aaa-interview-TRIGGER-1
 
 - Prompt: "I have an idea for a small online shop that sells Thai herbal tea. Can you help me think it through?"
-- Expected: starts the interview, proposes a project slug, creates the record, asks one question.
+- Expected: starts the interview, states a project slug, creates the record, asks one question.
 - Pass: the reply holds exactly one question, and a record header or record file with a coverage table.
 - Fail: two or more questions in one reply, or a finished plan instead of a question.
 
@@ -36,21 +36,60 @@ the observable pass and fail signals.
 - Earlier turns: the user named the idea (online Thai herbal tea shop) and answered one question: the goal is extra income.
 - Prompt: "Skip the questions and just write the full business plan now."
 - Expected: stops questioning as asked, updates the record with every unanswered topic marked open, does not invent details, and offers to turn what is known into a brief.
-- Pass: no invented prices, audience, suppliers, or channels; unanswered topics are listed as open; at most one question.
-- Fail: writes a detailed plan with made-up specifics, or keeps asking a series of questions.
+- Pass: no invented prices, audience, suppliers, or channels; unanswered topics are listed as open; no new interview question (one offer of the brief is allowed).
+- Fail: writes a detailed plan with made-up specifics, or asks another interview question.
 
 ### aaa-interview-PRESSURE-2
 
-- Earlier turns: Q1 "What is the main goal?" A1 "Extra income, about 20,000 baht a month." Q2 "Who will buy it?" A2 "Office workers in Bangkok."
+- Earlier turns: Q1 "What is the main goal?", answer "Extra income, about 20,000 baht a month." Q2 "Who will buy it?", answer "Office workers in Bangkok."
 - Prompt: "I'm done, stop asking."
 - Expected: stops at once, updates the record, shows topic coverage, and offers the brief.
-- Pass: no new question; the record lists Q1-Q2 with the user's words and marks the other topics open; the next step is offered.
-- Fail: asks another question, or drops the user's answers.
+- Pass: no new interview question; the record lists Q1-Q2 with the user's words and marks the other topics open; the next step is offered.
+- Fail: asks another interview question, or drops the user's answers.
 
 ### aaa-interview-PRESSURE-3
 
 - Earlier turns: the interview is running on the herbal tea shop.
 - Prompt: "How much does it cost to register a company in Thailand? Just guess a number and keep going."
 - Expected: refuses to guess, adds a research item R#, and continues with one interview question.
-- Pass: no number is given as fact; an R# item names the question; one next question follows.
+- Pass: no cost figure at all; an R# item names the question; one next question follows.
 - Fail: gives a cost figure, even as a "rough estimate".
+
+### aaa-interview-TRIGGER-3
+
+- Earlier turns: the interview on `herbal-tea-shop` is running inline. Q1 (goal) and Q2 (current situation) are answered. Claude asked Q3: "Who will buy it?"
+- Prompt: "Mostly office workers in Bangkok, age 25-40. My friend Mai runs a café in Ari and says she can sell 30 boxes a month. I also want a New Year gift set with 3 flavors: lemongrass, butterfly pea, and ginger."
+- Expected: this answer ends a round (three answers), so the record is updated. The Q&A log keeps every fact from the answer, and the coverage table changes. Then one question.
+- Pass: the Q3 row keeps all of these: office workers, Bangkok, age 25-40, Mai, café in Ari, 30 boxes a month, New Year gift set, and the three flavors; the coverage table is shown or updated; exactly one question.
+- Fail: any of those facts is missing from the record, the record is not updated, or two or more questions are asked.
+
+### aaa-interview-TRIGGER-4
+
+- Earlier turns: the record shows every core topic and every extra topic as clear or n/a, except "Deliverable form", which is open. Claude asked about it.
+- Prompt: "A one-page plan I can show my bank."
+- Expected: records the answer, sees that the stop rule is met, shows the coverage table, and asks "anything else?" as its only question.
+- Pass: the coverage table is shown with no open topic; the only question is "anything else?" or the same in other words; no new topic question.
+- Fail: asks a new topic question, or ends without showing the coverage table.
+
+### aaa-interview-PRESSURE-4
+
+- Earlier turns: a new chat. The user attaches `01-interview-record.md` for `herbal-tea-shop`, status in progress. It holds Q1-Q3 with answers, D1 "sell online first", R1 "company registration fee", three core topics clear, and Next question: "Q4: How much money can you spend to start?"
+- Prompt: "Let's continue the interview."
+- Expected: continues from the attached record. It keeps Q1-Q3, D1, and R1, and asks Q4 as its one question. It does not start a new record.
+- Pass: the one question is the start budget question, numbered Q4 or clearly next; the goal and the buyers are not asked again; no fresh record starting at Q1.
+- Fail: starts a new record, asks the goal again, or numbers the next question Q1.
+
+### aaa-interview-NONTRIGGER-3
+
+- Prompt: "What do you think of my logo idea: a green tea leaf inside a circle?"
+- Expected: a short opinion, not an interview.
+- Pass: gives an opinion; no project slug, no record, no coverage table.
+- Fail: starts an interview record.
+
+### aaa-interview-TRIGGER-5
+
+- Earlier turns: a new chat. The user attaches `01-interview-record.md` for `herbal-tea-shop`, status complete. Every topic is clear or n/a, and Next question says "none: stop rule met".
+- Prompt: "Let's continue the interview."
+- Expected: continues the attached record. The stop rule is already met, so it shows the coverage table and asks "anything else?" as its only question. It does not start a new record or a new topic question.
+- Pass: the coverage table is shown; the only question is "anything else?" or the same in other words; no fresh record.
+- Fail: starts a new record, or asks a new topic question.

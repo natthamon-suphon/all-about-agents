@@ -44,7 +44,8 @@ Copy this checklist into your reply and keep it current:
 ## 2. Resume point
 
 - Start at the first task, in table order, that is `in progress` or
-  `pending` and whose dependencies are done.
+  `pending` and whose dependencies are done. When the user resolves a
+  blocker, set that task back to `pending`.
 - Before you rely on a task marked done, check that its output exists in the
   folder, the chat, or an attachment. If it is missing, set the task back to
   `pending`, say so, and redo it if you can. Otherwise ask for the file.
@@ -56,9 +57,15 @@ Copy this checklist into your reply and keep it current:
 For each task, in order:
 
 1. Set the status to `in progress`.
-2. Do the work and produce the named output. In the folder tier, write the
-   file; otherwise put the output in your reply.
+2. Do the work and produce the named output, in the tier the conventions
+   choose.
 3. Run the done check now, against the real output. Say what you checked.
+   If it fails, fix the output and run the check again, and note each try in
+   the Notes of that task's run-log line. After the third failed check on the
+   same task, set it `blocked` (reason: done check failed three times) and
+   stop. If the check cannot pass without breaking a rule the user gave, set
+   it `blocked` (reason: the check conflicts with the user's rule), stop, and
+   ask which one wins.
 4. Set exactly one status:
    - `done`: the check passed.
    - `done with concerns`: the check passed, but something needs attention.
@@ -66,11 +73,13 @@ For each task, in order:
    - `done — check not run`: the output exists, but the check cannot run
      here (a missing source, a tool you lack, a physical step). Name the
      reason.
-   - `blocked`: you cannot produce the output. Name what is missing.
+   - `blocked`: you cannot produce the output, or its check fails and you
+     cannot fix it. Name what is missing or what failed.
    - `skipped`: only when the user says so.
 5. Add one run-log line: date, task, result, output and location, check
    result, notes.
-6. Save the task file. In the folder tier, write it; otherwise print the
+6. Save the task file in the tier the conventions choose. This is an update
+   of a project document, so do not ask. In the inline tier, print the
    changed rows.
 
 Then go straight to the next task. Do not ask "shall I continue?" between
@@ -85,13 +94,18 @@ caveat in brackets; pick the status that is true.
 Stop, save the task file, and ask one clear question when:
 
 - a task is flagged `needs approval`;
-- a step is irreversible or leaves the chat (deleting, sending, publishing,
-  paying), even when its flag says no;
+- a step is on the conventions' irreversible list (delete any file, overwrite
+  a file that no aaa skill wrote, send, publish or share, pay, buy or sign up,
+  change an account, a setting, or a connected system), even when its flag
+  says no;
 - a decision is needed that the brief and the task list do not answer;
 - two documents disagree, for example the brief and the task list;
 - a blocker appears: a missing input or file;
-- the done check of the same task fails three times.
+- the done check of the same task fails three times;
 - the user asked for only some tasks, and those are finished.
+
+At every stop and at the end, give the whole `03-tasks.md`, every section, in
+the tier the conventions choose.
 
 At an approval stop, show exactly what will happen: the message text and its
 recipients, the files to delete, or the amount to pay. Ask for that one step.
@@ -126,5 +140,6 @@ user, then suggest the next step: review the work, for example with
 | "They approved everything up front, so I can send." | Stop before the send and ask for that one step. |
 | "The check can't run, but it's basically done." | Use `done — check not run` and name the reason. |
 | "The flag says no approval, so I can delete." | Deleting is irreversible. Stop and ask. |
+| "It is only a settings change in a connected app." | Changing a connected system needs approval. Stop and ask. |
 | "The file says done, so the output must exist." | Check that the output exists first. |
 | "I'll ask before each task to be safe." | Keep going. Stop only for a stop reason. |

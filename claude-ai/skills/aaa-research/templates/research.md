@@ -16,8 +16,8 @@ The question in one sentence, and the decision it helps with.
 
 ## 2. Short answer
 
-At most five lines. Each claim carries its label: verified, inferred, or
-unknown.
+At most five lines. Each claim carries its label: verified, inferred,
+unknown, or stated (a fact from the user's own file).
 
 ## 3. Findings
 

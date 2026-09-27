@@ -40,12 +40,28 @@ each error is printed.
 
 ## Upload
 
-1. In claude.ai, turn on code execution. Skills do not load without it.
-2. Open **Customize > Skills** and upload `.aaa/claude-ai/<name>.zip`.
-3. Type `/aaa` in a new chat. The uploaded skills should appear in the list.
+1. In claude.ai, turn on code execution at **Settings > Capabilities**.
+   Skills do not load without it.
+2. If an older build of a skill is uploaded (today: `aaa-interview`), delete
+   it first, so two versions cannot be active at once: turn it off, select
+   **...** next to its toggle, choose **Delete**, and confirm.
+3. Open **Customize > Skills**, select **+**, then **Create skill** and
+   **Upload a skill**. Upload `.aaa/claude-ai/<name>.zip`. Repeat for each of
+   the six ZIPs.
+4. Turn on the toggle of each uploaded skill.
+5. Type `/aaa` in a new chat. The uploaded skills should appear in the list.
+   In Cowork, start a new session first, because custom skills sync at
+   session start.
 
 Upload is a manual owner step. When you change the shared conventions, every
-ZIP changes, so upload all six again.
+ZIP changes, so upload all six again. After an upload, record the ZIP SHA-256
+in `claude-ai/evals/results.md`.
+
+Sources for these steps (checked 2026-09-27):
+[Use skills in Claude](https://support.claude.com/en/articles/12512180-use-skills-in-claude).
+The Cowork sync fact comes from the
+[Cowork overview](https://claude.com/docs/cowork/overview.md) (spec fact F8,
+checked 2026-09-26).
 
 ## Verify
 
@@ -71,8 +87,7 @@ claude.ai run pending".
 ## Update a skill
 
 1. Add or change eval cases first.
-2. Edit the skill. Keep the same `name`, so the upload replaces the old
-   version.
+2. Edit the skill. Keep the same `name`.
 3. Run the checks:
 
    ```text
@@ -80,4 +95,9 @@ claude.ai run pending".
    npm run export:claude-ai
    ```
 
-4. Upload the new ZIP and run its eval cases again.
+4. Upload the new ZIP and run its eval cases again. The help center does not
+   say whether an upload with the same name replaces the old skill (checked
+   2026-09-27). If claude.ai rejects it, or two skills with the same name
+   appear, turn the old skill off, select
+   **...** next to its toggle, choose **Delete**, confirm, and then upload the
+   new ZIP.

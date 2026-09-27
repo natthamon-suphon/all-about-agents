@@ -14,11 +14,12 @@ document language, the evidence labels, where documents go, and the header.
 ## When to use
 
 - The user asks to summarize a chat, a discussion, or an interview into a
-  formal document, brief, or summary.
+  formal document or brief.
 - An interview record exists and the user wants the formal version.
 
 Do not use it to explore a new idea, to translate text, to answer a question,
-or to write content that nobody has discussed yet.
+to summarize an article, a web page, or a file, or to write content that
+nobody has discussed yet.
 
 ## Checklist
 
@@ -68,6 +69,9 @@ template's section order:
 ## 3. Trace every line
 
 - End each statement with its source: `(Q3)`, `(D2)`, or `(chat)`.
+- `(chat)` covers only what the user said or accepted. An idea that only you
+  suggested is not a source: leave it out, or list it as an open question
+  that says it was your suggestion.
 - A line you concluded yourself carries `inferred` and what it is based on.
 - A section nobody discussed holds only "Not discussed." Add the gap to the
   open questions.
@@ -94,11 +98,16 @@ Before you show the brief, check and fix:
 
 - placeholder or leftover template text
 - contradictions between sections
-- vague words such as "fast", "cheap", "soon", or "many" with no number or
-  example from the source
 - scope creep: anything the source does not contain
-- success criteria that nobody could check
 - an open question or R# from the source that is missing
+
+Then check these, and never fix them by adding a number, a date, or a target:
+
+- vague words such as "fast", "cheap", "soon", or "many" with no number or
+  example from the source: keep the user's words, and add an open question
+  that asks for the number;
+- success criteria that nobody could check: keep them, write "Not discussed"
+  under How to check it, and add an open question that asks for the measure.
 
 Under the brief, add one line: "Self-review: passed", or the fixes you made.
 

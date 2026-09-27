@@ -1,6 +1,6 @@
 ---
 name: aaa-review
-description: Reviews finished work and every related document against the brief, fixes small issues, and reports the rest. Use when the user asks to review, check, or audit work or docs.
+description: Reviews finished project work and every related document against the brief, fixes small issues, and reports the rest. Use when the user asks to review or audit work or docs, or asks if it is ready.
 ---
 
 # aaa-review
@@ -13,11 +13,12 @@ document language, the evidence labels, where documents go, and the header.
 
 ## When to use
 
-- The user asks to review, check, audit, or proofread work or documents, or
-  asks whether the work is ready.
+- The user asks to review or audit project work or documents, or asks
+  whether the work is ready.
 
-Do not use it to do remaining tasks, to write a brief, or to research a
-question.
+Do not use it to do remaining tasks, to write a brief, to research a
+question, or for a quick check of one sentence or one text. Answer those
+directly.
 
 ## Checklist
 
@@ -39,7 +40,8 @@ Copy this checklist into your reply and keep it current:
 - Sources of truth, in this order: the brief `02-brief.md`; the acceptance
   criteria and done checks in `03-tasks.md`; the interview record
   `01-interview-record.md`. When the brief disagrees with the record line it
-  cites, the record wins for that line: the brief copied it wrong.
+  cites, the record wins for that line: the brief copied it wrong. First read
+  the brief's change log: a later correction by the user wins over the record.
 - Read every item fresh. Do not trust a run log, a status, or a summary,
   including your own earlier ones. An output you cannot see is not checked.
 
@@ -91,9 +93,11 @@ document, message or post, code, research, data.
   yourself;
 - a change to many lines.
 
-When you are unsure, treat it as big. Edit only documents and outputs you can
-edit: in the folder tier, edit the file; otherwise show the corrected text.
-Never delete a file.
+When you are unsure, treat it as big. Apply small fixes in the tier the
+conventions choose: in the folder tier, edit the file in place without asking,
+because it is an update of a project file; otherwise show the corrected text.
+When you fix a document that has a change log, such as `02-brief.md`, raise
+its Version and add a change-log row. Never delete a file.
 
 ## 6. Severity and verdict
 

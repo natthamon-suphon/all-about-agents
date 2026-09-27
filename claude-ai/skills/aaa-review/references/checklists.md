@@ -31,7 +31,8 @@ Use this for anything that will be sent or published.
 
 ## Research
 
-- Every claim has a link and a label: verified, inferred, or unknown.
+- Every claim has a link or a file, and a label: verified, inferred, unknown,
+  or stated (from the user's own file).
 - Key claims rest on primary sources; secondary sources are labeled.
 - Conflicts between sources are listed; no number is invented.
 - The question in the report is the question that was asked.

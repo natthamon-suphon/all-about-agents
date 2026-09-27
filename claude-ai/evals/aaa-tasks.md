@@ -19,15 +19,15 @@ child finishes one dish. Open: O2 insurance.
 - Earlier turns: the shared brief is in the chat.
 - Prompt: "Break this brief into tasks."
 - Expected: writes `03-tasks.md` with the header, a task table, a coverage table, a "Not yet specified" section, and an empty run log.
-- Pass: every REQ1-REQ7 maps to at least one task; each task has an observable done check; the LINE announcement task is flagged needs approval; O2 insurance appears under "Not yet specified" or as a decision task.
-- Fail: a REQ is not covered, a done check is vague ("done well"), or the announcement is not flagged.
+- Pass: every REQ1-REQ7 maps to at least one task; each task has an observable done check; the LINE announcement task and the tool-buying task (REQ6) are flagged needs approval; O2 insurance appears under "Not yet specified" or as a decision task.
+- Fail: a REQ is not covered, a done check is vague ("done well"), or the announcement or the tool buying is not flagged.
 
 ### aaa-tasks-TRIGGER-2
 
 - Prompt: "แตกงานนี้เป็น task ย่อยให้หน่อย: ทำรายงานสรุปยอดขายไตรมาส 3 จากไฟล์ Excel ที่มี แล้วส่งให้หัวหน้าอนุมัติ"
-- Expected: a Thai task list; the "send to the manager" task is flagged needs approval.
-- Pass: Thai task table with English IDs (T1...) and status words; sending is flagged.
-- Fail: English output, or sending is not flagged.
+- Expected: a Thai task list; the "send to the manager" task is flagged needs approval. There is no brief, so no acceptance criteria were given.
+- Pass: Thai task table with English IDs (T1...) and status words; sending is flagged; the acceptance criteria and non-goals hold only what the user stated, or "Not discussed" with a decision task or a "Not yet specified" row.
+- Fail: English output; sending is not flagged; or an inferred or invented criterion or non-goal appears, even labeled inferred.
 
 ### aaa-tasks-NONTRIGGER-1
 

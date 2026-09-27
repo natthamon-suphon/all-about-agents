@@ -42,8 +42,12 @@ Copy this checklist into your reply and keep it current:
 
 ## 2. Header
 
-Write the goal, the acceptance criteria, and the non-goals. Copy the
-acceptance criteria from the brief's success criteria, with their sources.
+Write the goal, the acceptance criteria, and the non-goals, each with its
+source. Copy the acceptance criteria from the brief's success criteria. With
+no brief, use only what the user stated. Where the source has nothing, write
+"Not discussed", and for missing criteria add a decision task or a "Not yet
+specified" row that asks for them. Never add an inferred criterion or
+non-goal.
 
 ## 3. Tasks
 
@@ -56,10 +60,12 @@ Use the task table in the [task list template](templates/tasks.md). Rules:
 - **Done check.** Something another person could observe: "the form has
   name, age, allergy, and contact fields", "the post is live in the group",
   "the receipts total at most 5,000 baht". Never "done well" or "looks good".
-- **Needs approval.** Mark it `yes` and give the reason when the task sends,
-  publishes, pays, deletes, signs up, or changes an account or setting, or
-  when it needs a decision the source does not make. Example: "yes: sends a
-  message".
+- **Needs approval.** Mark it `yes` and give the reason when the task has a
+  step on the conventions' irreversible list (delete any file, overwrite a
+  file that no aaa skill wrote, send, publish or share, pay, buy or sign up,
+  change an account, a setting, or a connected system), or when it needs a
+  decision the source does not make.
+  Example: "yes: sends a message".
 - **Parallel-safe.** Mark it `yes` only when the task needs no output from an
   unfinished task and changes nothing another task also changes.
 - **Depends on.** List the T# it needs. Order the table so that every
@@ -90,7 +96,8 @@ If the user asks for TBD, say in one line why you use these instead.
 
 Then fill the coverage table:
 
-- every REQ# and every success criterion maps to at least one task;
+- every REQ# and every success criterion maps to at least one task; without
+  REQ#, map the goal lines the user gave;
 - every open question (O#) and research item (R#) from the source maps to a
   task or to a "Not yet specified" row;
 - a task that maps to nothing is out of scope: remove it, or ask.

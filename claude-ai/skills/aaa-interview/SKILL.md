@@ -1,6 +1,6 @@
 ---
 name: aaa-interview
-description: Interviews the user in depth about an idea, plan, or project, one question at a time, and keeps a live interview record. Use when the user wants to discuss, shape, or clarify an idea.
+description: Interviews the user in depth about an idea, plan, or project, one question at a time, and keeps a live interview record. Use when the user asks to be interviewed or to shape a plan in depth.
 ---
 
 # aaa-interview
@@ -13,12 +13,12 @@ document language, the evidence labels, where documents go, and the header.
 
 ## When to use
 
-- The user wants to discuss, shape, explore, or clarify an idea, plan, or
-  project.
+- The user asks to shape an idea, plan, or project in depth.
 - The user asks you to interview or question them about it.
 
 Do not use it to summarize a finished chat into a document, to answer a direct
-factual question, or for work that is already fully specified.
+factual question, to give a quick opinion on an idea, or for work that is
+already fully specified.
 
 ## Checklist
 
@@ -33,6 +33,11 @@ Copy this checklist into your reply and keep it current:
 ```
 
 ## 1. Start
+
+If a record for this project exists (in the folder, in this chat, or
+attached), continue it: keep its IDs, and ask its Next question. If it is
+complete, show the coverage and ask "anything else?". Never start a second
+record. Otherwise:
 
 - Restate the idea in one line.
 - State the project slug you will use, for example "I'll call this project
@@ -90,10 +95,11 @@ Instead:
 A round is about three answers, or the end of a topic. After each round,
 update the record:
 
-- Q&A log: Q#, the question, the answer in the user's own words (a short
-  quote), and your one-line reading of it.
+- Q&A log: Q#, the question, the answer in the user's own words, and your
+  one-line reading of it. Cut only filler. Keep every fact, number, and name.
 - Decisions D#, assumptions A#, open questions O#, research items R#.
 - Coverage table: each topic is clear, open, or n/a.
+- Next question: the one question you will ask next.
 
 In the inline tier, print only what changed in each round. Print the full
 record at the end of each topic and at the end of the interview.
@@ -113,7 +119,7 @@ the next step: turn the record into a formal brief, for example with
 ## 7. The user stops early
 
 If the user says stop, enough, or skip the questions, stop at once. Do not ask
-another question.
+another interview question.
 
 1. Mark every unanswered topic open.
 2. Update the record and show the coverage table.

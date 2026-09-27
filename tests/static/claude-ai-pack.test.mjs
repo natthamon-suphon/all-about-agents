@@ -24,6 +24,7 @@ const CONVENTION_HEADINGS = [
   "Irreversible steps",
   "Secrets",
   "Where documents go",
+  "IDs",
   "Document header"
 ];
 const CASE_KINDS = ["TRIGGER", "NONTRIGGER", "PRESSURE"];

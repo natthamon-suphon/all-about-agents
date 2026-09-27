@@ -121,6 +121,18 @@ All notable changes to all-about-agents. The format follows
 
 ### Changed
 
+- The claude.ai skill pack was revised after a pre-upload review. The shared
+  conventions now define one meaning per ID type (including `REQ#` and `F#`),
+  keep IDs across documents, and treat updates to the project's own documents
+  and outputs as part of the work, so `aaa-run` and `aaa-review` no longer stop
+  before every save. `aaa-interview` continues an existing record and keeps
+  every fact of an answer; `aaa-brief` never traces an idea only Claude
+  suggested and never fixes a vague word with an invented number; `aaa-tasks`
+  adds no inferred criteria; `aaa-run` defines the failed-check path and gives
+  the whole task file at every stop. The interview, review, and research
+  descriptions are narrower, and `docs/setup/claude-ai.md` now says to delete the old
+  `aaa-interview` before the upload. Evidence is in `claude-ai/evals/results.md`.
+
 - `npm run test:model` now scores routing instead of the announcement banner.
   Each case prompt carries one appended instruction: end with a final line
   `skill: <canonical skill name, or none>`. A trigger or pressure case passes

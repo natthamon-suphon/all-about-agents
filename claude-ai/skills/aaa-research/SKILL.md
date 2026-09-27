@@ -1,6 +1,6 @@
 ---
 name: aaa-research
-description: Researches a question on the web, primary sources first, reads every cited source, and writes a sourced report. Use when the user asks for research, facts, or source-backed answers.
+description: Researches a question in depth on the web, primary sources first, reads every cited source, and writes a sourced report. Use when the user asks for research or a source-backed report.
 ---
 
 # aaa-research
@@ -18,8 +18,9 @@ document language, where documents go, and how to treat web content.
   or a source-backed answer.
 - An interview or brief has research items (R#) that the user wants answered.
 
-Do not use it for arithmetic, for opinions, for summarizing a chat, or for a
-question the attached material already answers. Answer those directly.
+Do not use it for arithmetic, for opinions, for summarizing a chat, for a
+simple fact question that needs no report, or for a question the attached
+material already answers. Answer those directly.
 
 ## Checklist
 
@@ -70,12 +71,14 @@ quote, or a search.
 
 For each claim, record:
 
-- the link;
+- the link, or the file name for a file the user gave;
 - the source type: primary or secondary;
 - the date: published or updated, and when you read it;
 - a label: **verified** (a primary source, or two independent sources, say
   so), **inferred** (your conclusion; say from what), or **unknown** (no
-  reliable source found).
+  reliable source found). A claim that only one secondary source supports is
+  **inferred**: say "one secondary source". A fact from the user's own file
+  is **stated** (see the conventions).
 
 Never make up a number. If sources give different numbers, show them all with
 their sources. If no reliable source gives one, the answer is unknown. A
