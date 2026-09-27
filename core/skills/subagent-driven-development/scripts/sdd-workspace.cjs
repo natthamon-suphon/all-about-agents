@@ -17,7 +17,7 @@ function sddProblem(sddDir) {
 
 function sddPath(planFile) {
   const resolvedPlan = path.resolve(planFile);
-  if (!fs.existsSync(resolvedPlan)) fail(`no such plan file: ${planFile}`);
+  if (!fs.existsSync(resolvedPlan) || !fs.statSync(resolvedPlan).isFile()) fail(`no such plan file: ${planFile}`);
   const sddDir = path.join(path.dirname(resolvedPlan), 'sdd');
   const problem = sddProblem(sddDir);
   if (problem) fail(problem);

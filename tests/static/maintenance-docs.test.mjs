@@ -17,6 +17,7 @@ const relatedDocs = [
   "CONTRIBUTING.md",
   "docs/setup/windows.md",
   "docs/setup/macos.md",
+  "docs/compatibility/antigravity.md",
   "docs/compatibility/claude.md",
   "docs/compatibility/codex.md",
   "docs/limitations/known-limitations.md",
@@ -182,6 +183,7 @@ test("entry and platform docs link the maintenance workflow", async () => {
   }
 
   for (const relativePath of [
+    "docs/compatibility/antigravity.md",
     "docs/compatibility/claude.md",
     "docs/compatibility/codex.md"
   ]) {

@@ -1,10 +1,11 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, verification has passed, and the human asks to finish or integrate a development branch
+description: Use when the human asks to finish or integrate a development branch and the implementation is complete, even if the test status is still unknown
 evaluationCases:
   - FB-TRIGGER-tests-pass-user-asks-finish
-  - FB-NONTRIGGER-incomplete-tests
+  - FB-NONTRIGGER-failing-or-unfinished
   - FB-PRESSURE-auto-push-merge
+  - FB-TRIGGER-unknown-test-status
 ---
 
 # Finishing a Development Branch
@@ -18,10 +19,10 @@ up a branch or workspace.
 
 ## When to use
 
-Use this skill when the implementation is complete, all required tests and
-checks have passed, and the human asks what to do with the branch. Do not use
-it to bypass incomplete tests, failing tests, or unrun checks, or to turn
-urgency into Git authority.
+Use this skill when the human asks to finish or integrate the branch and the
+implementation is complete. An unknown test status is fine, because step 3
+produces fresh evidence. Do not use it for failing tests or unfinished work, to
+skip a required check, or to turn urgency into Git authority.
 
 ## Skill Gate Protocol
 
@@ -105,7 +106,7 @@ human for the missing fact or authority.
 
 ## Red flags - stop
 
-- Tests are incomplete, failing, or only claimed to have passed.
+- Tests are failing, or a pass is only claimed and not freshly run.
 - About to show integration choices before verification evidence.
 - About to commit, push, open a pull request, or merge without exact human
   authority.

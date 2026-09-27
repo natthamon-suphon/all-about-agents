@@ -5,17 +5,20 @@
 // Every process runs through scripts/lib/process-runner.mjs with a structured argument
 // list; prompts and paths never pass through a shell.
 
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { equalBytes } from "../../installers/lib/hash.mjs";
+import { renderForSurface } from "../../installers/lib/render.mjs";
 import { runProcess } from "../../scripts/lib/process-runner.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL("../../", import.meta.url)));
 const DEFAULT_CASE_TIMEOUT_MS = 300_000;
 const OUTPUT_DIR = ".aaa/eval-runs";
 const EXCERPT_LENGTH = 400;
+const PLUGIN_SELECTOR = "all-about-agents@all-about-agents";
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -42,6 +45,8 @@ export function resolveCaseTimeoutMs(env = process.env) {
 const TRAILER_INSTRUCTION = "End your answer with one final line, exactly:\nskill: <the all-about-agents skill you route this to, or none>";
 const TRAILER_LINE = /^[\s*_`#>-]*skill\s*:\s*(.+?)\s*$/iu;
 const NAMESPACE_PREFIX = "all-about-agents:";
+const SKILL_TOKEN = /[a-z0-9][a-z0-9:-]*/u;
+const SKILL_FILE = /^skills\/[^/]+\/SKILL\.md$/u;
 
 /** Append the routing trailer the scorer reads. The case prompt itself stays untouched. */
 export function buildCasePrompt(prompt) {
@@ -51,15 +56,16 @@ export function buildCasePrompt(prompt) {
 /**
  * Read the routed skill from the last `skill:` line. Prose that merely contains
  * the word does not match, so declining a skill by name never reads as routing
- * to it. Returns the bare skill name, "none", or null when no trailer exists.
+ * to it. Only the first skill-name token counts, so "none - nothing applies"
+ * reads as "none". Returns that token, or null when no trailer names one.
  */
 export function parseSkillTrailer(text) {
   const lines = String(text ?? "").split("\n");
   for (let index = lines.length - 1; index >= 0; index -= 1) {
     const match = lines[index].match(TRAILER_LINE);
     if (!match) continue;
-    const value = match[1].replace(/[*_`]/gu, "").replace(/\.$/u, "").trim().toLowerCase();
-    return value.startsWith(NAMESPACE_PREFIX) ? value.slice(NAMESPACE_PREFIX.length) : value;
+    const token = match[1].toLowerCase().match(SKILL_TOKEN)?.[0] ?? null;
+    return token?.startsWith(NAMESPACE_PREFIX) ? token.slice(NAMESPACE_PREFIX.length) : token;
   }
   return null;
 }
@@ -77,7 +83,7 @@ export function evaluateCase({ skill, caseSpec, resultText, forbiddenPressurePhr
   const routed = parseSkillTrailer(text);
   const kind = /-TRIGGER-/u.test(caseSpec.id) ? "trigger" : /-NONTRIGGER-/u.test(caseSpec.id) ? "nontrigger" : /-PRESSURE-/u.test(caseSpec.id) ? "pressure" : "unknown";
   if (kind === "unknown") return { status: "FAIL", kind, reason: "case id does not name TRIGGER, NONTRIGGER, or PRESSURE" };
-  if (routed === null) return { status: "FAIL", kind, reason: "no skill: trailer line, so no routing verdict was given" };
+  if (routed === null) return { status: "FAIL", kind, reason: "no skill: trailer line with a skill name, so no routing verdict was given" };
   const matched = routed === skill.toLowerCase();
   if (kind === "nontrigger") {
     if (isRouter) return routed === "none" ? { status: "PASS", kind, reason: "bootstrap routing stayed off" } : { status: "FAIL", kind, reason: `a dispatched worker must not route, but routed to "${routed}"` };
@@ -86,7 +92,7 @@ export function evaluateCase({ skill, caseSpec, resultText, forbiddenPressurePhr
     return matched ? { status: "FAIL", kind, reason: "skill was routed for a nontrigger prompt" } : { status: "PASS", kind, reason: `skill stayed unrouted (trailer: ${routed})` };
   }
   if (isRouter && kind === "trigger") {
-    return routed === "none" ? { status: "FAIL", kind, reason: "the skill check produced no route" } : { status: "PASS", kind, reason: `skill check routed to ${routed}` };
+    return packageSkills?.has(routed) ? { status: "PASS", kind, reason: `skill check routed to ${routed}` } : { status: "FAIL", kind, reason: `the skill check produced no route to a skill of this package (trailer: ${routed})` };
   }
   if (!matched) {
     const foreign = routed !== "none" && packageSkills && !packageSkills.has(routed) ? " (not a skill of this package)" : "";
@@ -99,6 +105,16 @@ export function evaluateCase({ skill, caseSpec, resultText, forbiddenPressurePhr
   return { status: "PASS", kind, reason: "skill routed" };
 }
 
+// Claude loads skills from its plugin cache, which a same-version install does
+// not refresh. Every skill description shapes routing, so any drift is stale.
+async function staleSkillFiles(root, installPath, home) {
+  const rendered = await renderForSurface({ repositoryRoot: root, surface: "claude", env: {}, homeDir: home, platform: process.platform });
+  return rendered.files.filter((file) => SKILL_FILE.test(file.relativePath)).filter((file) => {
+    const installed = join(installPath, ...file.relativePath.split("/"));
+    return !existsSync(installed) || !equalBytes(readFileSync(installed), file.content);
+  }).map((file) => file.relativePath);
+}
+
 /** Preconditions that make a green run meaningful; each failure is a NOT_RUN_UNAVAILABLE reason. */
 export async function checkPreconditions({ root = ROOT, home = homedir(), env = process.env, run = runProcess } = {}) {
   const reasons = [];
@@ -109,21 +125,35 @@ export async function checkPreconditions({ root = ROOT, home = homedir(), env = 
   const installed = join(configDir, "plugins", "installed_plugins.json");
   if (!existsSync(installed)) reasons.push("installed_plugins.json is missing");
   else {
-    const entry = readJson(installed).plugins?.["all-about-agents@all-about-agents"]?.[0];
+    const entry = readJson(installed).plugins?.[PLUGIN_SELECTOR]?.[0];
     if (!entry) reasons.push("all-about-agents plugin is not installed");
     else if (entry.version !== pkg.version) reasons.push(`installed package stale: plugin ${entry.version}, package.json ${pkg.version}`);
     else if (!existsSync(join(entry.installPath, ".claude-plugin", "plugin.json"))) reasons.push("installed plugin cache is missing its manifest");
+    else {
+      try {
+        const stale = await staleSkillFiles(root, entry.installPath, home);
+        if (stale.length > 0) reasons.push(`installed plugin cache is stale: ${String(stale.length)} skill file(s) differ from this checkout, such as ${stale.slice(0, 3).join(", ")}; run claude plugin uninstall ${PLUGIN_SELECTOR} --scope user --keep-data, then claude plugin install ${PLUGIN_SELECTOR} --scope user`);
+      } catch (error) {
+        reasons.push(`this checkout does not render for Claude, so the plugin cache cannot be compared: ${oneLine(error?.message ?? error)}`);
+      }
+    }
   }
   if (!existsSync(join(configDir, "CLAUDE.md"))) reasons.push("rendered global CLAUDE.md is not deployed to the config directory");
   return { ok: reasons.length === 0, reasons, packageVersion: pkg.version, configDir };
 }
 
+/** Return the fixture repository, or the reason it could not be made. */
 async function makeDisposableRepo(run) {
   const dir = mkdtempSync(join(tmpdir(), "aaa-trigger-suite-"));
   writeFileSync(join(dir, "README.md"), "# Trigger suite fixture\n\nA small repository used only for headless routing checks.\n", "utf8");
   const init = await run({ executable: "git", args: ["init", "-q"], cwd: dir, timeoutMs: 30_000 });
-  if (init.unavailable || init.exitCode !== 0) throw new Error(`git init failed: ${init.stderr}`);
-  return dir;
+  if (!init.unavailable && init.exitCode === 0) return { dir, error: null };
+  rmSync(dir, { recursive: true, force: true });
+  return { dir: null, error: `git init failed: ${init.unavailable ? "git is unavailable" : oneLine(init.stderr) || `exit ${String(init.exitCode)}`}` };
+}
+
+function oneLine(text) {
+  return String(text ?? "").trim().split("\n")[0].slice(0, 200);
 }
 
 async function runClaude(prompt, cwd, run, timeoutMs) {
@@ -138,8 +168,23 @@ async function runClaude(prompt, cwd, run, timeoutMs) {
   const durationMs = Date.now() - started;
   if (result.unavailable) return { unavailable: true, text: "", exitCode: null, durationMs, stderr: result.stderr ?? "" };
   let text = result.stdout ?? "";
-  try { const parsed = JSON.parse(text); text = typeof parsed.result === "string" ? parsed.result : JSON.stringify(parsed); } catch { /* keep raw text */ }
-  return { unavailable: false, text, exitCode: result.exitCode, durationMs, stderr: result.stderr ?? "", timedOut: result.timedOut === true };
+  let isError = false;
+  try {
+    const parsed = JSON.parse(text);
+    text = typeof parsed.result === "string" ? parsed.result : JSON.stringify(parsed);
+    isError = parsed.is_error === true;
+  } catch { /* keep raw text */ }
+  return { unavailable: false, text, exitCode: result.exitCode, isError, durationMs, stderr: result.stderr ?? "", timedOut: result.timedOut === true };
+}
+
+/** A session that did not produce a normal answer gives no routing verdict; return why, or null. */
+function sessionFailure(result, timeoutMs) {
+  if (result.unavailable) return "claude did not start";
+  if (result.timedOut) return `claude did not finish within ${String(timeoutMs)} ms`;
+  if (result.exitCode === 0 && !result.isError) return null;
+  if (/not logged in|authentication|unauthorized|login required/iu.test(`${result.stderr}\n${result.text}`)) return "claude session is not authenticated";
+  if (result.exitCode !== 0) return `claude exited ${String(result.exitCode)}: ${oneLine(result.stderr) || oneLine(result.text)}`;
+  return `claude returned an error result: ${oneLine(result.text)}`;
 }
 
 export async function runSuite({ root = ROOT, run = runProcess, suitePath = join(root, "tests", "model", "suite.json"), outputDir = join(root, OUTPUT_DIR), preconditions = checkPreconditions } = {}) {
@@ -154,7 +199,7 @@ export async function runSuite({ root = ROOT, run = runProcess, suitePath = join
     const routing = readJson(join(root, "core", "evals", "skill-routing", `${skill}.json`));
     for (const caseSpec of routing.cases) cases.push({ skill, caseSpec });
   }
-  const repo = pre.ok ? await makeDisposableRepo(run) : null;
+  const repo = pre.ok ? await makeDisposableRepo(run) : { dir: null, error: null };
   try {
     const batch = await runEvaluationBatch({
       cases,
@@ -164,12 +209,12 @@ export async function runSuite({ root = ROOT, run = runProcess, suitePath = join
       executeSample: async ({ skill, caseSpec }, index) => {
         let status, reason, text = "", exitCode = null, durationMs = 0;
         if (!pre.ok) { status = "NOT_RUN_UNAVAILABLE"; reason = pre.reasons.join("; "); }
+        else if (repo.error) { status = "NOT_RUN_UNAVAILABLE"; reason = repo.error; }
         else {
-          const result = await runClaude(buildCasePrompt(caseSpec.prompt), repo, run, caseTimeoutMs);
+          const result = await runClaude(buildCasePrompt(caseSpec.prompt), repo.dir, run, caseTimeoutMs);
           ({ text, exitCode, durationMs } = result);
-          if (result.unavailable) { status = "NOT_RUN_UNAVAILABLE"; reason = "claude did not start"; }
-          else if (result.timedOut) { status = "NOT_RUN_UNAVAILABLE"; reason = `claude did not finish within ${String(caseTimeoutMs)} ms`; }
-          else if (/not logged in|authentication|unauthorized|login required/iu.test(`${result.stderr}\n${text}`) && result.exitCode !== 0) { status = "NOT_RUN_UNAVAILABLE"; reason = "claude session is not authenticated"; }
+          const failure = sessionFailure(result, caseTimeoutMs);
+          if (failure !== null) { status = "NOT_RUN_UNAVAILABLE"; reason = failure; }
           else ({ status, reason } = evaluateCase({ skill, caseSpec, resultText: text, forbiddenPressurePhrases: suite.forbiddenPressurePhrases, isRouter: routers.has(skill), packageSkills }));
         }
         process.stdout.write(`${status.padEnd(20)} ${skill.padEnd(34)} ${caseSpec.id.padEnd(40)} ${reason}\n`);
@@ -189,11 +234,11 @@ export async function runSuite({ root = ROOT, run = runProcess, suitePath = join
     process.stdout.write(`\nsummary: ${JSON.stringify(summary)}\n`);
     return { batch, summary, preconditions: pre };
   } finally {
-    if (repo) rmSync(repo, { recursive: true, force: true });
+    if (repo.dir) rmSync(repo.dir, { recursive: true, force: true });
   }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
   const { summary } = await runSuite();
   process.exitCode = summary.fail > 0 ? 1 : 0;
 }

@@ -94,6 +94,10 @@ question, R# research item, REQ# requirement, T# task, F# review finding.
 
 - Keep the IDs of earlier documents. Never renumber them.
 - Number a new item after the highest ID of its type.
+- A research report names the R# it answers in its Answers row. A later
+  document carries that answer with the report as its source, for example
+  `(R2: research-insurance.md)`, instead of leaving the R# open. An answer
+  that is unknown keeps the R# open.
 
 ## Document header
 
@@ -110,3 +114,6 @@ not get this header.
 | Status | draft, in progress, or complete |
 | Language | the document language |
 | Sources | earlier documents, attached files by name, and "this chat" if used |
+
+A research report adds one row after Sources: Answers, with the R# it answers
+and its question, or "none".

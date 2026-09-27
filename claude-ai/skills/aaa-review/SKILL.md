@@ -43,7 +43,7 @@ Copy this checklist into your reply and keep it current:
   cites, the record wins for that line: the brief copied it wrong. First read
   the brief's change log: a later correction by the user wins over the record.
 - Read every item fresh. Do not trust a run log, a status, or a summary,
-  including your own earlier ones. An output you cannot see is not checked.
+  including your own earlier ones.
 
 ## 2. Pass A: outputs
 
@@ -55,8 +55,10 @@ quote or a location): met, partly met, missing, or extra.
   (scope creep).
 - Run each done check again against the real output. A failing check means
   the task is not done, whatever the log says.
-- An output you cannot see goes under "not checked", and its requirement is
-  not checked. Never count it as met.
+- A required output (one that a REQ# or a task names) that is missing or not
+  attached, so you cannot see it in the folder, the chat, or an attachment,
+  is **missing**: record an open finding for it and ask for the file. Never
+  count it as met, whatever the run log says.
 - A success criterion that can only be measured after the work is used, such
   as sales or repeat visits, goes under "not checked" with the reason. It is not a
   finding and does not change the verdict.
@@ -70,7 +72,9 @@ checked. Look for:
 
 - a decision or an answer that changed or got lost on the way;
 - an open question that disappeared without an answer;
-- a research answer (R#) that the brief or the tasks do not carry;
+- a research answer (R#) that the brief or the tasks do not carry, for
+  example a report that answers an R# the brief still lists as open (an
+  answer of "unknown" keeps the R# open, so that is not a finding);
 - a number, name, or date that differs between documents;
 - a fact in an output that no source contains, for example a price while the
   price is still an open question;
@@ -157,7 +161,8 @@ open finding:
 - **addressed**: the evidence now meets the requirement;
 - **not addressed**: it does not. Say why. "Attempted" is not addressed.
 
-Save the report as v2 with the new statuses and verdict.
+Save the report as the next version (v2, v3, and so on) with the new
+statuses and verdict, and add a change-log row.
 
 ## Red flags
 
@@ -166,5 +171,5 @@ Save the report as v2 with the new statuses and verdict.
 | "The run log says done." | Check the real output. |
 | "That extra feature is out of scope, I'll remove it." | List it under "Needs your decision". |
 | "They need it today, I'll say it's ready." | Give the true verdict and the shortest path to ready. |
-| "I can't see that file, but it's probably fine." | List it under "not checked". |
+| "I can't see that file, but it's probably fine." | A required output you cannot see is missing. Record a finding and ask for it. |
 | "They said they fixed it." | Re-check it. Attempted is not addressed. |

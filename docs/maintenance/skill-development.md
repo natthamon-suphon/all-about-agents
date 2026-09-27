@@ -60,7 +60,8 @@ fast and runs in every gate, and it proves nothing about what an agent does.
 `tests/model/suite.json` through real headless `claude -p` sessions and records
 `PASS`, `FAIL`, or `NOT_RUN_UNAVAILABLE` per case under `.aaa/eval-runs/`. It is
 manual: it needs an authenticated `claude` CLI and the installed plugin at the
-current `package.json` version, or every case is `NOT_RUN_UNAVAILABLE`. Report a
+current `package.json` version whose cached `SKILL.md` files match a render of
+this checkout, or every case is `NOT_RUN_UNAVAILABLE`. Report a
 skill change as "lint-verified, model run pending" until the model run has a
 `PASS` dated after the change.
 
@@ -77,8 +78,9 @@ stays unused names it without routing to it, and the trailer keeps the two apart
 
 A skill listed in `routers` in `tests/model/suite.json` is scored differently,
 because its job is to dispatch to another skill rather than to do the work. Its
-trigger case passes on any route, its non-trigger case requires no route at all,
-and its pressure case stays strict. `using-all-about-agents` is the only router.
+trigger case passes on a route to any skill of this package, its non-trigger case
+requires no route at all, and its pressure case stays strict.
+`using-all-about-agents` is the only router.
 
 The question names this package on purpose. A machine may carry skills from
 other plugins that fit a prompt better, and a route to one of those is reported

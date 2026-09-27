@@ -6,6 +6,7 @@ import { basename, extname, join, resolve } from "node:path";
 
 const MAX_SOURCE_BYTES = 1024 * 1024;
 const MAX_RENDER_BYTES = 10 * 1024 * 1024;
+const SIZE_LIMIT_MESSAGE = "Graphviz output is empty or exceeds the safe size limit";
 
 class RenderError extends Error {}
 
@@ -41,11 +42,10 @@ function runDot(executable, args, input) {
     encoding: null
   });
   if (result.error?.code === "ENOENT") throw new RenderError("Graphviz dot is unavailable; install it or set GRAPHVIZ_DOT to its executable path");
+  if (result.error?.code === "ENOBUFS") throw new RenderError(SIZE_LIMIT_MESSAGE);
   if (result.error) throw new RenderError("Graphviz could not start");
   if (result.status !== 0) throw new RenderError("Graphviz rejected the input; stderr redacted");
-  if (!Buffer.isBuffer(result.stdout) || result.stdout.length === 0 || result.stdout.length > MAX_RENDER_BYTES) {
-    throw new RenderError("Graphviz output is empty or exceeds the safe size limit");
-  }
+  if (!Buffer.isBuffer(result.stdout) || result.stdout.length === 0 || result.stdout.length > MAX_RENDER_BYTES) throw new RenderError(SIZE_LIMIT_MESSAGE);
   return result.stdout;
 }
 
@@ -68,7 +68,17 @@ function inputRecord(value) {
   if (!metadata.isFile() || metadata.size === 0 || metadata.size > MAX_SOURCE_BYTES) throw new RenderError(`input is empty, not a file, or too large: ${value}`);
   const stem = basename(path, extname(path));
   if (!/^[A-Za-z0-9._-]+$/u.test(stem)) throw new RenderError(`input basename is unsafe: ${value}`);
-  return { path, stem, source: readFileSync(path) };
+  return { input: value, path, stem, source: readFileSync(path) };
+}
+
+// Compared without case because macOS and Windows folders usually ignore case.
+function refuseSharedOutputs(records) {
+  const seen = new Set();
+  for (const record of records) {
+    const key = record.stem.toLowerCase();
+    if (seen.has(key)) throw new RenderError(`two inputs would write the same output ${record.stem}.svg: ${record.input}`);
+    seen.add(key);
+  }
 }
 
 function writeOutput(target, content, overwrite) {
@@ -95,6 +105,7 @@ function main(argv = process.argv.slice(2)) {
   if (!options.outputDir || options.inputs.length === 0) throw new RenderError("--output-dir and at least one .dot input are required");
   const outputDir = resolve(options.outputDir);
   const records = options.inputs.map(inputRecord);
+  refuseSharedOutputs(records);
   const executable = dotExecutable();
   checkDot(executable);
   const rendered = records.map((record) => ({ ...record, svg: runDot(executable, ["-Tsvg"], record.source) }));

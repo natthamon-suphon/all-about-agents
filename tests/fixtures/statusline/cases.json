@@ -1,16 +1,17 @@
 {
   "config": {
-    "missing": null,
-    "malformed": "{not-json",
-    "empty": {"displayName": ""},
-    "thai": {"displayName": "ทีมงาน"},
-    "unicode": {"displayName": "é · 東京"},
-    "spaces": {"displayName": "  spaced name  "},
-    "quotes": {"displayName": "\"quoted\""},
-    "backslashes": {"displayName": "C:\\\\agent"},
-    "64-code-points": {"displayName": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
-    "65-code-points": {"displayName": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
-    "ansi-control-newline": {"displayName": "safe\u001b[31m\nunsafe\u0000"}
+    "missing": { "config": null, "expected": "" },
+    "malformed": { "config": "{not-json", "expected": "" },
+    "unsupported-schema": { "config": { "schemaVersion": 999, "displayName": "unsupported" }, "expected": "" },
+    "empty": { "config": { "schemaVersion": 1, "displayName": "" }, "expected": "" },
+    "thai": { "config": { "schemaVersion": 1, "displayName": "ทีมงาน" }, "expected": "ทีมงาน" },
+    "unicode": { "config": { "schemaVersion": 1, "displayName": "é · 東京" }, "expected": "é · 東京" },
+    "spaces": { "config": { "schemaVersion": 1, "displayName": "  spaced name  " }, "expected": "spaced name" },
+    "quotes": { "config": { "schemaVersion": 1, "displayName": "\"quoted\"" }, "expected": "\"quoted\"" },
+    "backslashes": { "config": { "schemaVersion": 1, "displayName": "C:\\\\agent" }, "expected": "C:\\\\agent" },
+    "64-code-points": { "config": { "schemaVersion": 1, "displayName": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }, "expected": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+    "65-code-points": { "config": { "schemaVersion": 1, "displayName": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }, "expected": "" },
+    "ansi-control-newline": { "config": { "schemaVersion": 1, "displayName": "safe\u001b[31m\nunsafe\u0000" }, "expected": "safe unsafe" }
   },
   "fields": {
     "maliciousRepo": "C:\\repo\\evil\nname",

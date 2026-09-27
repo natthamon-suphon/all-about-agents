@@ -62,8 +62,9 @@ function refuseUntrackedSecrets(top) {
   if (secrets.length > 0) fail(`review-package: untracked files that look like secrets would enter the package; move, ignore, or delete them first: ${secrets.join(', ')}`);
 }
 
-function writePackage([planFile, base, head, customOut]) {
-  if (!planFile || !base || !head) fail(USAGE);
+function writePackage(args) {
+  const [planFile, base, head, customOut] = args;
+  if (args.length > 4 || !planFile || !base || !head) fail(USAGE);
 
   const top = workTreeTop();
   const sddDir = sddPath(planFile);

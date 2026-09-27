@@ -6,6 +6,7 @@ import test, { after } from "node:test";
 import { MAX_OVERLAY_BYTES, mergeSettingsOverlay } from "../../installers/lib/settings-overlay.mjs";
 import { hashBytes } from "../../installers/lib/hash.mjs";
 import { canonicalTmpdir, makeTempRoot } from "../helpers/temp-root.mjs";
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 const GENERATED_TEMP_ROOTS = new Set();
 
@@ -44,6 +45,40 @@ test("mergeSettingsOverlay recursively merges objects, replaces arrays/scalars, 
   assert.deepEqual(JSON.parse(await readFile(input.targetPath, "utf8")), { nested: { old: 1, new: 2 }, array: [2], scalar: true, unknown: "keep" });
 });
 
+test("mergeSettingsOverlay keeps the user's permission rules and adds the package rules once", async () => {
+  const input = await fixture();
+  const emergencyDenies = ["Bash(rm -rf /)", "Bash(rm -rf ~)", "Bash(git push --force*)", "Bash(git reset --hard*)"];
+  await writeFile(input.overlayPath, `${JSON.stringify({ permissions: { defaultMode: "default", deny: emergencyDenies, allow: ["Read(./docs/**)"] } })}\n`);
+  await mkdir(join(input.root, "target"), { recursive: true });
+  await writeFile(input.targetPath, `${JSON.stringify({ permissions: { deny: ["Read(./.env)", "Bash(curl:*)", "Bash(rm -rf /)"], allow: ["Bash(npm test)"] } })}\n`);
+  const first = await mergeSettingsOverlay({ ...input, allowedRoot: input.root });
+  assert.equal(first.changed, true);
+  assert.deepEqual(JSON.parse(await readFile(input.targetPath, "utf8")).permissions, {
+    deny: ["Read(./.env)", "Bash(curl:*)", "Bash(rm -rf /)", "Bash(rm -rf ~)", "Bash(git push --force*)", "Bash(git reset --hard*)"],
+    allow: ["Bash(npm test)", "Read(./docs/**)"],
+    defaultMode: "default"
+  });
+  const second = await mergeSettingsOverlay({ ...input, allowedRoot: input.root });
+  assert.equal(second.changed, false);
+  assert.equal(second.afterHash, first.afterHash);
+});
+
+test("mergeSettingsOverlay refuses a malformed user permission list and writes nothing", async () => {
+  const input = await fixture();
+  await writeFile(input.overlayPath, `${JSON.stringify({ permissions: { deny: ["Bash(rm -rf /)"], allow: ["Read(./docs/**)"] } })}\n`);
+  await mkdir(join(input.root, "target"), { recursive: true });
+  for (const permissions of [{ deny: "Bash(curl:*)" }, { allow: { tool: "Bash" } }, { deny: ["Read(./.env)", 7] }, { deny: ["Read(./.env)", ""] }, { allow: [null] }]) {
+    const body = `${JSON.stringify({ permissions })}\n`;
+    await writeFile(input.targetPath, body);
+    await assert.rejects(
+      () => mergeSettingsOverlay({ ...input, allowedRoot: input.root }),
+      (error) => error.code === "settings-permission-list-invalid" && /permissions\.(?:deny|allow)/u.test(error.message),
+      body
+    );
+    assert.equal(await readFile(input.targetPath, "utf8"), body);
+  }
+});
+
 test("mergeSettingsOverlay binds the bytes read to an expected managed hash", async () => {
   const input = await fixture();
   const expectedOverlayHash = hashBytes(await readFile(input.overlayPath));
@@ -74,7 +109,7 @@ test("mergeSettingsOverlay rejects malformed, non-object, oversized, and prototy
   await assert.rejects(() => mergeSettingsOverlay({ ...input, allowedRoot: input.root }), /size|large|maximum/u);
 });
 
-test("mergeSettingsOverlay rejects escape and symlink/junction targets", async () => {
+test("mergeSettingsOverlay rejects escape and symlink/junction targets", async (t) => {
   const input = await fixture("target/settings.json");
   await mkdir(join(input.root, "target"), { recursive: true });
   await assert.rejects(() => mergeSettingsOverlay({ ...input, targetPath: join(input.root, "..", "escape.json"), allowedRoot: input.root }), /contain|root|escape/u);
@@ -82,12 +117,20 @@ test("mergeSettingsOverlay rejects escape and symlink/junction targets", async (
   const link = join(input.root, "target-link");
   try {
     await (await import("node:fs/promises")).symlink(outside, link, process.platform === "win32" ? "junction" : "dir");
-  } catch { return; }
+  } catch (error) {
+    skipIfLinkUnavailable(t, error);
+    return;
+  }
   await assert.rejects(() => mergeSettingsOverlay({ ...input, targetPath: join(link, "settings.json"), allowedRoot: input.root }), /symlink|junction|reparse|unsafe/u);
   const fileLink = join(input.root, "file-link.json");
   const outsideFile = join(outside, "settings.json");
   await writeFile(outsideFile, "{}\n");
-  try { await (await import("node:fs/promises")).symlink(outsideFile, fileLink); } catch { return; }
+  try {
+    await (await import("node:fs/promises")).symlink(outsideFile, fileLink);
+  } catch (error) {
+    skipIfLinkUnavailable(t, error);
+    return;
+  }
   await assert.rejects(() => mergeSettingsOverlay({ ...input, targetPath: fileLink, allowedRoot: input.root }), /symlink|junction|reparse|unsafe/u);
 });
 

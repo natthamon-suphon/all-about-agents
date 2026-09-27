@@ -180,7 +180,7 @@ test("every adapter production render consumes the audit and checkpoint contract
   const packages = [
     {
       surface: "claude",
-      result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, platform: "win32" }),
+      result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, homeDir: "C:/Users/tester", platform: "win32" }),
       auditPath: "hooks/activity-audit.json",
       checkpointPath: "hooks/checkpoint.json",
       hooksPath: "hooks/hooks.json",
@@ -188,7 +188,7 @@ test("every adapter production render consumes the audit and checkpoint contract
     },
     {
       surface: "codex",
-      result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", targetRuntime: "cli" }),
+      result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", env: { CODEX_HOME: "C:/disposable" }, homeDir: "C:/Users/tester", platform: "win32", targetRuntime: "cli" }),
       auditPath: "hooks/activity-audit.json",
       checkpointPath: "hooks/checkpoint.json",
       hooksPath: "hooks/hooks.json",
@@ -215,22 +215,81 @@ test("every adapter production render consumes the audit and checkpoint contract
   }
 });
 
+async function materialize(result, root) {
+  for (const file of result.files) {
+    const target = join(root, ...file.relativePath.split("/"));
+    await mkdir(resolve(target, ".."), { recursive: true });
+    await writeFile(target, file.content);
+  }
+}
+
+function disposableEnv(root) {
+  return { PATH: process.env.PATH, HOME: root, USERPROFILE: root, TMPDIR: root, TMP: root, TEMP: root, CLAUDE_CONFIG_DIR: root, CODEX_HOME: root };
+}
+
+function renderedHookPackages(core) {
+  return [
+    { surface: "claude", result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, homeDir: "C:/Users/tester", platform: "win32" }) },
+    { surface: "codex", result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", env: { CODEX_HOME: "C:/disposable" }, homeDir: "C:/Users/tester", platform: "win32", targetRuntime: "cli" }) }
+  ];
+}
+
+test("rendered activity and checkpoint hooks record one line each for a valid native payload", async () => {
+  const core = await loadCore(process.cwd());
+  for (const item of renderedHookPackages(core)) {
+    await withTempRoot(async (root) => {
+      await materialize(item.result, root);
+      const runHook = (name, payload) => spawnSync(process.execPath, [join(root, "hooks", name)], { input: JSON.stringify(payload), encoding: "utf8", env: disposableEnv(root) });
+      const audit = runHook("activity-audit.mjs", { hook_event_name: "PostToolUse", tool_name: "Read", tool_input: {}, tool_response: {}, session_id: "session-1", tool_use_id: "tool-1" });
+      assert.equal(audit.status, 0, `${item.surface}: ${audit.stderr}`);
+      const checkpoint = runHook("pre-compact.mjs", { hook_event_name: "PreCompact", session_id: "session-1", transcript_path: join(root, "transcript.jsonl"), trigger: "auto" });
+      assert.equal(checkpoint.status, 0, `${item.surface}: ${checkpoint.stderr}`);
+
+      const auditLines = (await readFile(join(root, "hooks", "audit", "activity-audit.log"), "utf8")).trim().split("\n");
+      assert.equal(auditLines.length, 1, item.surface);
+      const auditEntry = JSON.parse(auditLines[0]);
+      assert.deepEqual(Object.keys(auditEntry), JSON.parse(await readFile(resolve(process.cwd(), "core/hooks/activity-audit.json"), "utf8")).recordedFields);
+      assert.equal(auditEntry.surface, item.surface);
+      assert.equal(auditEntry.actionId, "read");
+      assert.equal(auditEntry.sessionKeyHash, createHash("sha256").update("session-1").digest("hex"));
+
+      const checkpointLines = (await readFile(join(root, "hooks", "checkpoints", "checkpoint.jsonl"), "utf8")).trim().split("\n");
+      assert.equal(checkpointLines.length, 1, item.surface);
+      const checkpointEntry = JSON.parse(checkpointLines[0]);
+      assert.deepEqual(Object.keys(checkpointEntry), JSON.parse(await readFile(resolve(process.cwd(), "core/hooks/checkpoint.json"), "utf8")).recordedFields);
+      assert.equal(checkpointEntry.sessionId, "session-1");
+      assert.equal(checkpointEntry.trigger, "auto");
+      assert.ok(Number.isFinite(Date.parse(checkpointEntry.timestamp)));
+    });
+  }
+});
+
+test("rendered checkpoint hook bounds and sanitizes the native session and trigger fields", async () => {
+  const core = await loadCore(process.cwd());
+  for (const item of renderedHookPackages(core)) {
+    await withTempRoot(async (root) => {
+      await materialize(item.result, root);
+      const result = spawnSync(process.execPath, [join(root, "hooks", "pre-compact.mjs")], {
+        input: JSON.stringify({ hook_event_name: "PreCompact", session_id: `../${"s".repeat(100)}\u001b[31m`, trigger: 7 }),
+        encoding: "utf8",
+        env: disposableEnv(root)
+      });
+      assert.equal(result.status, 0, `${item.surface}: ${result.stderr}`);
+      const entry = JSON.parse((await readFile(join(root, "hooks", "checkpoints", "checkpoint.jsonl"), "utf8")).trim());
+      assert.match(entry.sessionId, /^[A-Za-z0-9._-]{1,64}$/u);
+      assert.equal(entry.trigger, "unknown");
+    });
+  }
+});
+
 test("Claude and Codex activity/checkpoint wrappers fail open on oversized stdin", async () => {
   const core = await loadCore(process.cwd());
-  const packages = [
-    { surface: "claude", result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, platform: "win32" }) },
-    { surface: "codex", result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", targetRuntime: "cli" }) }
-  ];
-  for (const item of packages) {
+  for (const item of renderedHookPackages(core)) {
     await withTempRoot(async (root) => {
-      for (const file of item.result.files) {
-        const target = join(root, ...file.relativePath.split("/"));
-        await mkdir(resolve(target, ".."), { recursive: true });
-        await writeFile(target, file.content);
-      }
+      await materialize(item.result, root);
       const oversized = JSON.stringify({ actionId: "tool:review", outcome: "success", session_id: "bounded", padding: "x".repeat(70_000) });
       for (const name of ["activity-audit.mjs", "pre-compact.mjs"]) {
-        const result = spawnSync(process.execPath, [join(root, "hooks", name)], { input: oversized, encoding: "utf8" });
+        const result = spawnSync(process.execPath, [join(root, "hooks", name)], { input: oversized, encoding: "utf8", env: disposableEnv(root) });
         assert.equal(result.status, 0, `${item.surface}/${name}: ${result.stderr}`);
       }
       assert.equal(await access(join(root, "hooks", "audit")).then(() => true, () => false), false);

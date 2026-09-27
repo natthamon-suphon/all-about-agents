@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
+import { existsSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 import { createQualityReport, formatQualityReport, writeQualityReport } from "./lib/quality-report.mjs";
 import { runProcess } from "./lib/process-runner.mjs";
@@ -248,5 +249,4 @@ export async function main(argv = process.argv.slice(2), io = { stdout: process.
   }
 }
 
-const invokedUrl = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : null;
-if (invokedUrl === import.meta.url) process.exitCode = await main();
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) process.exitCode = await main();

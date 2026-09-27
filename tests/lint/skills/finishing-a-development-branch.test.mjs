@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const skillId = "finishing-a-development-branch";
-const requiredCases = ["FB-TRIGGER-tests-pass-user-asks-finish", "FB-NONTRIGGER-incomplete-tests", "FB-PRESSURE-auto-push-merge"];
+const requiredCases = ["FB-TRIGGER-tests-pass-user-asks-finish", "FB-NONTRIGGER-failing-or-unfinished", "FB-PRESSURE-auto-push-merge", "FB-TRIGGER-unknown-test-status"];
 
 test("T030 exposes its routing evidence", async () => {
   const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
@@ -57,6 +57,9 @@ test("finishing-a-development-branch evaluation covers trigger, non-trigger, and
   assert.equal(evaluation.cases[2].expected.noAutomaticMerge, true);
   assert.equal(evaluation.cases[2].expected.noAutomaticCleanup, true);
   assert.equal(evaluation.cases[2].expected.explicitAuthorityForEachGitAction, true);
+  assert.equal(evaluation.cases[3].expected.skillCheck, "required");
+  assert.equal(evaluation.cases[3].expected.runsFullSuiteFirst, true);
+  assert.equal(evaluation.cases[3].expected.noIntegrationBeforeGreen, true);
 });
 
 test("core loader exposes finishing-a-development-branch metadata and routing links", async () => {
@@ -76,4 +79,20 @@ test("finishing-a-development-branch runs tests for unknown status and names the
   assert.match(skill, /status is unknown[^.]*step 3/isu);
   assert.doesNotMatch(skill, /unknown, record it as `not run`/iu);
   assert.match(skill, /record it as unknown/iu);
+});
+
+test("finishing-a-development-branch routes on a complete implementation, not on a passed test run", async () => {
+  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
+  const description = /^description: (.+)$/mu.exec(skill)?.[1] ?? "";
+  assert.doesNotMatch(description, /verification has passed/iu, "an unknown test status still triggers; step 3 runs the suite");
+  assert.match(description, /implementation is complete[^.]*unknown/iu);
+  const whenToUse = skill.split("## When to use")[1].split("\n## ")[0];
+  assert.doesNotMatch(whenToUse, /have passed/iu);
+  assert.match(whenToUse, /failing tests[^.]*unfinished work|unfinished work[^.]*failing tests/iu);
+  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
+  assert.doesNotMatch(JSON.stringify(evaluation.cases[0].observables), /only after fresh tests/iu);
+  const nontrigger = evaluation.cases[1];
+  assert.doesNotMatch(nontrigger.prompt, /not run|unknown|incomplete/iu, "an unknown test status is a trigger, not a nontrigger");
+  assert.match(nontrigger.prompt, /fail/iu);
+  assert.match(nontrigger.prompt, /not (?:yet )?implemented|unfinished/iu);
 });

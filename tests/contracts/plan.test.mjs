@@ -9,6 +9,7 @@ import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 import planSchema from "../../installers/schemas/plan.schema.json" with { type: "json" };
 import { buildPlan } from "../../installers/lib/plan.mjs";
 import { hashBytes } from "../../installers/lib/hash.mjs";
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 const bytes = (value) => new TextEncoder().encode(value);
 const surface = "claude";
@@ -74,32 +75,56 @@ test("buildPlan prunes only previously owned unchanged files and preserves unkno
   });
 });
 
-test("buildPlan rejects traversal, symlink, junction/directory, and unreadable destinations without writing", async () => {
+test("buildPlan rejects traversal and directory destinations without writing", async () => {
   await withTempRoot(async (root) => {
     await mkdir(join(root, "dir"));
     await writeFile(join(root, "regular.txt"), "before");
-    const outside = join(root, "outside.txt");
-    await writeFile(outside, "outside");
-    const linkPath = join(root, "link.txt");
-    let linkAvailable = true;
-    try { await symlink(outside, linkPath); } catch { linkAvailable = false; }
     const files = [
       { relativePath: "../escape.txt", content: bytes("escape"), mode: null },
       { relativePath: "dir", content: bytes("directory"), mode: null },
-      { relativePath: "regular.txt", content: bytes("after"), mode: null },
-      ...(linkAvailable ? [{ relativePath: "link.txt", content: bytes("link"), mode: null }] : [])
+      { relativePath: "regular.txt", content: bytes("after"), mode: null }
     ];
     assert.throws(() => buildPlan({ payload: payloadFor(files), destinationRoot: root, previousState: null }), /safe relativePath/u);
-    const validFiles = [
-      { relativePath: "dir", content: bytes("directory"), mode: null },
-      { relativePath: "regular.txt", content: bytes("after"), mode: null },
-      ...(linkAvailable ? [{ relativePath: "link.txt", content: bytes("link"), mode: null }] : [])
-    ];
-    const plan = buildPlan({ payload: payloadFor(validFiles), destinationRoot: root, previousState: null });
+    const plan = buildPlan({ payload: payloadFor(files.slice(1)), destinationRoot: root, previousState: null });
     assert.equal(plan.actions.find((entry) => entry.relativePath === "dir").kind, "reject");
     assert.equal(plan.actions.find((entry) => entry.relativePath === "regular.txt").kind, "replace");
-    if (linkAvailable) assert.equal(plan.actions.find((entry) => entry.relativePath === "link.txt").kind, "reject");
     assert.equal(await readFile(join(root, "regular.txt"), "utf8"), "before");
+  });
+});
+
+test("buildPlan rejects a symlink destination without writing through it", async (t) => {
+  await withTempRoot(async (root) => {
+    const outside = join(root, "outside.txt");
+    await writeFile(outside, "outside");
+    try {
+      await symlink(outside, join(root, "link.txt"));
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
+    const plan = buildPlan({ payload: payloadFor([{ relativePath: "link.txt", content: bytes("link"), mode: null }]), destinationRoot: root, previousState: null });
+    assert.equal(plan.actions.find((entry) => entry.relativePath === "link.txt").kind, "reject");
+    assert.equal(await readFile(outside, "utf8"), "outside");
+  });
+});
+test("the plan schema accepts a plan for every supported surface", async () => {
+  await withTempRoot(async (root) => {
+    for (const planSurface of ["antigravity", "claude", "codex"]) {
+      const files = [{ relativePath: "GEMINI.md", content: bytes("rules"), mode: null }];
+      const plan = buildPlan({ payload: { ...payloadFor(files), registrations: [{ kind: "profile-translation", surface: planSurface }] }, destinationRoot: root });
+      assert.equal(plan.surface, planSurface);
+      assert.deepEqual(validateSchema({ schema: planSchema, value: plan, sourcePath: "plan.json" }).errors, [], planSurface);
+    }
+  });
+});
+
+test("the invalid-previous-state diagnostic says that apply refuses the root and how to recover", async () => {
+  await withTempRoot(async (root) => {
+    const plan = buildPlan({ payload: payloadFor([]), destinationRoot: root, previousState: { schemaVersion: 9 } });
+    const diagnostic = plan.diagnostics.find((entry) => entry.code === "invalid-previous-state");
+    assert.match(diagnostic.message, /install --apply refuses this root before any write/u);
+    assert.match(diagnostic.message, /--mode fresh|sync-and-update\.md/u);
+    assert.doesNotMatch(diagnostic.message, /pruning is disabled/u);
   });
 });
 
@@ -190,12 +215,17 @@ test("buildPlan rejects conflicting or ambiguous managed-root surface ownership"
   });
 });
 
-test("buildPlan fails closed when a nonexistent root crosses a symlink ancestor", async () => {
+test("buildPlan fails closed when a nonexistent root crosses a symlink ancestor", async (t) => {
   await withTempRoot(async (root) => {
     const outside = join(root, "outside");
     const alias = join(root, "alias");
     await mkdir(outside);
-    try { await symlink(outside, alias, process.platform === "win32" ? "junction" : "dir"); } catch { return; }
+    try {
+      await symlink(outside, alias, process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
     const destinationRoot = join(alias, "missing-root");
     const plan = buildPlan({ payload: payloadFor([{ relativePath: "x.txt", content: bytes("x"), mode: null }]), destinationRoot, previousState: null });
     const action = plan.actions.find((entry) => entry.relativePath === "x.txt");

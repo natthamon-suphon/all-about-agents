@@ -8,7 +8,7 @@
 | Date | YYYY-MM-DD |
 | Status | draft |
 | Language | the document language |
-| Sources | `01-interview-record.md` or "this chat", and attached files by name |
+| Sources | `01-interview-record.md` or "this chat", research reports, and attached files by name |
 
 ## 1. Summary
 

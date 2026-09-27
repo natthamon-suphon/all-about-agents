@@ -66,7 +66,7 @@ function validateRepository(repository) {
 }
 
 function validateRuntime(runtime) {
-  if (!object(runtime) || !["win32", "darwin", "linux"].includes(runtime.platform) || typeof runtime.nodeVersion !== "string" || !/^v\d+\.\d+\.\d+/u.test(runtime.nodeVersion)) {
+  if (!object(runtime) || !["win32", "darwin"].includes(runtime.platform) || typeof runtime.nodeVersion !== "string" || !/^v\d+\.\d+\.\d+/u.test(runtime.nodeVersion)) {
     throw new TypeError("runtime must include a supported platform and Node.js version");
   }
   return { platform: runtime.platform, nodeVersion: runtime.nodeVersion };

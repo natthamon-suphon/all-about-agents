@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
+import { existsSync, realpathSync } from "node:fs";
 import { lstat, mkdir, rename, rm, writeFile } from "node:fs/promises";
-import { join, relative, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { buildSkillArchive, loadPack, PackValidationError, validateSkill } from "./lib/claude-ai-pack.mjs";
 
@@ -71,5 +72,4 @@ export async function main(argv = process.argv.slice(2), io = { stdout: process.
   }
 }
 
-const invokedUrl = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : null;
-if (invokedUrl === import.meta.url) process.exitCode = await main();
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) process.exitCode = await main();

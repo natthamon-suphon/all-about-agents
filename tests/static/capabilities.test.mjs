@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { access, mkdtemp, mkdir, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { access, mkdir, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import test from "node:test";
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
+import { makeTempRoot, withTempRoot } from "../helpers/temp-root.mjs";
 
 const surfaces = ["antigravity", "claude", "codex"];
 const manifestGlobalNames = new Map([
@@ -14,7 +14,7 @@ const manifestGlobalNames = new Map([
 const repositoryRoot = resolve(process.cwd());
 const officialHosts = new Set(["code.claude.com", "developers.openai.com"]);
 
-async function assertValidSource(source, label) {
+async function assertValidSource(source, label, root = repositoryRoot) {
   assert.equal(typeof source, "string", `${label}: source must be a string`);
   assert.ok(source.length > 0, `${label}: source must not be empty`);
 
@@ -27,8 +27,8 @@ async function assertValidSource(source, label) {
 
   assert.equal(source.includes("\\"), false, `${label}: local source must use repository POSIX separators`);
   assert.equal(isAbsolute(source), false, `${label}: local source must be relative`);
-  const resolvedSource = resolve(repositoryRoot, source);
-  const canonicalRepositoryRoot = await realpath(repositoryRoot);
+  const resolvedSource = resolve(root, source);
+  const canonicalRepositoryRoot = await realpath(root);
   const canonicalSource = await realpath(resolvedSource);
   const containedPath = relative(canonicalRepositoryRoot, canonicalSource);
   assert.equal(containedPath === "" || (!containedPath.startsWith("..") && !isAbsolute(containedPath)), true, `${label}: local source must stay in the repository`);
@@ -109,29 +109,32 @@ test("capability source validation rejects unsafe paths and untrusted URLs", asy
 });
 
 test("capability source validation rejects directories and links escaping the repository", async () => {
-  await mkdir(resolve(repositoryRoot, "tests/.tmp"), { recursive: true });
-  const disposableRoot = await mkdtemp(resolve(repositoryRoot, "tests/.tmp/capability-sources-"));
-  const outsideRoot = await mkdtemp(join(tmpdir(), "aaa-capability-sources-"));
-  const outsideFile = join(outsideRoot, "outside.md");
-  const linkRoot = join(disposableRoot, "escaped");
-  try {
-    await writeFile(outsideFile, "outside evidence\n", "utf8");
+  await withTempRoot(async (root) => {
+    const sourceDirectory = join(root, "capability-sources");
+    const outsideRoot = await makeTempRoot("aaa-capability-sources-");
+    const outsideFile = join(outsideRoot, "outside.md");
+    const linkRoot = join(sourceDirectory, "escaped");
     try {
-      await symlink(outsideRoot, linkRoot, process.platform === "win32" ? "junction" : "dir");
-    } catch (error) {
-      assert.fail(`Could not create an escape-link regression fixture on ${process.platform}: ${error.message}`);
-    }
+      await mkdir(sourceDirectory);
+      await writeFile(join(sourceDirectory, "inside.md"), "inside evidence\n", "utf8");
+      await writeFile(outsideFile, "outside evidence\n", "utf8");
+      try {
+        await symlink(outsideRoot, linkRoot, process.platform === "win32" ? "junction" : "dir");
+      } catch (error) {
+        assert.fail(`Could not create an escape-link regression fixture on ${process.platform}: ${error.message}`);
+      }
 
-    const toSource = (path) => relative(repositoryRoot, path).replaceAll("\\", "/");
-    const rejected = await Promise.all([
-      assertValidSource(toSource(disposableRoot), "directory-source").then(() => false, () => true),
-      assertValidSource(toSource(join(linkRoot, "outside.md")), "escaped-link-source").then(() => false, () => true)
-    ]);
-    assert.deepEqual(rejected, [true, true]);
-  } finally {
-    await rm(disposableRoot, { recursive: true, force: true });
-    await rm(outsideRoot, { recursive: true, force: true });
-  }
+      const toSource = (path) => relative(root, path).replaceAll("\\", "/");
+      await assertValidSource(toSource(join(sourceDirectory, "inside.md")), "contained-source", root);
+      const rejected = await Promise.all([
+        assertValidSource(toSource(sourceDirectory), "directory-source", root).then(() => false, () => true),
+        assertValidSource(toSource(join(linkRoot, "outside.md")), "escaped-link-source", root).then(() => false, () => true)
+      ]);
+      assert.deepEqual(rejected, [true, true]);
+    } finally {
+      await rm(outsideRoot, { recursive: true, force: true });
+    }
+  });
 });
 
 test("Claude native statusline capability is supported and stable", async () => {

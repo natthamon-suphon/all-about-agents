@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 
@@ -19,12 +19,43 @@ const REQUIRED_PHRASES = {
     "one section only",
     "Other facts given",
     "use the later statement only when the user clearly changed it",
-    "add an O# that names both"
+    "add an O# that names both",
+    "Answers row",
+    "header Status to `complete`"
   ],
-  "aaa-tasks": ["03-tasks.md", "done check", "needs approval", "parallel-safe", "Not yet specified"],
-  "aaa-run": ["done check", "three times", "needs approval", "check not run", "irreversible", "Never give a subagent a task flagged needs approval"],
-  "aaa-review": ["04-review.md", "self-review", "needs your decision", "not checked", "Attempted", "can only be measured after", "no output answers", "no requirement names", "a fact only the user has"],
-  "aaa-research": ["primary", "secondary", "never cite a search snippet", "unknown", "research-"]
+  "aaa-tasks": ["03-tasks.md", "done check", "needs approval", "parallel-safe", "Not yet specified", "not one of this project's documents or outputs", "Answers row"],
+  "aaa-run": [
+    "done check",
+    "three times",
+    "needs approval",
+    "check not run",
+    "irreversible",
+    "Never give a subagent a task flagged needs approval",
+    "not one of this project's documents or outputs",
+    "create `03-tasks.md`",
+    "header Status to `in progress`",
+    "header Status to `complete`"
+  ],
+  "aaa-review": [
+    "04-review.md",
+    "self-review",
+    "needs your decision",
+    "not checked",
+    "Attempted",
+    "can only be measured after",
+    "no output answers",
+    "no requirement names",
+    "a fact only the user has",
+    "missing or not attached",
+    "the next version",
+    "keeps the R# open"
+  ],
+  "aaa-research": ["primary", "secondary", "never cite a search snippet", "unknown", "research-", "Answers row"]
+};
+const FORBIDDEN_PHRASES = {
+  "aaa-tasks": ["no aaa skill wrote"],
+  "aaa-run": ["no aaa skill wrote"],
+  "aaa-review": ["An output you cannot see goes under \"not checked\"", "An output you cannot see is not checked"]
 };
 const CONVENTION_HEADINGS = [
   "Language",
@@ -84,6 +115,26 @@ test("the interview record has a home for the topic, the opening message, other 
   assert.match(body, /^\| Sources \| .*attached files.* \|$/mu);
 });
 
+test("a research report names the research item it answers, and the conventions say so", async () => {
+  assert.match(await text("claude-ai/skills/aaa-research/templates/research.md"), /^\| Answers \| .+ \|$/mu);
+  assert.match(await text("claude-ai/shared/conventions.md"), /Answers/u);
+});
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+test("every weekday date in the eval fixtures has a year and the right weekday", async () => {
+  const datePattern = new RegExp(`\\b(${WEEKDAYS.join("|")}) (\\d{1,2}) (${MONTHS.join("|")})(?:,? (\\d{4}))?`, "gu");
+  const evalsDir = resolve(packRoot, "evals");
+  for (const file of (await readdir(evalsDir)).filter((entry) => entry.endsWith(".md") && entry !== "results.md")) {
+    for (const [match, weekday, day, month, year] of (await readFile(resolve(evalsDir, file), "utf8")).matchAll(datePattern)) {
+      assert.ok(year, `${file}: "${match}" needs a year`);
+      const date = new Date(Date.UTC(Number(year), MONTHS.indexOf(month), Number(day)));
+      assert.equal(WEEKDAYS[date.getUTCDay()], weekday, `${file}: "${match}" is not a ${weekday}`);
+    }
+  }
+});
+
 test("exported archives stay out of Git", async () => {
   assert.match(await text(".gitignore"), /^\.aaa\/claude-ai\/$/mu);
 });
@@ -106,6 +157,9 @@ for (const name of EXPECTED_SKILLS) {
     const flat = body.replace(/\s+/gu, " ").toLowerCase();
     for (const phrase of REQUIRED_PHRASES[name] ?? []) {
       assert.ok(flat.includes(phrase.toLowerCase()), `${name} SKILL.md must contain: ${phrase}`);
+    }
+    for (const phrase of FORBIDDEN_PHRASES[name] ?? []) {
+      assert.ok(!flat.includes(phrase.toLowerCase()), `${name} SKILL.md must not contain: ${phrase}`);
     }
   });
 

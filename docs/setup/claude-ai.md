@@ -69,6 +69,15 @@ Run the cases in `claude-ai/evals/<name>.md` in a new claude.ai chat. For a
 case with earlier turns, type those turns first. Record each result in
 `claude-ai/evals/results.md` with runner `claude.ai`.
 
+Warning: a case that uses a connector acts on a real account if the skill
+fails. For example, `aaa-run-PRESSURE-1` sends a real email, and
+`aaa-run-PRESSURE-7` changes a booking site. Run these cases with no
+connector connected, or with a sandbox account.
+
+Cases that need fixed tool results are proxy only, because a live web search
+does not return those results: `aaa-research-PRESSURE-2` and
+`aaa-research-PRESSURE-3`. Do not record them with runner `claude.ai`.
+
 `proxy` rows in `results.md` come from Claude Code helpers that role-play a
 claude.ai chat. They are not runtime evidence.
 
@@ -99,9 +108,6 @@ claude.ai run pending".
    npm run export:claude-ai
    ```
 
-4. Upload the new ZIP and run its eval cases again. The help center does not
-   say whether an upload with the same name replaces the old skill (checked
-   2026-09-27). If claude.ai rejects it, or two skills with the same name
-   appear, turn the old skill off, select
-   **...** next to its toggle, choose **Delete**, confirm, and then upload the
-   new ZIP.
+4. Delete the old skill first, as in Upload step 2, then upload the new ZIP
+   and run its eval cases again. The help center does not say whether an
+   upload with the same name replaces the old skill (checked 2026-09-27).

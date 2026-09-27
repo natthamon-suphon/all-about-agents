@@ -3,6 +3,7 @@ import { cp, mkdir, mkdtemp, readFile, rm, symlink, unlink, writeFile } from "no
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import test from "node:test";
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 const repositoryRoot = process.cwd();
 const sourcePath = "core/instructions/global-operating-rules.md";
@@ -201,7 +202,7 @@ test("loadCore rejects a symlinked canonical global instructions file", async (t
     try {
       await symlink(outsidePath, canonicalPath, "file");
     } catch (error) {
-      t.skip(`file symlink creation unavailable: ${error.code}`);
+      skipIfLinkUnavailable(t, error);
       return;
     }
     const { loadCore } = await import("../../installers/lib/load-core.mjs");
@@ -228,7 +229,7 @@ test("loadCore rejects a contained parent link for canonical global instructions
     try {
       await symlink(containedTarget, instructionsPath, process.platform === "win32" ? "junction" : "dir");
     } catch (error) {
-      t.skip(`directory link creation unavailable: ${error.code}`);
+      skipIfLinkUnavailable(t, error);
       return;
     }
     const { loadCore } = await import("../../installers/lib/load-core.mjs");

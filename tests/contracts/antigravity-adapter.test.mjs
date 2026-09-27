@@ -108,8 +108,18 @@ test("the config root is the documented Gemini home on both platforms", () => {
   assert.equal(resolveGeminiHome({ env: {}, homeDir: "C:/Users/tester", platform: "win32" }), "C:\\Users\\tester\\.gemini");
   assert.equal(resolveGeminiHome({ env: {}, homeDir: "/home/tester", platform: "linux" }), "/home/tester/.gemini");
   const [root] = registrationOfKind(render(), "resolved-config-root");
-  assert.equal(root.rootEnv, null, "Antigravity documents no environment variable for its home");
+  assert.equal(root.rootEnv, ANTIGRAVITY_ROOT_ENV, "the record names the repository override this installer reads");
   assert.equal(root.path, "C:\\Users\\tester\\.gemini");
+  const guidance = fileMap(render()).get("skills/using-all-about-agents/references/adapter-capability-guidance.md");
+  assert.match(guidance, /documents no environment variable/u);
+  assert.ok(guidance.includes(`\`${ANTIGRAVITY_ROOT_ENV}\``), "the guidance must name the override the installer reads");
+  assert.doesNotMatch(guidance, /none is read/u);
+});
+
+test("the manifest config root names the same repository override", async () => {
+  const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/antigravity.json"), "utf8"));
+  assert.equal(manifest.configRoot.environment, ANTIGRAVITY_ROOT_ENV);
+  assert.equal(manifest.configRoot.fallback, "~/.gemini");
 });
 
 test("the render is deterministic and matches the checked-in snapshots", async () => {

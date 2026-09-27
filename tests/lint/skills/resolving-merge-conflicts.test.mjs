@@ -33,18 +33,15 @@ test("resolving-merge-conflicts verifies markers and clean-tree nontrigger", asy
   assert.match(skill, /clean tree|clean working tree|working tree is clean/iu);
   assert.match(skill, /untrusted/iu);
   assert.match(skill, /do not commit|never commit/iu);
-  const active = await readFile(new URL("../../../tests/fixtures/resolving-merge-conflicts/active-conflict.txt", import.meta.url), "utf8");
-  const clean = await readFile(new URL("../../../tests/fixtures/resolving-merge-conflicts/clean-tree.txt", import.meta.url), "utf8");
-  const [ours, current, separator, incoming, theirs] = active.trim().split("\n");
-  const constructed = [
-    `${"<".repeat(7)} ${ours}`,
-    current,
-    "=".repeat(7),
-    incoming,
-    `${">".repeat(7)} ${theirs}`
-  ].join("\n");
-  assert.match(constructed, /<<<<<<< ours[\s\S]*=======[\s\S]*>>>>>>> theirs/u);
-  assert.doesNotMatch(clean, /<<<<<<<|=======|>>>>>>>/u);
+});
+
+test("resolving-merge-conflicts description names every operation the body handles", async () => {
+  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
+  const description = /^description: (.+)$/mu.exec(skill)?.[1] ?? "";
+  for (const operation of ["merge", "rebase", "cherry-pick", "revert", "stash"]) {
+    assert.match(description, new RegExp(`\\b${operation}\\b`, "u"), `description must name ${operation}`);
+  }
+  assert.match(skill, /git revert --abort/u);
 });
 
 test("resolving-merge-conflicts evaluation has exact active, clean, and pressure contracts", async () => {

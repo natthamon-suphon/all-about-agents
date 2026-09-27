@@ -37,8 +37,13 @@ Copy this checklist into your reply and keep it current:
 - Use `03-tasks.md` (in the folder, in this chat, or attached).
 - With no task file, treat `02-brief.md` as one task T1 whose done check is
   the brief's success criteria. If that task has more than a few outputs,
-  suggest breaking it down first, for example with `/aaa-tasks`. Continue if
-  the user says so.
+  suggest breaking it down first, for example with `/aaa-tasks`, and
+  continue only if the user says so.
+- Before you run a lone brief's T1, create `03-tasks.md` in the tier the
+  conventions choose, with the header, one task row T1 (output: what
+  the brief's requirements ask for; done check: the brief's success criteria;
+  needs approval: yes if a step is on the irreversible list; status:
+  pending), and an empty run log. Then run T1.
 - With neither, ask. Never rebuild a task list from memory.
 
 ## 2. Resume point
@@ -55,6 +60,8 @@ Copy this checklist into your reply and keep it current:
   as existing only when a tool shows it or the user confirms it.
 
 ## 3. The loop
+
+When the run starts, set the task file's header Status to `in progress`.
 
 For each task, in order:
 
@@ -97,7 +104,8 @@ Stop, save the task file, and ask one clear question when:
 
 - a task is flagged `needs approval`;
 - a step is on the conventions' irreversible list (delete any file, overwrite
-  a file that no aaa skill wrote, send, publish or share, pay, buy or sign up,
+  a file that is not one of this project's documents or outputs, send a
+  message or an invite, publish or share anything, pay, buy or sign up,
   change an account, a setting, or a connected system), even when its flag
   says no;
 - a decision is needed that the brief and the task list do not answer;
@@ -133,9 +141,10 @@ step yourself after the user approves.
 ## 6. End
 
 When no runnable task is left, report the counts: done, done with concerns,
-done — check not run, blocked, skipped, and pending. List what needs the
-user, then suggest the next step: review the work, for example with
-`/aaa-review`.
+done — check not run, blocked, skipped, and pending. If every task's status
+starts with `done` or is `skipped`, set the header Status to `complete`;
+otherwise keep it `in progress`. List what needs the user, then suggest the
+next step: review the work, for example with `/aaa-review`.
 
 ## Red flags
 

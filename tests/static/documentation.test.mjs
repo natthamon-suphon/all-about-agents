@@ -48,9 +48,7 @@ const canonicalPrefixes = [
   "LICENSE",
   "package.json",
   ".gitignore",
-  ".gitattributes",
-  ".pre-commit-config.yaml",
-  ".idea/"
+  ".gitattributes"
 ];
 const coreRelativePrefixes = ["skills/", "roles/", "rules/", "hooks/", "evals/"];
 
@@ -230,6 +228,7 @@ test("compatibility documentation records automatic, manual, unsupported, and mo
     [/model[\s\S]{0,240}fallback|fallback[\s\S]{0,240}model/iu, "model fallback semantics"]
   ];
   for (const relativePath of [
+    "docs/compatibility/antigravity.md",
     "docs/compatibility/claude.md",
     "docs/compatibility/codex.md"
   ]) {
@@ -241,6 +240,7 @@ test("compatibility documentation records automatic, manual, unsupported, and mo
 test("cross-machine documentation records separate repository and native lifecycles", async () => {
   const lifecycleTerms = ["rendered", "validated", "registered", "trusted", "active", "runtime verified"];
   const compatibility = [
+    "docs/compatibility/antigravity.md",
     "docs/compatibility/claude.md",
     "docs/compatibility/codex.md"
   ];
@@ -356,4 +356,11 @@ test("macOS setup resolves every disposable root without a symlinked ancestor", 
   const roots = guide.split("\n").filter((line) => /^[A-Z_]+="\$\(.*mktemp -d/u.test(line));
   assert.ok(roots.length > 0, "macOS setup must create at least one disposable root");
   for (const line of roots) assert.match(line, /&& pwd -P\)"$/u, `root is not resolved through pwd -P: ${line}`);
+});
+
+test("Windows setup gives every disposable root a unique name", async () => {
+  const guide = await textAt("docs/setup/windows.md");
+  const roots = guide.split("\n").filter((line) => /Join-Path \$env:TEMP/u.test(line));
+  assert.ok(roots.length > 0, "Windows setup must create at least one disposable root");
+  for (const line of roots) assert.match(line, /\[guid\]::NewGuid\(\)/u, `root name is reused across runs: ${line}`);
 });

@@ -69,15 +69,15 @@ async function hasSymlinkComponent(path, boundary) {
   }
 }
 
-export async function assertContainedOutputDir(outputDir) {
+export async function assertContainedOutputDir(outputDir, repositoryRoot = process.cwd()) {
   if (typeof outputDir !== "string" || outputDir.trim().length === 0 || hasTraversalSegment(outputDir)) {
     throw new Error("outputDir must be a contained evaluation directory");
   }
-  const target = resolve(process.cwd(), outputDir);
-  const repositoryRoot = resolve(process.cwd());
+  const root = resolve(repositoryRoot);
+  const target = resolve(root, outputDir);
   const repositoryRoots = [
-    { logical: resolve(repositoryRoot, ".aaa", "eval-runs"), intendedParent: repositoryRoot },
-    { logical: resolve(repositoryRoot, "tests", ".tmp"), intendedParent: repositoryRoot }
+    { logical: resolve(root, ".aaa", "eval-runs"), intendedParent: root },
+    { logical: resolve(root, "tests", ".tmp"), intendedParent: root }
   ];
   const temporaryRoot = resolve(tmpdir());
   // A platform may expose the temporary directory through a symlinked spelling
@@ -176,12 +176,12 @@ async function writeResult(outputDir, batch) {
   await rename(temporaryPath, outputPath);
 }
 
-export async function runEvaluationBatch({ cases, variant, samples, executeSample, outputDir }) {
+export async function runEvaluationBatch({ cases, variant, samples, executeSample, outputDir, repositoryRoot = process.cwd() }) {
   if (!Array.isArray(cases)) throw new TypeError("cases must be an array");
   if (variant !== "control" && variant !== "candidate") throw new TypeError("variant must be control or candidate");
   if (!Number.isInteger(samples) || samples < 1) throw new TypeError("samples must be a positive integer");
   if (typeof executeSample !== "function") throw new TypeError("executeSample must be a function");
-  const containedOutputDir = await assertContainedOutputDir(outputDir);
+  const containedOutputDir = await assertContainedOutputDir(outputDir, repositoryRoot);
   if (cases.length !== samples && cases.length !== 1) throw new Error("cases must contain exactly the requested sample count");
   const inputCases = cases.length === samples ? cases : Array.from({ length: samples }, () => cases[0]);
   const results = [];

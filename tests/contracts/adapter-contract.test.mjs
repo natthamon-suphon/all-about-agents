@@ -14,6 +14,7 @@ import {
   renderText,
   renderToml
 } from "../../adapters/shared/render-utils.mjs";
+import { SURFACES } from "../../adapters/shared/surfaces.mjs";
 import { renderPayload } from "../../installers/lib/render.mjs";
 
 function input(overrides = {}) {
@@ -181,15 +182,16 @@ test("renderPayload dispatches selected surfaces in canonical order", async () =
 
 test("production rendering validates both profiles and all surfaces through the public seam", async () => {
   for (const profile of ["portable", "template"]) {
-    const results = await renderPayload({ surfaces: ["claude", "codex"], profile, platform: "win32", homeDir: "C:/Users/tester", env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude", CODEX_HOME: "C:/disposable/codex" } });
-    assert.equal(results.length, 2);
+    const results = await renderPayload({ surfaces: [...SURFACES], profile, platform: "win32", homeDir: "C:/Users/tester", env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude", CODEX_HOME: "C:/disposable/codex" } });
+    assert.deepEqual(results.map((result) => result.registrations.find((entry) => entry.kind === "profile-translation")?.surface), [...SURFACES]);
     for (const result of results) assert.equal(validateRenderResult(result).valid, true);
   }
 });
 
 test("all surface ownership arrays are complete, sorted, unique, and hash-correct for both profiles", async () => {
   for (const profile of ["portable", "template"]) {
-    const results = await renderPayload({ surfaces: ["claude", "codex"], profile, platform: "win32", homeDir: "C:/Users/tester", env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude", CODEX_HOME: "C:/disposable/codex" } });
+    const results = await renderPayload({ surfaces: [...SURFACES], profile, platform: "win32", homeDir: "C:/Users/tester", env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude", CODEX_HOME: "C:/disposable/codex" } });
+    assert.equal(results.length, SURFACES.length);
     for (const result of results) {
       assert.deepEqual(result.ownership.map((entry) => entry.relativePath), result.files.map((file) => file.relativePath), `${result.registrations[0]?.surface}/${profile} ownership order drift`);
       assert.equal(new Set(result.ownership.map((entry) => entry.relativePath)).size, result.ownership.length, `${result.registrations[0]?.surface}/${profile} ownership paths are not unique`);

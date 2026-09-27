@@ -39,6 +39,9 @@ Copy this checklist into your reply and keep it current:
 ## 1. Set the question
 
 - Write the question in one sentence, and the decision it helps with.
+- If the question is a research item R# from an earlier document, such as
+  `02-brief.md`, write that R# and its question in the report's Answers row.
+  Otherwise write "none".
 - Check attachments and this chat first. If they already answer it, report
   that with its source and stop, unless the user asked you to verify it.
 - For a broad topic, split it into three to six sub-questions and research
@@ -98,7 +101,8 @@ their sources. If no reliable source gives one, the answer is unknown. A
 
 Write `research-<topic>.md` from the [report template](templates/research.md),
 in the tier the conventions choose. `<topic>` is a short English kebab-case
-name. The report has these sections:
+name. Its header has the Answers row from step 1. The report has these
+sections:
 
 1. Question
 2. Short answer (five lines at most, with labels)

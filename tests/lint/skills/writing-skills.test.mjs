@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -9,12 +9,9 @@ import { withTempRoot } from "../../helpers/temp-root.mjs";
 
 const id = "writing-skills";
 const cases = ["WS-TRIGGER-create-or-edit-skill", "WS-NONTRIGGER-use-existing-skill", "WS-PRESSURE-prose-only-confidence"];
-const companions = [
-  "graphviz-conventions.dot",
-  "persuasion-principles.md",
-  "render-graphs.mjs",
-  "testing-skills-with-subagents.md"
-];
+const assets = ["graphviz-conventions.dot", "persuasion-principles.md", "testing-skills-with-subagents.md"];
+const scripts = ["render-graphs.mjs"];
+const companions = [...assets, ...scripts];
 const read = (name = "SKILL.md") => readFile(new URL(`../../../core/skills/${id}/${name}`, import.meta.url), "utf8");
 
 test("T043 exposes routing evidence", async () => {
@@ -62,8 +59,8 @@ test("core loader exposes all writing-skill metadata and companions", async () =
   const core = await loadCore(process.cwd());
   assert.deepEqual(core.skills.find((entry) => entry.id === id)?.evaluationCases, cases);
   const source = core.inventory.skillSources.find((entry) => entry.name === id);
-  assert.deepEqual(source?.assets, companions.map((name) => `skills/writing-skills/${name}`));
-  assert.deepEqual(source?.scripts, []);
+  assert.deepEqual(source?.assets, assets.map((name) => `skills/writing-skills/${name}`));
+  assert.deepEqual(source?.scripts, scripts.map((name) => `skills/writing-skills/${name}`));
 });
 
 test("writing-skills states its budgets, renderer usage, and authority-aware evidence", async () => {
@@ -80,11 +77,11 @@ test("writing-skills states its budgets, renderer usage, and authority-aware evi
 });
 
 const renderer = fileURLToPath(new URL(`../../../core/skills/${id}/render-graphs.mjs`, import.meta.url));
-const render = (cwd, args) => spawnSync(process.execPath, [renderer, ...args], {
+const render = (cwd, args, dot = join(cwd, "no-such-dot")) => spawnSync(process.execPath, [renderer, ...args], {
   cwd,
   encoding: "utf8",
   shell: false,
-  env: { ...process.env, GRAPHVIZ_DOT: join(cwd, "no-such-dot") }
+  env: { ...process.env, GRAPHVIZ_DOT: dot }
 });
 
 test("render-graphs rejects a flag given as the --output-dir value", async () => {
@@ -102,6 +99,38 @@ test("render-graphs reports a missing input before it looks for Graphviz", async
     const result = render(root, ["--output-dir", output, "missing.dot"]);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /^Error: input not found: missing\.dot\n$/u);
+    assert.equal(existsSync(output), false);
+  });
+});
+
+test("render-graphs refuses two inputs that would write the same SVG before it renders", async () => {
+  await withTempRoot(async (root) => {
+    for (const directory of ["a", "b"]) await mkdir(join(root, directory));
+    for (const name of ["a/graph.dot", "b/graph.dot", "a/Other.dot", "b/other.dot"]) await writeFile(join(root, name), "digraph { a -> b }\n", "utf8");
+    const output = join(root, "out");
+    for (const inputs of [["a/graph.dot", "b/graph.dot"], ["a/graph.dot", "a/graph.dot"], ["a/Other.dot", "b/other.dot"]]) {
+      const result = render(root, ["--output-dir", output, ...inputs]);
+      assert.equal(result.status, 1, inputs.join(" "));
+      assert.match(result.stderr, /^Error: two inputs would write the same output (?:graph|other)\.svg: /u, inputs.join(" "));
+      assert.equal(existsSync(output), false);
+    }
+  });
+});
+
+test("render-graphs reports Graphviz output over the size limit as a size error", async (t) => {
+  if (process.platform === "win32") {
+    t.skip("win32: the fake dot is a POSIX shell script");
+    return;
+  }
+  await withTempRoot(async (root) => {
+    const dot = join(root, "fake-dot");
+    await writeFile(dot, "#!/bin/sh\n[ \"$1\" = -V ] && exit 0\ncat >/dev/null\nexec head -c 11000000 /dev/zero\n", "utf8");
+    await chmod(dot, 0o755);
+    await writeFile(join(root, "graph.dot"), "digraph { a -> b }\n", "utf8");
+    const output = join(root, "out");
+    const result = render(root, ["--output-dir", output, "graph.dot"], dot);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /^Error: Graphviz output is empty or exceeds the safe size limit\n$/u);
     assert.equal(existsSync(output), false);
   });
 });

@@ -23,7 +23,7 @@
     ]
   },
   "configRoot": {
-    "environment": null,
+    "environment": "AAA_ANTIGRAVITY_ROOT",
     "fallback": "~/.gemini",
     "sharedBy": [
       "antigravity-cli",

@@ -9,8 +9,8 @@
   "scripts": {
     "test": "node --test",
     "test:static": "node --test tests/static/runtime.test.mjs tests/static/repository-layout.test.mjs",
-    "test:contracts": "node --test",
-    "test:integration": "node --test",
+    "test:contracts": "node --test tests/contracts/*.test.mjs",
+    "test:integration": "node --test tests/integration/*.test.mjs",
     "validate": "node scripts/aaa.mjs validate",
     "doctor": "node scripts/aaa.mjs doctor",
     "sync:status": "node scripts/sync-status.mjs",

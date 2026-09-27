@@ -181,3 +181,18 @@ test("codex reference is marked Codex-only and uses shell-neutral detection", as
   assert.doesNotMatch(reference, /\$\(|pwd -P|```bash/u);
   assert.match(reference, /current Codex documentation/iu);
 });
+
+test("codex reference dates its multi-agent facts and never edits Codex config without authority", async () => {
+  const reference = await readFile(resolve(process.cwd(), "core/skills/using-all-about-agents/references/codex-tools.md"), "utf8");
+  const text = reference.replace(/\s+/gu, " ");
+  assert.match(text, /checked 2026-09-27 on codex-cli 0\.146\.0 with `codex features list`/u);
+  assert.match(text, /Run `codex features list`/u);
+  assert.match(text, /`multi_agent` is `stable` and `true` \(the value in effect on that\s+install\)/u);
+  for (const tool of ["spawn_agent", "wait_agent", "close_agent", "send_input", "resume_agent", "list_agents"]) assert.match(text, new RegExp(`\`${tool}\``, "u"));
+  assert.match(text, /If the command fails or `multi_agent` is not `true`, stop and ask the human before changing any config\./u);
+  assert.match(text, /Never edit `~\/\.codex\/config\.toml` without the human's explicit authority/u);
+  assert.doesNotMatch(text, /\[features\]|multi_agent = true|Add to your Codex config|cites no source/u);
+  assert.match(text, /`~\/\.codex\/agents\/`/u);
+  assert.match(text, /close reviewer subagents when their review returns/u);
+  assert.match(text, /Keep each implementer subagent open until its task's review passes/u);
+});

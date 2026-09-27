@@ -12,6 +12,7 @@ import { applyPlan, STATE_RELATIVE_PATH } from "../../installers/lib/apply.mjs";
 import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 import reportSchema from "../../installers/schemas/report.schema.json" with { type: "json" };
 import planSchema from "../../installers/schemas/plan.schema.json" with { type: "json" };
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 const requiredOutputs = [
   "installers/lib/apply.mjs",
@@ -375,20 +376,20 @@ test("applyPlan verifies the final managed-state hash", async () => {
   });
 });
 
-test("applyPlan fails closed when a parent becomes a symlink between preflight and content mutation", async () => {
+test("applyPlan fails closed when a parent becomes a symlink between preflight and content mutation", async (t) => {
   await withTempRoot(async (root) => {
     const nested = join(root, "nested");
     const outside = join(root, "outside");
     await mkdir(nested);
     await mkdir(outside);
-    let linkAvailable = true;
+    let linkError = null;
     let escapedWriteCalls = 0;
     const fileSystem = fsFor([["nested/escape.txt", "must stay inside"]], {
       mkdir: async (path, options) => {
         await mkdir(path, options);
         if (path === nested) {
           await rename(nested, join(root, "nested-original"));
-          try { await symlink(outside, nested, process.platform === "win32" ? "junction" : "dir"); } catch { linkAvailable = false; }
+          try { await symlink(outside, nested, process.platform === "win32" ? "junction" : "dir"); } catch (error) { linkError = error; }
         }
       },
       writeFile: async (path, ...args) => {
@@ -396,8 +397,11 @@ test("applyPlan fails closed when a parent becomes a symlink between preflight a
         return writeFile(join(outside, basename(path)), ...args);
       }
     });
-    if (!linkAvailable) return;
     const result = await applyPlan({ plan: planFor(root, [["nested/escape.txt", "must stay inside"]]), fileSystem });
+    if (linkError) {
+      skipIfLinkUnavailable(t, linkError);
+      return;
+    }
     assert.equal(result.status, "failed");
     assert.equal(escapedWriteCalls, 0);
     assert.equal(await access(join(outside, "escape.txt")).then(() => true, () => false), false);
@@ -405,7 +409,7 @@ test("applyPlan fails closed when a parent becomes a symlink between preflight a
   });
 });
 
-test("applyPlan fails closed when an owned parent becomes a symlink before prune", async () => {
+test("applyPlan fails closed when an owned parent becomes a symlink before prune", async (t) => {
   await withTempRoot(async (root) => {
     const ownedDirectory = join(root, "owned");
     const outside = join(root, "outside");
@@ -413,7 +417,7 @@ test("applyPlan fails closed when an owned parent becomes a symlink before prune
     await mkdir(outside);
     await writeFile(join(ownedDirectory, "stale.txt"), "owned");
     await writeFile(join(outside, "stale.txt"), "outside");
-    let linkAvailable = true;
+    let linkError = null;
     let swapped = false;
     const state = { schemaVersion: 1, repositoryVersion: "repo-1", profile: "portable", surfaces: ["claude"], ownedPaths: [{ relativePath: "owned/stale.txt", sha256: hashBytes(bytes("owned")) }] };
     const fileSystem = fsFor([], {
@@ -422,33 +426,36 @@ test("applyPlan fails closed when an owned parent becomes a symlink before prune
         if (!swapped && path === join(ownedDirectory, "stale.txt")) {
           swapped = true;
           await rename(ownedDirectory, join(root, "owned-original"));
-          try { await symlink(outside, ownedDirectory, process.platform === "win32" ? "junction" : "dir"); } catch { linkAvailable = false; }
+          try { await symlink(outside, ownedDirectory, process.platform === "win32" ? "junction" : "dir"); } catch (error) { linkError = error; }
         }
         return value;
       }
     });
-    if (!linkAvailable) return;
     const result = await applyPlan({ plan: planFor(root, [], state), fileSystem });
+    if (linkError) {
+      skipIfLinkUnavailable(t, linkError);
+      return;
+    }
     assert.equal(result.status, "failed");
     assert.equal(await readFile(join(outside, "stale.txt"), "utf8"), "outside");
     assert.equal(await access(join(root, STATE_RELATIVE_PATH)).then(() => true, () => false), false);
   });
 });
 
-test("applyPlan fails closed when the managed-state parent becomes a symlink", async () => {
+test("applyPlan fails closed when the managed-state parent becomes a symlink", async (t) => {
   await withTempRoot(async (root) => {
     const stateDirectory = join(root, ".all-about-agents");
     const outside = join(root, "outside");
     await mkdir(stateDirectory);
     await mkdir(outside);
-    let linkAvailable = true;
+    let linkError = null;
     let escapedWriteCalls = 0;
     const fileSystem = fsFor([], {
       mkdir: async (path, options) => {
         await mkdir(path, options);
         if (path === stateDirectory) {
           await rename(stateDirectory, join(root, "state-original"));
-          try { await symlink(outside, stateDirectory, process.platform === "win32" ? "junction" : "dir"); } catch { linkAvailable = false; }
+          try { await symlink(outside, stateDirectory, process.platform === "win32" ? "junction" : "dir"); } catch (error) { linkError = error; }
         }
       },
       writeFile: async (path, ...args) => {
@@ -456,9 +463,12 @@ test("applyPlan fails closed when the managed-state parent becomes a symlink", a
         return writeFile(join(outside, basename(path)), ...args);
       }
     });
-    if (!linkAvailable) return;
     const plan = planFor(root, []);
     const result = await applyPlan({ plan, fileSystem });
+    if (linkError) {
+      skipIfLinkUnavailable(t, linkError);
+      return;
+    }
     assert.equal(result.status, "failed");
     assert.equal(escapedWriteCalls, 0);
     assert.equal(await access(join(outside, "state.json")).then(() => true, () => false), false);
@@ -515,7 +525,7 @@ test("applyPlan keeps a completed prune when an empty-folder removal fails", asy
   });
 });
 
-test("applyPlan refuses to remove folders above a parent that became a symlink during the prune", async () => {
+test("applyPlan refuses to remove folders above a parent that became a symlink during the prune", async (t) => {
   await withTempRoot(async (root) => {
     const files = [["outer/inner/stale.txt", "stale"], ["keep.txt", "keep"]];
     await applyPlan({ plan: planFor(root, files), fileSystem: fsFor(files) });
@@ -524,18 +534,21 @@ test("applyPlan refuses to remove folders above a parent that became a symlink d
     await mkdir(join(outside, "inner"), { recursive: true });
     const outer = join(root, "outer");
     const removed = [];
-    let linkAvailable = true;
+    let linkError = null;
     const rmdirSwap = async (path) => {
       removed.push(path);
       await rmdir(path);
       if (path === join(outer, "inner")) {
         await rename(outer, join(root, "outer-original"));
-        try { await symlink(outside, outer, process.platform === "win32" ? "junction" : "dir"); } catch { linkAvailable = false; }
+        try { await symlink(outside, outer, process.platform === "win32" ? "junction" : "dir"); } catch (error) { linkError = error; }
       }
     };
     const kept = [["keep.txt", "keep"]];
     const result = await applyPlan({ plan: planFor(root, kept, state), fileSystem: fsFor(kept, { rmdir: rmdirSwap }) });
-    if (!linkAvailable) return;
+    if (linkError) {
+      skipIfLinkUnavailable(t, linkError);
+      return;
+    }
     assert.notEqual(result.status, "complete");
     assert.match(result.failed.reason, /symlink|junction|reparse/u);
     assert.deepEqual(removed, [join(outer, "inner")]);

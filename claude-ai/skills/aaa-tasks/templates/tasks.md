@@ -8,7 +8,7 @@
 | Date | YYYY-MM-DD |
 | Status | draft |
 | Language | the document language |
-| Sources | `02-brief.md` or the plan the user gave, and attached files by name |
+| Sources | `02-brief.md` or the plan the user gave, research reports, and attached files by name |
 
 ## Goal
 
@@ -39,7 +39,7 @@ skipped, done — check not run.
 
 ## Coverage
 
-| REQ#, criterion, O#, or R# | Tasks or row |
+| REQ#, criterion, O#, or R# | Tasks, row, or report |
 | --- | --- |
 
 ## Run log

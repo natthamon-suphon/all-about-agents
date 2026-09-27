@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, readdir, readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
@@ -7,8 +7,8 @@ import { main } from "../../scripts/aaa.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderForSurface } from "../../installers/lib/render.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
+import { SURFACES, SURFACE_ROOT_ENV } from "../../adapters/shared/surfaces.mjs";
 
-const SURFACES = ["antigravity", "claude", "codex"];
 const NAMESPACES = new Set(SURFACES.map((surface) => `${surface}/`));
 
 function manifestPatternRegex(pattern) {
@@ -130,10 +130,11 @@ test("single-surface refresh preserves every other surface in a shared managed r
     const refresh = await runCli(["install", "--surface", "claude", "--destination-root", root, "--apply", "--format", "json"]);
     assert.equal(refresh.code, 0, refresh.stderr);
     assert.equal(refresh.report.status, "complete");
-    assert.ok(refresh.report.plans[0].actions.every((action) => !action.relativePath.startsWith("codex/")), "single-surface plan must not mutate another surface namespace");
+    const siblingPrefixes = SURFACES.filter((surface) => surface !== "claude").map((surface) => `${surface}/`);
+    assert.ok(refresh.report.plans[0].actions.every((action) => !siblingPrefixes.some((prefix) => action.relativePath.startsWith(prefix))), "single-surface plan must not mutate another surface namespace");
 
     const after = await snapshotTree(root);
-    for (const prefix of ["codex/"]) {
+    for (const prefix of siblingPrefixes) {
       for (const [relativePath, content] of Object.entries(before)) {
         if (relativePath.startsWith(prefix)) assert.equal(after[relativePath], content, `${relativePath} must be preserved byte-for-byte`);
       }
@@ -170,18 +171,17 @@ test("every rendered surface file is declared by its manifest ownership patterns
 
 test("install --apply without --destination-root fails closed before touching any discovered root", async () => {
   await withTempRoot(async (root) => {
-    const claudeRoot = join(root, "claude");
-    const codexRoot = join(root, "codex");
-    const previous = { CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR, CODEX_HOME: process.env.CODEX_HOME };
-    process.env.CLAUDE_CONFIG_DIR = claudeRoot;
-    process.env.CODEX_HOME = codexRoot;
+    const discoveredRoots = Object.fromEntries(SURFACES.map((surface) => [surface, join(root, surface)]));
+    const previous = Object.fromEntries(SURFACES.map((surface) => [SURFACE_ROOT_ENV[surface], process.env[SURFACE_ROOT_ENV[surface]]]));
+    for (const surface of SURFACES) process.env[SURFACE_ROOT_ENV[surface]] = discoveredRoots[surface];
     try {
-      for (const surface of ["all", ...SURFACES]) {
-        const result = await runCli(["install", "--surface", surface, "--apply", "--format", "json"]);
-        assert.notEqual(result.code, 0, `${surface}: apply without an explicit destination must not succeed`);
-        assert.match(JSON.stringify(result.report), /destination-root-required/u, `${surface}: report must name the guard`);
-        assert.deepEqual(await snapshotTree(claudeRoot), {}, `${surface}: discovered Claude root must stay untouched`);
-        assert.deepEqual(await snapshotTree(codexRoot), {}, `${surface}: discovered Codex root must stay untouched`);
+      for (const selected of ["all", ...SURFACES]) {
+        const result = await runCli(["install", "--surface", selected, "--apply", "--format", "json"]);
+        assert.notEqual(result.code, 0, `${selected}: apply without an explicit destination must not succeed`);
+        assert.match(JSON.stringify(result.report), /destination-root-required/u, `${selected}: report must name the guard`);
+        for (const surface of SURFACES) {
+          assert.deepEqual(await snapshotTree(discoveredRoots[surface]), {}, `${selected}: discovered ${surface} root must stay untouched`);
+        }
       }
     } finally {
       for (const [name, value] of Object.entries(previous)) {

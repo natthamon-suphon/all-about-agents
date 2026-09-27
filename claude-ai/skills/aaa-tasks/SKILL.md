@@ -35,6 +35,8 @@ Copy this checklist into your reply and keep it current:
 
 - Use `02-brief.md` if it exists (in the folder, in this chat, or attached).
   Otherwise use the plan or goal the user gives.
+- Also read the research reports `research-<topic>.md` of this project, and
+  their Answers rows.
 - **One-step check.** If the work is one action (one edit, one answer, one
   message), say so, then do it or offer to do it. Make no task list. This holds
   even when the user asks for a minimum number of tasks: padded tasks hide the
@@ -62,9 +64,10 @@ Use the task table in the [task list template](templates/tasks.md). Rules:
   "the receipts total at most 5,000 baht". Never "done well" or "looks good".
 - **Needs approval.** Mark it `yes` and give the reason when the task has a
   step on the conventions' irreversible list (delete any file, overwrite a
-  file that no aaa skill wrote, send, publish or share, pay, buy or sign up,
-  change an account, a setting, or a connected system), or when it needs a
-  decision the source does not make.
+  file that is not one of this project's documents or outputs, send a message
+  or an invite, publish or share anything, pay, buy or sign up, change an
+  account, a setting, or a connected system), or when it needs a decision the
+  source does not make.
   Example: "yes: sends a message".
 - **Parallel-safe.** Mark it `yes` when the task changes nothing that another
   task also changes. A dependency alone does not make it `no`: the run loop
@@ -101,7 +104,10 @@ Then fill the coverage table:
 - every REQ# and every success criterion maps to at least one task; without
   REQ#, map the goal lines the user gave;
 - every open question (O#) and research item (R#) from the source maps to a
-  task or to a "Not yet specified" row;
+  task or to a "Not yet specified" row. An R# that a research report's
+  Answers row names needs no research task: map it to that report, and put
+  the report in the Inputs of each task that uses the answer. If the report's
+  answer is unknown, the R# still needs a task or a row;
 - a task that maps to nothing is out of scope: remove it, or ask.
 
 ## 5. Self-review and show

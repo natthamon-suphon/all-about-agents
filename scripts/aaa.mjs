@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { lstat, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { createInterface } from "node:readline/promises";
@@ -33,13 +33,29 @@ const HELP_TEXT = [
   "  eval      Run an evaluation against a disposable root",
   "  register  Register one rendered package with its native product (dry-run by default)",
   "",
-  "Options:",
-  "  --surface <surface>  Select one surface (register requires exactly one)",
+  "Options for install, doctor, diff, and register:",
+  "  --surface <surface>  antigravity, claude, codex, or all (default all; register requires exactly one)",
   "  --profile <profile>  Use portable or template profile",
-  "  --package-root <path>  Package path for register (repository-relative or absolute)",
+  "  --destination-root <path>  Root for install, doctor, or diff, relative to the current directory; required for install --apply",
+  "  --statusline-name <name>  Claude statusline display name for install or diff (at most 64 characters)",
+  "  --package-root <path>  Package path for register, required (absolute or relative to the current directory)",
   "  --dry-run | --apply  Plan only by default; apply requires explicit --apply",
   "  --format text|json  Select human or machine-readable output",
   "  -h, --help  Show this help",
+  "",
+  "Options for validate:",
+  "  --scope core|all|skill  core renders the portable profile, all adds the template profile, skill checks one skill",
+  "  --skill <name>  Skill to check with --scope skill",
+  "  --format text|json  Select human or machine-readable output",
+  "",
+  "Options for eval (all required except --surface and --format):",
+  "  --skill <name>  Canonical skill to evaluate",
+  "  --variant control|candidate  Variant label for the batch",
+  "  --samples 5  Sample count; must be exactly 5",
+  "  --input-jsonl <path>  JSONL file with one record per sample",
+  "  --output <dir>  Result directory, for example .aaa/eval-runs",
+  "  --surface <surface>  Optional surface label for the report",
+  "  --format text|json  Select human or machine-readable output",
   ""
 ].join("\n");
 
@@ -567,4 +583,4 @@ export async function main(args, output = process.stdout, errorOutput = process.
   return 0;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exitCode = await main(process.argv.slice(2));
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) process.exitCode = await main(process.argv.slice(2));

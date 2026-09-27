@@ -75,6 +75,8 @@ test("dispatching-parallel-agents routing evaluation defines four critical cases
   assert.equal(evaluation.cases[2].expected.nativeAvailability, false);
   assert.equal(evaluation.cases[2].expected.noFakeParallelism, true);
   assert.equal(evaluation.cases[2].expected.sequentialFallbackOrBlock, true);
+  assert.equal(Object.hasOwn(evaluation.cases[2].expected, "approvedPlan"), false, "read-only workers need no plan approval");
+  assert.doesNotMatch(evaluation.cases[2].observables.join("\n"), /approved/iu);
   assert.equal(evaluation.cases[3].expected.skillCheck, "not-required");
   assert.equal(evaluation.cases[3].expected.routeTo, "subagent-driven-development");
 });

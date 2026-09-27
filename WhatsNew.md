@@ -112,14 +112,68 @@ All notable changes to all-about-agents. The format follows
 - `npm run setup` (`scripts/setup.mjs`): one guarded pipeline for installing this
   repository into the local products. `--mode fresh` clears every previous render
   from the package root first; `--mode update` keeps the root and syncs it with the
-  current checkout. Both then remove the installed plugin, render, commit the Codex
-  plugin source when it changed, register each surface, and list what each product
-  reports. Planning is the default and `--apply` is required to mutate. The run
+  current checkout. Both then render, commit the Codex plugin source when it
+  changed, remove and register each surface's plugin one surface at a time, and
+  list what each product reports. Planning is the default and `--apply` is required to mutate. The run
   refuses a home directory, a live product root, this repository, or any directory
   without a rendered package marker, and it never deletes inside the product roots.
   See `docs/maintenance/sync-and-update.md`.
 
 ### Changed
+
+- A full read of all 412 tracked files (review round 2) was fixed in one pass:
+  - Claude now gets the nine core rules and the presentation catalog:
+    `register --surface claude --apply` copies them to
+    `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, a folder this package owns,
+    so a user's own rule files are never touched. Files there are replaced on
+    update; an extra file is reported (`claude-rules-extra-files`), never
+    deleted; a symlinked folder is one manual step. Claude Code loads rules from
+    subfolders. The registration record and the Claude docs say so.
+  - `npm run setup` previews each registration (`register --dry-run`), then
+    removes and registers that surface's plugin before it moves to the next
+    surface, so a failed surface never leaves another product with no plugin;
+    a failed preview stops the run before the removal. `--mode fresh` with a
+    surface subset clears only the selected surface folders. A missing product binary is `not-run-unavailable` and the run
+    continues. A registration that ends `manual-required` does not stop the
+    run either: setup goes on, lists each manual step with its reason, and
+    exits 1 with status `manual-required`. The reserved package roots now
+    include `~/.gemini` and
+    `AAA_ANTIGRAVITY_ROOT`; `--surface all` on a root with per-surface state is
+    refused in update mode (`whole-root-in-surface-managed-root`); the Codex
+    source commit strips `GIT_*` variables; the Claude plugin is removed with
+    `--scope user --keep-data`, so its data folder is kept.
+  - The PreCompact checkpoint records the payload's `session_id` and `trigger`
+    (cleaned, at most 64 characters) instead of fixed values.
+  - `npm run test:model` marks every case `NOT_RUN_UNAVAILABLE` when the
+    installed plugin cache does not match a render of this checkout, when
+    `claude` fails, or when `git init` fails. The `skill:` trailer counts only
+    its first token, and the router trigger passes only on a skill of this
+    package.
+  - `finishing-a-development-branch` applies when the human asks to finish and
+    the work is complete, even if the test status is unknown (it runs the full
+    suite); failing tests or unfinished work are its non-trigger
+    (`FB-NONTRIGGER-failing-or-unfinished`). `loop-me` also triggers when the
+    human asks to be grilled about a recurring workflow, and
+    `resolving-merge-conflicts` names revert.
+  - `codex-tools.md` no longer tells the agent to edit `~/.codex/config.toml`.
+    It records what was checked on codex-cli 0.146.0 (`codex features list`:
+    `multi_agent` stable and on) and says to stop and ask if it is off.
+  - `task-brief` ends a task at the next heading of the same or a higher level,
+    needs a capital-T `Task` heading, and behaves the same in Node and bash.
+    The `.cjs` scripts refuse a folder as the plan file and extra arguments.
+  - `aaa --help` lists every option; `test:contracts` and `test:integration`
+    run only their folders; the plan and state schemas accept `antigravity`;
+    the quality report no longer accepts `linux`, which the roots never
+    supported.
+  - claude.ai pack: a research report's Answers row names the R# it answers,
+    and the brief and tasks carry that answer with its source; a required
+    output that is missing is an open finding; a re-review saves the next
+    version; the brief and the run set the header Status; the run creates
+    `03-tasks.md` for a lone brief. ZIPs re-exported; nothing uploaded.
+  - Docs: the T07 harness is described as Claude and Codex only; the
+    non-existent `--instruction-root` is gone; the Windows guide uses a new
+    root name per run; "macOS or Linux" labels say macOS; `.aaa/` is ignored
+    as a whole.
 
 - A second full review of the 27 core skills was fixed in one pass. The
   owner chose three defaults:
@@ -160,8 +214,8 @@ All notable changes to all-about-agents. The format follows
   `hooks/checkpoints/`), or when the Codex plugin's package root has
   uncommitted changes or is not its own Git repository. The cache must sit
   below `<product root>/plugins/cache`. The report prints the exact reinstall
-  commands, with control characters escaped; for a package root that holds
-  `'` it prints none. See `docs/maintenance/native-registration.md`.
+  commands, with control characters escaped and the package root shown as
+  `<PACKAGE_ROOT>`. See `docs/maintenance/native-registration.md`.
 - Several descriptions were narrowed so their triggers no longer overlap:
   brainstorming, performance-profiling-and-benchmarking (goal and proof work;
   an unknown-cause regression goes to systematic-debugging),
@@ -220,7 +274,8 @@ All notable changes to all-about-agents. The format follows
   - A router skill was asserted to name itself. `using-all-about-agents`
     dispatches to another skill, so on a trigger case the correct answer is the
     skill it routes to, and the old assertion could never pass. `suite.json`
-    now carries `routers`, and a router's trigger case passes on any route,
+    now carries `routers`, and a router's trigger case passes on a route to
+    any skill of this package,
     its non-trigger case requires no route at all (which is stricter than
     before, and is what `restartBootstrap: false` in the case file asks for),
     and its pressure case stays strict because the rule under pressure lives in
@@ -242,6 +297,13 @@ All notable changes to all-about-agents. The format follows
 
 ### Removed
 
+- The five `.idea/` IntelliJ files are no longer tracked; `.gitignore` already
+  ignored them, and one pinned a machine-specific JDK. They stay on disk.
+- `.pre-commit-config.yaml`: it targeted `evals/*.py`, which is ignored and does
+  not exist. The dead `*.cmd` rule in `.gitattributes`, the unused
+  `DEFAULT_ROLES` tables in the three adapters, and tests that could not fail
+  (constant-only checks, a checkout test that checked nothing, a self-made
+  conflict-marker check) with their orphan fixtures.
 - `writing-skills/anthropic-best-practices.md` and
   `writing-skills/examples/CLAUDE_MD_TESTING.md`: their content moved into
   `SKILL.md` and `testing-skills-with-subagents.md`.
@@ -253,6 +315,45 @@ All notable changes to all-about-agents. The format follows
 
 ### Fixed
 
+- `npm run setup --mode fresh` could delete a parent folder: a package root
+  such as `..` passed the equality-only reserved-root check, and the clear
+  accepted any folder with any marker in any child. The root may no longer be,
+  contain, or sit inside a reserved root (real paths, letter case ignored), and
+  the clear deletes only the package layout this installer writes (plus a
+  root `.DS_Store`); any other entry refuses the clear and nothing is deleted.
+- Claude registration kept only the package's `permissions.deny` and
+  `permissions.allow` entries and dropped the user's own; both lists are now
+  merged, user entries first. A user list that is not an array of non-empty
+  strings is refused (`settings-permission-list-invalid`): `settings.json` is
+  not written and the step is `manual-required`.
+- Registration steps that leave rules or settings undeployed (a linked or
+  non-file rule target, extra files in the rules folder, a refused settings
+  merge) now end the report `manual-required` with exit 1. A Codex
+  `config.toml` or an Antigravity `GEMINI.md` that already exists counts as
+  complete when it contains the package's managed tables or body (extra
+  tables and sections may stay); when managed content is missing, the step
+  names it and ends `manual-required` with exit 1. Such a file is never
+  overwritten; before, a differing file was skipped and the run still reported
+  complete. Codex product
+  commands run without inherited `GIT_*` variables, and managed state rejects
+  control characters in owned paths.
+- `npm run setup` removed every plugin before it registered any, so the first
+  failed register (for example a missing `agy`) left Claude and Codex with no
+  plugin.
+- The deployed Claude statusline could not import its key function, so it never
+  showed tracked agents or skills; it is now self-contained.
+- Scripts, hooks, and the statusline did nothing when started through a
+  symlinked path; the entry check now compares real paths.
+- An empty `--destination-root` value fell back to the current directory.
+- A file copy with the right bytes but the wrong mode was not repaired.
+- The setup evidence text replaced every "s" with a space.
+- `presentation-trace` swapped the `emoji-before-name` and `label-mismatch`
+  codes. The brainstorming companion kept `$`-patterns in screen text wrong and
+  promised a reconnect that cannot happen after a restart.
+- `render-graphs` let two inputs with the same name overwrite each other.
+- Tests no longer read the operator's own config or home, skip with a reason
+  when symlinks or `pwsh` are unavailable, and cover the Antigravity surface in
+  the D9 root guard, presentation safety, and all-surface loops.
 - `brainstorming`: the visual companion always reported port 0, so its URL
   never opened. Each start now makes a new session key, kept only in a
   private temp folder, never in the project. `stop-server.sh` now cleans up
@@ -286,9 +387,8 @@ All notable changes to all-about-agents. The format follows
   anywhere in the answer. Nothing rendered into the package carries that literal
   string, so compliant announcements were recorded as `FAIL`, and a non-trigger
   answer that named the skill to explain why it stayed unused was recorded as an
-  announcement. A case now counts as announced when one line carries the canonical
-  skill name together with its emoji from `core/presentation/emoji-registry.json`,
-  which is what `core/instructions/global-operating-rules.md` asks for.
+  announcement. The suite now scores the `skill:` trailer line instead; see the
+  `npm run test:model` entry under Changed.
 - A case that outruns its budget is `NOT_RUN_UNAVAILABLE`, not `FAIL`: a slow
   session is an environment fact, not a routing verdict. The budget moved from a
   fixed 180000 ms to 300000 ms and reads `AAA_CASE_TIMEOUT_MS` when it is set.

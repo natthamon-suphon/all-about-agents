@@ -10,12 +10,14 @@ node_modules/
 inspo
 triage/
 
-# Eval harness lives in its own repository, cloned into evals/ for local
-# development (see CLAUDE.md). It is not part of the published
-# plugin, so only the root checkout is ignored here.
+# A root evals/ checkout is a separate eval harness, not part of the published
+# plugin. Only that root folder is ignored; core/evals/ stays tracked.
 /evals/
 !/core/evals/
 !/core/evals/**
+# Local skill and tool records (.aaa/<topic>/). The two explicit lines are
+# pinned by tests and are covered by .aaa/.
+.aaa/
 .aaa/eval-runs/
 .aaa/claude-ai/
 tests/.tmp/

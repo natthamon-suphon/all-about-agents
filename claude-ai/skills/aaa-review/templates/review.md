@@ -49,6 +49,10 @@ not addressed. Only fixed and addressed findings are closed.
 
 ## Not checked
 
+Items you could not check, with the reason, such as a success criterion that
+can be measured only after the work is used. A required output that is
+missing or not attached is a finding, not a row here.
+
 | Item | Why |
 | --- | --- |
 

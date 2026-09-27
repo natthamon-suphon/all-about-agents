@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, posix, resolve } from "node:path";
 import test from "node:test";
 
+import { renderAntigravity } from "../../adapters/antigravity/adapter.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
 import { assertUnifiedSkillPortfolio, loadCore } from "../../installers/lib/load-core.mjs";
@@ -12,6 +13,7 @@ import { assertUnifiedSkillPortfolio, loadCore } from "../../installers/lib/load
 const requiredOutputs = [
   "tests/contracts/complete-skill-manifest.test.mjs",
   "tests/lint/skill-collisions.test.mjs",
+  "tests/snapshots/antigravity/skills-manifest.json",
   "tests/snapshots/claude/skills-manifest.json",
   "tests/snapshots/codex/skills-manifest.json"
 ];
@@ -21,9 +23,11 @@ test("T044 creates every owned artifact", async () => {
   for (const relativePath of requiredOutputs) await access(resolve(process.cwd(), relativePath));
 });
 
+const PINNED = Object.freeze({ env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude", CODEX_HOME: "C:/disposable/codex" }, homeDir: "C:/Users/tester", platform: "win32", targetRuntime: "cli", statuslineName: "" });
 const surfaceSpecs = [
-  { id: "claude", prefix: "skills", render: (core) => renderClaude({ core, profile: { id: "portable" }, statuslineName: "" }) },
-  { id: "codex", prefix: ".agents/skills", render: (core) => renderCodex({ core, profile: { id: "portable" }, targetRuntime: "cli" }) }
+  { id: "antigravity", prefix: "skills", render: (core, profile = { id: "portable" }) => renderAntigravity({ ...PINNED, core, profile }) },
+  { id: "claude", prefix: "skills", render: (core, profile = { id: "portable" }) => renderClaude({ ...PINNED, core, profile }) },
+  { id: "codex", prefix: ".agents/skills", render: (core, profile = { id: "portable" }) => renderCodex({ ...PINNED, core, profile }) }
 ];
 
 function normalized(value) {
@@ -85,7 +89,7 @@ test("loader exposes every declared companion as contained normalized UTF-8 cont
   }
 });
 
-test("both surfaces render every companion once beside its owning skill", async () => {
+test("every surface renders every companion once beside its owning skill", async () => {
   const core = await loadCore(process.cwd());
   const records = new Map(core.skills.map((record) => [record.id, record]));
   for (const surface of surfaceSpecs) {
@@ -109,6 +113,7 @@ test("both surfaces render every companion once beside its owning skill", async 
 
 test("all package manifests declare the rendered global file and complete skill roots", async () => {
   const expectedGlobal = new Map([
+    ["antigravity", "GEMINI.md"],
     ["claude", "CLAUDE.md"],
     ["codex", "AGENTS.md"]
   ]);
@@ -131,8 +136,7 @@ test("pack selection is rejected at loader, adapter, and profile argument seams"
   await assert.rejects(loadCore(process.cwd(), { skillPack: "core" }), /complete skill portfolio|pack selection/iu);
   const core = await loadCore(process.cwd());
   for (const surface of surfaceSpecs) {
-    const options = { core, profile: { id: "portable", skillPack: "core" }, statuslineName: "", targetRuntime: "cli" };
-    assert.throws(() => surface.id === "claude" ? renderClaude(options) : renderCodex(options), /complete skill portfolio|pack selection/iu);
+    assert.throws(() => surface.render(core, { id: "portable", skillPack: "core" }), /complete skill portfolio|pack selection/iu, surface.id);
   }
 });
 

@@ -6,8 +6,9 @@ import test from "node:test";
 
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { materializeRenderResult, renderForSurface } from "../../installers/lib/render.mjs";
+import { SURFACES, SURFACE_ROOT_ENV } from "../../adapters/shared/surfaces.mjs";
 
-const SURFACES = ["claude", "codex"];
+const DISPOSABLE_ROOT_ENV = Object.fromEntries(SURFACES.map((surface) => [SURFACE_ROOT_ENV[surface], `C:/disposable/${surface}`]));
 const PROFILES = ["portable", "template"];
 const EMOJI = /\p{Extended_Pictographic}/u;
 const RAW_ESCAPE = /\u001B|\x1B/u;
@@ -174,8 +175,8 @@ test("all materialized surface packages pass the presentation safety scan", asyn
         statuslineName: "",
         platform: "win32",
         homeDir: "C:/Users/tester",
-        env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude", CODEX_HOME: "C:/disposable/codex" },
-        targetRuntime: surface === "codex" ? "cli" : undefined
+        env: DISPOSABLE_ROOT_ENV,
+        targetRuntime: surface === "claude" ? undefined : "cli"
       });
       const result = materializeRenderResult(rendered);
       assertSafePackage({ surface, profile, result, core });

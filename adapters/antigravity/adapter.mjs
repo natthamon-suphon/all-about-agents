@@ -8,7 +8,7 @@ import { renderSurface as validateSurface, validateRenderResult } from "../share
 import { SURFACE_HOME_DIRECTORY, SURFACE_ROOT_ENV } from "../shared/surfaces.mjs";
 import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeScopeDiagnostics } from "../../core/roles/contract.mjs";
-import { skillCompanionsFor } from "../../installers/lib/load-core.mjs";
+import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 import { renderAntigravityGlobalInstructions } from "../shared/global-instructions.mjs";
 
@@ -38,16 +38,6 @@ const ANTIGRAVITY_SEMANTIC_MAPPINGS = Object.freeze({
   "workflow-state": Object.freeze(["GEMINI.md"]),
   "schema-validation": Object.freeze(["run_shell_command"]),
   "native-rendering": Object.freeze(["plugin"])
-});
-
-const DEFAULT_ROLES = Object.freeze({
-  researcher: Object.freeze({ description: "Find and cite primary sources without mutating the repository.", capabilities: ["external-research", "web-primary-sources", "repository-read"] }),
-  investigator: Object.freeze({ description: "Reproduce an internal problem and rank evidence-backed hypotheses.", capabilities: ["repository-read", "filesystem-read", "test-execution"] }),
-  architect: Object.freeze({ description: "Design modules, interfaces, seams, invariants, and risks.", capabilities: ["repository-read", "schema-validation", "evaluation"] }),
-  implementer: Object.freeze({ description: "Make scoped test-first changes and report fresh evidence.", capabilities: ["repository-read", "repository-write", "isolated-write", "test-execution"] }),
-  verifier: Object.freeze({ description: "Run fresh black-box checks without changing implementation files.", capabilities: ["repository-read", "test-execution", "evaluation"] }),
-  reviewer: Object.freeze({ description: "Review specifications, diffs, tests, and maintainability evidence.", capabilities: ["repository-read", "evaluation", "schema-validation"] }),
-  "security-reviewer": Object.freeze({ description: "Check threat paths, secrets, containment, and emergency guardrails.", capabilities: ["repository-read", "evaluation", "schema-validation"] })
 });
 
 function compareCodePoints(left, right) {
@@ -121,22 +111,19 @@ function renderSkill(name, record) {
 }
 
 function renderRole(name, role) {
-  const fallback = DEFAULT_ROLES[name] || Object.freeze({ description: "Unknown role; no native capabilities are granted.", capabilities: [] });
-  const description = role?.description || role?.purpose || fallback.description;
-  const capabilities = role
-    ? [
-      ...(Array.isArray(role.capabilities) ? role.capabilities : []),
-      ...(Array.isArray(role.requiredCapabilities) ? role.requiredCapabilities : []),
-      ...(Array.isArray(role.allowedCapabilities) ? role.allowedCapabilities : [])
-    ]
-    : fallback.capabilities;
+  const description = role.description || role.purpose;
+  const capabilities = [
+    ...(Array.isArray(role.capabilities) ? role.capabilities : []),
+    ...(Array.isArray(role.requiredCapabilities) ? role.requiredCapabilities : []),
+    ...(Array.isArray(role.allowedCapabilities) ? role.allowedCapabilities : [])
+  ];
   const roleContext = [
-    role?.purpose,
+    role.purpose,
     capabilities.length > 0 ? `Semantic capabilities: ${[...new Set(capabilities)].join(", ")}.` : "",
-    Array.isArray(role?.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
-    Array.isArray(role?.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
+    Array.isArray(role.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
+    Array.isArray(role.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
-  const instructions = `${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
+  const instructions = `${role.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
   return ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${instructions}\n`);
 }
 
@@ -162,7 +149,7 @@ function capabilityGuidance(semanticProfile) {
     "",
     "This package is the Antigravity adapter's documented surface map.",
     "",
-    "- The configuration root is the user's `.gemini` directory. No environment variable is documented for it, so none is read.",
+    `- The configuration root is the user's \`.gemini\` directory. Antigravity documents no environment variable for it; this installer reads its own repository-scoped override, \`${ANTIGRAVITY_ROOT_ENV}\`.`,
     "- `GEMINI.md` carries the canonical global body, the inlined routing contract, the canonical rules, and the presentation catalog.",
     "- Skills are packaged under `skills/<skill>/SKILL.md` and roles under `agents/<role>.md`; `agy plugin validate` reports both counts.",
     "- There is no session-start event. The routing contract is inlined into `GEMINI.md` rather than injected, and this adapter renders no hook files.",
@@ -307,6 +294,7 @@ function targetRuntimeOf(input) {
 
 /** Render the deterministic Antigravity package. */
 export function renderAntigravity(input = {}) {
+  assertUnifiedSkillPortfolio(input);
   const core = input.core;
   if (!core || typeof core !== "object") throw new TypeError("core is required");
   for (const collection of ["rules", "skills"]) {
@@ -337,7 +325,7 @@ export function renderAntigravity(input = {}) {
   }
 
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
-  const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort(compareCodePoints);
+  const roleNames = [...roleRecords.keys()].sort(compareCodePoints);
   for (const roleName of roleNames) addFile(files, `agents/${roleName}.md`, renderRole(roleName, roleRecords.get(roleName)));
 
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
@@ -393,7 +381,7 @@ export function renderAntigravity(input = {}) {
       }]),
       {
         kind: "resolved-config-root",
-        rootEnv: null,
+        rootEnv: ANTIGRAVITY_ROOT_ENV,
         path: configRoot
       }
     ],

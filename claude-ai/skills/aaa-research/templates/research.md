@@ -9,6 +9,7 @@
 | Status | complete |
 | Language | the document language |
 | Sources | the web, plus any attachments |
+| Answers | R# and its question, from the earlier document that holds it, or "none" |
 
 ## 1. Question
 

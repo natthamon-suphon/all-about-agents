@@ -46,6 +46,8 @@ the applicable implementation workflow.
    use its native child issues, dependency links, labels, and assignees. If no
    tracker is available or the human does not care, use the durable
    local-markdown tracker described below; it needs no setup or dependency.
+   Pressure to start at once does not confirm a tracker; still confirm the
+   destination and scope, and use the local map until a tracker is confirmed.
 5. Chart the frontier breadth-first. Create only decision tickets that can be
    stated precisely now, wire blocking edges after ticket identities exist,
    and leave not-yet-specifiable questions in the map's fog section. Do not

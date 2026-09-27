@@ -13,7 +13,7 @@ import {
   renderClaude,
   resolveClaudeConfigDir
 } from "../../adapters/claude/adapter.mjs";
-import { renderClaudeGlobalInstructions, renderCodexGlobalInstructions, renderSharedGlobalInstructions } from "../../adapters/shared/global-instructions.mjs";
+import { renderAntigravityGlobalInstructions, renderClaudeGlobalInstructions, renderCodexGlobalInstructions, renderSharedGlobalInstructions } from "../../adapters/shared/global-instructions.mjs";
 
 const requiredOutputs = [
   "adapters/claude/adapter.mjs",
@@ -54,10 +54,13 @@ test("shared global renderers use the loaded canonical body and normalize only l
 test("egroup house rules reach Claude Code only while RTK house rules reach every surface", () => {
   const claude = renderClaudeGlobalInstructions(core);
   const codex = codexBody();
+  const antigravity = renderAntigravityGlobalInstructions(core, { canonicalRules: core.rules.slice(0, 1) });
   assert.match(claude, /^## egroup house rules \(coding-guidelines\)$/mu);
   assert.match(claude, /^@~\/Workspaces\/coding-guidelines\/Rules\/RULES\.md$/mu);
-  assert.doesNotMatch(codex, /egroup house rules/u);
-  for (const rendered of [claude, codex]) assert.match(rendered, /^## RTK house rules \(rust-token-killer\)$/mu);
+  for (const [surface, rendered] of [["codex", codex], ["antigravity", antigravity]]) {
+    assert.doesNotMatch(rendered, /egroup house rules|coding-guidelines\/Rules\/RULES\.md/u, `${surface} must not receive the Claude-only appendix`);
+  }
+  for (const rendered of [claude, codex, antigravity]) assert.match(rendered, /^## RTK house rules \(rust-token-killer\)$/mu);
   assert.ok(claude.startsWith(renderSharedGlobalInstructions(core).trimEnd()));
 });
 
@@ -402,9 +405,8 @@ test("Claude package renders a self-contained development marketplace and two-st
   assert.equal(marketplace.plugins[0].source, "./");
   assert.equal(marketplace.plugins[0].version, plugin.version);
   const registration = result.registrations.find((entry) => entry.kind === "plugin-registration");
-  assert.deepEqual(registration.marketplaceCommand, ["claude", "plugin", "marketplace", "add", "."]);
-  assert.deepEqual(registration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents"]);
-  assert.equal(registration.command.join(" "), "claude plugin install all-about-agents@all-about-agents");
+  assert.deepEqual(registration.marketplaceCommand, ["claude", "plugin", "marketplace", "add", "PACKAGE_ROOT", "--scope", "user"]);
+  assert.deepEqual(registration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents", "--scope", "user"]);
 });
 
 test("Claude hook prerequisites reject a clean host without Node.js", () => {
@@ -473,7 +475,8 @@ test("Claude read-only roles cannot receive Bash or write tools", () => {
   for (const role of ["investigator", "verifier", "reviewer", "security-reviewer"]) {
     const frontmatter = files.get(`agents/${role}.md`).split("---\n")[1];
     assert.match(frontmatter, /disallowedTools:/u, `${role} must declare native restrictions`);
-    const tools = frontmatter.match(/^tools:\n([\s\S]*?)(?:^disallowedTools:|$)/mu)?.[1] || "";
+    const tools = frontmatter.match(/^tools:\n([\s\S]*?)^disallowedTools:/mu)?.[1] || "";
+    assert.match(tools, /^\s+- Read$/mu, `${role} tool list must be captured whole`);
     assert.doesNotMatch(tools, /^\s+- (?:Bash|Write|Edit|Agent)\s*$/mu, `${role} received a mutating native tool`);
   }
 });
@@ -507,8 +510,8 @@ test("Claude ownership manifest documents roots, mappings, and native validation
   assert.deepEqual(manifest.semanticCapabilities["web-primary-sources"], ["WebSearch", "WebFetch"]);
   assert.deepEqual([...manifest.readOnlyRoles.roles].sort(), ["architect", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]);
   assert.deepEqual(manifest.nativeValidation.command, ["claude", "plugin", "validate", ".", "--strict"]);
-  assert.deepEqual(manifest.pluginRegistration.marketplaceCommand, ["claude", "plugin", "marketplace", "add", "."]);
-  assert.deepEqual(manifest.pluginRegistration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents"]);
+  assert.deepEqual(manifest.pluginRegistration.marketplaceCommand, ["claude", "plugin", "marketplace", "add", "PACKAGE_ROOT", "--scope", "user"]);
+  assert.deepEqual(manifest.pluginRegistration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents", "--scope", "user"]);
   assert.ok(manifest.ownedPaths.includes(".claude-plugin/marketplace.json"));
   assert.ok(manifest.ownedPaths.includes("CLAUDE.md"));
   assert.deepEqual(manifest.preflight, CLAUDE_PREREQUISITES);
@@ -524,6 +527,30 @@ test("Claude ownership manifest documents roots, mappings, and native validation
     assert.equal(Object.keys(profile.settings).some((key) => key.includes(".")), false);
   }
   assert.match(manifest.rootInstructionContext, /deployed to <CLAUDE_CONFIG_DIR>\/CLAUDE[.]md/u);
+  assert.match(manifest.rootInstructionContext, /rules\/ files are copied to <CLAUDE_CONFIG_DIR>\/rules\/all-about-agents\//u);
+  assert.doesNotMatch(manifest.rootInstructionContext, /plugin rules remain separate/u);
+});
+
+test("Claude records, guidance, and template docs name the rules deployment to the config root", async () => {
+  const result = resultFor();
+  assert.deepEqual(result.registrations.find((entry) => entry.kind === "rules"), {
+    kind: "rules",
+    relativeDirectory: "rules",
+    rootEnv: "CLAUDE_CONFIG_DIR",
+    destination: "rules/all-about-agents"
+  });
+  const files = fileMap(result);
+  assert.match(files.get("skills/using-all-about-agents/references/adapter-capability-guidance.md"), /registration copies them to `<CLAUDE_CONFIG_DIR>\/rules\/all-about-agents\/`/u);
+  assert.match(files.get("docs/semantic-mappings.md"), /registration copies them to `<CLAUDE_CONFIG_DIR>\/rules\/all-about-agents\/`/u);
+  const readme = await readFile(resolve(process.cwd(), "adapters/claude/templates/README.md"), "utf8");
+  assert.match(readme, /<CLAUDE_CONFIG_DIR>\/rules\/all-about-agents\//u);
+  const capabilities = JSON.parse(await readFile(resolve(process.cwd(), "adapters/claude/capabilities.json"), "utf8")).capabilities;
+  assert.match(capabilities.find((entry) => entry.feature === "instructions.global").notes, /<CLAUDE_CONFIG_DIR>\/rules\/all-about-agents\//u);
+  assert.equal(capabilities.find((entry) => entry.feature === "rules.instructions").value.rules, "~/.claude/rules/**/*.md", "a namespaced rule folder is only loaded because discovery is recursive");
+  assert.doesNotMatch(readme, /plugin rules/u);
+  assert.doesNotMatch(readme, /statusline entrypoints use exec-form/iu, "the statusline runs through a shell or PowerShell launcher");
+  assert.match(readme, /statusline[.]sh/u);
+  assert.match(readme, /statusline[.]ps1/u);
 });
 
 test("Claude render is deterministic and matches the checked-in portable snapshot", async () => {

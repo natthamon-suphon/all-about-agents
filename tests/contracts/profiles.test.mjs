@@ -171,7 +171,7 @@ test("template full access never removes emergency denies", () => {
   assert.ok(codexEmergency.manualSteps.some((step) => step.includes("command(rm -rf)") && step.includes("write_file(/home/user/.ssh)")));
 });
 
-test("both profiles render deterministically and match all four checked-in snapshots", async () => {
+test("both profiles render deterministically and match every checked-in profile snapshot", async () => {
   for (const [surface, render] of Object.entries(renderers)) {
     for (const profile of Object.values(profiles)) {
       const first = render(profile);

@@ -73,9 +73,8 @@ artifact also explicitly prevents automatic use.
 
 Gate 0 also checks that the exact global destinations are documented:
 `<CLAUDE_CONFIG_DIR>/CLAUDE.md`, `<CODEX_HOME>/AGENTS.md`, and
-`~/.gemini/GEMINI.md`. It checks that `CLAUDE.local.md` and `GEMINI.local.md`
-are not used as global destinations,
-and that the receiving-machine order is:
+`~/.gemini/GEMINI.md`. It checks that `CLAUDE.local.md` is not used as a
+global destination, and that the receiving-machine order is:
 
 ```text
 pull -> validate -> render -> dry-run -> apply package -> dry-run registration -> explicit registration apply -> restart -> verify loaded instructions
@@ -126,7 +125,7 @@ node --test tests/integration/native-registration.test.mjs
 ```
 
 The harness creates fresh OS temporary roots for its checks. It renders both
-`portable` and `template` packages for every CLI surface. It checks the
+`portable` and `template` packages for Claude Code and Codex. It checks the
 following:
 
 - Claude Code strict validation and statusline fixture checks for both
@@ -137,10 +136,12 @@ following:
 - Codex marketplace add, plugin add, exact installed/enabled JSON discovery,
   and hook files inside the discovered installed package. All Codex state is
   under a disposable `CODEX_HOME`. Hook trust remains `NOT_RUN`.
-- Antigravity package validation through `agy plugin validate`, then install and
-  plugin/agent discovery. There is no hook-file or hook-trust check: the surface
-  renders no hooks. A runtime question must run from a directory with no
-  `.agents/` folder, or it cannot say which copy of the package answered.
+
+The harness does not run `agy`. Antigravity native checks are manual; follow
+the Antigravity steps in [native verification](../maintenance/native-verification.md#antigravity-agy).
+`tests/integration/antigravity-install.test.mjs` checks the rendered
+Antigravity layout and registration plan offline in a disposable root. It does
+not run the product.
 
 Native product commands use explicit executable arguments and `shell: false`.
 The child environment starts from a small allowlist. Home, config, cache, and
@@ -351,10 +352,10 @@ claim and is not evidence that unrun checks pass.
 ## Later execution procedure
 
 Run Gate 0 and Gate 1 first in disposable roots. For native checks, follow the
-surface-specific manual procedures in
-`tests/integration/manual-desktop-checklist.json`; that file is an evidence
-checklist, not a fabricated result. Never replace its unknown/not-run fields
-with assumptions based on filesystem presence.
+surface-specific procedures in
+[native verification](../maintenance/native-verification.md#product-observations).
+Record a check it does not observe as `NOT_RUN` or `NOT_RUN_UNAVAILABLE`. Never
+fill an unknown field with an assumption based on filesystem presence.
 
 For each required skill, case, surface, and variant, run the repository
 evaluator with a fresh run ID and retain its redacted JSON output. The exact

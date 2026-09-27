@@ -337,10 +337,11 @@
       "assets": [
         "skills/writing-skills/graphviz-conventions.dot",
         "skills/writing-skills/persuasion-principles.md",
-        "skills/writing-skills/render-graphs.mjs",
         "skills/writing-skills/testing-skills-with-subagents.md"
       ],
-      "scripts": [],
+      "scripts": [
+        "skills/writing-skills/render-graphs.mjs"
+      ],
       "auditDisposition": {
         "status": "stable",
         "reason": "Current public skill retained in the unified baseline."
@@ -370,54 +371,6 @@
     },
     {
       "path": ".gitignore",
-      "kind": "metadata",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
-      "path": ".idea/.gitignore",
-      "kind": "metadata",
-      "auditDisposition": {
-        "status": "unknown",
-        "reason": "Repository documentation or IDE metadata is not a native capability claim."
-      }
-    },
-    {
-      "path": ".idea/all-about-agents.iml",
-      "kind": "metadata",
-      "auditDisposition": {
-        "status": "unknown",
-        "reason": "Repository documentation or IDE metadata is not a native capability claim."
-      }
-    },
-    {
-      "path": ".idea/misc.xml",
-      "kind": "metadata",
-      "auditDisposition": {
-        "status": "unknown",
-        "reason": "Repository documentation or IDE metadata is not a native capability claim."
-      }
-    },
-    {
-      "path": ".idea/modules.xml",
-      "kind": "metadata",
-      "auditDisposition": {
-        "status": "unknown",
-        "reason": "Repository documentation or IDE metadata is not a native capability claim."
-      }
-    },
-    {
-      "path": ".idea/vcs.xml",
-      "kind": "metadata",
-      "auditDisposition": {
-        "status": "unknown",
-        "reason": "Repository documentation or IDE metadata is not a native capability claim."
-      }
-    },
-    {
-      "path": ".pre-commit-config.yaml",
       "kind": "metadata",
       "auditDisposition": {
         "status": "stable",
@@ -1093,13 +1046,13 @@
       "kind": "test",
       "auditDisposition": {
         "status": "stable",
-        "reason": "Behavior tests for structured presentation traces and four native render surfaces."
+        "reason": "Behavior tests for structured presentation traces and the three native render surfaces."
       }
     }
   ],
   "auditDisposition": {
     "status": "stable",
-    "reason": "Canonical inventory for the Claude and Codex surfaces; native capability claims remain versioned in adapter records.",
+    "reason": "Canonical inventory for the Antigravity, Claude, and Codex surfaces; native capability claims remain versioned in adapter records.",
     "unknowns": [
       "Codex automatic model fallback is undocumented and unsupported."
     ]

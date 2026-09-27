@@ -10,6 +10,7 @@ import { validateSchema } from "../../installers/lib/validate-schema.mjs";
 import traceSchema from "../../core/evals/presentation-trace.schema.json" with { type: "json" };
 import scenarios from "../../core/evals/scenarios/presentation-contract.json" with { type: "json" };
 import { auditPresentationTrace } from "../../core/evals/presentation-trace.mjs";
+import { SURFACES } from "../../adapters/shared/surfaces.mjs";
 
 const scenario = (id) => {
   const value = scenarios.scenarios.find((entry) => entry.id === id);
@@ -222,14 +223,17 @@ test("standalone trace auditing enforces the schema event limit and bounds seman
 });
 
 test("emoji-before-name and unknown emoji labels are rejected", () => {
-  assertScenario("emoji-order-and-unknown", false, 0);
-  assertScenario("emoji-order-and-unknown", false, 1);
+  const codes = (index) => assertScenario("emoji-order-and-unknown", false, index).errors.map((error) => error.code);
+  assert.deepEqual(codes(0), ["emoji-before-name"]);
+  assert.deepEqual(codes(1), ["label-mismatch"]);
 });
 
-test("both surfaces use the same normative presentation clauses and native label placements", async () => {
+const DISPOSABLE_HOME = process.platform === "win32" ? "C:/Users/tester" : "/Users/tester";
+
+test("every surface uses the same normative presentation clauses and native label placements", async () => {
   const core = await loadCore(process.cwd());
   const renders = new Map();
-  for (const surface of ["claude", "codex"]) {
+  for (const surface of SURFACES) {
     const result = await renderForSurface({
       repositoryRoot: process.cwd(),
       core,
@@ -237,19 +241,23 @@ test("both surfaces use the same normative presentation clauses and native label
       profile: "portable",
       statuslineName: "",
       platform: process.platform,
-      ...(surface === "codex" ? { targetRuntime: "cli" } : {})
+      homeDir: DISPOSABLE_HOME,
+      env: { CLAUDE_CONFIG_DIR: `${DISPOSABLE_HOME}/.claude`, CODEX_HOME: `${DISPOSABLE_HOME}/.codex`, AAA_ANTIGRAVITY_ROOT: `${DISPOSABLE_HOME}/.gemini` },
+      ...(surface === "claude" ? {} : { targetRuntime: "cli" })
     });
     renders.set(surface, new Map(result.files.map((file) => [file.relativePath, new TextDecoder().decode(file.content)])));
   }
 
-  // The normative clauses live once per package: the rendered catalog for Claude and
-  // the AGENTS.md presentation section for Codex. Skills and roles carry no copy.
+  // The normative clauses live once per package: the rendered catalog for Claude,
+  // the AGENTS.md presentation section for Codex, and GEMINI.md for Antigravity.
+  // Skills and roles carry no copy.
   const placements = {
+    antigravity: ["GEMINI.md"],
     claude: ["rules/presentation.md"],
     codex: ["AGENTS.md"]
   };
   for (const [surface, files] of renders) {
-    const skillPath = surface === "claude" ? "skills/brainstorming/SKILL.md" : ".agents/skills/brainstorming/SKILL.md";
+    const skillPath = surface === "codex" ? ".agents/skills/brainstorming/SKILL.md" : "skills/brainstorming/SKILL.md";
     assert.doesNotMatch(files.get(skillPath) ?? "", /Checklist rules:|Reason rule:|Using skill \*\*/u, `${surface}: skills carry no preamble`);
   }
   const clauses = [

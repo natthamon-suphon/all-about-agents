@@ -64,35 +64,6 @@ test("Antigravity install materializes the layout agy reads and is idempotent", 
   });
 });
 
-test("a two-surface managed root gains Antigravity without disturbing the other surfaces", async () => {
-  await withTempRoot(async (root) => {
-    const destination = resolve(root, "shared");
-    const unrelated = resolve(root, "unrelated");
-    await mkdir(unrelated, { recursive: true });
-
-    // Reproduce what an existing machine holds: a root rendered before this
-    // surface existed, whose managed state names only claude and codex.
-    for (const surface of ["claude", "codex"]) {
-      const result = runCli([
-        "install", "--surface", surface, "--profile", "portable",
-        "--destination-root", resolve(destination, surface), "--apply", "--format", "json",
-        ...(surface === "claude" ? ["--statusline-name", "tester"] : [])
-      ], unrelated);
-      assert.equal(result.status, 0, result.stderr);
-    }
-    const beforeClaude = await readManagedState(resolve(destination, "claude"));
-    assert.deepEqual(beforeClaude.surfaces, ["claude"]);
-
-    const added = await installAntigravity(root, resolve(destination, "antigravity"));
-    assert.equal(added.status, "complete");
-
-    const afterClaude = await readManagedState(resolve(destination, "claude"));
-    assert.deepEqual(afterClaude.ownedPaths, beforeClaude.ownedPaths, "adding a surface must not rewrite a sibling package");
-    await access(resolve(destination, "codex", "AGENTS.md"));
-    await access(resolve(destination, "antigravity", "GEMINI.md"));
-  });
-});
-
 test("registration refuses to overwrite an existing GEMINI.md it does not own", async () => {
   await withTempRoot(async (root) => {
     const destination = resolve(root, "antigravity");

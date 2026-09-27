@@ -1,15 +1,29 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { cp, mkdir, readdir, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdir, readdir, readFile, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve, relative } from "node:path";
 import test, { after } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { formatNativeRegistrationText, planNativeRegistration, runNativeRegistration, resolveNativeInstructionRoot } from "../../installers/lib/native-registration.mjs";
 import { renderClaudeStatuslineCommand } from "../../adapters/claude/adapter.mjs";
 import { hashBytes } from "../../installers/lib/hash.mjs";
 import { canonicalTmpdir, makeTempRoot } from "../helpers/temp-root.mjs";
+import { main } from "../../scripts/aaa.mjs";
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 const GENERATED_TEMP_ROOTS = new Set();
+const CORE_RULES_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "core", "rules");
+// One package file per core rule plus the presentation catalog, rendered under
+// the package-owned rules/all-about-agents/ folder that registration copies as is.
+const CLAUDE_RULE_FILES = [
+  ...(await readdir(CORE_RULES_ROOT, { withFileTypes: true })).filter((entry) => entry.isDirectory()).map((entry) => `${entry.name}.md`),
+  "presentation.md"
+].sort();
+const CLAUDE_RULE_IDS = CLAUDE_RULE_FILES.map((name) => `claude-rule-${name.slice(0, -".md".length)}-deploy`);
+// Shaped like the rendered files: top-level keys, then one table per role.
+const CODEX_CONFIG = 'model = "gpt-5.6-sol"\nsandbox_mode = "danger-full-access"\n[agents.reviewer]\nconfig_file = "agents/reviewer.toml"\ndescription = "Reviews."\n\n[agents.verifier]\nconfig_file = "agents/verifier.toml"\ndescription = "Verifies."\n';
+const GEMINI_BODY = "# Global Operating Rules\n\n## Routing contract\n\nRoute each task to one skill.\n";
 
 async function generatedTempRoot(prefix) {
   const root = await makeTempRoot(prefix);
@@ -39,6 +53,8 @@ async function fixture(profile = "template", { layout = "own" } = {}) {
   await mkdir(join(packageRoot, "all-about-agents"), { recursive: true });
   await mkdir(join(packageRoot, "agents"), { recursive: true });
   await mkdir(join(packageRoot, "statusline"), { recursive: true });
+  await mkdir(join(packageRoot, "rules", "all-about-agents"), { recursive: true });
+  for (const name of CLAUDE_RULE_FILES) await writeFile(join(packageRoot, "rules", "all-about-agents", name), `# ${name}\n`);
   await mkdir(join(packageRoot, "skills", "kept-skill"), { recursive: true });
   await writeFile(join(packageRoot, "skills", "kept-skill", "SKILL.md"), "# Kept skill\n");
   await mkdir(join(packageRoot, "hooks"), { recursive: true });
@@ -48,7 +64,7 @@ async function fixture(profile = "template", { layout = "own" } = {}) {
   await writeFile(join(packageRoot, ".codex-plugin", "plugin.json"), "{}\n");
   await writeFile(join(packageRoot, ".agents", "plugins", "marketplace.json"), "{}\n");
   await writeFile(join(packageRoot, ".agents", "plugins", "all-about-agents", "plugin.json"), "{}\n");
-  await writeFile(join(packageRoot, "settings.json"), '{"permissions":{"defaultMode":"bypassPermissions"},"statusLine":{"type":"command","command":"stale-package-root-command"}}\n');
+  await writeFile(join(packageRoot, "settings.json"), '{"permissions":{"defaultMode":"bypassPermissions","deny":["Bash(rm -rf /)"]},"statusLine":{"type":"command","command":"stale-package-root-command"}}\n');
   await writeFile(join(packageRoot, "CLAUDE.md"), "# Global instructions\n");
   await writeFile(join(packageRoot, "all-about-agents", "statusline.json"), '{"schemaVersion":1,"displayName":"Test"}\n');
   await writeFile(join(packageRoot, "statusline", "statusline.mjs"), "// renderer\n");
@@ -56,11 +72,14 @@ async function fixture(profile = "template", { layout = "own" } = {}) {
   await writeFile(join(packageRoot, "statusline", "statusline.ps1"), "# windows launcher\n");
   await writeFile(join(packageRoot, "statusline", "statusline.sh"), "#!/bin/sh\n# posix launcher\n");
   await writeFile(join(packageRoot, "AGENTS.md"), "# Global instructions\n");
-  await writeFile(join(packageRoot, "config.toml"), 'model = "gpt-5.6-sol"\n');
+  await writeFile(join(packageRoot, "config.toml"), CODEX_CONFIG);
   await writeFile(join(packageRoot, "terra-max.config.toml"), 'model = "gpt-5.6-terra"\n');
   for (const role of ["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]) {
     await writeFile(join(packageRoot, "agents", `${role}.toml`), `developer_instructions = "${role}"\n`);
+    await writeFile(join(packageRoot, "agents", `${role}.md`), `# ${role}\n`);
   }
+  await writeFile(join(packageRoot, "plugin.json"), "{}\n");
+  await writeFile(join(packageRoot, "GEMINI.md"), GEMINI_BODY);
   const prefix = layout === "parent" ? "claude/" : "";
   const ownedPaths = (await treeBytes(packageRoot)).map(([relativePath, content]) => ({
     relativePath: `${prefix}${relativePath.replaceAll("\\", "/")}`,
@@ -75,7 +94,7 @@ async function fixture(profile = "template", { layout = "own" } = {}) {
     schemaVersion: 1,
     repositoryVersion: "test-repository",
     profile,
-    surfaces: ["claude", "codex"],
+    surfaces: ["antigravity", "claude", "codex"],
     ownedPaths
   })}\n`);
   return { root, packageRoot, productRoot };
@@ -141,7 +160,7 @@ function base(input, surface) {
 test("planner creates deterministic known actions for every surface", async () => {
   const input = await fixture();
   const expected = {
-    claude: ["claude-instructions-deploy", "claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list", "claude-plugin-cache-check", "claude-reload"],
+    claude: ["claude-instructions-deploy", "claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", ...CLAUDE_RULE_IDS, "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list", "claude-plugin-cache-check", "claude-reload"],
     codex: ["codex-instructions-deploy", "codex-config-deploy", "codex-terra-profile-deploy", "codex-agent-architect-deploy", "codex-agent-implementer-deploy", "codex-agent-investigator-deploy", "codex-agent-researcher-deploy", "codex-agent-reviewer-deploy", "codex-agent-security-reviewer-deploy", "codex-agent-verifier-deploy", "codex-marketplace-add", "codex-plugin-install", "codex-plugin-list", "codex-plugin-source-check", "codex-hooks-trust"]
   };
   for (const [surface, ids] of Object.entries(expected)) {
@@ -258,8 +277,10 @@ test("planner deploys the Claude and Codex runtime config needed by the installe
     [join("statusline", "statusline.mjs"), join("statusline", "statusline.mjs"), 0o755, null],
     [join("statusline", "track-tool.mjs"), join("statusline", "track-tool.mjs"), 0o755, null],
     [join("statusline", "statusline.ps1"), join("statusline", "statusline.ps1"), null, null],
-    [join("statusline", "statusline.sh"), join("statusline", "statusline.sh"), 0o755, null]
+    [join("statusline", "statusline.sh"), join("statusline", "statusline.sh"), 0o755, null],
+    ...CLAUDE_RULE_FILES.map((name) => [join("rules", "all-about-agents", name), join("rules", "all-about-agents", name), null, null])
   ]);
+  assert.deepEqual([...new Set(claudeCopies.filter((action) => action.id.startsWith("claude-rule-")).map((action) => action.guard))], [null]);
   const codexCopies = base(input, "codex").actions.filter((action) => action.kind === "file-copy");
   assert.deepEqual(codexCopies.slice(0, 3).map(({ sourcePath, targetPath }) => [relative(input.packageRoot, sourcePath), relative(input.productRoot, targetPath)]), [
     ["AGENTS.md", "AGENTS.md"],
@@ -269,7 +290,7 @@ test("planner deploys the Claude and Codex runtime config needed by the installe
   assert.equal(codexCopies.filter((action) => /codex-agent-.+-deploy/u.test(action.id)).length, 7);
 });
 
-test("planner rejects unsupported surfaces, profiles, unsafe roots, and symlink roots", async () => {
+test("planner rejects unsupported surfaces, profiles, unsafe roots, and symlink roots", async (t) => {
   const input = await fixture();
   assert.throws(() => planNativeRegistration({ ...input, surface: "unknown", profile: "template" }), (error) => error.code === "unsupported-surface");
   assert.throws(() => planNativeRegistration({ ...input, surface: "codex", profile: "unknown" }), (error) => error.code === "invalid-profile");
@@ -279,7 +300,12 @@ test("planner rejects unsupported surfaces, profiles, unsafe roots, and symlink 
   assert.throws(() => planNativeRegistration({ ...input, surface: "codex", productRoot: `${input.productRoot}${process.platform === "win32" ? "\\" : "/"}..`, profile: "template" }), (error) => error.code === "root-traversal");
   const outside = await generatedTempRoot("aaa-t06-outside-");
   const link = join(input.root, "package-link");
-  try { await (await import("node:fs/promises")).symlink(outside, link, process.platform === "win32" ? "junction" : "dir"); } catch { return; }
+  try {
+    await symlink(outside, link, process.platform === "win32" ? "junction" : "dir");
+  } catch (error) {
+    skipIfLinkUnavailable(t, error);
+    return;
+  }
   assert.throws(() => planNativeRegistration({ ...input, surface: "codex", packageRoot: link, profile: "template" }), /symlink|unsafe|root/u);
 });
 
@@ -332,10 +358,32 @@ test("apply stops at the first required process failure and reports a partial re
   assert.deepEqual(report.notAttempted.map((action) => action.id), ["codex-plugin-list", "codex-plugin-source-check", "codex-hooks-trust"]);
   assert.deepEqual(calls[0].args, ["plugin", "marketplace", "add", input.packageRoot, "--json"]);
   assert.deepEqual(calls[0].environmentKeys, ["CODEX_HOME"]);
-  assert.equal(calls[0].env, undefined);
-  assert.equal(calls[0].envOverrides.CODEX_HOME, input.productRoot);
+  assert.equal(calls[0].env.CODEX_HOME, input.productRoot);
   assert.equal(calls[0].shell, false);
   assert.equal(report.lifecycle.registered.status, "fail");
+});
+
+test("Codex product commands get the product root without inherited GIT_* redirects", async () => {
+  const input = await fixture();
+  const previous = { GIT_DIR: process.env.GIT_DIR, GIT_INDEX_FILE: process.env.GIT_INDEX_FILE };
+  process.env.GIT_DIR = join(input.root, "hook.git");
+  process.env.GIT_INDEX_FILE = join(input.root, "hook.index");
+  try {
+    const products = fakeProducts(input);
+    await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: products.run });
+    const codexCalls = products.calls.filter((request) => request.executable === "codex");
+    assert.equal(codexCalls.length, 3);
+    for (const request of codexCalls) {
+      assert.equal(request.envOverrides, undefined);
+      assert.equal(request.env.CODEX_HOME, input.productRoot);
+      assert.deepEqual(Object.keys(request.env).filter((key) => /^GIT_/iu.test(key)), []);
+    }
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
 });
 
 test("successful native commands remain registered not-run until semantic discovery is observed", async () => {
@@ -351,7 +399,7 @@ test("successful reports keep manual actions out of completed execution", async 
   const input = await fixture();
   const cases = [
     ["codex", ["codex-instructions-deploy", "codex-config-deploy", "codex-terra-profile-deploy", "codex-agent-architect-deploy", "codex-agent-implementer-deploy", "codex-agent-investigator-deploy", "codex-agent-researcher-deploy", "codex-agent-reviewer-deploy", "codex-agent-security-reviewer-deploy", "codex-agent-verifier-deploy", "codex-marketplace-add", "codex-plugin-install", "codex-plugin-list", "codex-plugin-source-check"]],
-    ["claude", ["claude-instructions-deploy", "claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list", "claude-plugin-cache-check"]]
+    ["claude", ["claude-instructions-deploy", "claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", ...CLAUDE_RULE_IDS, "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list", "claude-plugin-cache-check"]]
   ];
   for (const [surface, executedIds] of cases) {
     const report = await runNativeRegistration(base(input, surface), { mode: "apply", runProcess: fakeProducts(input).run });
@@ -362,16 +410,17 @@ test("successful reports keep manual actions out of completed execution", async 
   }
 });
 
-test("apply revalidates roots and marker ancestors after planning", async () => {
+test("apply revalidates roots and marker ancestors after planning", async (t) => {
   const input = await fixture();
   const packagePlan = base(input, "codex");
   const outside = await generatedTempRoot("aaa-t06-revalidation-");
   const markerDir = join(input.packageRoot, ".codex-plugin");
   const markerDirMoved = join(input.root, ".codex-plugin-original");
+  await rename(markerDir, markerDirMoved);
   try {
-    await (await import("node:fs/promises")).rename(markerDir, markerDirMoved);
-    await (await import("node:fs/promises")).symlink(outside, markerDir, process.platform === "win32" ? "junction" : "dir");
-  } catch {
+    await symlink(outside, markerDir, process.platform === "win32" ? "junction" : "dir");
+  } catch (error) {
+    skipIfLinkUnavailable(t, error);
     return;
   }
   let calls = 0;
@@ -436,15 +485,16 @@ test("apply revalidates non-copy package files before the first native process",
   assert.equal(processCalls, 0);
 });
 
-test("apply rejects a product root junction created after planning", async () => {
+test("apply rejects a product root junction created after planning", async (t) => {
   const input = await fixture();
   const plan = base(input, "codex");
   const outside = await generatedTempRoot("aaa-t06-product-outside-");
   const moved = join(input.root, "product-original");
+  await rename(input.productRoot, moved);
   try {
-    await (await import("node:fs/promises")).rename(input.productRoot, moved);
-    await (await import("node:fs/promises")).symlink(outside, input.productRoot, process.platform === "win32" ? "junction" : "dir");
-  } catch {
+    await symlink(outside, input.productRoot, process.platform === "win32" ? "junction" : "dir");
+  } catch (error) {
+    skipIfLinkUnavailable(t, error);
     return;
   }
   let calls = 0;
@@ -510,10 +560,10 @@ test("native reports redact Windows path case and separator variants", async () 
 
 test("apply reports unavailable and malformed probe output without leaking stdout", async () => {
   const input = await fixture();
-  const unavailable = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: async () => ({ unavailable: true, exitCode: null, stdout: "secret", stderr: "ENOENT" }) });
+  const unavailable = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: async () => ({ unavailable: true, exitCode: null, stdout: "leaked-stdout-sentinel", stderr: "ENOENT" }) });
   assert.equal(unavailable.status, "partial");
   assert.equal(unavailable.error.code, "native-executable-unavailable");
-  assert.doesNotMatch(JSON.stringify(unavailable), /secret/u);
+  assert.doesNotMatch(JSON.stringify(unavailable), /leaked-stdout-sentinel/u);
   const malformed = await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: async () => ({ exitCode: 0, stdout: "not-json", stderr: "" }) });
   assert.equal(malformed.status, "partial");
   assert.equal(malformed.failed.action.id, "codex-marketplace-add");
@@ -542,7 +592,7 @@ test("apply atomically overwrites approved Claude and Codex config destinations"
   const productEntries = await (await import("node:fs/promises")).readdir(input.productRoot);
   assert.equal(productEntries.some((entry) => entry.includes("backup")), false);
   const installedClaudeSettings = JSON.parse(await readFile(join(input.productRoot, "settings.json"), "utf8"));
-  assert.deepEqual(installedClaudeSettings.permissions, { defaultMode: "bypassPermissions" });
+  assert.deepEqual(installedClaudeSettings.permissions, { defaultMode: "bypassPermissions", deny: ["Bash(rm -rf /)"] });
   assert.equal(installedClaudeSettings.statusLine.command, renderClaudeStatuslineCommand({ configRoot: input.productRoot, platform: process.platform }));
   assert.notEqual(installedClaudeSettings.statusLine.command, "stale-package-root-command");
   assert.equal(await readFile(join(input.productRoot, "all-about-agents", "statusline.json"), "utf8"), '{"schemaVersion":1,"displayName":"Test"}\n');
@@ -553,9 +603,211 @@ test("apply atomically overwrites approved Claude and Codex config destinations"
 
   const codex = await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: fakeProducts(input).run });
   assert.equal(codex.status, "complete");
-  assert.equal(await readFile(join(input.productRoot, "config.toml"), "utf8"), 'model = "gpt-5.6-sol"\n');
+  assert.equal(await readFile(join(input.productRoot, "config.toml"), "utf8"), CODEX_CONFIG);
   assert.equal(await readFile(join(input.productRoot, "terra-max.config.toml"), "utf8"), 'model = "gpt-5.6-terra"\n');
   assert.equal(await readFile(join(input.productRoot, "agents", "reviewer.toml"), "utf8"), 'developer_instructions = "reviewer"\n');
+});
+
+test("a linked Claude rules folder degrades to one manual step instead of blocking registration", async (t) => {
+  for (const linkedPath of [["rules"], ["rules", "all-about-agents"]]) {
+    const input = await fixture();
+    const outside = await generatedTempRoot("aaa-t06-rules-outside-");
+    await mkdir(join(input.productRoot, ...linkedPath.slice(0, -1)), { recursive: true });
+    try {
+      await symlink(outside, join(input.productRoot, ...linkedPath), process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
+    const plan = base(input, "claude");
+    assert.equal(plan.actions.some((action) => action.id.startsWith("claude-rule-")), false);
+    const manual = plan.actions.filter((action) => action.id === "claude-rules-deploy");
+    assert.equal(manual.length, 1);
+    assert.equal(manual[0].kind, "manual");
+    assert.match(manual[0].message, /<CLAUDE_CONFIG_DIR>\/rules\/all-about-agents/u);
+    const dry = await runNativeRegistration(plan, { mode: "dry-run" });
+    assert.equal(dry.actions.find((action) => action.id === "claude-rules-deploy").status, "manual-required");
+    const applied = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+    assert.equal(applied.status, "manual-required");
+    assert.equal(applied.error.code, "manual-step-required");
+    assert.equal(applied.lifecycle.registered.status, "not-run");
+    assert.equal(applied.actions.find((action) => action.id === "claude-rules-deploy").status, "manual-required");
+    assert.match(formatNativeRegistrationText(applied), /^reason\tclaude-rules-deploy\t<CLAUDE_CONFIG_DIR>\/rules/mu);
+    assert.deepEqual(await readdir(outside), []);
+    assert.equal(await readFile(join(input.productRoot, "CLAUDE.md"), "utf8"), "# Global instructions\n");
+  }
+});
+
+test("a linked or non-file rule target degrades to the manual rules step before any write", async (t) => {
+  for (const kind of ["file-link", "directory"]) {
+    const input = await fixture();
+    const namespace = join(input.productRoot, "rules", "all-about-agents");
+    await mkdir(namespace, { recursive: true });
+    const outside = await generatedTempRoot("aaa-t06-rule-file-outside-");
+    const outsideFile = join(outside, "presentation.md");
+    await writeFile(outsideFile, "# Outside\n");
+    if (kind === "directory") {
+      await mkdir(join(namespace, "presentation.md"));
+    } else {
+      try {
+        await symlink(outsideFile, join(namespace, "presentation.md"));
+      } catch (error) {
+        skipIfLinkUnavailable(t, error);
+        return;
+      }
+    }
+    const plan = base(input, "claude");
+    assert.equal(plan.actions.some((action) => action.id.startsWith("claude-rule-")), false, kind);
+    assert.equal(plan.actions.filter((action) => action.id === "claude-rules-deploy").length, 1, kind);
+    const applied = await runNativeRegistration(plan, { mode: "apply", runProcess: fakeProducts(input).run });
+    assert.equal(applied.status, "manual-required", kind);
+    assert.equal(applied.failed, null, kind);
+    assert.equal(await readFile(outsideFile, "utf8"), "# Outside\n");
+    assert.deepEqual((await readdir(namespace)).sort(), ["presentation.md"], kind);
+    assert.equal(await readFile(join(input.productRoot, "CLAUDE.md"), "utf8"), "# Global instructions\n");
+  }
+});
+
+test("a malformed user permission list leaves settings.json untouched and needs a manual step", async () => {
+  const input = await fixture();
+  const body = `${JSON.stringify({ permissions: { deny: "Bash(curl:*)" }, theme: "dark" })}\n`;
+  await writeFile(join(input.productRoot, "settings.json"), body);
+  const report = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(await readFile(join(input.productRoot, "settings.json"), "utf8"), body);
+  const settings = report.actions.find((action) => action.id === "claude-settings-deploy");
+  assert.equal(settings.status, "manual-required");
+  assert.match(settings.reason, /permissions\.deny/u);
+  assert.equal(report.completed.some((action) => action.id === "claude-settings-deploy"), false);
+  assert.equal(report.status, "manual-required");
+  assert.equal(report.error.code, "manual-step-required");
+  assert.equal(report.failed, null);
+  assert.equal(report.actions.find((action) => action.id === "claude-plugin-install").status, "complete");
+});
+
+async function registerExitCode(input, surface) {
+  return main(["register", "--surface", surface, "--profile", "template", "--package-root", input.packageRoot, "--apply", "--format", "json"], { write() {} }, { write() {} }, { productRoot: input.productRoot, runProcess: fakeProducts(input).run });
+}
+
+test("a no-clobber destination that contains the managed content is complete and untouched", async () => {
+  const cases = [
+    ["codex", "config.toml", "codex-config-deploy",
+      'model = "gpt-5.6-sol"  \nsandbox_mode = "danger-full-access"\napproval_policy = "never"\n\n[features]\nmulti_agent = true\n\n[agents.verifier]\nconfig_file = "agents/verifier.toml"\ndescription = "Verifies."\n[marketplaces.all-about-agents]\nsource = "/somewhere"\n\n[agents.reviewer]\n  config_file = "agents/reviewer.toml"\ndescription = "Reviews."\n\n[plugins."all-about-agents@all-about-agents"]\nenabled = true\n'],
+    ["antigravity", "GEMINI.md", "antigravity-instructions-deploy",
+      `# My own section\r\n\r\nkeep me\r\n\r\n${GEMINI_BODY.replaceAll("\n", "  \r\n")}\r\n## Caveman mode\r\n\r\nalways on\r\n`]
+  ];
+  for (const [surface, file, id, body] of cases) {
+    const input = await fixture();
+    await writeFile(join(input.productRoot, file), body);
+    const report = await runNativeRegistration(base(input, surface), { mode: "apply", runProcess: fakeProducts(input).run });
+    assert.equal(report.status, "complete", surface);
+    const deploy = report.actions.find((action) => action.id === id);
+    assert.equal(deploy.status, "complete", surface);
+    assert.equal(deploy.result.changed, false, surface);
+    assert.equal(await readFile(join(input.productRoot, file), "utf8"), body, surface);
+    assert.equal(await registerExitCode(input, surface), 0, surface);
+  }
+});
+
+test("a no-clobber destination that misses managed content names it and stays untouched", async () => {
+  const cases = [
+    ["codex", "config.toml", "codex-config-deploy", CODEX_CONFIG.replace('[agents.verifier]\nconfig_file = "agents/verifier.toml"\ndescription = "Verifies."\n', "") + "[marketplaces.all-about-agents]\nsource = \"/somewhere\"\n", /\[agents\.verifier\]/u],
+    ["codex", "config.toml", "codex-config-deploy", CODEX_CONFIG.replace('description = "Reviews."', 'description = "Edited."'), /\[agents\.reviewer\]/u],
+    ["codex", "config.toml", "codex-config-deploy", CODEX_CONFIG.replace('model = "gpt-5.6-sol"\n', 'model = "other"\n'), /top-level keys/u],
+    ["antigravity", "GEMINI.md", "antigravity-instructions-deploy", `# Mine\n\n${GEMINI_BODY.replace("Route each task to one skill.", "Route each task to two skills.")}`, /managed GEMINI\.md body/u]
+  ];
+  for (const [surface, file, id, body, named] of cases) {
+    const input = await fixture();
+    await writeFile(join(input.productRoot, file), body);
+    const report = await runNativeRegistration(base(input, surface), { mode: "apply", runProcess: fakeProducts(input).run });
+    assert.equal(report.status, "manual-required", `${surface} ${body}`);
+    const deploy = report.actions.find((action) => action.id === id);
+    assert.equal(deploy.status, "manual-required", surface);
+    assert.match(deploy.reason, named, surface);
+    assert.equal(await readFile(join(input.productRoot, file), "utf8"), body, surface);
+    assert.equal(await registerExitCode(input, surface), 1, surface);
+  }
+});
+
+test("a refused no-clobber file needs a manual step, exits 1, and stays untouched", async () => {
+  for (const [surface, file, id] of [["codex", "config.toml", "codex-config-deploy"], ["antigravity", "GEMINI.md", "antigravity-instructions-deploy"]]) {
+    const input = await fixture();
+    const body = `# The operator's own ${file}\n`;
+    await writeFile(join(input.productRoot, file), body);
+    const report = await runNativeRegistration(base(input, surface), { mode: "apply", runProcess: fakeProducts(input).run });
+    assert.equal(report.status, "manual-required", surface);
+    assert.equal(report.error.code, "manual-step-required", surface);
+    assert.equal(report.failed, null, surface);
+    const refused = report.actions.find((action) => action.id === id);
+    assert.equal(refused.status, "manual-required", surface);
+    assert.match(refused.reason, new RegExp(`${file.replace(".", "\\.")} already exists and differs[\\s\\S]*merge [\\s\\S]*by hand`, "u"), surface);
+    assert.match(report.error.message, new RegExp(file.replace(".", "\\."), "u"), surface);
+    assert.equal(await readFile(join(input.productRoot, file), "utf8"), body, surface);
+
+    let stdout = "";
+    const code = await main(["register", "--surface", surface, "--profile", "template", "--package-root", input.packageRoot, "--apply", "--format", "json"], { write: (value) => { stdout += value; } }, { write() {} }, { productRoot: input.productRoot, runProcess: fakeProducts(input).run });
+    assert.equal(code, 1, surface);
+    assert.equal(JSON.parse(stdout).error.code, "manual-step-required", surface);
+    assert.equal(await readFile(join(input.productRoot, file), "utf8"), body, surface);
+  }
+});
+
+test("a file copy with matching bytes still restores the executable mode", async (t) => {
+  if (process.platform === "win32") {
+    t.skip("POSIX executable bits are not meaningful on Windows");
+    return;
+  }
+  const input = await fixture();
+  const renderer = join(input.productRoot, "statusline", "statusline.mjs");
+  await mkdir(dirname(renderer), { recursive: true });
+  await writeFile(renderer, "// renderer\n");
+  await chmod(renderer, 0o644);
+  const report = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(report.status, "complete");
+  assert.equal((await stat(renderer)).mode & 0o777, 0o755);
+  assert.equal(report.actions.find((action) => action.id === "claude-statusline-renderer-deploy").result.changed, true);
+  const rerun = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(rerun.actions.find((action) => action.id === "claude-statusline-renderer-deploy").result.changed, false);
+});
+
+test("Claude registration owns only rules/all-about-agents and never touches the user's own rule files", async () => {
+  assert.equal(CLAUDE_RULE_FILES.length, 10);
+  const input = await fixture();
+  const rulesRoot = join(input.productRoot, "rules");
+  const namespace = join(rulesRoot, "all-about-agents");
+  await mkdir(rulesRoot, { recursive: true });
+  await writeFile(join(rulesRoot, "presentation.md"), "# The user's own presentation rule\n");
+  const first = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(first.status, "complete");
+  assert.deepEqual((await readdir(namespace)).sort(), CLAUDE_RULE_FILES);
+  for (const name of CLAUDE_RULE_FILES) assert.equal(await readFile(join(namespace, name), "utf8"), `# ${name}\n`);
+  assert.deepEqual((await readdir(rulesRoot)).sort(), ["all-about-agents", "presentation.md"]);
+  assert.equal(await readFile(join(rulesRoot, "presentation.md"), "utf8"), "# The user's own presentation rule\n");
+
+  const rerun = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(rerun.status, "complete");
+  for (const action of rerun.actions.filter((entry) => entry.id.startsWith("claude-rule"))) {
+    assert.equal(action.status, "complete", action.id);
+    assert.equal(action.result.changed, false, action.id);
+  }
+
+  await writeFile(join(namespace, "evidence-and-truth.md"), "# An older package version of this rule\n");
+  await writeFile(join(namespace, "removed-rule.md"), "# A rule the package no longer renders\n");
+  const plan = base(input, "claude");
+  const extra = plan.actions.find((action) => action.id === "claude-rules-extra-files");
+  assert.equal(extra.kind, "manual");
+  assert.match(extra.message, /rules\/all-about-agents\/removed-rule\.md/u);
+  const updated = await runNativeRegistration(plan, { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(updated.status, "manual-required");
+  assert.equal(updated.error.code, "manual-step-required");
+  assert.match(updated.error.message, /removed-rule\.md/u);
+  const replaced = updated.actions.find((action) => action.id === "claude-rule-evidence-and-truth-deploy");
+  assert.equal(replaced.status, "complete");
+  assert.equal(replaced.result.changed, true);
+  assert.equal(await readFile(join(namespace, "evidence-and-truth.md"), "utf8"), "# evidence-and-truth.md\n");
+  assert.equal(updated.actions.find((action) => action.id === "claude-rules-extra-files").status, "manual-required");
+  assert.equal(await readFile(join(namespace, "removed-rule.md"), "utf8"), "# A rule the package no longer renders\n");
+  assert.match(formatNativeRegistrationText(updated), /^reason\tclaude-rules-extra-files\t.*removed-rule\.md/mu);
+  assert.equal(await readFile(join(rulesRoot, "presentation.md"), "utf8"), "# The user's own presentation rule\n");
 });
 
 test("Claude registration reports manual-required while the plugin cache still holds an older copy", async () => {
@@ -645,7 +897,7 @@ test("Claude cache check allows only known runtime files and flags every other d
   }
 });
 
-test("Claude cache check does not follow a symlinked folder inside the cache", async () => {
+test("Claude cache check does not follow a symlinked folder inside the cache", async (t) => {
   const input = await fixture();
   const cacheRoot = claudeCacheRoot(input);
   await cp(input.packageRoot, cacheRoot, { recursive: true });
@@ -653,7 +905,12 @@ test("Claude cache check does not follow a symlinked folder inside the cache", a
   await mkdir(join(outside, "kept-skill"), { recursive: true });
   await writeFile(join(outside, "kept-skill", "SKILL.md"), "# Kept skill\n");
   await rename(join(cacheRoot, "skills"), join(input.root, "skills-original"));
-  try { await symlink(outside, join(cacheRoot, "skills"), process.platform === "win32" ? "junction" : "dir"); } catch { return; }
+  try {
+    await symlink(outside, join(cacheRoot, "skills"), process.platform === "win32" ? "junction" : "dir");
+  } catch (error) {
+    skipIfLinkUnavailable(t, error);
+    return;
+  }
   const touched = [];
   const report = await runNativeRegistration(base(input, "claude"), {
     mode: "apply",
@@ -796,7 +1053,7 @@ test("an unverifiable installed copy uses the same not-confirmed error code as a
   assert.match(report.error.message, /own Git repository/u);
 });
 
-test("Codex registration prints no quoted git commands for a package root that contains an apostrophe", async () => {
+test("Codex source-check commands name an apostrophe package root only by its placeholder", async () => {
   const input = await fixture();
   const quotedRoot = join(input.root, "owner's package");
   await rename(input.packageRoot, quotedRoot);
@@ -805,9 +1062,19 @@ test("Codex registration prints no quoted git commands for a package root that c
   assert.equal(report.status, "manual-required");
   const check = report.actions.find((action) => action.id === "codex-plugin-source-check");
   assert.match(check.reason, /working tree differs from its HEAD commit/u);
-  assert.match(check.reason, /native-registration\.md, section Codex CLI/u);
-  assert.deepEqual(check.commands, []);
-  assert.equal(formatNativeRegistrationText(report).includes("git -C"), false);
+  assert.deepEqual(check.commands.slice(0, 2), ["git -C '<PACKAGE_ROOT>' status --short", "git -C '<PACKAGE_ROOT>' add -A"]);
+  const text = formatNativeRegistrationText(report);
+  assert.equal(text.includes("owner's package"), false);
+  assert.equal(JSON.stringify(report).includes("owner's package"), false);
+});
+
+test("the text report escapes control characters in action ids", () => {
+  const text = formatNativeRegistrationText({
+    action: "register", mode: "apply", status: "manual-required", surface: "claude", profile: "template", productRoot: "<PRODUCT_ROOT>", instructionRoot: "<PRODUCT_ROOT>",
+    actions: [{ status: "manual-required", id: "claude-rule-evil\nrun\tforged-deploy", kind: "file-copy", reason: "needs review" }]
+  });
+  assert.equal(text.split("\n").some((line) => line.startsWith("run")), false);
+  assert.ok(text.includes("claude-rule-evil\\u000arun\\u0009forged-deploy"), text);
 });
 
 test("failed registration reports escape control characters from a caught error message", async () => {

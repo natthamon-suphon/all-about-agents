@@ -102,7 +102,7 @@ test("brainstorming description routes by intent and names its neighbors", async
   assert.match(description, /systematic-debugging/u);
   assert.match(description, /writing-plans/u);
   assert.doesNotMatch(description, /: /u, "the single-line frontmatter parser must not see a second key");
-  assert.doesNotMatch(frontmatter, /^capabilities:/mu, "skill capabilities are not rendered; 25 of 27 skills omit the field");
+  assert.doesNotMatch(frontmatter, /^capabilities:/mu, "skill capabilities are not rendered, so brainstorming declares none");
   const listed = [...frontmatter.split(/^evaluationCases:\n/mu)[1].matchAll(/^ {2}- (\S+)$/gmu)].map((match) => match[1]);
   assert.deepEqual(listed, requiredCases);
   assert.match(skill, /one-file change/u);
@@ -185,6 +185,9 @@ test("companion bounds frames, event input, queue growth, and event-log output",
   assert.match(helper, /MAX_EVENT_QUEUE_LENGTH/u);
   assert.match(helper, /MAX_EVENT_TEXT_LENGTH/u);
   assert.match(helper, /eventQueue\.length\s*[<>]=?/u);
+  // Every start makes a new port and key, so a stopped companion never comes back at the old URL.
+  assert.doesNotMatch(helper, /reconnects automatically/iu);
+  assert.match(helper, /new companion URL/u);
 });
 
 test("companion cleanup proves canonical containment before deleting ephemeral roots", async () => {
@@ -204,7 +207,6 @@ test("companion does not write session tokens into server metadata or logs", asy
   assert.match(server, /connection-url/u);
   assert.match(server, /server-info/u);
   assert.match(server, /redactToken/u);
-  assert.doesNotMatch(server, /server-info[\s\S]{0,300}companionUrl\(\)/u);
   assert.doesNotMatch(server, /console\.log\([\s\S]{0,160}TOKEN/u);
   assert.doesNotMatch(server, /console\.log\([\s\S]{0,160}key\s*:/iu);
 });
@@ -331,6 +333,11 @@ test("each project start makes a fresh key and keeps it in a private temp state 
       assert.equal(statSync(state).mode & 0o777, 0o700);
       assert.equal(statSync(join(state, "connection-url")).mode & 0o777, 0o600);
     }
+    started.forEach((info, index) => {
+      for (const name of ["server-info", "server.log"]) {
+        assert.equal(readFileSync(join(info.state_dir, name), "utf8").includes(keys[index]), false, `${name} must not hold the key`);
+      }
+    });
     const projectFiles = readdirSync(project, { recursive: true }).map((name) => join(project, name)).filter((path) => statSync(path).isFile());
     const projectText = projectFiles.map((path) => readFileSync(path, "utf8")).join("\n");
     for (const key of keys) assert.equal(projectText.includes(key), false, "the key must never be written into the project");
@@ -342,6 +349,28 @@ test("each project start makes a fresh key and keeps it in a private temp state 
     }
     rmSync(tmpRoot, { recursive: true, force: true });
     rmSync(project, { recursive: true, force: true });
+  }
+});
+
+test("a screen fragment keeps its dollar sequences verbatim", { skip: posixSkip }, async () => {
+  const tmpRoot = mkdtempSync(join(tmpdir(), "t017-tmp-"));
+  let info;
+  try {
+    info = startCompanion(companionEnv(tmpRoot));
+    const fragment = "<p>cost $$5, $' tail, $& match, $` head</p>";
+    writeFileSync(join(info.screen_dir, "001.html"), fragment);
+    const key = new URL(info.url).searchParams.get("key");
+    const page = await fetch(`http://127.0.0.1:${info.port}/`, { headers: { cookie: `brainstorm-key-${info.port}=${key}` } });
+    const body = await page.text();
+    assert.equal(page.status, 200);
+    assert.ok(body.includes(fragment), "String.replace patterns must not rewrite the screen");
+    assert.equal(body.split("<!-- CONTENT -->").length, 1, "no placeholder text is left or injected");
+  } finally {
+    if (info) {
+      runScript("stop-server.sh", [dirname(info.state_dir)], companionEnv(tmpRoot));
+      killLeftover(info);
+    }
+    rmSync(tmpRoot, { recursive: true, force: true });
   }
 });
 

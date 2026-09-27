@@ -34,14 +34,18 @@ Run these checks from the repository root:
 
 ```text
 node --test tests/integration/native-registration.test.mjs
+node --test tests/integration/antigravity-install.test.mjs
 node --test tests/static/documentation.test.mjs tests/static/maintenance-docs.test.mjs tests/static/contributor-entrypoints.test.mjs
 ```
 
 The native harness uses fresh temporary roots. It checks Claude validation,
 marketplace registration, plugin discovery, and both statusline profiles. It
 checks Codex marketplace and plugin discovery and hook file presence. Codex
-hook trust is not run. For Antigravity it checks the package layout that
-`agy plugin validate` accepts; Antigravity renders no hooks, so there is no
+hook trust is not run. The native harness does not run `agy`.
+`tests/integration/antigravity-install.test.mjs` checks the rendered
+Antigravity layout and registration plan offline; it does not run the product.
+Antigravity native checks are the manual steps under
+[Antigravity](#antigravity-agy). Antigravity renders no hooks, so there is no
 hook-file or hook-trust check to run.
 
 Run a product validator only against a disposable package root:

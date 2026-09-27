@@ -11,7 +11,7 @@ const ID_PATTERN = /^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)?$/u;
 const ASCII_KEY_PATTERN = /^[\x21-\x7e]+$/u;
 const CONTROL_OR_FORMAT_PATTERN = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
 const HTML_PATTERN = /<[^>]*>/u;
-const KIND_CATEGORY = Object.freeze({ skill: "skills", role: "roles", subagent: "subagents", command: "commands", workflow: "workflows", hook: "hooks", profile: "profiles" });
+const KIND_CATEGORY = Object.freeze({ skill: "skills", role: "roles", subagent: "subagents", hook: "hooks", profile: "profiles" });
 
 function issue(code, path, message) {
   return { code, path, message };
@@ -68,11 +68,6 @@ function expectedEmoji(presentation, kind, id) {
   return isObject(entry) && typeof entry.emoji === "string" ? entry.emoji : null;
 }
 
-function expectedLabel(presentation, kind, id) {
-  const emoji = expectedEmoji(presentation, kind, id);
-  return emoji ? `${id} ${emoji}` : null;
-}
-
 function presentationErrors(presentation) {
   const errors = [];
   if (!isObject(presentation)) {
@@ -99,12 +94,10 @@ function checkAnnouncement(event, path, presentation, state, errors) {
   if (!safeText(event.reason, 160, { singleLine: true })) errors.push(issue("short-reason-required", pathJoin(path, "reason"), "announcement reason must be one short safe sentence"));
 
   if (KINDS.includes(event.kind) && safeId(event.id)) {
-    const label = expectedLabel(presentation, event.kind, event.id);
-    if (label === null) errors.push(issue("unknown-presentation-id", pathJoin(path, "id"), `no registered label exists for ${event.kind} ${event.id}`));
-    else if (event.label !== label) {
-      const code = typeof event.label === "string" && event.label.endsWith(` ${label.split(" ").at(-1)}`) && !event.label.startsWith(`${event.id} `)
-        ? "emoji-before-name"
-        : "label-mismatch";
+    const emoji = expectedEmoji(presentation, event.kind, event.id);
+    if (!emoji) errors.push(issue("unknown-presentation-id", pathJoin(path, "id"), `no registered label exists for ${event.kind} ${event.id}`));
+    else if (event.label !== `${event.id} ${emoji}`) {
+      const code = event.label === `${emoji} ${event.id}` ? "emoji-before-name" : "label-mismatch";
       errors.push(issue(code, pathJoin(path, "label"), "label must exactly match the registered presentation label"));
     }
   }

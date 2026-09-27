@@ -34,8 +34,8 @@ the separate `trusted` step when Codex asks. A fresh session is needed for
 The shared global file is rendered from
 `core/instructions/global-operating-rules.md` and registered at
 `<CODEX_HOME>/AGENTS.md`, or `~/.codex/AGENTS.md` with the normal root. Project
-`AGENTS.override.md` or `AGENTS.md`, plus plugin rules, are the more specific
-second layer. Visible names use the registry emoji after the machine ID and
+`AGENTS.override.md` or `AGENTS.md` are the more specific second layer; the
+nine core rules are part of the global file. Visible names use the registry emoji after the machine ID and
 include a short reason and a 2-to-7 item checklist. This is prompt guidance,
 not a UI guarantee.
 
@@ -79,7 +79,7 @@ $env:CODEX_HOME = "<PRODUCT_ROOT>"
 node scripts/aaa.mjs register --surface codex --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
 ```
 
-POSIX shell on macOS or Linux:
+POSIX shell on macOS:
 
 ```sh
 mkdir -p "<PRODUCT_ROOT>"
@@ -108,8 +108,11 @@ so product-written plugin metadata is not erased by a later config deployment.
 
 `config.toml` is written only when it is absent. Codex keeps its own
 `[marketplaces.*]` and `[plugins.*]` tables there, and users add MCP servers and
-sandbox settings, so an existing file is never replaced. The step then reports
-`manual-required` and names the file to merge by hand.
+sandbox settings, so an existing file is never replaced. It is complete when it
+already contains the managed content: every managed table with all of its key
+lines, plus the managed top-level keys; other tables may stay. Otherwise the
+step reports `manual-required`, names the missing tables to merge by hand, and
+the run ends with exit code 1 (`manual-step-required`).
 
 The fixed current CLI commands are:
 

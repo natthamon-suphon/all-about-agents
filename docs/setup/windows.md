@@ -1,8 +1,9 @@
 # Windows setup
 
 This procedure renders the repository package into a disposable directory. It
-does not launch Claude or Codex, change a live product configuration, or prove
-native discovery. Use a new root for every run.
+does not launch Antigravity, Claude, or Codex, change a live product
+configuration, or prove native discovery. Use a new root for every run: each
+example adds a new GUID to the directory name.
 
 If this checkout came from another machine, follow [sync and update](../maintenance/sync-and-update.md)
 first. A pull does not install or update any coding tool.
@@ -42,10 +43,10 @@ dependencies.
 
 ### Product binaries must resolve before native registration
 
-`register --apply` spawns the product executables by bare name: `claude` and
-`codex`. Rendering and `install --apply` do not need them, so a package can be
-complete while a later registration silently fails its native steps. Confirm
-each binary you intend to register:
+`register --apply` spawns the product executables by bare name: `agy`,
+`claude`, and `codex`. Rendering and `install --apply` do not need them, so a
+package can be complete while a later registration fails its native steps.
+Confirm each binary you intend to register:
 
 ```powershell
 Get-Command agy, claude, codex -ErrorAction SilentlyContinue |
@@ -95,8 +96,8 @@ overwrite differing regular files under this root without a backup, so do not us
 `%USERPROFILE%\.claude`, `%USERPROFILE%\.codex`, or other product directory.
 
 ```powershell
-$ClaudeRoot = Join-Path $env:TEMP "all-about-agents-claude"
-New-Item -ItemType Directory -Path $ClaudeRoot -Force | Out-Null
+$ClaudeRoot = Join-Path $env:TEMP "all-about-agents-claude-$([guid]::NewGuid())"
+New-Item -ItemType Directory -Path $ClaudeRoot | Out-Null
 
 pwsh -NoProfile -File .\installers\install.ps1 doctor --surface claude --destination-root $ClaudeRoot --format json
 pwsh -NoProfile -File .\installers\install.ps1 install --surface claude --profile portable --destination-root $ClaudeRoot --statusline-name "<YOUR_NAME>" --dry-run --format json
@@ -119,16 +120,16 @@ control or ANSI characters.
 Use a separate root when inspecting each non-Claude package:
 
 ```powershell
-$CodexRoot = Join-Path $env:TEMP "all-about-agents-codex"
-New-Item -ItemType Directory -Path $CodexRoot -Force | Out-Null
+$CodexRoot = Join-Path $env:TEMP "all-about-agents-codex-$([guid]::NewGuid())"
+New-Item -ItemType Directory -Path $CodexRoot | Out-Null
 
 pwsh -NoProfile -File .\installers\install.ps1 install --surface codex --destination-root $CodexRoot --dry-run
 pwsh -NoProfile -File .\installers\install.ps1 install --surface codex --destination-root $CodexRoot --apply
 ```
 
 ```powershell
-$AntigravityRoot = Join-Path $env:TEMP "all-about-agents-antigravity"
-New-Item -ItemType Directory -Path $AntigravityRoot -Force | Out-Null
+$AntigravityRoot = Join-Path $env:TEMP "all-about-agents-antigravity-$([guid]::NewGuid())"
+New-Item -ItemType Directory -Path $AntigravityRoot | Out-Null
 
 pwsh -NoProfile -File .\installers\install.ps1 install --surface antigravity --destination-root $AntigravityRoot --dry-run
 pwsh -NoProfile -File .\installers\install.ps1 install --surface antigravity --destination-root $AntigravityRoot --apply
@@ -140,8 +141,8 @@ enable hooks automatically.
 To render every package in one disposable tree, use one more explicit root:
 
 ```powershell
-$AllRoot = Join-Path $env:TEMP "all-about-agents-all"
-New-Item -ItemType Directory -Path $AllRoot -Force | Out-Null
+$AllRoot = Join-Path $env:TEMP "all-about-agents-all-$([guid]::NewGuid())"
+New-Item -ItemType Directory -Path $AllRoot | Out-Null
 pwsh -NoProfile -File .\installers\install.ps1 install --surface all --destination-root $AllRoot --statusline-name "<YOUR_NAME>" --dry-run
 pwsh -NoProfile -File .\installers\install.ps1 install --surface all --destination-root $AllRoot --statusline-name "<YOUR_NAME>" --apply
 ```

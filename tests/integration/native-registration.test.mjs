@@ -441,7 +441,8 @@ async function probeVersion(executable, root, overrides = {}) {
 
 function isolatedNativeRunner(root, captures) {
   return async (request) => {
-    const requestedEnvironment = request.envOverrides ?? {};
+    // Codex requests carry a full environment copy; keep only the declared keys.
+    const requestedEnvironment = request.envOverrides ?? Object.fromEntries((request.environmentKeys ?? []).map((key) => [key, request.env[key]]));
     const env = isolatedEnvironment(root, requestedEnvironment);
     const result = await runProcess({
       ...request,

@@ -1,7 +1,7 @@
 # claude.ai skill pack (`aaa-*`)
 
-Status: built 2026-09-26; revised twice on 2026-09-27, after a pre-upload
-review and after a pack review. All six
+Status: built 2026-09-26; revised three times on 2026-09-27, after a
+pre-upload review, a pack review, and a full-repo review. All six
 skills are validated (pack and export tests). Proxy results are in
 `claude-ai/evals/results.md`. An earlier aaa-interview build (ca62642f…) was
 registered on claude.ai and is superseded; no current build is uploaded.
@@ -99,14 +99,17 @@ gitignored.
 | Skill | Reads | Writes |
 | --- | --- | --- |
 | aaa-interview | the user's answers | `01-interview-record.md`, updated after each round |
-| aaa-brief | the interview record, or the chat when no record exists | `02-brief.md` |
-| aaa-tasks | the brief or a plan | `03-tasks.md`: tasks, status, and run log in one file |
-| aaa-run | `03-tasks.md`, or the brief when no task file exists | task outputs; it updates status and the run log |
+| aaa-brief | the interview record, or the chat when no record exists, and research reports | `02-brief.md` |
+| aaa-tasks | the brief or a plan, and research reports | `03-tasks.md`: tasks, status, and run log in one file |
+| aaa-run | `03-tasks.md`, or the brief when no task file exists | task outputs; it updates status and the run log, and creates `03-tasks.md` with one task T1 when it runs a brief |
 | aaa-review | all outputs and all documents | `04-review.md`; applies small fixes |
 | aaa-research | a question and any supplied material | `research-<topic>.md` |
 
 Every document starts with a header block: project, document type, version,
-date, status, language, and source documents.
+date, status, language, and source documents. A research report adds an
+Answers row: the R# it answers and its question, or "none". The brief and the
+task list carry that answer, with the report as its source, instead of
+leaving the R# open; an unknown answer keeps the R# open.
 
 ### 4.3 Capability tiers
 
@@ -170,8 +173,9 @@ asks to be interviewed or to shape a plan in depth."
    - risks and unknowns
    - deliverable form
 
-   Add the extra topics for the kind of work (software, document, research,
-   business) from `references/topics.md`.
+   Add the extra topics for the kind of work (software or app, document or
+   content, research or analysis, business or project, event or personal
+   plan) from `references/topics.md`.
 3. Ask one question per message. When a real choice exists, give 2-3 options,
    a recommendation, and a reason. Otherwise ask an open question. Follow one
    branch to its end before starting the next.
@@ -226,11 +230,14 @@ to summarize a discussion into a document."
    including a line that rests only on the record's Reading. A topic nobody
    discussed reads "Not discussed". Add nothing new. If the source conflicts,
    the later statement wins only when the user clearly changed it; otherwise
-   an open question names both.
+   an open question names both. A research item R# stays open, unless a
+   research report's Answers row names it and its answer is not unknown: then
+   the answer is carried with the report as its source.
 4. Self-review before showing the brief: placeholders, contradictions, vague
    words, scope creep, and success criteria that cannot be checked.
 5. Each round of user corrections creates a new version (v2, v3, and so on).
-   Then offer the next step: tasks or run.
+   When the user accepts the brief, its header status becomes complete. Then
+   offer the next step: tasks or run.
 
 ### 5.3 `aaa-tasks`
 
@@ -256,7 +263,9 @@ make a task list."
    a task limit, each needs-approval step keeps its own task.
 4. Order the tasks by dependency.
 5. Write no "TBD" and no "handle edge cases". Put unknowns in a "Not yet
-   specified" section, or turn them into a research task.
+   specified" section, or turn them into a research task. An R# that a
+   research report answers needs no research task; the report becomes an
+   input of the tasks that use the answer.
 6. Add a coverage table: every REQ# maps to at least one task, and no task falls
    outside scope.
 
@@ -267,15 +276,19 @@ result, and keeps status and a run log. Use when the user asks to execute,
 continue, or resume planned tasks."
 
 1. Source: `03-tasks.md`. If there is none, treat the brief as one task. If
-   that task is large, suggest `aaa-tasks` first, in plain words.
+   that task is large, suggest `aaa-tasks` first, in plain words. To go on,
+   create `03-tasks.md` with one task T1, whose done check is the brief's
+   success criteria.
 2. Resume at the first task that is pending or in progress and whose
    dependencies are done (a status that starts with done). Before trusting a
    done task, re-check that its output exists.
-3. For each task, in order:
+3. When the run starts, the task list's header status becomes in progress.
+   For each task, in order:
    - mark it in progress
    - do the work
    - run its done check
-   - mark it done, done with concerns, or blocked
+   - mark it done, done with concerns, done — check not run, or blocked
+     (skipped only when the user says so)
    - add one line to the run log (output, location, check result)
    - save the file
 4. Stop only for:
@@ -285,13 +298,17 @@ continue, or resume planned tasks."
    - an irreversible or external step
    - two documents that disagree
    - a done check that fails three times on the same task
+   - the tasks the user asked for are finished
 5. Never mark a task done without a passing check. If the check cannot run,
    the status is "done — check not run".
 6. In Cowork with subagents, tasks marked parallel-safe whose dependencies are
-   done may go to subagents.
+   done may go to subagents. A task flagged needs-approval never goes to a
+   subagent; the loop stops for it and does that step itself after approval.
    The loop re-checks every result itself and does not trust worker reports.
-7. At the end, report counts of done, done with concerns, blocked, and
-   skipped, then suggest a review.
+7. At the end, report counts of done, done with concerns, done — check not
+   run, blocked, skipped, and pending, then suggest a review. The header
+   status becomes complete only when every task is done (any done status) or
+   skipped; otherwise it stays in progress.
 
 ### 5.5 `aaa-review`
 
@@ -305,6 +322,9 @@ asks to review or audit work or docs, or asks if it is ready."
    - mark each REQ# and each success criterion as met, partly met, missing, or
      extra
    - re-run every done check fresh; do not trust the run log
+   - a required output that is missing or not attached is a missing
+     finding, so the verdict cannot be ready; "not checked" is only for a
+     success criterion that can be measured only after the work is used
 3. Pass B, documents: check the chain record -> brief -> tasks -> outputs, and
    each research file against the brief and tasks. In the folder tier, list
    every file in the project folder. Look for these problems:
@@ -343,7 +363,8 @@ asks to review or audit work or docs, or asks if it is ready."
    - needs-decision list
    - not-checked list
 8. After the user's fixes, re-review only the changed parts. "Attempted" does
-   not count as fixed.
+   not count as fixed. Save the report as the next version with a change-log
+   row.
 
 ### 5.6 `aaa-research`
 
@@ -373,6 +394,7 @@ user asks for research or a source-backed report."
    - source list
    - method (queries used, date)
 
+   The header's Answers row names the R# the report answers, or "none".
    Never make up a number.
 
 ## 6. Reuse from `core/skills`

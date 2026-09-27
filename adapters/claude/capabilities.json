@@ -15,7 +15,7 @@
         "package": "CLAUDE.md",
         "destination": "<CLAUDE_CONFIG_DIR>/CLAUDE.md"
       },
-      "notes": "The shared global instruction body is deployed separately from plugin rules and project instructions."
+      "notes": "The shared global instruction body is deployed separately from the rule files under <CLAUDE_CONFIG_DIR>/rules/all-about-agents/ and from project instructions."
     },
     {
       "feature": "model.primary",
@@ -109,15 +109,15 @@
       "feature": "rules.instructions",
       "support": "supported",
       "stability": "stable",
-      "source": "docs/evaluations/research-claude-code.md",
-      "checkedAt": "2026-08-31",
+      "source": "https://code.claude.com/docs/en/memory.md",
+      "checkedAt": "2026-09-27",
       "productVersion": "2.1.251",
       "value": {
         "global": "~/.claude/CLAUDE.md",
-        "rules": "~/.claude/rules/*.md",
+        "rules": "~/.claude/rules/**/*.md",
         "project": "CLAUDE.md or .claude/CLAUDE.md"
       },
-      "notes": "CLAUDE.md and rules are documented instruction surfaces."
+      "notes": "CLAUDE.md and rules are documented instruction surfaces. The memory documentation checked on 2026-09-27 says every .md file below rules/ is discovered recursively, so the package rules load from rules/all-about-agents/; the product version was not observed again for this check."
     },
     {
       "feature": "skills.discovery",

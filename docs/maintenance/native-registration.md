@@ -26,21 +26,25 @@ pull -> validate -> render -> dry-run -> apply package -> dry-run registration -
 
 Git pull changes the repository only. Package apply and native registration
 are separate explicit actions. The managed global destinations are
-`<CLAUDE_CONFIG_DIR>/CLAUDE.md` and `<CODEX_HOME>/AGENTS.md`.
+`<CLAUDE_CONFIG_DIR>/CLAUDE.md`, `<CODEX_HOME>/AGENTS.md`, and
+`~/.gemini/GEMINI.md` (`<AAA_ANTIGRAVITY_ROOT>/GEMINI.md` when that variable
+is set).
 
-An authorized apply may overwrite these managed global files without a backup.
-It must not guess a product root or replace unknown neighboring files.
+An authorized apply may overwrite `CLAUDE.md` and `AGENTS.md` without a backup.
+It never overwrites a differing `GEMINI.md`. It must not guess a product root
+or replace unknown neighboring files.
 
 ## Product binaries must resolve first
 
-The native steps of `register --apply` spawn `claude` and `codex` by bare
-name. Rendering and package apply never call them. When a binary does not
+The native steps of `register --apply` spawn `agy`, `claude`, and `codex` by
+bare name. Rendering and package apply never call them. When a binary does not
 resolve, the plan still copies its managed files and then fails the native
 commands, which leaves a package that looks installed but that the product
 does not know about. Verify discovery with each product's own command before
 you register:
 
 ```text
+agy plugin list
 claude plugin list
 codex plugin list --available --json
 ```
@@ -117,7 +121,7 @@ that the product will discover or run the package.
    node scripts/aaa.mjs register --surface codex --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
    ```
 
-   POSIX shell on macOS or Linux:
+   POSIX shell on macOS:
 
    ```sh
    mkdir -p "<CLAUDE_PRODUCT_ROOT>" "<CODEX_PRODUCT_ROOT>"
@@ -129,7 +133,10 @@ that the product will discover or run the package.
    ```
 
 The `register` action accepts one surface and one package root. It uses
-`CLAUDE_CONFIG_DIR` or `CODEX_HOME`. The CLI does not accept a guessed
+`CLAUDE_CONFIG_DIR` or `CODEX_HOME`. For Antigravity, the repository variable
+`AAA_ANTIGRAVITY_ROOT` moves only the `GEMINI.md` destination; the `agy`
+commands still act on the live product, so that variable does not make
+`register --apply` a safe preview. The CLI does not accept a guessed
 `--product-root` option.
 
 Registration checks package consistency, not package origin or signature. It
@@ -156,11 +163,15 @@ agy plugin list
 source, so `<PACKAGE_ROOT>` needs no Git repository.
 
 `GEMINI.md` is the only deployed file, and it is **not** overwritten. It carries
-`guard: "no-clobber"`: when the destination exists and differs from the managed
-source, the action reports `manual-required` and writes nothing. A live
-`~/.gemini/GEMINI.md` can hold always-on sections this package does not own, and
-the Antigravity render is not a superset of them the way `CLAUDE.md` is. Merge
-the managed body by hand when that happens.
+`guard: "no-clobber"`. A live `~/.gemini/GEMINI.md` can hold always-on sections
+this package does not own, and the Antigravity render is not a superset of them
+the way `CLAUDE.md` is. So an existing file is complete when it already contains
+the managed body as one contiguous block, after line endings and trailing
+whitespace are normalized; your own sections before or after it stay. When the
+body is missing or one of its lines was edited, the action reports
+`manual-required`, writes nothing, and the report ends `manual-required` with
+exit code 1 and error code `manual-step-required`. Merge the managed body by
+hand.
 
 No hooks and no status line are registered. No session-start event can be
 named for this surface with current evidence, so the routing contract is
@@ -185,6 +196,7 @@ The fixed registration plan first overwrites these approved files in
 `CLAUDE_CONFIG_DIR`:
 
 ```text
+CLAUDE.md
 all-about-agents/statusline.json
 statusline/statusline.mjs
 statusline/track-tool.mjs
@@ -192,15 +204,56 @@ statusline/statusline.ps1
 statusline/statusline.sh
 ```
 
+`CLAUDE.md` has no guard: the rendered file replaces the existing one.
+
 `settings.json` is not one of them. It is a shared product file that the user
 and other tools also write, so the plan merges into it instead of replacing it.
-The merge is a deep merge: keys the package declares win, and every other key
-in the existing file is preserved. Before the merge, only
-`statusLine.command` in the rendered source is rebased to the selected
-`CLAUDE_CONFIG_DIR`; the other rendered-source fields stay unchanged.
+Objects merge key by key: keys the package declares win, and every other key
+in the existing file is preserved. An array the package declares replaces the
+existing array, except `permissions.allow` and `permissions.deny`. For those
+two lists the plan keeps every existing rule in its order and appends each
+package rule that is not already present, so your own rules survive and the
+emergency denies are added once. A rule that a later package drops stays in
+the file until you remove it. When your `permissions.allow` or
+`permissions.deny` is not an array of non-empty strings, the plan writes
+nothing to `settings.json` and the step reports `manual-required`; fix the
+list by hand, then register again. Before the merge, only `statusLine.command`
+in the rendered source is rebased to the selected `CLAUDE_CONFIG_DIR`; the
+other rendered-source fields stay unchanged.
 
-The POSIX runtime files keep executable mode. The approved files listed above
-are overwritten without a backup, as required by this repository policy.
+The POSIX runtime files keep executable mode. A file whose bytes already match
+but whose mode differs is written again to restore the mode. The approved files
+listed above are overwritten without a backup, as required by this repository
+policy.
+
+The plan also copies the rendered rules into
+`<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`: one `<rule>.md` file for each
+core rule, and `presentation.md`, the presentation catalog. The Claude Code
+memory documentation says: "All `.md` files are discovered recursively, so you
+can organize rules into subdirectories"
+([Claude Code memory](https://code.claude.com/docs/en/memory.md); quote
+verified by the coordinator on 2026-09-27, not fetched by this repository's
+checks). So this package owns that one subfolder and never writes a file
+directly in `<CLAUDE_CONFIG_DIR>/rules/`, where the user and other tools keep
+their own rules:
+
+- A missing rule file is written.
+- A differing rule file in `rules/all-about-agents/` is overwritten without a
+  backup, because the folder belongs to this package. A package update
+  therefore replaces its old rules.
+- An identical rule file is left as it is.
+- Any other entry in `rules/all-about-agents/`, such as a rule that a later
+  package no longer renders, is never deleted. One `manual-required` step,
+  `claude-rules-extra-files`, names it. Claude Code still loads such a `.md`
+  file, so review and remove it by hand.
+- When `rules` or `rules/all-about-agents` is a symlink, junction, or not a
+  folder, or a rule file there is a link or not a regular file, no rule file is
+  written. One `manual-required` step, `claude-rules-deploy`, names it, and the
+  rest of the registration still runs.
+
+A package without `rules/all-about-agents/presentation.md` fails before any
+write with `package-source-unowned`. Whether a session loads these rules is an
+`active` check, not a registration result.
 
 It then performs these native actions:
 
@@ -270,9 +323,17 @@ product-written plugin metadata.
 and `[plugins.*]` tables there, and users add MCP servers and sandbox settings,
 so the plan refuses to replace an existing file. When `config.toml` is absent
 the managed file is written. When it exists and differs, the step reports
-`manual-required` and names the file: copy the managed `[agents.*]` tables and
-the model keys across by hand. This repository has no TOML writer, so it cannot
-merge that file safely.
+`manual-required` only when the file lacks managed content. The check splits
+the managed file into tables: each `[header]` line with its key lines, plus the
+top-level keys before the first header. It compares lines exactly after
+trimming whitespace and skips blank lines. The file is complete when every
+managed table is present with all of its key lines, in any order; Codex's own
+`[marketplaces.*]`, `[plugins.*]`, and `[features]` tables and your extra tables
+or keys may stay. Otherwise the reason names the missing or changed tables, for
+example `[agents.reviewer]` or `top-level keys`: copy them across by hand. This
+is a line check, not a TOML parser, and this repository has no TOML writer, so
+it never merges that file for you. A refusal ends the report as
+`manual-required` with exit code 1 and error code `manual-step-required`.
 
 The native commands use the current structured CLI forms:
 
@@ -286,7 +347,9 @@ Codex serves a Git clone of `<PACKAGE_ROOT>`, so a new render reaches Codex
 only through a new commit in that folder. After the native commands, the plan
 runs `codex-plugin-source-check` in `<PACKAGE_ROOT>`. It writes nothing. It
 removes inherited `GIT_*` variables from the git environment and passes
-`-c core.fsmonitor=false` to each git call, so no fsmonitor hook runs.
+`-c core.fsmonitor=false` to each git call, so no fsmonitor hook runs. The
+`codex plugin` commands also run without inherited `GIT_*` variables, so the
+clone Codex makes cannot be redirected by a `GIT_DIR` set in a git hook.
 
 1. `git rev-parse --show-prefix` must print an empty prefix. The package root
    must be its own Git repository, not a folder inside a larger repository.
@@ -306,11 +369,8 @@ codex plugin add all-about-agents@all-about-agents --json
 
 Registration never commits for you. Read the `git status --short` output
 before `git add -A`, run the commands with the same `CODEX_HOME`, then run
-`register --apply` again. When `<PACKAGE_ROOT>` contains a single quote, the
-check prints no commands. Run the same steps by hand and quote the path for
-your shell. The
-check cannot see a commit that Codex has not cloned yet, so run the remove and
-add commands after every new commit.
+`register --apply` again. The check cannot see a commit that Codex has not
+cloned yet, so run the remove and add commands after every new commit.
 
 `plugin list --available --json` must show the registered package. That result
 is `registered`; it is not proof that hooks are `trusted`, `active`, or
@@ -341,7 +401,7 @@ a reviewed dry-run report.
    node scripts/aaa.mjs register --surface codex --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --apply --format json
    ```
 
-2. On macOS or Linux, set the isolated product root in a POSIX shell, then
+2. On macOS, set the isolated product root in a POSIX shell, then
    register Claude or Codex.
 
    ```sh
@@ -365,6 +425,13 @@ source clone can still differ from the package. The command then exits with
 code 1 and reports `registered: fail`. The check action lists the exact
 commands. Run them, then run `register --apply` again until the report says
 `complete`.
+
+The Claude steps `claude-rules-deploy`, `claude-rules-extra-files`, and a
+refused `claude-settings-deploy`, and a no-clobber file (`GEMINI.md` or the
+Codex `config.toml`) that lacks managed content, also end the report as
+`manual-required` with exit code 1 and error code `manual-step-required`. The other actions still run, and
+`registered` is not changed. Do the named step by hand, then register again.
+`CLAUDE.md` has no guard and is overwritten, so it never causes this.
 
 ## Boundaries
 

@@ -28,8 +28,9 @@ Managed global files are separate
 from Git pull. An authorized native apply may overwrite them without a backup.
 
 The global destinations are `<CLAUDE_CONFIG_DIR>/CLAUDE.md`,
-`<CODEX_HOME>/AGENTS.md`, and `~/.gemini/GEMINI.md`. Project instruction files
-and plugin rules remain the more specific second layer. Read
+`<CODEX_HOME>/AGENTS.md`, and `~/.gemini/GEMINI.md`. Claude also gets the core
+rules as files in `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`. Project
+instruction files remain the more specific second layer. Read
 [global instructions](global-instructions.md) for the complete model.
 
 `GEMINI.md` is the one destination that is never overwritten. When the file
@@ -53,24 +54,44 @@ node scripts/setup.mjs --mode update --apply    # perform the run
 | Mode | Package root | Use it when |
 | --- | --- | --- |
 | `update` | kept, then synced with this checkout | the normal refresh after a pull |
-| `fresh` | every previous render removed first | the root was written by an older repository version, or a render is in doubt |
+| `fresh` | every previous render of the selected surfaces removed first | the root was written by an older repository version, or a render is in doubt |
 
 Both modes run the same remaining pipeline: validate the checkout, report how
-it compares with its upstream, render into the package root, commit the Codex
-plugin source when it changed, remove the installed plugin from each product,
-register each surface, and list what each product reports.
+it compares with its upstream, render into the package root, and commit the
+Codex plugin source when it changed. Then, for one surface at a time
+(Antigravity, Claude, Codex), preview the registration with
+`register --dry-run`, remove the installed plugin, and register that surface
+again. Last, list what each product reports. A plan-only run shows the preview
+as `pending`, because it needs the render of an `--apply` run.
 
-The plugin removal is not optional in either mode, because both products serve
+The plugin removal is not optional in either mode, because every product serves
 a cached snapshot and a version-keyed cache does not refresh in place. It runs
-after the render on purpose: a failed render then leaves the working
-installation untouched instead of stranding the product with no plugin.
+after the render on purpose: a failed render then leaves every working
+installation untouched. Each removal sits between a registration preview and
+its own registration. A preview that fails, for example because a product root
+is not absolute, stops the run before that product loses its plugin. A failed
+registration stops the run before the next product loses its plugin.
 
 `fresh` clears only the package root, which is a directory this installer owns
-end to end. It never deletes anything inside `CLAUDE_CONFIG_DIR`, `CODEX_HOME`,
-or the Gemini home, so personal skills, settings, credentials, and history stay
-in place; registration then overwrites only the files the package owns. The run
-refuses a package root that is a home directory, a live product root, this
-repository, or any directory without a rendered package marker.
+end to end. It deletes only these entries: the root `.all-about-agents/` state
+folder, one folder per surface (`antigravity`, `claude`, `codex`), and a Finder
+`.DS_Store` file. With a surface subset it deletes only the selected surface
+folders and `.DS_Store`; every other surface keeps its render and its
+registration. A surface folder counts only when the root holds that state
+folder or the surface folder carries its own marker, and a marker that is a
+link does not count. Any other entry, for
+example a file, a `.git` folder, another repository, or a folder from a retired
+surface, refuses the whole clear: the run lists the unknown entries and deletes
+nothing. Remove them by hand, or choose another package root.
+
+It never deletes anything inside `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, or the
+Gemini home, so personal skills, settings, credentials, and history stay in
+place; registration then overwrites only the files the package owns. The run
+refuses a package root that is a home directory, or that is, contains, or sits
+inside a live product root (`~/.claude`, `~/.codex`, `~/.gemini`, or the root
+named by `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, or `AAA_ANTIGRAVITY_ROOT`) or this
+repository. The comparison uses real paths, so a link does not hide a product
+root, and ignores letter case, so `~/.Claude` is the same as `~/.claude`.
 
 The defaults are `~/.all-about-agents/package`, profile `template`, and every
 surface. Options: `--package-root`, `--profile`, `--surface`,
@@ -82,13 +103,27 @@ with a subset, never both. `--surface all` keeps one managed state at the root;
 a subset writes a second one inside `<root>/<surface>`, and registration
 prefers the nested file. The two then drift apart on the next render and the
 surface fails with a hash mismatch. A subset run against a root that is already
-managed as a whole is refused with `surface-subset-in-managed-root`.
+managed as a whole is refused with `surface-subset-in-managed-root`. An
+`update` with `--surface all` against a root that already holds a
+`<root>/<surface>/.all-about-agents/state.json` is refused with
+`whole-root-in-surface-managed-root`; a `fresh` run clears those nested states
+first, so it may switch the root to whole-root management.
 
 A reported step is `completed`, `pending` (planned, needs `--apply`),
 `skipped` with a reason (for example a plugin that was not installed),
-`not-run-unavailable` when a product CLI is off PATH, `blocked`, or `failed`.
-A failed or blocked step stops the run, the remaining steps are listed as not
-attempted, and the exit code is 1.
+`not-run-unavailable` when a product CLI is off PATH, `manual-required`,
+`blocked`, or `failed`.
+A registration whose report names `native-executable-unavailable` is
+`not-run-unavailable` too, and the run goes on to the next surface. That
+registration may already have written files, for example `GEMINI.md`, before it
+reached the missing CLI; the step reason then counts the completed actions.
+A registration that ends `manual-required` with error `manual-step-required`
+or `installed-copy-not-confirmed` has set up its product but left a step to
+you. That step is `manual-required`, its reason lists each manual step id with
+its reason, and the run goes on to the next surface. The whole run then ends
+with status `manual-required` and exit code 1: do the listed steps, then rerun.
+Any other failed or blocked step stops the run, the remaining steps are listed
+as not attempted, and the exit code is 1.
 
 An `update` dry-run plans the real render against the existing package root.
 When that plan reports `invalid-previous-state` or a rejected action, the step
@@ -215,8 +250,8 @@ path itself so the registered marketplace pointer stays valid, then render again
 
 Claude caches an installed plugin under its version directory. When `version`
 in `package.json` changed since the last registration, `claude plugin update`
-is not enough: run `claude plugin uninstall all-about-agents@all-about-agents`
-and then `claude plugin install all-about-agents@all-about-agents` after the
+is not enough: run `claude plugin uninstall all-about-agents@all-about-agents --scope user --keep-data`
+and then `claude plugin install all-about-agents@all-about-agents --scope user` after the
 authorized `register --apply`. When only the marketplace pointer changed,
 `claude plugin update` is enough. `WhatsNew.md` lists the version history.
 

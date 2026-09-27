@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { closeSync, openSync, readSync } from "node:fs";
+import { closeSync, openSync, readSync, realpathSync } from "node:fs";
 import { open } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -12,20 +12,9 @@ const MAX_LOG_BYTES = 8_192;
 const MAX_STDIN_BYTES = 64 * 1024;
 const MAX_DISPLAY_CODE_POINTS = 64;
 const MAX_FIELD_CODE_POINTS = 256;
+const MAX_KEY_CODE_POINTS = 64;
 const ANSI_ESCAPE = /\u001b(?:\][\s\S]*?(?:\u0007|\u001b\\)|\[[0-?]*[ -/]*[@-~]|[()][0-2A-Z]|[@-_])/gu;
 const TERMINAL_CONTROL = /[\u0000-\u001f\u007f-\u009f]/gu;
-
-async function loadCanonicalSafeLogKey() {
-  for (const modulePath of ["../../../../installers/lib/audit-log.mjs", "../hooks/audit-log.mjs"]) {
-    try {
-      const module = await import(modulePath);
-      if (typeof module.safeLogKey === "function") return module.safeLogKey;
-    } catch { /* source and generated package roots have different layouts */ }
-  }
-  return null;
-}
-
-const canonicalSafeLogKey = await loadCanonicalSafeLogKey();
 
 /** Remove terminal control data without changing the surrounding line shape. */
 export function sanitizeTerminalText(value) {
@@ -115,10 +104,23 @@ export function readStatuslineConfig(root) {
   }
 }
 
+/**
+ * The same normalization as safeLogKey in installers/lib/audit-log.mjs, kept
+ * here because the renderer is deployed to the config root without the plugin's
+ * hooks/ directory while the tracker runs from the plugin.
+ */
+function canonicalSafeLogKey(id) {
+  const normalized = id.normalize("NFKC")
+    .replace(/[^A-Za-z0-9._-]/gu, "-")
+    .replace(/-{2,}/gu, "-")
+    .replace(/^[-.]+|[-.]+$/gu, "");
+  const key = [...normalized].slice(0, MAX_KEY_CODE_POINTS).join("");
+  return key && key !== "." && key !== ".." ? key : "unknown";
+}
+
 /** Extend the canonical audit key with an input hash so normalization collisions remain distinct. */
 export function safeStatuslineLogKey(id) {
   if (typeof id !== "string") throw new TypeError("id must be a string");
-  if (typeof canonicalSafeLogKey !== "function") return "unknown-0000000000000000";
   const canonical = canonicalSafeLogKey(id);
   const digest = createHash("sha256").update(id, "utf8").digest("hex").slice(0, 16);
   return `${canonical.slice(0, 47)}-${digest}`;
@@ -299,7 +301,17 @@ async function main() {
   process.stdout.write(await renderStatusline(payload));
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+/** True when Node started this file, including through a symlinked path. */
+export function isMainModule(moduleUrl) {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(moduleUrl));
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule(import.meta.url)) {
   main().catch(() => {
     process.stdout.write(emptyRender());
   });

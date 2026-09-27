@@ -11,21 +11,6 @@ import { writeManagedState } from "../../installers/lib/state.mjs";
 
 const bytes = (value) => new TextEncoder().encode(value);
 
-test("T047 state creates every owned artifact", async () => {
-  const requiredOutputs = [
-    "installers/lib/apply.mjs",
-    "installers/lib/state.mjs",
-    "installers/lib/atomic-write.mjs",
-    "installers/lib/report.mjs",
-    "installers/schemas/state.schema.json",
-    "installers/schemas/report.schema.json",
-    "tests/contracts/apply.test.mjs",
-    "tests/contracts/state.test.mjs",
-    "tests/contracts/partial-failure.test.mjs"
-  ];
-  assert.equal(requiredOutputs.length, 9);
-});
-
 test("managed state has only stable metadata and sorted owned hashes", () => {
   const state = buildManagedState({
     repositoryVersion: "repo-1",
@@ -43,6 +28,13 @@ test("managed state has only stable metadata and sorted owned hashes", () => {
   assert.equal(new TextDecoder().decode(serializeManagedState(state)), `${JSON.stringify(state)}\n`);
 });
 
+test("the state schema accepts managed state for every supported surface", () => {
+  const state = buildManagedState({ repositoryVersion: "repo-1", profile: "template", surfaces: ["antigravity", "claude", "codex"], ownedPaths: [{ relativePath: "antigravity/GEMINI.md", sha256: hashBytes(bytes("rules")) }] });
+  assert.deepEqual(validateSchema({ schema: stateSchema, value: state, sourcePath: "state.json" }).errors, []);
+  const single = buildManagedState({ repositoryVersion: "repo-1", profile: "portable", surfaces: ["antigravity"], ownedPaths: [] });
+  assert.deepEqual(validateSchema({ schema: stateSchema, value: single, sourcePath: "state.json" }).errors, []);
+});
+
 test("missing and malformed managed state return null and do not block authoritative state writes", async () => {
   await withTempRoot(async (root) => {
     assert.equal(await readManagedState(root), null);
@@ -54,6 +46,14 @@ test("missing and malformed managed state return null and do not block authorita
     await writeManagedState({ root, state });
     assert.deepEqual(await readManagedState(root), state);
   });
+});
+
+test("state rejects owned paths that contain control characters", () => {
+  const sha256 = hashBytes(bytes("x"));
+  for (const relativePath of ["rules/evil\nrun.md", "rules/bell\u0007.md", "rules/escape\u001b[31m.md", "rules/c1\u009b.md"]) {
+    assert.throws(() => buildManagedState({ repositoryVersion: "x", profile: "portable", surfaces: ["claude"], ownedPaths: [{ relativePath, sha256 }] }), /safe relativePath/u, JSON.stringify(relativePath));
+    assert.equal(parseManagedState(JSON.stringify({ schemaVersion: 1, repositoryVersion: "x", profile: "portable", surfaces: ["claude"], ownedPaths: [{ relativePath, sha256 }] })), null);
+  }
 });
 
 test("state rejects extra fields, duplicate ownership, invalid metadata, and non-lowercase hashes", () => {

@@ -75,7 +75,7 @@
     const heading = document.createElement("h2");
     heading.textContent = "Companion paused";
     const message = document.createElement("p");
-    message.textContent = "This brainstorm companion has stopped. Ask your coding agent to bring it back; this page reconnects automatically.";
+    message.textContent = "This brainstorm companion has stopped or cannot be reached. Ask your coding agent for a new companion URL.";
     box.append(heading, message);
     element.append(box);
     document.body?.append(element);

@@ -3,43 +3,36 @@ const fs = require('fs');
 const path = require('path');
 const { customOutPath, ensureSddDir, fail, sddPath, writeOutFile } = require(path.join(__dirname, 'sdd-workspace.cjs'));
 
-const [planFile, taskNumStr, customOut] = process.argv.slice(2);
+const args = process.argv.slice(2);
+const [planFile, taskNumStr, customOut] = args;
 
-if (!planFile || taskNumStr === undefined) fail('usage: task-brief.cjs PLAN_FILE TASK_NUMBER [OUTFILE]');
+if (args.length < 2 || args.length > 3) fail('usage: task-brief.cjs PLAN_FILE TASK_NUMBER [OUTFILE]');
 if (!/^[0-9]+$/.test(taskNumStr)) fail(`invalid task number: ${taskNumStr}`);
 
 const n = Number(taskNumStr);
 const sddDir = sddPath(planFile);
 const customFile = customOutPath(sddDir, customOut);
 
-const content = fs.readFileSync(path.resolve(planFile), 'utf8');
-const lines = content.split(/\r?\n/);
+// Keep these rules in step with the awk fallback in the task-brief wrapper.
+const lines = fs.readFileSync(path.resolve(planFile), 'utf8').split('\n');
+if (lines.at(-1) === '') lines.pop();
 
 let infence = false;
-let intask = false;
-let taskLines = [];
+let taskLevel = 0;
+const taskLines = [];
 
-for (let i = 0; i < lines.length; i++) {
-  const line = lines[i];
-  if (line.trim().startsWith('```')) {
-    infence = !infence;
+for (const rawLine of lines) {
+  const line = rawLine.replace(/\r$/, '');
+  if (/^[ \t]*```/.test(line)) infence = !infence;
+  const heading = infence ? null : line.match(/^(#+)(?:[ \t]|$)/);
+  if (heading) {
+    const level = heading[1].length;
+    const taskHeading = line.match(/^#+[ \t]+Task[ \t]+([0-9]+)(?:[^0-9]|$)/);
+    const thisTask = taskHeading !== null && Number(taskHeading[1]) === n;
+    if (taskLevel > 0 && (level <= taskLevel || (taskHeading && !thisTask))) break;
+    if (taskLevel === 0 && thisTask) taskLevel = level;
   }
-
-  if (!infence) {
-    const taskHeaderMatch = line.match(/^#+\s+Task\s+(\d+)(?:[^0-9]|$)/i);
-    if (taskHeaderMatch) {
-      const currentTaskNum = parseInt(taskHeaderMatch[1], 10);
-      if (currentTaskNum === n) {
-        intask = true;
-      } else if (intask) {
-        break;
-      }
-    }
-  }
-
-  if (intask) {
-    taskLines.push(line);
-  }
+  if (taskLevel > 0) taskLines.push(line);
 }
 
 if (taskLines.length === 0) {

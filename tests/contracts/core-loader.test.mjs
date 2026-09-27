@@ -7,6 +7,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { validateSkillArtifacts } from "../../installers/lib/validate-skill.mjs";
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 const requiredOutputs = [
   "installers/lib/load-core.mjs",
@@ -108,7 +109,7 @@ test("loadCore rejects symlinked canonical presentation files", async (t) => {
       try {
         await symlink(outsidePath, canonicalPath, "file");
       } catch (error) {
-        t.skip(`file symlink creation unavailable: ${error.code}`);
+        skipIfLinkUnavailable(t, error);
         return;
       }
       const { loadCore } = await loader();
@@ -139,7 +140,7 @@ test("loadCore rejects canonical presentation files under an escaping parent jun
     try {
       await symlink(outsidePresentationPath, presentationPath, process.platform === "win32" ? "junction" : "dir");
     } catch (error) {
-      t.skip(`directory junction creation unavailable: ${error.code}`);
+      skipIfLinkUnavailable(t, error);
       return;
     }
     const { loadCore } = await loader();
@@ -169,7 +170,7 @@ test("loadCore rejects canonical presentation files under a contained parent lin
     try {
       await symlink(containedTarget, presentationPath, process.platform === "win32" ? "junction" : "dir");
     } catch (error) {
-      t.skip(`directory link creation unavailable: ${error.code}`);
+      skipIfLinkUnavailable(t, error);
       return;
     }
     const { loadCore } = await loader();
@@ -195,7 +196,7 @@ test("loadCore rejects a linked canonical core root even when its target stays i
     try {
       await symlink(containedTarget, corePath, process.platform === "win32" ? "junction" : "dir");
     } catch (error) {
-      t.skip(`core link creation unavailable: ${error.code}`);
+      skipIfLinkUnavailable(t, error);
       return;
     }
     const { loadCore } = await loader();

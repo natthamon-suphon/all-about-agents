@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -10,7 +10,8 @@ import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
 import { MAX_STDIN_BYTES, runBootstrap } from "../../core/hooks/bootstrap.mjs";
 import { NATIVE_PHASES } from "../../adapters/shared/native-state.mjs";
-import { makeTempRoot } from "../helpers/temp-root.mjs";
+import { makeTempRoot, withTempRoot } from "../helpers/temp-root.mjs";
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 const requiredOutputs = [
   "core/hooks/bootstrap.json",
@@ -75,7 +76,7 @@ test("rendered executable packages invoke the production bootstrap handler", asy
   const packages = [
     {
       surface: "claude",
-      result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CLAUDE_CONFIG_DIR: "C:/disposable" } }),
+      result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, homeDir: "C:/Users/tester" }),
       runtimePath: "hooks/bootstrap.mjs",
       skillPath: "skills/using-all-about-agents/SKILL.md",
       configPath: "hooks/bootstrap.json",
@@ -84,7 +85,7 @@ test("rendered executable packages invoke the production bootstrap handler", asy
     },
     {
       surface: "codex",
-      result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" } }),
+      result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" }, homeDir: "C:/Users/tester" }),
       runtimePath: "hooks/bootstrap.mjs",
       skillPath: ".agents/skills/using-all-about-agents/SKILL.md",
       configPath: "hooks/bootstrap.json",
@@ -107,12 +108,12 @@ test("automatic renderers consume the canonical core bootstrap contract", async 
   const canonicalContract = await readFile(root("core/hooks/bootstrap.json"), "utf8");
   const packages = [
     {
-      result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, platform: "win32" }),
+      result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, homeDir: "C:/Users/tester", platform: "win32" }),
       configPath: "hooks/bootstrap.json",
       hooksPath: "hooks/hooks.json"
     },
     {
-      result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" }),
+      result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" }, homeDir: "C:/Users/tester" }),
       configPath: "hooks/bootstrap.json",
       hooksPath: "hooks/hooks.json"
     }
@@ -130,7 +131,7 @@ test("automatic renderers consume the canonical core bootstrap contract", async 
 
 test("Claude production handler injects on startup, clear, and compact and fails open for every other SessionStart source", async () => {
   const core = await loadCore(process.cwd());
-  const result = renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CLAUDE_CONFIG_DIR: "C:/disposable" } });
+  const result = renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, homeDir: "C:/Users/tester" });
   const base = { surface: "claude", runtimePath: "hooks/bootstrap.mjs", skillPath: "skills/using-all-about-agents/SKILL.md", configPath: "hooks/bootstrap.json" };
   const canonical = fileMap(result).get("skills/using-all-about-agents/SKILL.md");
   assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source: "startup" } }), { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: canonical } });
@@ -149,7 +150,7 @@ test("Claude production handler injects on startup, clear, and compact and fails
 
 test("Codex production handler supports documented SessionStart sources and malformed input", async () => {
   const core = await loadCore(process.cwd());
-  const result = renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" } });
+  const result = renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" }, homeDir: "C:/Users/tester" });
   const base = { surface: "codex", runtimePath: "hooks/bootstrap.mjs", skillPath: ".agents/skills/using-all-about-agents/SKILL.md", configPath: "hooks/bootstrap.json" };
   const canonical = fileMap(result).get(".agents/skills/using-all-about-agents/SKILL.md");
   assert.deepEqual(await executeRendered(result, { ...base, input: { hook_event_name: "SessionStart", source: "startup" } }), { hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: canonical } });
@@ -163,13 +164,34 @@ test("Codex production handler supports documented SessionStart sources and malf
 test("automatic bootstrap fails open when stdin exceeds the bounded collector limit", async () => {
   const core = await loadCore(process.cwd());
   const cases = [
-    { surface: "claude", result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CLAUDE_CONFIG_DIR: "C:/disposable" } }), skillPath: "skills/using-all-about-agents/SKILL.md" },
-    { surface: "codex", result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" } }), skillPath: ".agents/skills/using-all-about-agents/SKILL.md" }
+    { surface: "claude", result: renderClaude({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, homeDir: "C:/Users/tester" }), skillPath: "skills/using-all-about-agents/SKILL.md" },
+    { surface: "codex", result: renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" }, homeDir: "C:/Users/tester" }), skillPath: ".agents/skills/using-all-about-agents/SKILL.md" }
   ];
   for (const item of cases) {
     const input = { hook_event_name: "SessionStart", source: "startup", padding: "x".repeat(70_000) };
     assert.deepEqual(await executeRendered(item.result, { surface: item.surface, runtimePath: "hooks/bootstrap.mjs", skillPath: item.skillPath, configPath: "hooks/bootstrap.json", input }), {});
   }
+});
+
+test("bootstrap runs as the main module when started through a symlinked path", async (t) => {
+  await withTempRoot(async (linkRoot) => {
+    const link = join(linkRoot, "bootstrap-link.mjs");
+    try {
+      await symlink(root("core/hooks/bootstrap.mjs"), link, "file");
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
+    try {
+      const output = await runHandler(process.execPath, [
+        link, "--surface", "claude", "--skill-path", root("core/skills/using-all-about-agents/SKILL.md"), "--config-path", root("core/hooks/bootstrap.json")
+      ], `${JSON.stringify({ hook_event_name: "SessionStart", source: "startup" })}\n`, { cwd: linkRoot, env: { PATH: process.env.PATH, HOME: linkRoot, USERPROFILE: linkRoot, TMPDIR: linkRoot, TMP: linkRoot, TEMP: linkRoot } });
+      assert.equal(output.hookSpecificOutput?.additionalContext, await readFile(root("core/skills/using-all-about-agents/SKILL.md"), "utf8"));
+    } finally {
+      // Unlink the live-repository link before withTempRoot deletes the root recursively.
+      await rm(link, { force: true, recursive: false });
+    }
+  });
 });
 
 test("bootstrap helper also bounds explicitly supplied raw input", async () => {
@@ -204,11 +226,11 @@ test("canonical behavior is vendor-neutral while each template owns its native c
 
 test("rendered hook configs consume their parsed native templates and declare runtime availability", async () => {
   const core = await loadCore(process.cwd());
-  const claude = renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, platform: "win32" });
+  const claude = renderClaude({ core, profile: { id: "portable" }, statuslineName: "", env: { CLAUDE_CONFIG_DIR: "C:/disposable" }, homeDir: "C:/Users/tester", platform: "win32" });
   const claudeHooks = JSON.parse(fileMap(claude).get("hooks/hooks.json"));
   assert.equal(claudeHooks.hooks.SessionStart[0].matcher, "startup|clear|compact");
   assert.deepEqual(claudeHooks.hooks.SessionStart[0].hooks[0].args.slice(1), ["--surface", "claude", "--skill-path", "${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md", "--config-path", "${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json"]);
-  const codex = renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32" });
+  const codex = renderCodex({ core, profile: { id: "portable" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" }, homeDir: "C:/Users/tester" });
   const codexHooks = JSON.parse(fileMap(codex).get("hooks/hooks.json"));
   assert.equal(codexHooks.hooks.SessionStart[0].matcher, "^(startup|clear|compact)$");
   assert.match(codexHooks.hooks.SessionStart[0].hooks[0].command, /\$PLUGIN_ROOT\/hooks\/bootstrap\.mjs/u);
@@ -217,7 +239,7 @@ test("rendered hook configs consume their parsed native templates and declare ru
 
 test("Codex hook templates and rendered records remain manual until registration and trust evidence", async () => {
   const core = await loadCore(process.cwd());
-  const result = renderCodex({ core, profile: { id: "template" }, statuslineName: "", platform: "win32" });
+  const result = renderCodex({ core, profile: { id: "template" }, statuslineName: "", platform: "win32", env: { CODEX_HOME: "C:/disposable" }, homeDir: "C:/Users/tester" });
   for (const templatePath of [
     "adapters/codex/templates/hooks/bootstrap.json",
     "adapters/codex/templates/hooks/activity-audit.json",

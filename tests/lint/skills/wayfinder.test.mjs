@@ -46,7 +46,8 @@ test("wayfinder provides a durable local-markdown fallback under tracker pressur
   assert.match(skill, /Blocked by:/u);
   assert.match(skill, /Claimed:/u);
   assert.match(skill, /never assume|do not assume|never invent/iu);
-  assert.match(skill, /pressure|urgency/iu);
+  const body = skill.slice(skill.indexOf("\n---\n", 4) + 5);
+  assert.match(body, /(?:pressure|urgency)[^.]*(?:tracker|local map)/iu);
 });
 
 test("wayfinder gate protocol claims and resolves one named frontier ticket", async () => {

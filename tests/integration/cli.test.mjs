@@ -343,7 +343,12 @@ test("diff reports a mode-only executable repair without exposing file content",
   });
 });
 
-test("PowerShell launcher preserves normalized output and exit-code parity", async () => {
+test("PowerShell launcher preserves normalized output and exit-code parity", async (t) => {
+  const probe = spawnSync("pwsh", ["--version"], { cwd: process.cwd(), encoding: "utf8" });
+  if (probe.status !== 0) {
+    t.skip(`NOT_RUN_UNAVAILABLE: pwsh unavailable (status ${probe.status ?? "spawn-error"})`);
+    return;
+  }
   const result = spawnSync("pwsh", ["-NoProfile", "-File", resolve(process.cwd(), "installers", "install.ps1"), "doctor", "--surface", "claude", "--destination-root", resolve(process.cwd(), "tests", ".tmp", "launcher-doctor"), "--format", "json"], { cwd: process.cwd(), encoding: "utf8" });
   assert.equal(result.status, 1, result.stderr);
   const report = JSON.parse(result.stdout);

@@ -6,9 +6,11 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 import { loadCore, resolveWorkspaceScopePath, VENDOR_NATIVE_TOOL_NAMES } from "../../installers/lib/load-core.mjs";
+import { renderAntigravity } from "../../adapters/antigravity/adapter.mjs";
 import { CLAUDE_SEMANTIC_MAPPINGS, renderClaude } from "../../adapters/claude/adapter.mjs";
 import { parseCodexToml, renderCodex } from "../../adapters/codex/adapter.mjs";
 import { CANONICAL_ROLE_CAPABILITIES } from "../../core/roles/contract.mjs";
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 const ROLE_IDS = [
   "researcher",
@@ -75,10 +77,12 @@ function textFiles(result) {
 }
 
 function roleFilePath(surface, roleId) {
-  return surface === "claude"
-    ? `agents/${roleId}.md`
-    : `.codex/agents/${roleId}.toml`;
+  return surface === "codex"
+    ? `.codex/agents/${roleId}.toml`
+    : `agents/${roleId}.md`;
 }
+
+const antigravityRender = (core) => renderAntigravity({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" });
 
 function parseNativeArtifact(surface, content) {
   if (surface === "claude") {
@@ -289,7 +293,7 @@ test("portable prompt validation catches native command forms but permits generi
   }
 });
 
-test("role loading rejects an external prompt symlink before reading its body", async () => {
+test("role loading rejects an external prompt symlink before reading its body", async (t) => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-prompt-link-"));
   const outside = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-prompt-link-outside-"));
   try {
@@ -301,7 +305,7 @@ test("role loading rejects an external prompt symlink before reading its body", 
     try {
       await symlink(external, prompt, "file");
     } catch (error) {
-      assert.match(String(error?.message || error), /(?:privilege|operation|symlink|not supported|access)/iu, "symlink setup failure must be explicit");
+      skipIfLinkUnavailable(t, error);
       return;
     }
     await assert.rejects(loadCore(root), (error) => error.errors.some((entry) => entry.keyword === "promptContainment"));
@@ -325,7 +329,7 @@ test("implementer mutation scope rejects traversal, absolute, and Windows paths"
   }
 });
 
-test("implementer mutation scope rejects a symlink that escapes the repository root", async () => {
+test("implementer mutation scope rejects a symlink that escapes the repository root", async (t) => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-symlink-"));
   const outside = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-outside-"));
   const link = resolve(root, "link");
@@ -335,7 +339,7 @@ test("implementer mutation scope rejects a symlink that escapes the repository r
     try {
       await symlink(outside, link, "junction");
     } catch (error) {
-      assert.match(String(error?.message || error), /(?:privilege|operation|symlink|not supported|access)/iu, "symlink setup failure must be explicit");
+      skipIfLinkUnavailable(t, error);
       return;
     }
     await mutateRole(root, "implementer", (role) => { role.mutationScope.paths = ["workspace/link/**"]; });
@@ -354,7 +358,7 @@ test("workspace containment maps the virtual root and rejects cross-volume Windo
   }
 });
 
-test("implementer descendant containment rejects an escaping symlink below a glob", async () => {
+test("implementer descendant containment rejects an escaping symlink below a glob", async (t) => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-descendant-link-"));
   const outside = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-descendant-outside-"));
   const link = resolve(root, "docs/link");
@@ -364,7 +368,7 @@ test("implementer descendant containment rejects an escaping symlink below a glo
     try {
       await symlink(outside, link, "junction");
     } catch (error) {
-      assert.match(String(error?.message || error), /(?:privilege|operation|symlink|not supported|access)/iu, "symlink setup failure must be explicit");
+      skipIfLinkUnavailable(t, error);
       return;
     }
     await mutateRole(root, "implementer", (role) => { role.mutationScope.paths = ["workspace/**"]; });
@@ -375,7 +379,7 @@ test("implementer descendant containment rejects an escaping symlink below a glo
   }
 });
 
-test("workspace root scope scans descendants for escaping symlinks", async () => {
+test("workspace root scope scans descendants for escaping symlinks", async (t) => {
   const root = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-root-scope-"));
   const outside = await mkdtemp(resolve(tmpdir(), "aaa-t012-roles-root-scope-outside-"));
   const link = resolve(root, "escape");
@@ -384,7 +388,7 @@ test("workspace root scope scans descendants for escaping symlinks", async () =>
     try {
       await symlink(outside, link, "junction");
     } catch (error) {
-      assert.match(String(error?.message || error), /(?:privilege|operation|symlink|not supported|access)/iu, "symlink setup failure must be explicit");
+      skipIfLinkUnavailable(t, error);
       return;
     }
     await mutateRole(root, "implementer", (role) => { role.mutationScope.paths = ["workspace"]; });
@@ -497,7 +501,8 @@ test("renderers fail closed for an unknown role instead of making it editable", 
   const core = { ...base, roles: [role] };
   const renders = [
     ["claude", () => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", () => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ["codex", () => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity", () => antigravityRender(core)]
   ];
   for (const [surface, render] of renders) assert.throws(render, (error) => error.name === "CanonicalRoleContractError" && error.errors.some((entry) => entry.code === "canonical-role"), surface);
 });
@@ -507,7 +512,8 @@ test("all renderers reject an incomplete canonical role collection deterministic
   const core = { ...base, roles: [base.roles[0]] };
   const renderers = [
     ["claude", () => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", () => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ["codex", () => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity", () => antigravityRender(core)]
   ];
   const expectedMissing = ROLE_IDS.filter((roleId) => roleId !== base.roles[0].id).sort();
   for (const [surface, render] of renderers) {
@@ -558,7 +564,8 @@ test("all renderers reject forged canonical mutation semantics at the native bou
   ];
   const renderers = [
     ["claude", (core) => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity", antigravityRender]
   ];
   for (const [caseName, core, code] of cases) {
     for (const [surface, render] of renderers) {
@@ -577,7 +584,8 @@ test("all renderers reject malformed canonical prompt and evidence contracts bef
   }));
   const renderers = [
     ["claude", (core) => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity", antigravityRender]
   ];
   for (const [surface, render] of renderers) {
     assert.throws(() => render(malformed), (error) => error.name === "CanonicalRoleContractError" && error.errors.some((entry) => ["prompt", "evidence-contract", "output-contract"].includes(entry.code)), surface);
@@ -588,7 +596,8 @@ test("native boundary rejects malformed prompt documents and explicit native too
   const base = await loadCore(process.cwd());
   const renderers = [
     ["claude", (core) => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity", antigravityRender]
   ];
   for (const prompt of [
     "---\nname: reviewer\n---\n## Evidence contract\nreport only.\n",
@@ -650,7 +659,8 @@ test("all renderers reject a forged vendor-native prompt before artifact creatio
   }));
   const renderers = [
     ["claude", (core) => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity", antigravityRender]
   ];
   for (const [surface, render] of renderers) {
     assert.throws(() => render(forgedPrompt), (error) => error.name === "CanonicalRoleContractError" && error.errors.some((entry) => entry.code === "prompt-safety"), surface);
@@ -667,7 +677,8 @@ test("all renderers reject canonical roles missing portable input and routing co
   });
   const renderers = [
     ["claude", (core) => renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ["codex", (core) => renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity", antigravityRender]
   ];
   for (const [surface, render] of renderers) {
     assert.throws(() => render(malformed), (error) => error.name === "CanonicalRoleContractError" && error.errors.some((entry) => ["input-contract", "routing-keywords"].includes(entry.code)), surface);
@@ -678,7 +689,8 @@ test("native adapters disclose only narrower implementer scopes instead of claim
   const core = await loadCore(process.cwd());
   const canonicalRenders = [
     ["claude", renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity", antigravityRender(core)]
   ];
   for (const [surface, result] of canonicalRenders) {
     assert.equal(result.diagnostics.some((entry) => entry.code === "native-scope-not-enforced"), false, `${surface} must not warn when native workspace scope matches workspace/**`);
@@ -691,7 +703,8 @@ test("native adapters disclose only narrower implementer scopes instead of claim
   }));
   const narrowedRenders = [
     ["claude", renderClaude({ core: narrowedCore, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", renderCodex({ core: narrowedCore, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ["codex", renderCodex({ core: narrowedCore, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity", antigravityRender(narrowedCore)]
   ];
   for (const [surface, result] of narrowedRenders) {
     const warning = result.diagnostics.find((entry) => entry.code === "native-scope-not-enforced");
@@ -727,7 +740,8 @@ test("all native surfaces consume canonical role semantics with read-only safety
   const core = await loadCore(process.cwd());
   const renders = [
     ["claude", renderClaude({ core, profile: "portable", statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
-    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ["codex", renderCodex({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+    ["antigravity", antigravityRender(core)]
   ];
   for (const [surface, result] of renders) {
     const files = textFiles(result);
@@ -742,7 +756,9 @@ test("all native surfaces consume canonical role semantics with read-only safety
       if (roleId !== "implementer") {
         const toolDeclaration = surface === "claude"
           ? content.match(/^tools:\n([\s\S]*?)(?:^disallowedTools:|^---$)/mu)?.[1] || ""
-          : content.match(/^(?:tools:|developer_instructions\s*=)[\s\S]*?(?:^---$|\n\n|$)/mu)?.[0] || content;
+          : surface === "antigravity"
+            ? content.match(/^---\n([\s\S]*?)\n---$/mu)?.[1] ?? content
+            : content.match(/^(?:tools:|developer_instructions\s*=)[\s\S]*?(?:^---$|\n\n|$)/mu)?.[0] || content;
         assert.doesNotMatch(toolDeclaration, /(?:run_command|write_to_file|replace_file_content|multi_replace_file_content|invoke_subagent|define_subagent|manage_subagents|(?:^|\s)(?:Agent|Bash|Write|Edit)(?:\s|$))/u, `${surface}/${roleId} exposes a mutation, command, or dispatch tool`);
       }
     }

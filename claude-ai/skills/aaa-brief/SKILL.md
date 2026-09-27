@@ -40,11 +40,14 @@ Copy this checklist into your reply and keep it current:
 2. Otherwise use the current chat, or the part of it the user names.
 3. If there is nothing real to summarize, say so and stop. Do not build a
    brief from almost nothing.
+4. Also look for research reports `research-<topic>.md` of this project, in
+   the same places. Read each one's Answers row.
 
-Name every source in the header's Sources row, including attached files by
-name. Read an interview record by its header table, its Topic line, its ID
-tables (Q0 and up, D#, A#, O#, R#), and its Other facts given table (fact,
-source). Its section titles may be in another language.
+Name every source in the header's Sources row, including research reports
+and attached files by name. Read an interview record by its header table,
+its Topic line, its ID tables (Q0 and up, D#, A#, O#, R#), and its Other
+facts given table (fact, source). Its section titles may be in another
+language.
 
 ## 2. Draft
 
@@ -84,7 +87,11 @@ template's section order:
 - A section nobody discussed holds only "Not discussed." Add the gap to the
   open questions.
 - Carry every research item R# into the open questions with its question.
-  Never answer it yourself.
+  Never answer it yourself. When a research report's Answers row names that
+  R#, carry the report's short answer instead, with its label, into the
+  section it affects, traced as `(R2: research-insurance.md)`, and do not
+  list the R# as open. If the report's answer is unknown, keep the R# open
+  and name the report.
 - Add nothing new: no features, numbers, targets, names, or dates that the
   source does not contain.
 - Put each fact in one section only. A stated fact is a requirement, a
@@ -125,7 +132,9 @@ fixes you made.
 
 Show the brief and ask for corrections. Each round of corrections makes a new
 version: v2, v3, and so on. Update the Version row, and add one line to the
-change log: version, date, and what changed.
+change log: version, date, and what changed. When the user accepts the brief,
+or asks for the next step with no more corrections, set its header Status to
+`complete`.
 
 Then offer the next step: split the work into tasks, for example with
 `/aaa-tasks`, or run it with `/aaa-run`.

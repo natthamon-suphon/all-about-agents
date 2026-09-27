@@ -179,9 +179,12 @@ codex plugin marketplace add ~/.caveman/codex-plugin
 codex plugin add caveman@caveman
 ```
 
-Antigravity has no hook to use. Its lifecycle events are `PreToolUse`,
-`PostToolUse`, `PreInvocation`, `PostInvocation`, and `Stop`; there is no
-`SessionStart`. Hooks written into `~/.gemini/settings.json` or
+Antigravity has no hook to use. The event list on record is `PreToolUse`,
+`PostToolUse`, `PreInvocation`, `PostInvocation`, and `Stop`, with no
+`SessionStart`. That list is inherited from `agy 1.1.22` and not re-verified on
+`1.2.7`; see
+[the Antigravity research note](../evaluations/research-antigravity.md#lifecycle-events---inherited-not-re-verified).
+Hooks written into `~/.gemini/settings.json` or
 `~/.gemini/antigravity-cli/settings.json` did not fire in testing.
 
 Put the text in the always-loaded instruction file instead. Back it up first,

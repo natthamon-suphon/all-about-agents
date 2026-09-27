@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { access, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -13,11 +14,27 @@ import {
   sanitizeTerminalText
 } from "../../adapters/claude/templates/statusline/statusline.mjs";
 import { trackToolEvent } from "../../adapters/claude/templates/statusline/track-tool.mjs";
+import { safeLogKey } from "../../installers/lib/audit-log.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 const fixtureCases = JSON.parse(await readFile(resolve(process.cwd(), "tests/fixtures/statusline/cases.json"), "utf8"));
+const TEMPLATE_ROOT = resolve(process.cwd(), "adapters/claude/templates/statusline");
+const PINNED_RENDER = Object.freeze({ env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude" }, homeDir: "C:/Users/tester", platform: "win32" });
+
+function disposableEnv(root, overrides = {}) {
+  return { PATH: process.env.PATH, HOME: root, USERPROFILE: root, TMPDIR: root, TMP: root, TEMP: root, CLAUDE_CONFIG_DIR: root, ...overrides };
+}
+
+async function materialize(files, root) {
+  for (const file of files) {
+    const target = join(root, ...file.relativePath.split("/"));
+    await mkdir(resolve(target, ".."), { recursive: true });
+    await writeFile(target, file.content);
+  }
+}
 
 const requiredOutputs = [
   "adapters/claude/templates/statusline/statusline.mjs",
@@ -52,19 +69,19 @@ test("clampPercent handles negative, over-100, decimal, numeric-string, and non-
 });
 
 test("readStatuslineConfig is JSON-only, bounded, and fail-open", async () => {
+  const writeConfig = async (root, text) => {
+    await mkdir(join(root, "all-about-agents"), { recursive: true });
+    await writeFile(join(root, "all-about-agents", "statusline.json"), text, "utf8");
+  };
+  for (const [name, { config, expected }] of Object.entries(fixtureCases.config)) {
+    await withTempRoot(async (root) => {
+      if (config !== null) await writeConfig(root, typeof config === "string" ? config : JSON.stringify(config));
+      assert.deepEqual(readStatuslineConfig(root), { displayName: expected }, name);
+    });
+  }
   await withTempRoot(async (root) => {
-    assert.deepEqual(await readStatuslineConfig(root), { displayName: "" });
-    const configDir = join(root, "all-about-agents");
-    await mkdir(configDir, { recursive: true });
-    const configPath = join(configDir, "statusline.json");
-    await writeFile(configPath, JSON.stringify({ schemaVersion: 1, displayName: " ทีม / \"Claude\" " }), "utf8");
-    assert.deepEqual(await readStatuslineConfig(root), { displayName: "ทีม / \"Claude\"" });
-    await writeFile(configPath, "{not-json", "utf8");
-    assert.deepEqual(await readStatuslineConfig(root), { displayName: "" });
-    await writeFile(configPath, JSON.stringify({ displayName: "a".repeat(10_000) }), "utf8");
-    assert.deepEqual(await readStatuslineConfig(root), { displayName: "" });
-    await writeFile(configPath, JSON.stringify({ schemaVersion: 999, displayName: "unsupported" }), "utf8");
-    assert.deepEqual(await readStatuslineConfig(root), { displayName: "" });
+    await writeConfig(root, JSON.stringify({ schemaVersion: 1, displayName: "a".repeat(10_000) }));
+    assert.deepEqual(readStatuslineConfig(root), { displayName: "" }, "a config above the byte bound is ignored");
   });
 });
 
@@ -82,18 +99,22 @@ test("safeStatuslineLogKey preserves canonical ownership and separates hostile c
   assert.notEqual(slash, backslash);
   assert.notEqual(longA, longB);
   assert.throws(() => safeStatuslineLogKey(42), TypeError);
+  for (const id of ["../session\\nested/\u001b[31m", "a/b", "x".repeat(80), "plain-session"]) {
+    const digest = createHash("sha256").update(id, "utf8").digest("hex").slice(0, 16);
+    assert.equal(safeStatuslineLogKey(id), `${safeLogKey(id).slice(0, 47)}-${digest}`, "the self-contained key must keep the canonical audit key shape");
+  }
 });
 
 test("renderStatusline always emits deterministic four-line fail-open output", async () => {
   await withTempRoot(async (root) => {
     const data = {
-      workspace: { project_dir: "C:\\repo\\evil\nname" },
-      worktree: { branch: "feature/\u001b[31munsafe\nbranch" },
-      model: { display_name: "model\r\u001b[2J" },
+      workspace: { project_dir: fixtureCases.fields.maliciousRepo },
+      worktree: { branch: fixtureCases.fields.maliciousBranch },
+      model: { display_name: fixtureCases.fields.maliciousModel },
       context_window: { total_input_tokens: 1234, total_output_tokens: 5678 },
       rate_limits: { five_hour: { used_percentage: -20 }, seven_day: { used_percentage: 140 } },
       cost: { total_duration_ms: 61_000 },
-      session_id: "../traversal\\session",
+      session_id: fixtureCases.fields.traversalSession,
       unknown: "\u001b]52;;secret\u0007"
     };
     const first = await renderStatusline(data, { configRoot: root, logRoot: join(root, "logs") });
@@ -115,15 +136,40 @@ test("renderer returns empty-name output and only invalid stdin JSON fails", asy
     const output = await renderStatusline({}, { configRoot: root, logRoot: join(root, "logs") });
     assert.equal(output.split("\n").length, 4);
     assert.doesNotMatch(output, /Hardcoded User Name/u);
+    const modulePath = join(TEMPLATE_ROOT, "statusline.mjs");
+    const run = (input) => spawnSync(process.execPath, [modulePath], { input, encoding: "utf8", env: disposableEnv(root) });
+    const valid = run("{}");
+    assert.equal(valid.status, 0, valid.stderr);
+    assert.equal(valid.stdout.trimEnd().split("\n").length, 4);
+    assert.notEqual(run("not-json").status, 0);
+    assert.notEqual(run(JSON.stringify({ padding: "x".repeat(70_000) })).status, 0);
   });
-  const modulePath = resolve(process.cwd(), "adapters/claude/templates/statusline/statusline.mjs");
-  const valid = spawnSync(process.execPath, [modulePath], { input: "{}", encoding: "utf8" });
-  assert.equal(valid.status, 0, valid.stderr);
-  assert.equal(valid.stdout.trimEnd().split("\n").length, 4);
-  const invalid = spawnSync(process.execPath, [modulePath], { input: "not-json", encoding: "utf8" });
-  assert.notEqual(invalid.status, 0);
-  const oversized = spawnSync(process.execPath, [modulePath], { input: JSON.stringify({ padding: "x".repeat(70_000) }), encoding: "utf8" });
-  assert.notEqual(oversized.status, 0);
+});
+
+test("statusline and tracker run as main modules when started through a symlinked path", async (t) => {
+  await withTempRoot(async (root) => {
+    const renderer = join(root, "statusline-link.mjs");
+    const tracker = join(root, "track-tool-link.mjs");
+    try {
+      await symlink(join(TEMPLATE_ROOT, "statusline.mjs"), renderer, "file");
+      await symlink(join(TEMPLATE_ROOT, "track-tool.mjs"), tracker, "file");
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
+    try {
+      const rendered = spawnSync(process.execPath, [renderer], { input: "{}", encoding: "utf8", env: disposableEnv(root) });
+      assert.equal(rendered.status, 0, rendered.stderr);
+      assert.equal(rendered.stdout.split("\n").length, 4, "the symlinked renderer must still write its four lines");
+      const payload = { session_id: "linked-session", tool_name: "Skill", tool_input: { skill: "brainstorming" } };
+      const tracked = spawnSync(process.execPath, [tracker], { input: JSON.stringify(payload), encoding: "utf8", env: disposableEnv(root) });
+      assert.equal(tracked.status, 0, tracked.stderr);
+      assert.deepEqual(await readdir(join(root, "claude-statusline")), [`${safeStatuslineLogKey("linked-session")}-skills.log`]);
+    } finally {
+      // Unlink the live-repository links before withTempRoot deletes the root recursively.
+      for (const link of [renderer, tracker]) await rm(link, { force: true, recursive: false });
+    }
+  });
 });
 
 test("track-tool fails open, bounds values, and never writes unsafe session or tool text", async () => {
@@ -153,7 +199,7 @@ test("track-tool fails open, bounds values, and never writes unsafe session or t
 
 test("Claude production render owns both statusline modules and wires the tracker", async () => {
   const core = await loadCore(process.cwd());
-  const result = renderClaude({ core, profile: "portable", statuslineName: "" });
+  const result = renderClaude({ core, profile: "portable", statuslineName: "", ...PINNED_RENDER });
   const files = new Map(result.files.map((file) => [file.relativePath, new TextDecoder().decode(file.content)]));
   assert.ok(files.has("statusline/statusline.mjs"));
   assert.ok(files.has("statusline/track-tool.mjs"));
@@ -191,13 +237,9 @@ test("Claude production render owns cross-platform statusline launchers", async 
 
 test("generated statusline package imports and renders both owned modules", async () => {
   const core = await loadCore(process.cwd());
-  const result = renderClaude({ core, profile: "portable", statuslineName: "" });
+  const result = renderClaude({ core, profile: "portable", statuslineName: "", ...PINNED_RENDER });
   await withTempRoot(async (root) => {
-    for (const file of result.files) {
-      const target = join(root, ...file.relativePath.split("/"));
-      await mkdir(resolve(target, ".."), { recursive: true });
-      await writeFile(target, file.content);
-    }
+    await materialize(result.files, root);
     const statusline = await import(pathToFileURL(join(root, "statusline/statusline.mjs")).href);
     const tracker = await import(pathToFileURL(join(root, "statusline/track-tool.mjs")).href);
     const output = await statusline.renderStatusline({}, { configRoot: root, logRoot: join(root, "logs") });
@@ -206,9 +248,32 @@ test("generated statusline package imports and renders both owned modules", asyn
   });
 });
 
+test("a statusline deployed apart from the plugin shows the plugin tracker's agents and skills", async () => {
+  const core = await loadCore(process.cwd());
+  const result = renderClaude({ core, profile: "portable", statuslineName: "", ...PINNED_RENDER });
+  await withTempRoot(async (root) => {
+    const pluginRoot = join(root, "plugin");
+    const configRoot = join(root, "config");
+    await materialize(result.files, pluginRoot);
+    await materialize(result.files.filter((file) => file.relativePath.startsWith("statusline/")), configRoot);
+    const env = disposableEnv(root, { CLAUDE_CONFIG_DIR: configRoot });
+    for (const payload of [
+      { session_id: "deployed-session", tool_name: "Agent", tool_input: { subagent_type: "reviewer" } },
+      { session_id: "deployed-session", tool_name: "Skill", tool_input: { skill: "brainstorming" } }
+    ]) {
+      const tracked = spawnSync(process.execPath, [join(pluginRoot, "statusline", "track-tool.mjs")], { input: JSON.stringify(payload), encoding: "utf8", env });
+      assert.equal(tracked.status, 0, tracked.stderr);
+    }
+    const rendered = spawnSync(process.execPath, [join(configRoot, "statusline", "statusline.mjs")], { input: JSON.stringify({ session_id: "deployed-session" }), encoding: "utf8", env });
+    assert.equal(rendered.status, 0, rendered.stderr);
+    const line4 = rendered.stdout.split("\n")[3].replace(/\u001b\[[0-9;]+m/gu, "");
+    assert.equal(line4, "🤖 reviewer · ⚡ brainstorming");
+  });
+});
+
 test("oversized tracker stdin fails open without writing", async () => {
   await withTempRoot(async (root) => {
-    const modulePath = resolve(process.cwd(), "adapters/claude/templates/statusline/track-tool.mjs");
+    const modulePath = join(TEMPLATE_ROOT, "track-tool.mjs");
     const oversized = JSON.stringify({
       session_id: "oversized-session",
       tool_name: "Agent",
@@ -217,7 +282,7 @@ test("oversized tracker stdin fails open without writing", async () => {
     const result = spawnSync(process.execPath, [modulePath], {
       input: oversized,
       encoding: "utf8",
-      env: { ...process.env, TMP: root, TEMP: root, TMPDIR: root }
+      env: disposableEnv(root)
     });
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(await readdir(root), []);

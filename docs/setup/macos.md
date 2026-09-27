@@ -1,8 +1,8 @@
 # macOS setup
 
 This procedure renders the repository package into a disposable directory. It
-does not launch Claude or Codex, change a live product configuration, or prove
-native discovery. Use a new root for every run.
+does not launch Antigravity, Claude, or Codex, change a live product
+configuration, or prove native discovery. Use a new root for every run.
 
 If this checkout came from another machine, follow [sync and update](../maintenance/sync-and-update.md)
 first. A pull does not install or update any coding tool.
@@ -41,13 +41,13 @@ dependencies.
 
 ### Product binaries must resolve before native registration
 
-`register --apply` spawns the product executables by bare name: `claude` and
-`codex`. Rendering and `install --apply` do not need them, so a package can be
-complete while a later registration silently fails its native steps. Confirm
-each binary you intend to register:
+`register --apply` spawns the product executables by bare name: `agy`,
+`claude`, and `codex`. Rendering and `install --apply` do not need them, so a
+package can be complete while a later registration fails its native steps.
+Confirm each binary you intend to register:
 
 ```sh
-command -v claude codex
+command -v agy claude codex
 ```
 
 A product installed outside `PATH` still works; prepend its `bin` directory for

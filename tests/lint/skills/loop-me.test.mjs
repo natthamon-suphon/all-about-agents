@@ -26,6 +26,8 @@ test("loop-me is explicit-invocation-first and keeps ordinary brainstorming sepa
   const frontmatter = skill.slice(4, closing);
   assert.match(frontmatter, /^name:\s*loop-me\s*$/mu);
   assert.match(frontmatter, /^description:\s*Use when\b/mu);
+  // The description names both triggers the gate accepts.
+  assert.match(frontmatter, /^description:[^\n]*explicitly invokes loop-me[^\n]*asks to be grilled about a (?:recurring )?workflow/mu);
   assert.match(frontmatter, /^requiredSkills:\s*$/mu);
   assert.match(frontmatter, /^\s+-\s+interviewing\s*$/mu);
   assert.match(frontmatter, /^evaluationCases:\s*$/mu);

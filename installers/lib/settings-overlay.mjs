@@ -97,11 +97,44 @@ function clone(value) {
   return result;
 }
 
-function merge(base, overlay) {
+// Permission rule lists are shared with the user and other tools, so the
+// package adds its rules instead of replacing theirs.
+const UNION_PERMISSION_LISTS = new Set(["allow", "deny"]);
+
+function union(base, overlay) {
+  const seen = new Set(base.map((entry) => JSON.stringify(entry)));
+  const result = base.map(clone);
+  for (const entry of overlay) {
+    const key = JSON.stringify(entry);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(clone(entry));
+  }
+  return result;
+}
+
+function ruleList(value) {
+  return Array.isArray(value) && value.every((entry) => typeof entry === "string" && entry.trim() !== "");
+}
+
+// Refuse rather than drop or replace: a malformed list is the user's data, and
+// the settings file stays as it is until they fix it.
+function assertRuleList(value, key) {
+  if (value === undefined || ruleList(value)) return;
+  const error = new TypeError(`settings permissions.${key} must be an array of non-empty strings; fix it by hand, then register again`);
+  error.code = "settings-permission-list-invalid";
+  throw error;
+}
+
+function merge(base, overlay, path = []) {
   if (!object(base) || !object(overlay)) return clone(overlay);
   const result = clone(base);
   for (const [key, value] of Object.entries(overlay)) {
-    result[key] = object(result[key]) && object(value) ? merge(result[key], value) : clone(value);
+    if (path.length === 1 && path[0] === "permissions" && UNION_PERMISSION_LISTS.has(key) && Array.isArray(value)) {
+      assertRuleList(result[key], key);
+      result[key] = union(result[key] ?? [], value);
+    } else if (object(result[key]) && object(value)) result[key] = merge(result[key], value, [...path, key]);
+    else result[key] = clone(value);
   }
   return result;
 }

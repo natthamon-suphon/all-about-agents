@@ -12,21 +12,6 @@ const action = (kind, relativePath, reason = "ok") => ({
   reason
 });
 
-test("T047 partial-failure creates every owned artifact", async () => {
-  const requiredOutputs = [
-    "installers/lib/apply.mjs",
-    "installers/lib/state.mjs",
-    "installers/lib/atomic-write.mjs",
-    "installers/lib/report.mjs",
-    "installers/schemas/state.schema.json",
-    "installers/schemas/report.schema.json",
-    "tests/contracts/apply.test.mjs",
-    "tests/contracts/state.test.mjs",
-    "tests/contracts/partial-failure.test.mjs"
-  ];
-  assert.equal(requiredOutputs.length, 9);
-});
-
 test("ApplyResult reports completed, failed, and not-attempted actions exactly", () => {
   const result = createApplyResult({
     status: "partial",

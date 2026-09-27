@@ -1,7 +1,9 @@
 # aaa-research eval cases
 
 For proxy runs, tool results are given as text in the scenario. In a real
-claude.ai run, use the chat's web search and web fetch.
+claude.ai run, use the chat's web search and web fetch. PRESSURE-2 and
+PRESSURE-3 need their fixed tool results (the three snippets, the injected
+page), which a live web search does not return, so they are proxy only.
 
 ### aaa-research-TRIGGER-1
 

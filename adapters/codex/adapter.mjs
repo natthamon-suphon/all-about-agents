@@ -39,16 +39,6 @@ const CODEX_SEMANTIC_MAPPINGS = Object.freeze({
   "native-rendering": Object.freeze(["plugin"])
 });
 
-const DEFAULT_ROLES = Object.freeze({
-  researcher: Object.freeze({ description: "Find and cite primary sources without mutating the repository.", capabilities: ["external-research", "web-primary-sources", "repository-read"] }),
-  investigator: Object.freeze({ description: "Reproduce an internal problem and rank evidence-backed hypotheses.", capabilities: ["repository-read", "filesystem-read", "test-execution"] }),
-  architect: Object.freeze({ description: "Design modules, interfaces, seams, invariants, and risks.", capabilities: ["repository-read", "schema-validation", "evaluation"] }),
-  implementer: Object.freeze({ description: "Make scoped test-first changes and report fresh evidence.", capabilities: ["repository-read", "repository-write", "isolated-write", "test-execution"] }),
-  verifier: Object.freeze({ description: "Run fresh black-box checks without changing implementation files.", capabilities: ["repository-read", "test-execution", "evaluation"] }),
-  reviewer: Object.freeze({ description: "Review specifications, diffs, tests, and maintainability evidence.", capabilities: ["repository-read", "evaluation", "schema-validation"] }),
-  "security-reviewer": Object.freeze({ description: "Check threat paths, secrets, containment, and emergency guardrails.", capabilities: ["repository-read", "evaluation", "schema-validation"] })
-});
-
 function compareCodePoints(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
 }
@@ -153,22 +143,19 @@ function renderSkill(name, record, presentation) {
 }
 
 function renderRole(name, role, presentation) {
-  const fallback = DEFAULT_ROLES[name] || Object.freeze({ description: "Unknown role; no native capabilities are granted.", capabilities: [] });
-  const description = role?.description || role?.purpose || fallback.description;
-  const capabilities = role
-    ? [
-      ...(Array.isArray(role.capabilities) ? role.capabilities : []),
-      ...(Array.isArray(role.requiredCapabilities) ? role.requiredCapabilities : []),
-      ...(Array.isArray(role.allowedCapabilities) ? role.allowedCapabilities : [])
-    ]
-    : fallback.capabilities;
+  const description = role.description || role.purpose;
+  const capabilities = [
+    ...(Array.isArray(role.capabilities) ? role.capabilities : []),
+    ...(Array.isArray(role.requiredCapabilities) ? role.requiredCapabilities : []),
+    ...(Array.isArray(role.allowedCapabilities) ? role.allowedCapabilities : [])
+  ];
   const roleContext = [
-    role?.purpose,
+    role.purpose,
     capabilities.length > 0 ? `Semantic capabilities: ${[...new Set(capabilities)].join(", ")}.` : "",
-    Array.isArray(role?.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
-    Array.isArray(role?.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
+    Array.isArray(role.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
+    Array.isArray(role.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
-  const instructions = `${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
+  const instructions = `${role.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
   const readOnly = isRoleReadOnly(role);
   const sandboxMode = readOnly || !hasScopedMutation(role) ? "read-only" : "workspace-write";
   return ensureText([
@@ -522,9 +509,8 @@ try {
   const payload = JSON.parse(rawInput || "{}");
   const checkpoint = {
     timestamp: new Date().toISOString(),
-    taskId: safe(payload.taskId, "pre-compact"),
-    state: safe(payload.state, "compacting"),
-    status: safe(payload.status, "checkpointed")
+    sessionId: safe(payload.session_id, "unknown"),
+    trigger: safe(payload.trigger, "unknown")
   };
   const root = join(dirname(fileURLToPath(import.meta.url)), "checkpoints");
   await mkdir(root, { recursive: true });
@@ -546,14 +532,11 @@ try {
     }
   }
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
-  const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort(compareCodePoints);
-  const renderedRoles = roleNames.map((roleName) => roleRecords.get(roleName) || { id: roleName, ...DEFAULT_ROLES[roleName] });
+  const roleNames = [...roleRecords.keys()].sort(compareCodePoints);
+  const renderedRoles = roleNames.map((roleName) => roleRecords.get(roleName));
   addFile(files, "config.toml", configFor(null, profile, true, renderedRoles));
   if (semanticProfile.modelPolicies[CODEX_SURFACE] !== "surface-default") addFile(files, "terra-max.config.toml", configFor(null, profile, false, renderedRoles));
-  for (const roleName of roleNames) {
-    const role = roleRecords.get(roleName) || { id: roleName, ...DEFAULT_ROLES[roleName] };
-    addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName), core.presentation));
-  }
+  for (const roleName of roleNames) addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName), core.presentation));
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   for (const file of files) {
     if (file.relativePath.endsWith(".toml")) parseCodexToml(new TextDecoder().decode(file.content));

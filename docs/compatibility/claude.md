@@ -43,8 +43,10 @@ Some native behavior remains unsupported until a product session is observed.
 The shared global file is rendered from
 `core/instructions/global-operating-rules.md`. Claude registration deploys it
 to `<CLAUDE_CONFIG_DIR>/CLAUDE.md`, or `~/.claude/CLAUDE.md` when the normal
-root is used. Project `CLAUDE.md`, `.claude/CLAUDE.md`, and plugin rules are a
-more specific second layer.
+root is used. It also copies the core rules and the presentation catalog to
+`<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, a folder this package owns, and
+never writes beside the user's own rule files. Project `CLAUDE.md` and
+`.claude/CLAUDE.md` are a more specific second layer.
 
 Visible skills, agents, subagents, and hooks keep their machine IDs. Their
 user-facing labels put the emoji after the name, with a short reason and a
@@ -115,7 +117,7 @@ $env:CLAUDE_CONFIG_DIR = "<PRODUCT_ROOT>"
 node scripts/aaa.mjs register --surface claude --profile <PROFILE> --package-root "<PACKAGE_ROOT>" --dry-run --format json
 ```
 
-POSIX shell on macOS or Linux:
+POSIX shell on macOS:
 
 ```sh
 mkdir -p "<PRODUCT_ROOT>"
@@ -125,15 +127,38 @@ node scripts/aaa.mjs register --surface claude --profile <PROFILE> --package-roo
 
 Run the same command with `--apply` only after exact authority.
 
-During apply, the installer first overwrites
-`all-about-agents/statusline.json` and the four files under `statusline/` in
+During apply, the installer first overwrites `CLAUDE.md`,
+`all-about-agents/statusline.json`, and the four files under `statusline/` in
 `CLAUDE_CONFIG_DIR`: `statusline.mjs`, `track-tool.mjs`, `statusline.ps1`, and
-`statusline.sh`. `settings.json` is merged, not replaced: keys the package
-declares win, and every other key already in the file is preserved. In the
-rendered source it rebases only `statusLine.command` to this exact config root
-and keeps the other rendered fields. Native marketplace and plugin
-registration run after those files are present. The package managed state,
-surface, profile, and owned hashes must match before any write.
+`statusline.sh`. `CLAUDE.md` has no guard.
+`settings.json` is merged, not replaced: keys the package declares win, and
+every other key already in the file is preserved. An array the package
+declares replaces the existing one, except `permissions.allow` and
+`permissions.deny`: those keep every existing rule in its order and add each
+package rule once, so the user's own rules survive. When one of those lists is
+not an array of non-empty strings, nothing is written to `settings.json` and
+the step reports `manual-required`. In the rendered source it rebases only
+`statusLine.command` to this exact config root and keeps the other rendered
+fields.
+
+The installer then writes one `<rule>.md` file for each core rule and
+`presentation.md` into `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`. Claude
+Code documents that "All `.md` files are discovered recursively, so you can
+organize rules into subdirectories"
+([Claude Code memory](https://code.claude.com/docs/en/memory.md); quote
+verified by the coordinator on 2026-09-27). The folder belongs to this
+package: a missing or differing rule file is written, and an identical one is
+kept. Nothing is written directly in `<CLAUDE_CONFIG_DIR>/rules/`, so the
+user's own rule files are never touched. An extra entry in the package folder
+is never deleted; the `claude-rules-extra-files` step reports it as
+`manual-required`. When `rules` or `rules/all-about-agents` is a symlink,
+junction, or not a folder, or a rule file there is a link or not a regular
+file, no rule file is written and the `claude-rules-deploy` step reports it as
+`manual-required`. Each of these steps ends the report as `manual-required`
+with exit code 1.
+Native marketplace and plugin registration run after those files are present.
+The package managed state, surface, profile, and owned hashes must match before
+any write.
 
 The fixed native commands are:
 

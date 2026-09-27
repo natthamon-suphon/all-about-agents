@@ -1,4 +1,4 @@
-import { lstatSync, readFileSync, realpathSync } from "node:fs";
+import { lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { lstat as defaultLstat, readdir as defaultReaddir, readFile as defaultReadFile, realpath as defaultRealpath } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, relative, resolve, join } from "node:path";
@@ -24,6 +24,10 @@ const PLUGIN_SELECTOR = "all-about-agents@all-about-agents";
 // package hooks append beside themselves. Everything else must match.
 const RUNTIME_FILE_PREFIXES = [".in_use/", "hooks/audit/", "hooks/checkpoints/"];
 const RUNTIME_FILES = new Set([".all-about-agents/state.json"]);
+// Claude Code loads every .md file below <CLAUDE_CONFIG_DIR>/rules/, so the
+// package owns one subfolder and never writes beside the user's own rules.
+const CLAUDE_RULES_FOLDER = "rules/all-about-agents";
+const CLAUDE_RULE_FILE = /^rules\/all-about-agents\/[^/]+\.md$/u;
 
 function object(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -86,7 +90,7 @@ function requiredPackageFiles(surface) {
 
 function requiredRegistrationSourceFiles(surface, profile) {
   const markers = requiredPackageFiles(surface);
-  if (surface === "claude") return [...markers, "CLAUDE.md", "settings.json", "all-about-agents/statusline.json", "statusline/statusline.mjs", "statusline/track-tool.mjs", "statusline/statusline.ps1", "statusline/statusline.sh"];
+  if (surface === "claude") return [...markers, "CLAUDE.md", "settings.json", "all-about-agents/statusline.json", "statusline/statusline.mjs", "statusline/track-tool.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", `${CLAUDE_RULES_FOLDER}/presentation.md`];
   if (surface === "antigravity") return [...markers, "GEMINI.md", ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.md`)];
   if (surface === "codex") return [...markers, "AGENTS.md", "config.toml", ...(profile === "template" ? ["terra-max.config.toml"] : []), ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.toml`)];
   return markers;
@@ -169,11 +173,13 @@ function processAction(id, executable, args, cwd, environmentKey, expectedProbe,
   return { id, kind: "process", executable, args: [...args], cwd, environmentKeys: environmentKey ? [environmentKey] : [], mutates, required: true, expectedProbe };
 }
 
-function manualAction(id, message) {
-  return { id, kind: "manual", mutates: false, required: false, message };
+// A required manual step marks work the plan could not do, so the apply
+// report ends manual-required instead of complete.
+function manualAction(id, message, { required = false } = {}) {
+  return { id, kind: "manual", mutates: false, required, message };
 }
 
-function fileCopyAction(id, packageRoot, destinationRoot, sourceRelativePath, destinationRelativePath, { mode = null, transform = null, guard = null, expectedSourceHash, allowedRoot = destinationRoot } = {}) {
+function fileCopyAction(id, packageRoot, destinationRoot, sourceRelativePath, destinationRelativePath, { mode = null, transform = null, guard = null, match = null, expectedSourceHash, allowedRoot = destinationRoot } = {}) {
   if (!(mode === null || (Number.isInteger(mode) && mode >= 0 && mode <= 0o777))) throw new TypeError("native config copy mode must be null or a Unix mode from 0 through 0777");
   if (!(transform === null || transform === "claude-statusline-product-root")) throw new TypeError("unsupported native config copy transform");
   if (typeof expectedSourceHash !== "string" || !SHA256.test(expectedSourceHash)) throw new TypeError("native config copy requires a managed source hash");
@@ -183,8 +189,82 @@ function fileCopyAction(id, packageRoot, destinationRoot, sourceRelativePath, de
   if (isAbsolute(suffix) || suffix.split(/[\\/]/u)[0] === "..") throw pathError("destination-escape", "native config destination escapes the selected native root");
   assertSafeDestinationRoot(dirname(targetPath), { allowedProductRoots: [allowedRoot] });
   if (!(guard === null || guard === "no-clobber")) throw new TypeError("unsupported native config copy guard");
-  return { id, kind: "file-copy", sourcePath, sourceRelativePath, expectedSourceHash, targetPath, destinationRelativePath, allowedRoot, mode, transform, guard, mutates: true, required: true, expectedProbe: guard === "no-clobber" ? "hash-verified-write-or-refuse" : "hash-verified-overwrite", automaticWrite: true };
+  if (guard === "no-clobber" ? !CONTAINMENT_CHECKS.has(match) : match !== null) throw new TypeError("a no-clobber native config copy needs a supported match, and only it takes one");
+  return { id, kind: "file-copy", sourcePath, sourceRelativePath, expectedSourceHash, targetPath, destinationRelativePath, allowedRoot, mode, transform, guard, match, mutates: true, required: true, expectedProbe: guard === "no-clobber" ? "hash-verified-write-or-refuse" : "hash-verified-overwrite", automaticWrite: true };
 }
+
+// A linked or non-folder rules path, or a linked or non-file rule target
+// (common with dotfiles), blocks only the rule copies, never the rest of the
+// Claude registration.
+function ruleTargetsAreSafe(productRoot, rules) {
+  try {
+    assertSafeDestinationRoot(join(productRoot, ...CLAUDE_RULES_FOLDER.split("/")), { allowedProductRoots: [productRoot] });
+  } catch (error) {
+    if (error?.code === "unsafe-root" || error?.code === "invalid-root") return false;
+    throw error;
+  }
+  for (const rule of rules) {
+    let metadata;
+    try {
+      metadata = lstatSync(join(productRoot, ...rule.split("/")));
+    } catch (error) {
+      if (error?.code === "ENOENT" || error?.code === "ENOTDIR") continue;
+      throw pathError("destination-unreadable", `unable to inspect <CLAUDE_CONFIG_DIR>/${rule}`);
+    }
+    if (!metadata.isFile()) return false;
+  }
+  return true;
+}
+
+function extraRuleEntries(productRoot, renderedNames) {
+  let entries;
+  try {
+    entries = readdirSync(join(productRoot, ...CLAUDE_RULES_FOLDER.split("/")), { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return [];
+    throw pathError("destination-unreadable", `unable to list <CLAUDE_CONFIG_DIR>/${CLAUDE_RULES_FOLDER}`);
+  }
+  return entries.filter((entry) => !renderedNames.has(entry.name)).map((entry) => `${CLAUDE_RULES_FOLDER}/${entry.name}${entry.isDirectory() ? "/" : ""}`).sort();
+}
+
+function textLines(text) {
+  return text.replace(/\r\n?/gu, "\n").split("\n").map((line) => line.trimEnd());
+}
+
+// Line-based, not a TOML parser: each "[header]" line starts a table, and the
+// lines before the first header are the top-level keys. The rendered file has
+// only one-line keys, so this is exact for it.
+function tomlTables(text) {
+  const tables = new Map([["", []]]);
+  let header = "";
+  for (const line of textLines(text).map((entry) => entry.trim())) {
+    if (line === "") continue;
+    if (/^\[.*\]$/u.test(line)) {
+      header = line;
+      if (!tables.has(header)) tables.set(header, []);
+    } else {
+      tables.get(header).push(line);
+    }
+  }
+  return tables;
+}
+
+function missingTomlTables(managed, existing) {
+  const present = tomlTables(existing);
+  return [...tomlTables(managed)]
+    .filter(([header, lines]) => lines.length > 0 || header !== "")
+    .filter(([header, lines]) => !present.has(header) || lines.some((line) => !present.get(header).includes(line)))
+    .map(([header]) => header === "" ? "top-level keys" : header);
+}
+
+function missingTextBlock(managed, existing) {
+  const block = textLines(managed).join("\n").replace(/^\n+|\n+$/gu, "");
+  return `\n${textLines(existing).join("\n")}\n`.includes(`\n${block}\n`) ? [] : ["the managed GEMINI.md body as one block"];
+}
+
+// A shared destination is complete when it already contains the managed
+// content; the operator and the product may keep more beside it.
+const CONTAINMENT_CHECKS = new Map([["toml-tables", missingTomlTables], ["text-block", missingTextBlock]]);
 
 function lifecycle(surface) {
   const registrationEvidence = "Native registration has not been attempted by this dry-run plan.";
@@ -240,6 +320,20 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push(deployFile("claude-statusline-tracker-deploy", "statusline/track-tool.mjs", "statusline/track-tool.mjs", { mode: 0o755 }));
     actions.push(deployFile("claude-statusline-windows-launcher-deploy", "statusline/statusline.ps1", "statusline/statusline.ps1"));
     actions.push(deployFile("claude-statusline-posix-launcher-deploy", "statusline/statusline.sh", "statusline/statusline.sh", { mode: 0o755 }));
+    const rules = [...managedPackage.ownership.keys()]
+      .map((relativePath) => relativePath.slice(managedPackage.ownershipPrefix.length))
+      .filter((relativePath) => CLAUDE_RULE_FILE.test(relativePath))
+      .sort();
+    if (ruleTargetsAreSafe(product, rules)) {
+      for (const rule of rules) actions.push(deployFile(`claude-rule-${basename(rule, ".md")}-deploy`, rule, rule));
+      const extras = extraRuleEntries(product, new Set(rules.map((rule) => basename(rule))));
+      if (extras.length > 0) {
+        const count = extras.length === 1 ? "1 entry is" : `${extras.length} entries are`;
+        actions.push(manualAction("claude-rules-extra-files", `${count} in ${CLAUDE_RULES_FOLDER}/ but not rendered by this package, such as ${extras.slice(0, 5).join(", ")}. Claude Code loads every .md file below rules/, so review and remove them by hand; registration never deletes them.`, { required: true }));
+      }
+    } else {
+      actions.push(manualAction("claude-rules-deploy", `<CLAUDE_CONFIG_DIR>/rules or ${CLAUDE_RULES_FOLDER} is a symlink, junction, or not a folder, or a rule file there is a link or not a regular file, so no rule file is written; copy the package ${CLAUDE_RULES_FOLDER}/*.md files into <CLAUDE_CONFIG_DIR>/${CLAUDE_RULES_FOLDER}/ by hand.`, { required: true }));
+    }
     actions.push(processAction("claude-marketplace-add", "claude", ["plugin", "marketplace", "add", pkg, "--scope", "user"], pkg, "CLAUDE_CONFIG_DIR", "none"));
     actions.push(processAction("claude-plugin-install", "claude", ["plugin", "install", PLUGIN_SELECTOR, "--scope", "user"], pkg, "CLAUDE_CONFIG_DIR", "none"));
     actions.push(processAction("claude-plugin-list", "claude", ["plugin", "list", "--json"], pkg, "CLAUDE_CONFIG_DIR", "json", false));
@@ -247,7 +341,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push(manualAction("claude-reload", "Restart Claude Code or reload the plugin before checking native behavior."));
   } else if (surface === "codex") {
     actions.push(deployFile("codex-instructions-deploy", "AGENTS.md", "AGENTS.md"));
-    actions.push(deployFile("codex-config-deploy", "config.toml", "config.toml", { guard: "no-clobber" }));
+    actions.push(deployFile("codex-config-deploy", "config.toml", "config.toml", { guard: "no-clobber", match: "toml-tables" }));
     if (profile === "template") actions.push(deployFile("codex-terra-profile-deploy", "terra-max.config.toml", "terra-max.config.toml"));
     for (const role of ["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]) {
       actions.push(deployFile(`codex-agent-${role}-deploy`, `agents/${role}.toml`, `agents/${role}.toml`));
@@ -261,7 +355,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     // GEMINI.md is not a superset of the live file the way CLAUDE.md is: an
     // operator may keep unrelated always-on sections there. Refuse rather than
     // replace. See docs/plans/2026-09-19-restore-antigravity.md decision A6.
-    actions.push(deployFile("antigravity-instructions-deploy", "GEMINI.md", "GEMINI.md", { guard: "no-clobber" }, instruction));
+    actions.push(deployFile("antigravity-instructions-deploy", "GEMINI.md", "GEMINI.md", { guard: "no-clobber", match: "text-block" }, instruction));
     actions.push(processAction("antigravity-plugin-validate", "agy", ["plugin", "validate", pkg], pkg, null, "none", false));
     actions.push(processAction("antigravity-plugin-install", "agy", ["plugin", "install", pkg], pkg, null, "none"));
     actions.push(processAction("antigravity-plugin-list", "agy", ["plugin", "list"], pkg, null, "json", false));
@@ -339,7 +433,12 @@ async function readExistingDestination(targetPath, fileSystem) {
     throw pathError("destination-unreadable", "unable to read the native instruction destination");
   }
   if (!(content instanceof Uint8Array)) throw pathError("invalid-destination-bytes", "native instruction destination did not return bytes");
-  return content;
+  return { content, mode: Number.isInteger(metadata.mode) ? metadata.mode & 0o777 : null };
+}
+
+// atomic-write sets an explicit mode on POSIX only, so only there can it drift.
+function modeMatches(action, existing) {
+  return action.mode === null || process.platform === "win32" || existing.mode === action.mode;
 }
 
 function transformCopyContent(action, content, plan) {
@@ -461,8 +560,8 @@ async function claudeCacheCheck(plan, listing, fileSystem) {
 }
 
 // process-runner merges envOverrides into the ambient environment and cannot
-// unset a key, so git gets a full copy without inherited GIT_* repository
-// redirects. The copy is never written to a report.
+// unset a key, so git and the Codex commands get a full copy without inherited
+// GIT_* repository redirects. The copy is never written to a report.
 function gitEnvironment() {
   return Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^GIT_/iu.test(key)));
 }
@@ -482,11 +581,10 @@ async function codexSourceCheck(plan, action, runProcess) {
   const status = await git(action.statusArgs);
   if (status.unavailable || failed(status)) return { reason: "git status could not read the package root, so it cannot be checked that Codex serves the current package.", commands: [] };
   if (String(status.stdout ?? "").trim() !== "") {
-    const reason = "Codex installs a Git clone of the package root, and the package working tree differs from its HEAD commit, so Codex keeps serving the last commit.";
-    // A quote in the path would break out of the single-quoted argument.
-    if (plan.packageRoot.includes("'")) return { reason: `${reason} The package root contains a single quote, so no copyable commands are printed; follow docs/maintenance/native-registration.md, section Codex CLI.`, commands: [] };
+    // sanitizeReport replaces every packageRoot with <PACKAGE_ROOT>, so no
+    // path text, and no quote in it, reaches a printed command.
     return {
-      reason,
+      reason: "Codex installs a Git clone of the package root, and the package working tree differs from its HEAD commit, so Codex keeps serving the last commit.",
       commands: [
         `git -C '${plan.packageRoot}' status --short`,
         `git -C '${plan.packageRoot}' add -A`,
@@ -569,6 +667,7 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
   const probes = new Map();
   let overlay = null;
   let stale = null;
+  let followUp = null;
   for (let index = 0; index < plan.actions.length; index += 1) {
     const action = plan.actions[index];
     try {
@@ -577,6 +676,7 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
       revalidatePlan(plan, { validateState: index === 0 || action.kind === "process" || action.kind === "settings-overlay" });
       if (action.kind === "manual") {
         actionReports.push(reportAction(action, "manual-required"));
+        if (action.required) followUp ??= action.message;
       } else if (action.kind === "plugin-cache-check" || action.kind === "git-source-check") {
         const check = action.kind === "plugin-cache-check" ? await claudeCacheCheck(plan, probes.get(action.probe), fileSystem) : await codexSourceCheck(plan, action, runProcess);
         if (check.reason !== null) {
@@ -587,7 +687,14 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
         actionReports.push(reportAction(action, "complete", { result: check.result }));
       } else if (action.kind === "settings-overlay") {
         const transformOverlay = action.transform ? (bytes) => transformCopyContent(action, bytes, plan) : null;
-        overlay = await mergeSettingsOverlay({ targetPath: action.targetPath, overlayPath: action.overlayPath, expectedOverlayHash: action.expectedOverlayHash, allowedRoot: action.allowedRoot, transformOverlay, fileSystem });
+        try {
+          overlay = await mergeSettingsOverlay({ targetPath: action.targetPath, overlayPath: action.overlayPath, expectedOverlayHash: action.expectedOverlayHash, allowedRoot: action.allowedRoot, transformOverlay, fileSystem });
+        } catch (error) {
+          if (error?.code !== "settings-permission-list-invalid") throw error;
+          followUp ??= error.message;
+          actionReports.push(reportAction(action, "manual-required", { reason: error.message }));
+          continue;
+        }
         actionReports.push(reportAction(action, "complete", { result: { changed: overlay.changed, bytes: overlay.bytes, beforeHash: overlay.beforeHash, afterHash: overlay.afterHash } }));
       } else if (action.kind === "file-copy") {
         const read = typeof fileSystem?.readFile === "function" ? fileSystem.readFile.bind(fileSystem) : defaultReadFile;
@@ -597,22 +704,35 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
         const content = transformCopyContent(action, sourceContent, plan);
         const expectedHash = hashBytes(content);
         const existing = await readExistingDestination(action.targetPath, fileSystem);
-        if (existing !== null && hashBytes(existing) === expectedHash) {
+        const sameBytes = existing !== null && hashBytes(existing.content) === expectedHash;
+        if (sameBytes && modeMatches(action, existing)) {
           actionReports.push(reportAction(action, "complete", { result: { bytes: content.byteLength, sha256: expectedHash, overwrite: false, changed: false } }));
           completed.push(action);
           continue;
         }
-        if (action.guard === "no-clobber" && existing !== null) {
-          // The destination is shared with the product and other tools. Refuse
-          // rather than replace content this package does not own.
-          actionReports.push(reportAction(action, "manual-required", { reason: `${action.destinationRelativePath} already exists and differs from the managed source; merge the managed keys by hand instead of overwriting unowned content` }));
+        if (action.guard === "no-clobber" && existing !== null && !sameBytes) {
+          // The destination is shared with the product and other tools. Never
+          // replace it; it is complete when it already contains the managed content.
+          const decoder = new TextDecoder("utf-8");
+          const missing = CONTAINMENT_CHECKS.get(action.match)(decoder.decode(content), decoder.decode(existing.content));
+          if (missing.length === 0) {
+            actionReports.push(reportAction(action, "complete", { result: { bytes: content.byteLength, sha256: expectedHash, overwrite: false, changed: false, containsManagedContent: true } }));
+            completed.push(action);
+            continue;
+          }
+          const reason = `${action.destinationRelativePath} already exists and differs from the managed source, and it lacks managed content: ${missing.join(", ")}; merge the missing content into it by hand instead of overwriting unowned content`;
+          followUp ??= reason;
+          actionReports.push(reportAction(action, "manual-required", { reason }));
           continue;
         }
         const written = await atomicReplaceFile({ destination: action.targetPath, content, expectedHash, mode: action.mode, allowedProductRoots: [action.allowedRoot], fileSystem });
         actionReports.push(reportAction(action, "complete", { result: { bytes: content.byteLength, sha256: written.sha256, overwrite: true, changed: true } }));
       } else {
         const explicitEnv = envFor(plan, action);
-        const result = await runProcess({ executable: action.executable, args: [...action.args], cwd: action.cwd, environmentKeys: [...(action.environmentKeys || [])], envOverrides: explicitEnv, shell: false });
+        // Codex clones the package with git, so a GIT_* redirect inherited from
+        // a git hook must not reach that clone.
+        const environment = plan.surface === "codex" ? { env: { ...gitEnvironment(), ...explicitEnv } } : { envOverrides: explicitEnv };
+        const result = await runProcess({ executable: action.executable, args: [...action.args], cwd: action.cwd, environmentKeys: [...(action.environmentKeys || [])], ...environment, shell: false });
         if (!result || typeof result !== "object") throw pathError("invalid-process-result", `native action ${action.id} returned an invalid process result`);
         if (result.unavailable) throw pathError("native-executable-unavailable", `${action.executable} is unavailable; install it and retry registration`);
         if (result.timedOut) throw pathError("native-process-timeout", `${action.id} timed out`);
@@ -633,7 +753,10 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
   const registered = stale
     ? { status: "fail", evidence: "The product still serves an older copy of the package; run the commands of the manual-required check, then register again." }
     : { status: "not-run", evidence: "Commands completed, but native semantic registration/discovery was not independently observed; run the product discovery probe and record T07 evidence." };
-  return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: stale ? "manual-required" : "complete", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, instructionRoot: plan.instructionRoot, actions: actionReports, completed, failed: null, notAttempted: [], lifecycle: { ...plan.lifecycle, registered }, ...(stale ? { error: { code: "installed-copy-not-confirmed", message: stale } } : {}), ...(overlay ? { overlay } : {}) }, plan);
+  const error = stale
+    ? { code: "installed-copy-not-confirmed", message: stale }
+    : followUp ? { code: "manual-step-required", message: followUp } : null;
+  return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: error ? "manual-required" : "complete", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, instructionRoot: plan.instructionRoot, actions: actionReports, completed, failed: null, notAttempted: [], lifecycle: { ...plan.lifecycle, registered }, ...(error ? { error } : {}), ...(overlay ? { overlay } : {}) }, plan);
 }
 
 export function resolveNativeProductRoot(surface, { env = process.env, homeDir = homedir(), platform = process.platform } = {}) {
@@ -653,9 +776,10 @@ export function resolveNativeInstructionRoot(surface, { env = process.env, homeD
 export function formatNativeRegistrationText(report) {
   const lines = [`action=${report.action} mode=${report.mode} status=${report.status}`, `surface=${report.surface} profile=${report.profile}`, `productRoot=${report.productRoot ?? "<NONE>"} instructionRoot=${report.instructionRoot ?? "<NONE>"}`];
   for (const action of report.actions || []) {
-    lines.push(`${action.status}\t${action.id}\t${action.kind}`);
-    if (action.status === "manual-required" && action.reason) lines.push(`reason\t${action.id}\t${printable(action.reason)}`);
-    for (const command of action.commands || []) lines.push(`run\t${action.id}\t${printable(command)}`);
+    lines.push(`${action.status}\t${printable(action.id)}\t${action.kind}`);
+    const note = action.reason ?? action.message;
+    if (action.status === "manual-required" && note) lines.push(`reason\t${printable(action.id)}\t${printable(note)}`);
+    for (const command of action.commands || []) lines.push(`run\t${printable(action.id)}\t${printable(command)}`);
   }
   if (report.error) lines.push(`error\t${report.error.code}\t${printable(report.error.message)}`);
   return `${lines.join("\n")}\n`;

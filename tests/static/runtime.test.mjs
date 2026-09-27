@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { access, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
 import { main } from "../../scripts/aaa.mjs";
+import { withTempRoot } from "../helpers/temp-root.mjs";
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 const requiredOutputs = [
   ".gitignore",
@@ -89,6 +91,8 @@ test("package metadata declares ESM Node support without dependencies", async ()
     "test:static",
     "validate"
   ]);
+  assert.equal(packageJson.scripts["test:contracts"], "node --test tests/contracts/*.test.mjs", "test:contracts must run only its folder");
+  assert.equal(packageJson.scripts["test:integration"], "node --test tests/integration/*.test.mjs", "test:integration must run only its folder");
 });
 
 test("withTempRoot cleans its disposable root after the callback", async () => {
@@ -119,7 +123,7 @@ test("withTempRoot cleans its disposable root when the callback throws", async (
   await assert.rejects(access(rootPath), { code: "ENOENT" });
 });
 
-test("CLI help lists the six supported top-level actions and registration options", () => {
+test("CLI help lists the six supported top-level actions and every option each action accepts", () => {
   const result = spawnSync(process.execPath, ["scripts/aaa.mjs", "--help"], {
     cwd: process.cwd(),
     encoding: "utf8"
@@ -138,16 +142,54 @@ test("CLI help lists the six supported top-level actions and registration option
       "  eval      Run an evaluation against a disposable root",
       "  register  Register one rendered package with its native product (dry-run by default)",
       "",
-      "Options:",
-      "  --surface <surface>  Select one surface (register requires exactly one)",
+      "Options for install, doctor, diff, and register:",
+      "  --surface <surface>  antigravity, claude, codex, or all (default all; register requires exactly one)",
       "  --profile <profile>  Use portable or template profile",
-      "  --package-root <path>  Package path for register (repository-relative or absolute)",
+      "  --destination-root <path>  Root for install, doctor, or diff, relative to the current directory; required for install --apply",
+      "  --statusline-name <name>  Claude statusline display name for install or diff (at most 64 characters)",
+      "  --package-root <path>  Package path for register, required (absolute or relative to the current directory)",
       "  --dry-run | --apply  Plan only by default; apply requires explicit --apply",
       "  --format text|json  Select human or machine-readable output",
       "  -h, --help  Show this help",
+      "",
+      "Options for validate:",
+      "  --scope core|all|skill  core renders the portable profile, all adds the template profile, skill checks one skill",
+      "  --skill <name>  Skill to check with --scope skill",
+      "  --format text|json  Select human or machine-readable output",
+      "",
+      "Options for eval (all required except --surface and --format):",
+      "  --skill <name>  Canonical skill to evaluate",
+      "  --variant control|candidate  Variant label for the batch",
+      "  --samples 5  Sample count; must be exactly 5",
+      "  --input-jsonl <path>  JSONL file with one record per sample",
+      "  --output <dir>  Result directory, for example .aaa/eval-runs",
+      "  --surface <surface>  Optional surface label for the report",
+      "  --format text|json  Select human or machine-readable output",
       ""
     ].join("\n")
   );
+});
+
+test("entry scripts still run when invoked through a symlinked repository path", async (t) => {
+  await withTempRoot(async (root) => {
+    const linked = join(root, "linked-repository");
+    try {
+      await symlink(process.cwd(), linked, "junction");
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
+    try {
+      for (const script of ["aaa.mjs", "quality-gate.mjs", "sync-status.mjs", "export-claude-ai.mjs"]) {
+        const result = spawnSync(process.execPath, [join(linked, "scripts", script), "--help"], { cwd: root, encoding: "utf8" });
+        assert.equal(result.status, 0, `${script}: ${result.stderr}`);
+        assert.match(result.stdout, /^Usage:/u, `${script} must act, not exit silently, when argv[1] is a symlinked path`);
+      }
+    } finally {
+      // Unlink the live-repository link before withTempRoot deletes the root recursively.
+      await rm(linked, { force: true, recursive: false });
+    }
+  });
 });
 
 test("CLI returns exit code 2 for an unknown action", () => {

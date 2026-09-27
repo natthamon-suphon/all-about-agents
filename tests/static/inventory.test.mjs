@@ -49,12 +49,6 @@ const expectedBaselineFiles = new Map([
 const expectedBaselinePaths = `
 .gitattributes
 .gitignore
-.idea/.gitignore
-.idea/all-about-agents.iml
-.idea/misc.xml
-.idea/modules.xml
-.idea/vcs.xml
-.pre-commit-config.yaml
 AGENTS.md
 CLAUDE.md
 LICENSE

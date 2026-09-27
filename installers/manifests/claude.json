@@ -12,13 +12,17 @@
       "plugin",
       "marketplace",
       "add",
-      "."
+      "PACKAGE_ROOT",
+      "--scope",
+      "user"
     ],
     "command": [
       "claude",
       "plugin",
       "install",
-      "all-about-agents@all-about-agents"
+      "all-about-agents@all-about-agents",
+      "--scope",
+      "user"
     ]
   },
   "configRoot": {
@@ -229,7 +233,7 @@
       "statusline/track-tool.mjs"
     ]
   },
-  "rootInstructionContext": "CLAUDE.md is emitted as the global instruction source and deployed to <CLAUDE_CONFIG_DIR>/CLAUDE.md; plugin rules remain separate",
+  "rootInstructionContext": "CLAUDE.md is emitted as the global instruction source and deployed to <CLAUDE_CONFIG_DIR>/CLAUDE.md; the rules/ files are copied to <CLAUDE_CONFIG_DIR>/rules/all-about-agents/, a folder this package owns",
   "capabilityEvidence": {
     "productContracts": "docs/evaluations/research-claude-code.md",
     "modelPolicy": "docs/evaluations/research-model-policy-claude.md"

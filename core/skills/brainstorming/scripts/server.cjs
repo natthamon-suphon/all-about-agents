@@ -369,8 +369,9 @@ function startServer() {
     if (req.method === 'GET' && pathname === '/') {
       const screenPath = newestScreen();
       let html = screenPath ? fs.readFileSync(screenPath, 'utf8') : waitingPage();
-      if (!isFullDocument(html)) html = templates.frame.replace('<!-- CONTENT -->', html);
-      html = html.includes('</body>') ? html.replace('</body>', `${templates.helperInjection}\n</body>`) : `${html}${templates.helperInjection}`;
+      // Function replacers: a screen may contain $&, $', or $$, which a string replacement would expand.
+      if (!isFullDocument(html)) html = templates.frame.replace('<!-- CONTENT -->', () => html);
+      html = html.includes('</body>') ? html.replace('</body>', () => `${templates.helperInjection}\n</body>`) : `${html}${templates.helperInjection}`;
       res.writeHead(200, securityHeaders({ 'Content-Type': 'text/html; charset=utf-8' }));
       res.end(html);
       return;

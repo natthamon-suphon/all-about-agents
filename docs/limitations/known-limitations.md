@@ -6,8 +6,8 @@ The status vocabulary follows the [evaluation method](../evaluations/method.md).
 required product, host, entitlement, session, or transport was unavailable.
 Neither status is a pass.
 
-Global instructions come from one canonical source and are rendered for both
-surfaces. See [global instructions](../maintenance/global-instructions.md)
+Global instructions come from one canonical source and are rendered for all
+three surfaces. See [global instructions](../maintenance/global-instructions.md)
 for the two-layer model, exact destinations, emoji labels, and checklist
 guidance.
 
@@ -52,9 +52,11 @@ trust, hook execution, permission blocking, persistence, and Gate 3 remain
   runtime behavior are separate states.
 - Antigravity renders no hooks at all, because no session-start event can be
   named with current evidence. The recorded event list is inherited from the
-  2026-08-31 evaluation of `agy 1.1.22` and was not re-verified on 1.2.7. Its routing contract lives in `GEMINI.md`, which is deployed with a
-  no-clobber guard, so a registration can complete while that file is untouched
-  and the contract is absent. Ask the product; do not infer it from a green run.
+  2026-08-31 evaluation of `agy 1.1.22` and was not re-verified on 1.2.7. Its
+  routing contract lives in `GEMINI.md`, which is never overwritten. A
+  registration completes only when that file already contains the managed body,
+  but that does not prove the product loads it. Ask the product; do not infer it
+  from a green run.
 - `agy plugin uninstall <name>` exits 0 even for a name that was never
   installed, so its exit code proves nothing was removed.
 - Native manual steps must use a fresh disposable product or workspace root.
@@ -67,6 +69,20 @@ trust, hook execution, permission blocking, persistence, and Gate 3 remain
   the plan copies managed files and then fails its native commands, so a
   package can look installed while the product knows nothing about it. Confirm
   with the product's own discovery command, never from installer output.
+- Inferred, not run on Windows: `register --apply` starts `agy`, `claude`,
+  `codex`, and `git` by bare name without a shell. Node.js cannot start a
+  `.cmd` or `.bat` file that way
+  ([Node.js child process documentation](https://nodejs.org/api/child_process.html#spawning-bat-and-cmd-files-on-windows)),
+  so a product that is installed only as an npm `.cmd` shim is reported as
+  unavailable even though it runs in a terminal. The repository adds no shell
+  to work around this. Check each binary first, for example
+  `Get-Command codex | Format-List Name, CommandType, Source`: a `Source` that
+  ends in `.exe` can be started, and a `Source` that ends in `.cmd` or `.ps1` is
+  the unsupported shim case.
+- Claude rules are copied to `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`.
+  Registration never deletes a file there. A rule that a later package no
+  longer renders stays, and Claude Code can still load it, until you remove it;
+  the report lists it as a `manual-required` step.
 - A registered package root is read on every product launch. A root under
   `%TEMP%`, `$TMPDIR`, or `/tmp` can be removed by routine cleanup, which
   breaks the registration with no error at install time.

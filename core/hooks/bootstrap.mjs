@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
@@ -147,7 +148,17 @@ export async function runBootstrap(argv = process.argv.slice(2), rawInput = null
   return serializeBootstrapOutput(surface, request, canonicalContent);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+/** True when Node started this file, including through a symlinked path. */
+function isMainModule() {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
   try {
     process.stdout.write(`${await runBootstrap()}\n`);
   } catch {

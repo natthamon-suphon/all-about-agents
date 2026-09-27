@@ -5,6 +5,7 @@ import test from "node:test";
 
 import { withTempRoot } from "../helpers/temp-root.mjs";
 import { assertSafeDestinationRoot, RootResolutionError, resolveDestinationRoot } from "../../installers/lib/roots.mjs";
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 test("destination safety rejects filesystem, account-container, and home roots", () => {
   const cases = [
@@ -54,7 +55,7 @@ test("explicit roots take precedence and Windows containment comparison is case-
   assert.equal(resolveDestinationRoot({ surface: "claude", override: "//SERVER/Share/配置", env: {}, platform: "win32", homeDir: "C:\\Users\\Test" }), "\\\\SERVER\\Share\\配置");
 });
 
-test("root resolution rejects traversal, malformed bases, unsupported platforms, and unsafe existing roots", async () => {
+test("root resolution rejects traversal, malformed bases, unsupported platforms, and unsafe existing roots", async (t) => {
   assert.throws(() => resolveDestinationRoot({ surface: "claude", override: "../escape", env: {}, platform: "darwin", homeDir: "/Users/tester" }), /traversal|escape/u);
   assert.throws(() => resolveDestinationRoot({ surface: "claude", override: "/Users/tester/../escape", env: {}, platform: "darwin", homeDir: "/Users/tester" }), /traversal|escape/u);
   assert.throws(() => resolveDestinationRoot({ surface: "claude", override: "C:\\Users\\Test\\..\\escape", env: {}, platform: "win32", homeDir: "C:\\Users\\Test" }), /traversal|escape/u);
@@ -64,20 +65,26 @@ test("root resolution rejects traversal, malformed bases, unsupported platforms,
     const target = join(root, "target");
     const link = join(root, "link");
     await mkdir(target);
-    try { await symlink(target, link, "junction"); } catch { return; }
+    try {
+      await symlink(target, link, "junction");
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
     await lstat(link);
     assert.throws(() => resolveDestinationRoot({ surface: "claude", override: link, env: {}, platform: process.platform === "win32" ? "win32" : "darwin", homeDir: process.platform === "win32" ? win32.parse(root).root : posix.parse(root).root }), /symlink|junction|unsafe/u);
   });
 });
 
-test("root resolution fails closed when a nonexistent descendant crosses an existing link ancestor", async () => {
+test("root resolution fails closed when a nonexistent descendant crosses an existing link ancestor", async (t) => {
   await withTempRoot(async (root) => {
     const real = join(root, "real");
     const alias = join(root, "alias");
     await mkdir(real);
     try {
       await symlink(real, alias, process.platform === "win32" ? "junction" : "dir");
-    } catch {
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
       return;
     }
     await lstat(alias);

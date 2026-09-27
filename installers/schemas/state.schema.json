@@ -30,6 +30,7 @@
       "uniqueItems": true,
       "items": {
         "enum": [
+          "antigravity",
           "claude",
           "codex"
         ]

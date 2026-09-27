@@ -107,48 +107,6 @@ const EMERGENCY_DENIES = Object.freeze([
   "Bash(git reset --hard*)"
 ]);
 
-const DEFAULT_ROLES = Object.freeze({
-  researcher: Object.freeze({
-    description: "Find and cite primary sources without mutating the repository.",
-    capabilities: ["external-research", "web-primary-sources", "repository-read"],
-    tools: ["Read", "Glob", "Grep", "WebSearch", "WebFetch"]
-  }),
-  investigator: Object.freeze({
-    description: "Reproduce an internal problem and rank evidence-backed hypotheses.",
-    capabilities: ["repository-read", "filesystem-read", "test-execution"],
-    tools: ["Read", "Glob", "Grep"],
-    readOnly: true
-  }),
-  architect: Object.freeze({
-    description: "Design modules, interfaces, seams, invariants, and risks.",
-    capabilities: ["repository-read", "schema-validation", "evaluation"],
-    tools: ["Read", "Glob", "Grep"]
-  }),
-  implementer: Object.freeze({
-    description: "Make scoped test-first changes and report fresh evidence.",
-    capabilities: ["repository-read", "repository-write", "isolated-write", "test-execution"],
-    tools: ["Read", "Glob", "Grep", "Write", "Edit", "Bash", "Agent"]
-  }),
-  verifier: Object.freeze({
-    description: "Run fresh black-box checks without changing implementation files.",
-    capabilities: ["repository-read", "test-execution", "evaluation"],
-    tools: ["Read", "Glob", "Grep"],
-    readOnly: true
-  }),
-  reviewer: Object.freeze({
-    description: "Review specifications, diffs, tests, and maintainability evidence.",
-    capabilities: ["repository-read", "evaluation", "schema-validation"],
-    tools: ["Read", "Glob", "Grep"],
-    readOnly: true
-  }),
-  "security-reviewer": Object.freeze({
-    description: "Check threat paths, secrets, containment, and emergency guardrails.",
-    capabilities: ["repository-read", "evaluation", "schema-validation"],
-    tools: ["Read", "Glob", "Grep"],
-    readOnly: true
-  })
-});
-
 const HOOK_SOURCES = Object.freeze({
   "activity-audit.mjs": `#!/usr/bin/env node
 import { appendAuditEvent } from "./audit-log.mjs";
@@ -181,9 +139,8 @@ try {
   const payload = JSON.parse(rawInput || "{}");
   const checkpoint = {
     timestamp: new Date().toISOString(),
-    taskId: safe(payload.taskId, "pre-compact"),
-    state: safe(payload.state, "compacting"),
-    status: safe(payload.status, "checkpointed")
+    sessionId: safe(payload.session_id, "unknown"),
+    trigger: safe(payload.trigger, "unknown")
   };
   const root = join(dirname(fileURLToPath(import.meta.url)), "checkpoints");
   await mkdir(root, { recursive: true });
@@ -326,24 +283,22 @@ function renderRule(rule) {
 }
 
 function renderAgent(name, role, presentation) {
-  const defaultRole = DEFAULT_ROLES[name];
-  const fallback = defaultRole || Object.freeze({ description: "Unknown role; no native capabilities are granted.", capabilities: [], readOnly: true });
-  const description = role?.description || role?.purpose || fallback.description;
+  const description = role.description || role.purpose;
   const semanticNames = [
-    ...(Array.isArray(role?.capabilities) ? role.capabilities : []),
-    ...(Array.isArray(role?.requiredCapabilities) ? role.requiredCapabilities : []),
-    ...(Array.isArray(role?.allowedCapabilities) ? role.allowedCapabilities : [])
+    ...(Array.isArray(role.capabilities) ? role.capabilities : []),
+    ...(Array.isArray(role.requiredCapabilities) ? role.requiredCapabilities : []),
+    ...(Array.isArray(role.allowedCapabilities) ? role.allowedCapabilities : [])
   ];
   const mappedTools = semanticNames.flatMap((capability) => CLAUDE_SEMANTIC_MAPPINGS[capability] || []);
-  const tools = [...new Set([...(role ? mappedTools : (mappedTools.length > 0 ? mappedTools : fallback.tools))])].sort();
+  const tools = [...new Set(mappedTools)].sort();
   const roleContext = [
-    role?.purpose,
-    Array.isArray(role?.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
-    Array.isArray(role?.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
+    role.purpose,
+    Array.isArray(role.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
+    Array.isArray(role.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
-  const capabilityDiagnostics = nativeCapabilityDiagnostics({ surface: CLAUDE_SURFACE, role: role || fallback, mappings: CLAUDE_SEMANTIC_MAPPINGS, blockedNativeTools: READ_ONLY_NATIVE_TOOLS });
-  const body = `${role?.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.\n`}${capabilityDiagnostics.length > 0 ? `\n\nNative capability diagnostic: ${capabilityDiagnostics.map((entry) => entry.message).join(" ")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
-  const readOnly = isRoleReadOnly(role || fallback);
+  const capabilityDiagnostics = nativeCapabilityDiagnostics({ surface: CLAUDE_SURFACE, role, mappings: CLAUDE_SEMANTIC_MAPPINGS, blockedNativeTools: READ_ONLY_NATIVE_TOOLS });
+  const body = `${role.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.\n`}${capabilityDiagnostics.length > 0 ? `\n\nNative capability diagnostic: ${capabilityDiagnostics.map((entry) => entry.message).join(" ")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
+  const readOnly = isRoleReadOnly(role);
   const allowedTools = readOnly ? tools.filter((tool) => !READ_ONLY_NATIVE_TOOLS.includes(tool)) : tools;
   const restriction = readOnly
     ? `disallowedTools:\n${READ_ONLY_NATIVE_TOOLS.map((tool) => `  - ${tool}`).join("\n")}\n`
@@ -484,7 +439,7 @@ function mappingsDocument() {
     "Read-only agents use Claude's `disallowedTools` for `Agent`, `Bash`, `Edit`, and `Write`.",
     "Read-only capability diagnostics identify any semantic action suppressed by that policy; record it as unavailable or not run rather than inferring a native substitute.",
     "The implementer's native Write/Edit controls are workspace-wide; its declared task paths remain an outer approval boundary.",
-    "The plugin never loads a root `CLAUDE.md`; rules are emitted as independent files under `rules/`."
+    "The plugin never loads a root `CLAUDE.md`; rules are emitted as independent files under `rules/`, and registration copies them to `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, a folder this package owns."
   );
   return ensureText(lines.join("\n"));
 }
@@ -501,7 +456,7 @@ function capabilityGuidance(semanticProfile) {
     "This package is the Claude adapter's documented surface map.",
     "",
     "- `CLAUDE_CONFIG_DIR` selects the settings root shared by Claude Code CLI and Claude Desktop local Code; the fallback is the user's `.claude` directory.",
-    "- Skills are packaged under `skills/<skill>/SKILL.md`, roles under `agents/<role>.md`, and rules as independent files under `rules/`. `CLAUDE.md` is deployed to `<CLAUDE_CONFIG_DIR>/CLAUDE.md`; the plugin never loads a root `CLAUDE.md`.",
+    "- Skills are packaged under `skills/<skill>/SKILL.md`, roles under `agents/<role>.md`, and rules as independent files under `rules/`; registration copies them to `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`. `CLAUDE.md` is deployed to `<CLAUDE_CONFIG_DIR>/CLAUDE.md`; the plugin never loads a root `CLAUDE.md`.",
     `- \`docs/semantic-mappings.md\` at the package root maps each semantic capability to Claude Code tools; \`role-dispatch\` maps to ${CLAUDE_SEMANTIC_MAPPINGS["role-dispatch"].map(code).join(", ")}.`,
     `- Read-only roles use \`disallowedTools\` for ${READ_ONLY_NATIVE_TOOLS.map(code).join(", ")}. The implementer's native \`Write\`/\`Edit\` controls are workspace-wide; its declared task paths remain an outer approval boundary.`,
     `- \`hooks/hooks.json\` runs \`node\` in exec form from \`\${CLAUDE_PLUGIN_ROOT}\`: ${claudeBootstrapTemplate.event} (${code(claudeBootstrapTemplate.nativeMatcher)}) adds this skill as session context, ${claudeActivityTemplate.event} writes the optional activity audit and statusline tracker, and ${claudeCheckpointTemplate.event} writes a checkpoint. No PreToolUse hook is rendered.`,
@@ -580,7 +535,7 @@ export function renderClaude(input = {}) {
   addFile(files, "rules/presentation.md", renderPresentationCatalog(core.presentation));
   for (const rule of [...core.rules].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `rules/${rule.id}.md`, renderRule(rule));
 
-  const roleNames = [...(roleRecords.size > 0 ? roleRecords.keys() : Object.keys(DEFAULT_ROLES))].sort();
+  const roleNames = [...roleRecords.keys()].sort();
   for (const roleName of roleNames) addFile(files, `agents/${roleName}.md`, renderAgent(roleName, roleRecords.get(roleName), core.presentation));
 
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
@@ -612,8 +567,8 @@ export function renderClaude(input = {}) {
         relativePath: ".claude-plugin/plugin.json",
         scope: "user",
         marketplace: "all-about-agents",
-        marketplaceCommand: ["claude", "plugin", "marketplace", "add", "."],
-        command: ["claude", "plugin", "install", "all-about-agents@all-about-agents"]
+        marketplaceCommand: ["claude", "plugin", "marketplace", "add", "PACKAGE_ROOT", "--scope", "user"],
+        command: ["claude", "plugin", "install", "all-about-agents@all-about-agents", "--scope", "user"]
       },
       {
         kind: "runtime-prerequisite",
@@ -643,7 +598,7 @@ export function renderClaude(input = {}) {
         kind: "rules",
         relativeDirectory: "rules",
         rootEnv: "CLAUDE_CONFIG_DIR",
-        destination: "rules"
+        destination: "rules/all-about-agents"
       },
       {
         kind: "statusline-config",

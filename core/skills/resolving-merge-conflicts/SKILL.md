@@ -1,6 +1,6 @@
 ---
 name: resolving-merge-conflicts
-description: Use when a merge, rebase, cherry-pick, or stash operation has unresolved paths or conflict markers that must be resolved safely
+description: Use when a merge, rebase, cherry-pick, revert, or stash operation has unresolved paths or conflict markers that must be resolved safely
 evaluationCases:
   - MC-TRIGGER-active-conflict
   - MC-NONTRIGGER-clean-tree

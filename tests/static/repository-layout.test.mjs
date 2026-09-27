@@ -7,7 +7,6 @@ import test from "node:test";
 // Git-tracked directories only. The .agents plugin slot is written by a coding
 // tool at install time, so it is absent on a clean checkout.
 const activeTopLevelDirectories = [
-  ".idea",
   "adapters",
   "core",
   "docs",

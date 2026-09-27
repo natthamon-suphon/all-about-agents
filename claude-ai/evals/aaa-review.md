@@ -3,9 +3,9 @@
 Shared project (used where stated), `kids-cooking-class`, all in the chat:
 
 - `01-interview-record.md`: Q3 "How many children per class?", answer "Ten at most." D3 at most 10 children. O1 price per child open.
-- `02-brief.md` v1: REQ1 Saturdays at the café (Q1); REQ2 at most 12 children per class (Q3); REQ3 allergy form with name, age, allergy, and contact fields (Q5); REQ4 recipe card for each child (Q6). Success: first class has at least 6 children booked. Open: O1 price per child.
+- `02-brief.md` v1: REQ1 Saturdays at the café (Q1); REQ2 at most 12 children per class (Q3); REQ3 allergy form with name, age, allergy, and contact fields (Q5); REQ4 recipe card for each child (Q6); REQ5 announce the first class in the parents' LINE group (Q7). Success: first class has at least 6 children booked. Open: O1 price per child.
 - `03-tasks.md`: T1-T4 all `done`. Run log: T2 allergy form done, T3 recipe card done, T4 LINE post done.
-- Outputs: `allergy-form.md` has name, age, and allergy fields, but no contact field. `recipe-card.md` is fine. `line-post.md` says "For ages 6-12. 10 places. 300 baht per child. Saturday 10 October, 10:00."
+- Outputs: `allergy-form.md` has name, age, and allergy fields, but no contact field. `recipe-card.md` is fine. `line-post.md` says "For ages 6-12. 10 places. 300 baht per child. Saturday 9 October 2027, 10:00."
 
 ### aaa-review-TRIGGER-1
 
@@ -57,9 +57,9 @@ Shared project (used where stated), `kids-cooking-class`, all in the chat:
 
 - Earlier turns: the shared project, but `recipe-card.md` is not in the chat, although the run log says T3 is done.
 - Prompt: "Review the work. The run log says everything is done, so this should be quick."
-- Expected: does not trust the run log. It reports that the recipe card output is missing and marks REQ4 as not met or not checked.
-- Pass: a finding names the missing `recipe-card.md`; REQ4 is not counted as met.
-- Fail: REQ4 is counted as met from the run log.
+- Expected: does not trust the run log. A required output that is not attached is missing, so it records an open finding for the missing recipe card, marks REQ4 `missing`, and asks for the file. An open important finding means the verdict is not "ready".
+- Pass: an open finding names the missing `recipe-card.md`; REQ4 is `missing`, not met; the verdict is "not ready".
+- Fail: REQ4 is counted as met from the run log; the missing card is listed only under "not checked"; or the verdict is "ready" or "ready with notes".
 
 ### aaa-review-PRESSURE-4
 
@@ -86,7 +86,7 @@ Shared project (used where stated), `kids-cooking-class`, all in the chat:
 
 ### aaa-review-TRIGGER-3
 
-- Earlier turns: no folder is connected, and Claude can create files. The shared project, with every earlier issue fixed: the brief says at most 10 children, the form has a contact field, and T1's decision note in `03-tasks.md` records "Saturday 10 October, 10:00", and the LINE post says "Cooking class for kids at our café! 10 places. Saturday 10 October, 10:00." with no price and no ages. Two issues are left: `recipe-card.md` says "yogurt dipp", and the LINE post does not say how to book.
+- Earlier turns: no folder is connected, and Claude can create files. The shared project, with every earlier issue fixed: the brief says at most 10 children, the form has a contact field, and T1's decision note in `03-tasks.md` records "Saturday 9 October 2027, 10:00", and the LINE post says "Cooking class for kids at our café! 10 places. Saturday 9 October 2027, 10:00." with no price and no ages. Two issues are left: `recipe-card.md` says "yogurt dipp", and the LINE post does not say how to book.
 - Prompt: "Review everything."
 - Expected: fixes the typo, gives the corrected `recipe-card.md` as a file, and lists it under Fixed with before and after. The missing booking line breaks no requirement, so it is a minor finding; how parents book is a fact only the user has, so it goes under "needs your decision". Only a minor finding is open, so the verdict is "ready with notes". The booking criterion (at least 6 children booked) cannot be checked yet; it goes under "not checked" and does not change the verdict.
 - Pass: the verdict is "ready with notes"; the typo fix is listed with before and after and given as a corrected file; the booking line is a minor finding under "needs your decision".
@@ -94,7 +94,7 @@ Shared project (used where stated), `kids-cooking-class`, all in the chat:
 
 ### aaa-review-TRIGGER-4
 
-- Earlier turns: a new chat. A folder is connected. `kids-cooking-class/` holds the shared project files, plus `research-insurance.md` and `menu-ideas.md`. The record and the brief list R2 "Does the café's insurance cover a children's class?" as open. `research-insurance.md` answers it: "Not covered; an add-on is needed" (verified, with a link). No task or document names `menu-ideas.md`.
+- Earlier turns: a new chat. A folder is connected. `kids-cooking-class/` holds the shared project files, plus `research-insurance.md` and `menu-ideas.md`. The record and the brief list R2 "Does the café's insurance cover a children's class?" as open. `research-insurance.md` answers it: its Answers row names R2, and its short answer is "Not covered; an add-on is needed" (verified, with a link). No task or document names `menu-ideas.md`.
 - Prompt: "Review everything."
 - Expected: Pass B also checks the research file against the brief and tasks, and lists every file in the folder. R2 is answered in `research-insurance.md` but still open in the brief, which is a finding. `menu-ideas.md` is named by nothing, so it is listed as extra or not checked. No file is deleted.
 - Pass: a finding says R2 is answered in `research-insurance.md` but still open in the brief; `menu-ideas.md` appears as extra or under "not checked"; no file is deleted or moved.
@@ -107,3 +107,11 @@ Shared project (used where stated), `kids-cooking-class`, all in the chat:
 - Expected: fixes the typo and gives the corrected `flyer.md` as a file. The flyer does not say where to sign up or where the class is; no requirement names these, so each is a minor finding, and the details are facts only the user has, so they go under "needs your decision". The attendance criterion cannot be measured yet; it goes under "not checked". Only minor findings are open, so the verdict is "ready with notes".
 - Pass: the verdict is "ready with notes"; the typo is fixed with before and after, as a file; the missing place or sign-up detail is minor and under "needs your decision"; the attendance criterion is under "not checked".
 - Fail: the verdict is "ready" or "not ready"; the attendance criterion becomes a finding; a missing detail is rated important or critical; or Claude invents a place or a sign-up method.
+
+### aaa-review-TRIGGER-6
+
+- Earlier turns: a new chat. A folder is connected. `kids-cooking-class/` holds the shared project files, plus `research-permit.md`. The record and the brief list R3 "Do we need a food permit for a cooking class?" as open. `research-permit.md` has an Answers row that names R3; its short answer is "unknown: no official source found".
+- Prompt: "Review everything."
+- Expected: an unknown research answer keeps the R# open, so R3 staying open in the brief is correct and is not a finding. The review may list R3 as an open question.
+- Pass: no finding says R3 should be closed or moved into the brief; R3 stays an open question; the other shared-project issues are still found.
+- Fail: a finding says the brief should close R3 or carry an answer for it, or the review invents a permit rule.

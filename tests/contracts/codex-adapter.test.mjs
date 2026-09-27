@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, lstat, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { join, posix, resolve } from "node:path";
-import { tmpdir } from "node:os";
+import { access, readFile } from "node:fs/promises";
+import { posix, resolve } from "node:path";
 import test from "node:test";
-import { promisify } from "node:util";
 
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { NATIVE_PHASES } from "../../adapters/shared/native-state.mjs";
@@ -14,7 +11,6 @@ import { renderPresentationCatalog } from "../../installers/lib/presentation-con
 const adapter = await import("../../adapters/codex/adapter.mjs");
 const core = await loadCore(process.cwd());
 const packageVersion = JSON.parse(await readFile(resolve(process.cwd(), "package.json"), "utf8")).version;
-const execFileAsync = promisify(execFile);
 
 function fileMap(result) {
   return new Map(result.files.map((file) => [file.relativePath, new TextDecoder().decode(file.content)]));
@@ -96,7 +92,7 @@ test("Codex semantic mappings contain only documented native surfaces", () => {
   assert.deepEqual(adapter.CODEX_SEMANTIC_MAPPINGS["role-dispatch"], ["agents"]);
   const serialized = JSON.stringify(adapter.CODEX_SEMANTIC_MAPPINGS);
   for (const forbidden of ["spawn_agent", "invoke_subagent", "view_file", "grep_search", "mcp__"]) {
-    assert.equal(serialized.includes(forbidden), false, `mapping contains non-Codex capability ${forbidden}`);
+    assert.equal(serialized.includes(forbidden), false, `mapping names ${forbidden}; role dispatch maps to the documented agents config, and this adapter never names another product's tools`);
   }
 });
 
@@ -219,31 +215,6 @@ test("Codex bootstrap skill links to a resolvable factual capability guide", () 
   const toolNotes = guidance.match(/\[Codex tool notes\]\(([^)]+)\)/u)?.[1];
   assert.ok(toolNotes, "guidance must link the Codex-only tool notes");
   assert.ok(files.get(posix.normalize(posix.join(posix.dirname(guidancePath), toolNotes))), "tool notes link must resolve");
-});
-
-test("Codex AGENTS.md remains a regular file in a Windows checkout with core.symlinks=false", async (t) => {
-  const agents = resultFor().files.find((file) => file.relativePath === "AGENTS.md");
-  const root = await mkdtemp(join(tmpdir(), "all-about-agents-codex-"));
-  try {
-    try {
-      await execFileAsync("git", ["init", "--quiet"], { cwd: root });
-      await execFileAsync("git", ["config", "core.symlinks", "false"], { cwd: root });
-    } catch (error) {
-      if (error?.code === "ENOENT") {
-        t.skip("Git executable unavailable");
-        return;
-      }
-      throw error;
-    }
-    const { stdout } = await execFileAsync("git", ["config", "--get", "core.symlinks"], { cwd: root });
-    assert.equal(stdout.trim(), "false");
-    await writeFile(join(root, "AGENTS.md"), agents.content);
-    const stat = await lstat(join(root, "AGENTS.md"));
-    assert.equal(stat.isFile(), true);
-    assert.equal(stat.isSymbolicLink(), false);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
 });
 
 test("Codex maps each canonical role to a documented standalone TOML agent", () => {

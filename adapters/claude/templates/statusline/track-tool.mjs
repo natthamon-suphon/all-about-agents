@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 import { appendFile, mkdir, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
-import { collectBoundedStdin, safeStatuslineLogKey, sanitizeTerminalText } from "./statusline.mjs";
+import { collectBoundedStdin, isMainModule, safeStatuslineLogKey, sanitizeTerminalText } from "./statusline.mjs";
 
 const MAX_LOG_BYTES = 8_192;
 const MAX_VALUE_CODE_POINTS = 256;
@@ -71,7 +70,7 @@ async function main() {
   }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMainModule(import.meta.url)) {
   main().catch(() => undefined);
 }
 

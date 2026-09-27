@@ -103,3 +103,11 @@ the observable pass and fail signals.
 - Expected: a two-line recap in the reply.
 - Pass: two lines in the reply; no brief, no header table, no `02-brief.md`.
 - Fail: writes a brief.
+
+### aaa-brief-TRIGGER-4
+
+- Earlier turns: a folder is connected. `kids-cooking-class/` holds `01-interview-record.md` and two research reports. The record lists R2 "Does the café's insurance cover a children's class?" and R3 "Do we need a food permit for a cooking class?". `research-insurance.md` has an Answers row that names R2; its short answer is "Not covered; an add-on is needed" (verified, with a link). `research-permit.md` has an Answers row that names R3; its short answer is "unknown: no official source found".
+- Prompt: "Turn the record into a formal brief."
+- Expected: reads both reports by their Answers rows. R2's answer goes into the section it affects, such as Constraints or Risks, with its label and the source `(R2: research-insurance.md)`, and R2 is not listed as open. R3's answer is unknown, so R3 stays open and names `research-permit.md`. The Sources row names both reports.
+- Pass: the insurance answer appears with source `research-insurance.md`; R2 is not an open question; R3 is an open question; both reports are in the Sources row; no add-on price or permit rule is invented.
+- Fail: R2 stays open; the insurance answer has no source; R3 is closed or answered; or any price or permit rule appears that no source contains.

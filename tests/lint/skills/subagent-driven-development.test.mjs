@@ -5,6 +5,7 @@ import { access, chmod, link, mkdir, mkdtemp, readdir, readFile, rm, stat, symli
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import test from "node:test";
+import { skipIfLinkUnavailable } from "../../helpers/symlink.mjs";
 
 const skillId = "subagent-driven-development";
 const requiredCases = [
@@ -421,8 +422,7 @@ test("review-package, task-brief, and sdd-workspace never write through a symlin
     try {
       await symlink(outside, repo.sdd, "dir");
     } catch (error) {
-      if (error.code !== "EPERM") throw error;
-      t.skip("this host does not allow symlinks");
+      skipIfLinkUnavailable(t, error);
       return;
     }
     for (const result of [repo.run([plan, repo.base, "WORKTREE"]), runNode(taskBriefPath, [plan, "1"], repo.root), runNode(sddWorkspacePath, [plan], repo.root)]) {
@@ -512,8 +512,7 @@ test("the sdd helpers check sdd/ for a symlink again after mkdir and before the 
     try {
       await symlink(outside, linked, "dir");
     } catch (error) {
-      if (error.code !== "EPERM") throw error;
-      t.skip("this host does not allow symlinks");
+      skipIfLinkUnavailable(t, error);
       return;
     }
     const helper = (code) => spawnSync(process.execPath, ["-e", code, sddWorkspacePath, linked], { encoding: "utf8", shell: false });
@@ -631,6 +630,101 @@ test("task-brief accepts only a whole task number and extracts exactly that task
   }
 });
 
+const briefPlanLines = [
+  "# Plan",
+  "",
+  "## Phase 1",
+  "",
+  "### Task 1: one",
+  "body one",
+  "#### Sub step",
+  "sub body",
+  "  ```sh",
+  "# a shell comment, not a heading",
+  "## Task 9: inside an indented fence",
+  "  ```",
+  "after fence",
+  "",
+  "### Task 2: two",
+  "body two",
+  "## task 3: lowercase is not a task heading",
+  "lowercase body",
+  "### Task 3: three",
+  "body three",
+  "##### Task 4: a deeper task heading",
+  "body four",
+  "",
+  "## Plan self-review",
+  "review text",
+  "",
+  "## Phase 2",
+  "### Task 1: repeated heading",
+  "repeat body",
+  "### Task 5: last",
+  "body five"
+];
+const briefCases = [
+  ["1", ["### Task 1: one", "body one", "#### Sub step", "sub body", "  ```sh", "# a shell comment, not a heading", "## Task 9: inside an indented fence", "  ```", "after fence", ""]],
+  ["2", ["### Task 2: two", "body two"]],
+  ["3", ["### Task 3: three", "body three"]],
+  ["4", ["##### Task 4: a deeper task heading", "body four", ""]],
+  ["5", ["### Task 5: last", "body five"]],
+  ["9", null]
+];
+
+async function assertBriefCases(runBrief) {
+  const root = await mkdtemp(join(tmpdir(), "aaa-brief-cases-"));
+  try {
+    const plan = join(root, "plan.md");
+    for (const eol of ["\n", "\r\n"]) {
+      await writeFile(plan, `${briefPlanLines.join(eol)}${eol}`, "utf8");
+      for (const [task, expected] of briefCases) {
+        const label = `Task ${task} with ${JSON.stringify(eol)} line ends`;
+        const brief = join(root, "sdd", `task-${task}-brief.md`);
+        await rm(brief, { force: true });
+        const result = runBrief(plan, task, root);
+        if (expected === null) {
+          assert.equal(result.status, 3, `${label}: ${result.stderr}`);
+          await assert.rejects(access(brief), { code: "ENOENT" }, label);
+          continue;
+        }
+        assert.equal(result.status, 0, `${label}: ${result.stderr}`);
+        assert.equal(await readFile(brief, "utf8"), `${expected.join("\n")}\n`, label);
+        assert.match(result.stdout, new RegExp(`: ${expected.length} lines\\n$`, "u"), label);
+      }
+    }
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+}
+
+test("task-brief ends a task at the next heading of the same or a higher level and outside fences", async () => {
+  await assertBriefCases((plan, task, cwd) => runNode(taskBriefPath, [plan, task], cwd));
+});
+
+test("the node scripts refuse a folder as PLAN_FILE and extra arguments", async () => {
+  const repo = await uncommittedRepo("aaa-plan-args-");
+  try {
+    const folder = join(repo.root, "folder-plan");
+    await mkdir(folder);
+    for (const [script, args] of [[taskBriefPath, [folder, "1"]], [sddWorkspacePath, [folder]], [reviewPackagePath, [folder, repo.base, "WORKTREE"]]]) {
+      const result = runNode(script, args, repo.root);
+      assert.equal(result.status, 2, `${script}: ${result.stderr}`);
+      assert.match(result.stderr, /^no such plan file: /u, script);
+    }
+    const plan = join(repo.root, "plan.md");
+    await writeFile(plan, "## Task 1: one\nbody\n", "utf8");
+    for (const [script, args] of [[taskBriefPath, [plan, "1", join(repo.sdd, "brief.md"), "extra"]], [reviewPackagePath, [plan, repo.base, "WORKTREE", join(repo.sdd, "review.diff"), "extra"]]]) {
+      const result = runNode(script, args, repo.root);
+      assert.equal(result.status, 2, `${script}: ${result.stderr}`);
+      assert.match(result.stderr, /^usage: /u, script);
+    }
+    await assert.rejects(access(repo.sdd), { code: "ENOENT" }, "a refused call must not create sdd/");
+  } finally {
+    await repo.cleanup();
+  }
+});
+
 test("every script restores a missing sdd/.gitignore and never overwrites an existing one", async () => {
   const root = await mkdtemp(join(tmpdir(), "aaa-sdd-ignore-"));
   try {
@@ -658,27 +752,71 @@ function findOnPath(name) {
   return null;
 }
 
-test("bash wrappers keep working when node is not on PATH", async (t) => {
+async function nodeFreeShell(t, toolNames) {
   if (process.platform === "win32") {
     t.skip("win32: the bash wrappers target hosts with bash; a node-free PATH needs symlinks this host may not allow");
-    return;
+    return null;
   }
-  const tools = ["bash", "git", "awk", "wc", "tr", "dirname", "mkdir", "mktemp", "mv", "rm"].map((name) => [name, findOnPath(name)]);
+  const tools = toolNames.map((name) => [name, findOnPath(name)]);
   const missing = tools.filter(([, target]) => !target).map(([name]) => name);
   if (missing.length > 0) {
     t.skip(`tools missing on PATH: ${missing.join(", ")}`);
-    return;
+    return null;
   }
-  const repo = await uncommittedRepo("aaa-no-node-");
   const bin = await mkdtemp(join(tmpdir(), "aaa-no-node-bin-"));
+  const cleanup = async () => {
+    // Unlink the links to host tools before the recursive delete of bin.
+    for (const [name] of tools) await rm(join(bin, name), { force: true, recursive: false });
+    await rm(bin, { force: true, recursive: true });
+  };
   try {
     for (const [name, target] of tools) await symlink(target, join(bin, name));
-    const env = { ...process.env, PATH: bin };
-    const bash = join(bin, "bash");
-    if (spawnSync(bash, ["-c", "command -v node"], { env }).status === 0) {
-      t.skip("node is still reachable through the stripped PATH");
-      return;
+  } catch (error) {
+    await cleanup();
+    skipIfLinkUnavailable(t, error);
+    return null;
+  }
+  const env = { ...process.env, PATH: bin };
+  const bash = join(bin, "bash");
+  if (spawnSync(bash, ["-c", "command -v node"], { env }).status === 0) {
+    await cleanup();
+    t.skip("node is still reachable through the stripped PATH");
+    return null;
+  }
+  return { bin, env, bash, cleanup };
+}
+
+test("the bash task-brief fallback extracts the same briefs as task-brief.cjs", async (t) => {
+  const shell = await nodeFreeShell(t, ["bash", "awk", "wc", "tr", "dirname", "mkdir", "mktemp", "mv", "rm"]);
+  if (!shell) return;
+  try {
+    const wrapper = (args, cwd) => spawnSync(shell.bash, [join(scriptsDirectory, "task-brief"), ...args], { cwd, env: shell.env, encoding: "utf8", shell: false });
+    await assertBriefCases((plan, task, cwd) => wrapper([plan, task], cwd));
+    const root = await mkdtemp(join(tmpdir(), "aaa-brief-args-"));
+    try {
+      const plan = join(root, "plan.md");
+      await writeFile(plan, "## Task 1: one\nbody\n", "utf8");
+      for (const args of [[root, "1"], [plan, "1", join(root, "sdd", "brief.md"), "extra"]]) {
+        assert.equal(wrapper(args, root).status, 2, args.join(" "));
+      }
+      const missing = wrapper([plan, "9"], root);
+      assert.equal(missing.status, 3, missing.stderr);
+      assert.match(missing.stderr, /task 9 not found/u);
+      await assert.rejects(access(join(root, "sdd")), { code: "ENOENT" }, "a missing task must not create sdd/");
+    } finally {
+      await rm(root, { force: true, recursive: true });
     }
+  } finally {
+    await shell.cleanup();
+  }
+});
+
+test("bash wrappers keep working when node is not on PATH", async (t) => {
+  const shell = await nodeFreeShell(t, ["bash", "git", "awk", "wc", "tr", "dirname", "mkdir", "mktemp", "mv", "rm"]);
+  if (!shell) return;
+  const { bin, env, bash } = shell;
+  const repo = await uncommittedRepo("aaa-no-node-");
+  try {
     const gitProbe = spawnSync(join(bin, "git"), ["--version"], { env, encoding: "utf8" });
     if (gitProbe.status !== 0) {
       t.skip(`git does not run with a stripped PATH: ${gitProbe.stderr.trim()}`);
@@ -766,7 +904,7 @@ test("bash wrappers keep working when node is not on PATH", async (t) => {
     assert.equal(await readFile(join(repo.sdd, ".gitignore"), "utf8"), "custom\n");
   } finally {
     await repo.cleanup();
-    await rm(bin, { force: true, recursive: true });
+    await shell.cleanup();
   }
 });
 

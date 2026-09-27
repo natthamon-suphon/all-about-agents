@@ -18,7 +18,8 @@ function object(value) {
 }
 
 function safeRelativePath(value) {
-  if (typeof value !== "string" || value.length === 0 || value.includes("\\") || value.includes("\0") || value.startsWith("/")) return false;
+  // Control characters (NUL included) could forge lines in text reports.
+  if (typeof value !== "string" || value.length === 0 || value.includes("\\") || /\p{Cc}/u.test(value) || value.startsWith("/")) return false;
   if (/^[A-Za-z]:/u.test(value)) return false;
   return value.split("/").every((part) => part.length > 0 && part !== "." && part !== "..");
 }

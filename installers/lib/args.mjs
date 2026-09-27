@@ -118,7 +118,7 @@ export function parseArgs(argv, options = {}) {
         break;
       case "--destination-root":
         destinationSeen = seen(name, destinationSeen);
-        if (value.includes("\0")) fail("invalid-destination-root", "--destination-root may not contain NUL bytes");
+        if (value.includes("\0") || value.trim() === "") fail("invalid-destination-root", "--destination-root must be a non-empty path without NUL bytes");
         destinationRoot = value;
         break;
       case "--package-root":

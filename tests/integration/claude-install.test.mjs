@@ -40,7 +40,7 @@ test("Claude clean-profile install works from an unrelated working directory", a
     for (const registeredPath of [
       "settings.json",
       "all-about-agents/statusline.json",
-      "rules/authority-and-scope.md",
+      "rules/all-about-agents/authority-and-scope.md",
       ".claude-plugin/plugin.json",
       "skills/brainstorming/SKILL.md"
     ]) await access(resolve(destination, registeredPath));

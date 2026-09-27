@@ -8,6 +8,7 @@ import { crc32, inflateRawSync } from "node:zlib";
 
 import { buildSkillArchive, createZip, loadPack, PackValidationError, parseSkillFile, validateSkill } from "../../scripts/lib/claude-ai-pack.mjs";
 import { exportPack, main } from "../../scripts/export-claude-ai.mjs";
+import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 
 const encoder = new TextEncoder();
 const VALID_DESCRIPTION = "Demonstrates one pack behavior for tests. Use when a test needs a valid skill.";
@@ -228,11 +229,8 @@ test("loadPack rejects a symlinked skill file", async (t) => {
     try {
       await symlink(target, skillFile);
     } catch (error) {
-      if (error?.code === "EPERM") {
-        t.skip("symlink creation is not permitted");
-        return;
-      }
-      throw error;
+      skipIfLinkUnavailable(t, error);
+      return;
     }
     await assert.rejects(loadPack(join(root, "claude-ai")), /symlink/u);
   } finally {

@@ -40,7 +40,7 @@ package was loaded.
 | Plugin registration | `agy plugin install <dir>`, then `agy plugin list` and `agy agents` listed the package and all seven roles | The install is a copy; it does not follow later renders. |
 | Routing contract | Inlined into `GEMINI.md`; a headless session quoted its first heading | Whether the model follows the contract is a behavior question, not a discovery one. |
 | Hooks | None rendered | No session-start event can be named with current evidence; the recorded event list is inherited from the 1.1.22 evaluation. Do not infer hook support from another product. |
-| Status line | None rendered | The removed adapters pointed one at a path the product never creates. |
+| Status line | None rendered | No statusline is rendered, so the Claude-only `--statusline-name` option has no effect here. The removed adapters pointed one at a path the product never creates. |
 | Permission deny rules | Recorded as a manual expectation only | This package never writes `antigravity-cli/settings.json`. |
 | Antigravity Desktop | `NOT_RUN_UNAVAILABLE` | No headless mode; the workspace slot is a manual copy. |
 
@@ -68,9 +68,14 @@ node scripts/aaa.mjs register --surface antigravity --package-root "<ROOT>" --dr
 node scripts/aaa.mjs register --surface antigravity --package-root "<ROOT>" --apply
 ```
 
-Registration runs `agy plugin validate`, then `agy plugin install`, then
-`agy plugin list`, and deploys `GEMINI.md`. `agy` must resolve on `PATH`; when
-it does not, the run is `NOT_RUN_UNAVAILABLE`, not a failure.
+Registration first deploys `GEMINI.md` (see below), then runs
+`agy plugin validate`, `agy plugin install`, and `agy plugin list`. `agy` must
+resolve on `PATH`. When it does not, `register` still deploys `GEMINI.md`
+first, then stops at the validate step with error
+`native-executable-unavailable` and exit code 1. The report status is `partial`
+when `GEMINI.md` was written or already matched, and `failed` when the
+no-clobber guard refused it. `npm run setup` reports that step as
+`not-run-unavailable` and continues with the other surfaces.
 
 `agy plugin install` takes a plain directory and needs no Git repository. That
 is the opposite of `codex plugin add`, which clones its source.
@@ -83,24 +88,31 @@ reinstall, and treats it as best-effort.
 ## GEMINI.md is never overwritten
 
 The `GEMINI.md` deploy carries `guard: "no-clobber"`. When the destination
-already exists and differs from the managed source, registration reports
-`manual-required` and writes nothing.
+already exists, it is complete when it contains the managed body as one
+contiguous block; your own sections before or after it stay. When the body is
+missing or edited, registration reports `manual-required`, writes nothing, and
+the run ends with exit code 1 (`manual-step-required`).
 
 This differs from Claude on purpose. `CLAUDE.md` is deployed without the guard
 because the Claude render is a superset of the live file. The Antigravity render
 is not: an operator may keep unrelated always-on sections in `~/.gemini/GEMINI.md`,
-and overwriting would delete them. Merge the managed body by hand instead, or
-point `--instruction-root` at a disposable directory first and compare.
+and overwriting would delete them. Merge the managed body by hand instead.
+`<ROOT>/GEMINI.md` is the exact file registration deploys, so compare it
+with `~/.gemini/GEMINI.md` directly. To preview the plan, set
+`AAA_ANTIGRAVITY_ROOT` to a disposable directory and run `register --dry-run`.
+Do not use `--apply` for a preview: the `agy` steps do not read that variable,
+so `agy plugin install` still writes the live Antigravity plugin folder.
 
 ## Configuration root
 
 The root is the user's `.gemini` directory. Antigravity documents no environment
-variable for it, so none is read.
+variable for it, so the product itself reads none.
 
 For qualification and tests this repository defines its own override,
 `AAA_ANTIGRAVITY_ROOT`. It is not a product variable. `install`, `doctor`,
 `diff`, and `register` all honor it; without it every run resolves to the
-operator's live home.
+operator's live home. For `register` it moves only the `GEMINI.md`
+destination: the `agy` steps run with the normal environment.
 
 ## Models and effort
 
@@ -111,6 +123,9 @@ The `portable` profile changes neither. The `template` profile records
 `gemini-3.1-pro-high` as the approved model and emits it as a **manual** step:
 selection happens through `agy --model` or the `/model` command, because no
 documented on-disk key persists it.
+
+The package sets no model fallback. Automatic model fallback is unsupported and
+not claimed.
 
 ## Antigravity Desktop
 
@@ -132,6 +147,12 @@ evidence rather than proof that the product merges them cleanly.
 
 ## Keeping the install current
 
-`agy plugin install` copies the package. A later `setup --mode update` refreshes
-the package root but not the installed copy, so re-run registration after every
-package update.
+`agy plugin install` copies the package, so a new render reaches Antigravity
+only when registration runs again. `npm run setup -- --mode update --apply`
+does that: it removes and registers the plugin for each surface. After a manual
+`install --apply`, run `register --surface antigravity --apply` again.
+
+Use [native registration](../maintenance/native-registration.md),
+[native verification](../maintenance/native-verification.md), and the
+[cross-tool quality guide](../maintenance/cross-tool-quality.md) for the
+evidence each lifecycle state needs.

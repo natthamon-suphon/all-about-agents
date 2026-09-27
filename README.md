@@ -83,8 +83,10 @@ reverses that plan's decision D6.
 A pull updates only the repository. It does not install files into a coding
 tool. Installation always needs a separate, exact action.
 
-The global layer gives shared safety and quality behavior. Project files and
-plugin rules are the more specific second layer. Read [global instructions and
+The global layer gives shared safety and quality behavior. Project files are
+the more specific second layer. The nine core rules belong to the global layer:
+Codex and Antigravity get them inside the global file, and Claude gets them as
+files in `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`. Read [global instructions and
 presentation](docs/maintenance/global-instructions.md) for the exact files,
 destinations, emoji labels, and checklist rules.
 

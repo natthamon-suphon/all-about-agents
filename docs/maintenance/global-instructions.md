@@ -11,12 +11,14 @@ The global layer gives stable behavior for every repository. It covers
 correctness, safety, scope, research, verification, and honest status reports.
 
 The project and plugin layer is the more specific second layer. It gives repository commands,
-local architecture, selected skills, rules, hooks, and task details.
+local architecture, selected skills, project rules, hooks, and task details.
+The nine core rules are not part of it: they belong to the global layer (see
+below).
 The more specific layer adds detail but must not weaken global safety rules.
 Keep these files in the project or plugin layer:
 
 - project `CLAUDE.md` and `AGENTS.md`;
-- plugin rules, skills, and agents;
+- project rules, plugin skills, and agents;
 - repository paths, test commands, and project-specific policy.
 
 This is a two-layer model: global behavior first, then project or plugin
@@ -30,10 +32,17 @@ source:
 
 | Section | Surfaces | Defined in |
 | --- | --- | --- |
-| `## RTK house rules (rust-token-killer)` | both | `core/instructions/global-operating-rules.md` |
+| `## RTK house rules (rust-token-killer)` | Antigravity, Claude Code, and Codex | `core/instructions/global-operating-rules.md` |
 | `## egroup house rules (coding-guidelines)` | Claude Code only | `adapters/shared/global-instructions.mjs` |
 | `# All About Agents for Codex` | Codex only | `adapters/shared/global-instructions.mjs` |
 | `# All About Agents for Antigravity` | Antigravity only | `adapters/shared/global-instructions.mjs` |
+
+The Codex and Antigravity appendices also carry the nine core rules and the
+presentation catalog. Claude gets the same content as files instead:
+`register --surface claude --apply` copies them to
+`<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, and Claude Code loads every
+`.md` file under its rules folder, subfolders included
+([memory docs](https://code.claude.com/docs/en/memory.md), checked 2026-09-27).
 
 `renderSharedGlobalInstructions` returns the shared body alone. The Codex and
 Antigravity renderers build on that function, never on the Claude renderer, so

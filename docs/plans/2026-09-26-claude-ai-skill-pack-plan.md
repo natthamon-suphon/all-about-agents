@@ -4,6 +4,15 @@ Spec: `docs/plans/2026-09-26-claude-ai-skill-pack.md`, accepted by the owner
 on 2026-09-26.
 Status: Tasks 1-11 executed on 2026-09-26. Evidence: `claude-ai/evals/results.md`.
 
+> **Historical.** This plan records the first build and is not kept up to
+> date. The skills changed in later reviews, so some lists here are stale,
+> for example the conventions headings, the record sections, and the
+> required phrases. The current contracts are the spec,
+> `claude-ai/shared/conventions.md`, and the pack tests
+> (`tests/static/claude-ai-pack.test.mjs`,
+> `tests/contracts/claude-ai-pack.test.mjs`). Where this plan differs, they
+> win.
+
 ## Goal
 
 Build the six `aaa-*` claude.ai skills (spec section 5) plus the tooling to

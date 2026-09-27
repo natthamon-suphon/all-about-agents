@@ -20,15 +20,24 @@ test("launchers preserve representative JSON output and exit-code parity", async
     ["validate", "--scope", "all", "--format", "json"],
     ["install", "--unknown", "--format", "json"]
   ];
-  const runPowerShell = (args) => spawnSync("pwsh", ["-NoProfile", "-File", resolve(process.cwd(), "installers", "install.ps1"), ...args], { cwd: process.cwd(), encoding: "utf8" });
-  const expected = launcherArgs.map((args) => {
-    const result = runPowerShell(args);
-    return { status: result.status, stdout: JSON.parse(result.stdout) };
-  });
-  assert.deepEqual(expected.map(({ status, stdout }) => ({ status, action: stdout.action, statusValue: stdout.status })), [
+  const expected = [
     { status: 0, action: "validate", statusValue: "pass" },
     { status: 2, action: undefined, statusValue: "fail" }
-  ]);
+  ];
+  const outcomes = (run) => launcherArgs.map((args) => {
+    const result = run(args);
+    const stdout = JSON.parse(result.stdout);
+    return { status: result.status, action: stdout.action, statusValue: stdout.status };
+  });
+
+  const pwshProbe = spawnSync("pwsh", ["--version"], { cwd: process.cwd(), encoding: "utf8" });
+  const powershellUnavailable = pwshProbe.status !== 0
+    ? `NOT_RUN_UNAVAILABLE: PowerShell launcher not run, pwsh unavailable (status ${pwshProbe.status ?? "spawn-error"})`
+    : null;
+  await t.test("PowerShell", { skip: powershellUnavailable || false }, async () => {
+    const runPowerShell = (args) => spawnSync("pwsh", ["-NoProfile", "-File", resolve(process.cwd(), "installers", "install.ps1"), ...args], { cwd: process.cwd(), encoding: "utf8" });
+    assert.deepEqual(outcomes(runPowerShell), expected);
+  });
 
   const bashProbe = spawnSync("bash", ["--version"], { cwd: process.cwd(), encoding: "utf8" });
   const nodeProbe = bashProbe.status === 0
@@ -41,10 +50,6 @@ test("launchers preserve representative JSON output and exit-code parity", async
       : null;
   await t.test("POSIX", { skip: posixUnavailable || false }, async () => {
     const runShell = (args) => spawnSync("bash", [resolve(process.cwd(), "installers", "install.sh"), ...args], { cwd: process.cwd(), encoding: "utf8" });
-    const actual = launcherArgs.map((args) => {
-      const result = runShell(args);
-      return { status: result.status, stdout: JSON.parse(result.stdout) };
-    });
-    assert.deepEqual(actual.map(({ status, stdout }) => ({ status, action: stdout.action, statusValue: stdout.status })), expected.map(({ status, stdout }) => ({ status, action: stdout.action, statusValue: stdout.status })));
+    assert.deepEqual(outcomes(runShell), expected);
   });
 });

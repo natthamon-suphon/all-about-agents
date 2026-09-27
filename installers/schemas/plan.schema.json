@@ -17,6 +17,7 @@
     },
     "surface": {
       "enum": [
+        "antigravity",
         "claude",
         "codex"
       ]

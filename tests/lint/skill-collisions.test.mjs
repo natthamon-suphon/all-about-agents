@@ -4,22 +4,13 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 const collisionSets = [
-  { id: "brainstorm-interview-loop", samples: 5, candidates: ["brainstorming", "interviewing", "loop-me"], boundary: "design, clarifying questions for an owned artifact, or workflow specification" },
-  { id: "research-investigation", samples: 5, candidates: ["research", "systematic-debugging"], boundary: "external fact or local failure cause" },
-  { id: "verification-review", samples: 5, candidates: ["verification-before-completion", "requesting-code-review"], boundary: "fresh execution evidence or independent critique" },
-  { id: "planning-execution", samples: 5, candidates: ["writing-plans", "executing-plans"], boundary: "write an approved plan or execute one" },
-  { id: "debugging-tdd", samples: 5, candidates: ["systematic-debugging", "test-driven-development"], boundary: "diagnose existing failure or implement new behavior" },
-  { id: "architecture-survey-design", samples: 5, candidates: ["improve-codebase-architecture", "codebase-design"], boundary: "portfolio survey or one module boundary" }
+  { id: "brainstorm-interview-loop", candidates: ["brainstorming", "interviewing", "loop-me"] },
+  { id: "research-investigation", candidates: ["research", "systematic-debugging"] },
+  { id: "verification-review", candidates: ["verification-before-completion", "requesting-code-review"] },
+  { id: "planning-execution", candidates: ["writing-plans", "executing-plans"] },
+  { id: "debugging-tdd", candidates: ["systematic-debugging", "test-driven-development"] },
+  { id: "architecture-survey-design", candidates: ["improve-codebase-architecture", "codebase-design"] }
 ];
-
-test("critical collision matrix defines six bounded sets and five fresh samples", () => {
-  assert.equal(collisionSets.length, 6);
-  for (const collision of collisionSets) {
-    assert.ok(collision.candidates.length > 0);
-    assert.ok(collision.boundary.length > 10);
-    assert.equal(collision.samples, 5, `${collision.id} release sample count`);
-  }
-});
 
 test("each collision candidate has trigger and nontrigger evidence with distinct descriptions", async () => {
   const ids = [...new Set(collisionSets.flatMap((entry) => entry.candidates))];

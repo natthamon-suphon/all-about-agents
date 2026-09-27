@@ -102,6 +102,12 @@ test("parseArgs rejects duplicates, missing values, conflicts, invalid values, a
   for (const [argv, expected] of cases) assert.throws(() => parseArgs(argv), expected);
 });
 
+test("parseArgs rejects a blank --destination-root instead of resolving it to the working directory", () => {
+  for (const argv of [["--destination-root", ""], ["--destination-root", "   "], ["install", "--apply", "--destination-root", ""], ["--destination-root=   "]]) {
+    assert.throws(() => parseArgs(argv), (error) => error instanceof ArgumentError && error.code === "invalid-destination-root", JSON.stringify(argv));
+  }
+});
+
 test("omitted statusline input is non-blocking by default and can be explicitly injected once", () => {
   assert.equal(parseArgs(["--surface", "claude"]).statuslineName, "");
   let prompts = 0;

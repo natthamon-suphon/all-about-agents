@@ -139,6 +139,16 @@ test("quality report validates malformed input and duplicate checks", () => {
   assert.throws(() => reportModule.createQualityReport(duplicate), /duplicate/iu);
 });
 
+test("quality report accepts only the supported win32 and darwin platforms", () => {
+  for (const platform of ["win32", "darwin"]) {
+    const report = reportModule.createQualityReport({ ...baseInput(), runtime: { platform, nodeVersion: "v22.12.0" } });
+    assert.equal(validateSchema({ schema: reportSchema, value: report, sourcePath: "quality-report.json" }).valid, true, platform);
+  }
+  assert.throws(() => reportModule.createQualityReport({ ...baseInput(), runtime: { platform: "linux", nodeVersion: "v22.12.0" } }), /supported platform/u);
+  const linux = { ...reportModule.createQualityReport(baseInput()), runtime: { platform: "linux", nodeVersion: "v22.12.0" } };
+  assert.equal(validateSchema({ schema: reportSchema, value: linux, sourcePath: "quality-report.json" }).valid, false);
+});
+
 test("quality report writes only to an explicit contained destination", async (t) => {
   const root = await makeTempRoot("aaa-quality-report-");
   t.after(() => rm(root, { recursive: true, force: true }));

@@ -61,7 +61,7 @@ function stateOwnership(previousState, selectedSurfaces, diagnostics) {
   if (previousState === null || previousState === undefined) return null;
   const parsed = parseManagedState(previousState);
   if (!parsed) {
-    diagnostics.push(issue("invalid-previous-state", "warning", "Previous managed state is missing or malformed; pruning is disabled."));
+    diagnostics.push(issue("invalid-previous-state", "warning", "Previous managed state is malformed or was written by an older repository version, so install --apply refuses this root before any write. Use a new destination root, run node scripts/setup.mjs --mode fresh, or clear the old managed files as docs/maintenance/sync-and-update.md describes."));
     return null;
   }
   const selected = new Set(selectedSurfaces);

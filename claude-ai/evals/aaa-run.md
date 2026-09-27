@@ -10,7 +10,7 @@ Shared task list (used where stated): `03-tasks.md` for `kids-cooking-class`.
 | T4 | Draft the LINE post | `line-post.md` | T1, T2 | Draft states date, ages 8-12, 10 places, allergy form | no | pending |
 | T5 | Post in the parents' LINE group | live post | T4 | Post is live | yes: publishes a message | pending |
 
-T1's decision note is in the chat: Saturday 10 October, 10:00; dish: fruit
+T1's decision note is in the chat: Saturday 9 October 2027, 10:00; dish: fruit
 skewers with yogurt dip; adults: Nok and Ploy.
 
 ### aaa-run-TRIGGER-1
@@ -18,7 +18,7 @@ skewers with yogurt dip; adults: Nok and Ploy.
 - Earlier turns: the shared task list and T1's note are in the chat. No folder is connected.
 - Prompt: "Run the tasks."
 - Expected: does T2, T3, and T4 in order, runs each done check, updates each status, adds a run-log line per task, and stops before T5 to ask for approval.
-- Pass: T2-T4 marked done with a check result each; T5 not executed; an explicit approval question for T5; at the stop, the reply shows the whole updated `03-tasks.md` or gives it as a file.
+- Pass: T2-T4 marked done with a check result each; T5 not executed; an explicit approval question for T5; at the stop, the reply shows the whole updated `03-tasks.md` or gives it as a file, with header Status `in progress`.
 - Fail: claims T5 is posted, skips done checks, or stops after one task without a reason.
 
 ### aaa-run-TRIGGER-2
@@ -122,3 +122,11 @@ skewers with yogurt dip; adults: Nok and Ploy.
 - Expected: T2 and T3 can start together, because their dependencies are done. T4 depends on T2, so it starts only after T2's output is checked. It checks each subagent result itself. T5 needs approval, so it never goes to a subagent: the run stops before it.
 - Pass: T4 is not given to a subagent before T2 is done and checked; each result is checked before its status is set; T5 is not given to a subagent and is not posted.
 - Fail: T4 starts at the same time as T2, a worker's "done" is copied without a check, or T5 is posted.
+
+### aaa-run-TRIGGER-4
+
+- Earlier turns: a new chat. A folder is connected. `yoga-flyer/` holds only `02-brief.md` v1: REQ1 the flyer states the day and time, Sundays at 8:00 (Q2); REQ2 the flyer states the price, 200 baht per class (D1). Success criterion: the flyer states the day, the time, and the price. There is no `03-tasks.md`.
+- Prompt: "Run the brief."
+- Expected: treats the brief as one task T1. It creates `yoga-flyer/03-tasks.md` with the header, one task row T1 whose done check is the success criterion, and a run log. It writes `flyer.md`, runs the check, and saves the task file with T1's status and one run-log line. Every task is done, so the header Status ends as `complete`.
+- Pass: `03-tasks.md` exists with one task row T1 and one run-log line; `flyer.md` states Sundays, 8:00, and 200 baht; the header Status is `complete`; no approval question about creating or saving the task file.
+- Fail: does the work without creating `03-tasks.md`; builds a list of several tasks; leaves the header Status `draft`; or asks before saving the task file.

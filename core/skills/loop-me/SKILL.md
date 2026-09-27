@@ -1,6 +1,6 @@
 ---
 name: loop-me
-description: Use when the human explicitly invokes loop-me to turn a recurring workflow into an implementation-ready specification.
+description: Use when the human explicitly invokes loop-me, or directly asks to be grilled about a recurring workflow, to turn that workflow into an implementation-ready specification.
 requiredSkills:
   - interviewing
 evaluationCases:
@@ -11,7 +11,8 @@ evaluationCases:
 
 # Loop Me
 
-Specify recurring workflows when the human explicitly invokes this skill.
+Specify recurring workflows when the human explicitly invokes this skill or
+directly asks to be grilled about a recurring workflow.
 This skill owns the workflow specification artifact and the readiness
 contract, and it is the wrapping skill for `interviewing`. Use the artifact path
 set by the active plan or brief; otherwise write
@@ -27,15 +28,15 @@ Loop Me is opt-in. Do not invoke it automatically because a request mentions a
 workflow, a recurring task, or a design. A normal feature, build, change, or
 architecture request routes to `brainstorming`; normal brainstorming must not
 route here automatically. Invoke Loop Me only when the human explicitly names
-or invokes `loop-me`, or directly asks to be grilled about a workflow.
+or invokes `loop-me`, or directly asks to be grilled about a recurring workflow.
 
 ## Skill Gate Protocol
 
 1. Inspect the request, existing brief, workspace notes, repository evidence,
    and recorded decisions. Resolve answerable facts before asking anything.
-2. Confirm explicit invocation, then open or create the workflow artifact.
-   Without explicit invocation, do not run this skill's protocol and do not
-   ask Loop Me questions.
+2. Confirm explicit invocation or a direct request to be grilled about a
+   recurring workflow, then open or create the workflow artifact. Without
+   either, do not run this skill's protocol and do not ask Loop Me questions.
 3. Define the single workflow in scope. Use `interviewing` for the questioning
    discipline: ask exactly one material question per message and attach a
    recommendation with a short reason.
