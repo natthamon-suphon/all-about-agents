@@ -19,8 +19,9 @@ until no material unknown could change the wrapper's output.
 
 ## Skill Gate Protocol
 
-1. Confirm that a wrapping skill owns the output. If no wrapper owns an
-   artifact, stop rather than interview for its own sake.
+1. Confirm that a wrapping skill owns the output: the workflow specification
+   that `loop-me` owns, or the design that `brainstorming` owns. If no wrapper
+   owns an artifact, stop rather than interview for its own sake.
 2. Inspect the request, existing brief, repository evidence, and decisions
    already recorded. Resolve facts that are answerable from those sources
    before asking the human. If a needed fact belongs outside the workspace,

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { posix, resolve } from "node:path";
 import test from "node:test";
 
 import { loadCore } from "../../installers/lib/load-core.mjs";
@@ -437,6 +437,35 @@ test("Claude renders every canonical skill and retains synthetic missing-source 
   assert.ok(missing.every((diagnostic) => diagnostic.severity === "error"));
   assert.ok(missing.every((diagnostic) => diagnostic.sourcePath === "core/inventory.json"));
   assert.ok(missing.every((diagnostic) => /owner: cycle-05-skill-remediation \(T017-T043\)/u.test(diagnostic.message)));
+});
+
+test("Claude bootstrap skill links to a resolvable factual capability guide", () => {
+  const skillPath = "skills/using-all-about-agents/SKILL.md";
+  const guidancePath = "skills/using-all-about-agents/references/adapter-capability-guidance.md";
+  for (const profileId of ["portable", "template"]) {
+    const files = fileMap(resultFor(profileId));
+    const link = files.get(skillPath).match(/\[Claude adapter capability guidance\]\(([^)]+)\)/u)?.[1];
+    assert.ok(link, `${profileId}: bootstrap skill must link the guidance`);
+    assert.equal(posix.normalize(posix.join(posix.dirname(skillPath), link)), guidancePath);
+    const guidance = files.get(guidancePath);
+    assert.ok(guidance, `${profileId}: guidance file must render`);
+    assert.match(guidance, /^# Claude adapter capability guidance$/mu);
+    assert.match(guidance, /CLAUDE_CONFIG_DIR/u);
+    assert.match(guidance, /docs\/semantic-mappings\.md/u);
+    assert.match(guidance, /`role-dispatch`[^\n]*`Agent`/u);
+    assert.match(guidance, /disallowedTools/u);
+    assert.match(guidance, /SessionStart[\s\S]*PostToolUse[\s\S]*PreCompact/u);
+    assert.match(guidance, /report that condition and stop or ask for direction/u);
+    assert.doesNotMatch(guidance, /Codex|CODEX_HOME|Antigravity|gemini|spawn_agent|mcp__/iu);
+    for (const other of ["handoff", "writing-skills"]) assert.doesNotMatch(files.get(`skills/${other}/SKILL.md`), /adapter capability guidance/iu, other);
+  }
+  const portable = fileMap(resultFor("portable")).get(guidancePath);
+  const template = fileMap(resultFor("template")).get(guidancePath);
+  assert.match(portable, /leaves the model and effort unchanged/u);
+  for (const value of [CLAUDE_MODEL_POLICY.template.model, ...CLAUDE_MODEL_POLICY.template.fallbackModel, CLAUDE_MODEL_POLICY.template.advisorModel, CLAUDE_MODEL_POLICY.template.env.CLAUDE_CODE_EFFORT_LEVEL]) {
+    assert.ok(template.includes(`\`${value}\``), `template guidance names ${value}`);
+    assert.equal(portable.includes(value), false, `portable guidance must not name ${value}`);
+  }
 });
 
 test("Claude read-only roles cannot receive Bash or write tools", () => {

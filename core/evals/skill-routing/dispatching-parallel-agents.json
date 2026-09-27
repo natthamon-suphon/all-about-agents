@@ -23,7 +23,7 @@
       "observables": [
         "Recognizes two useful independent items as sufficient; does not impose a three-item minimum.",
         "Records each item's inputs, outputs, dependencies, owner, disjoint scope, and verification before dispatch.",
-        "Dispatches fresh workers only after explicit approval and verified native availability, then waits for reports and preserves task and final review gates."
+        "Dispatches fresh workers only after the gate (recorded plan approval for any writer; a bounded brief and named owner for each read-only worker) and verified native availability, then waits for reports and preserves task and final review gates."
       ]
     },
     {
@@ -63,6 +63,22 @@
         "Does not imitate parallel dispatch or invent a guessed, cheaper, or shell-based substitute when native availability is false.",
         "Reports the exact missing capability and either uses an authorized sequential fallback or stops with a concrete blocker.",
         "Preserves the approved scope, verification evidence, and review gates under deadline pressure."
+      ]
+    },
+    {
+      "id": "DP-NONTRIGGER-reviewed-plan-tasks",
+      "critical": true,
+      "prompt": "The implementation plan is approved and subagents are available. Its five tasks are independent, but three of them edit the same service module. Please carry them out and have each task reviewed before the next one starts.",
+      "expected": {
+        "skillCheck": "not-required",
+        "routeTo": "subagent-driven-development",
+        "sharedWriteScope": true,
+        "noParallelDispatch": true
+      },
+      "observables": [
+        "Recognizes approved plan tasks that share one write scope as a nontrigger for parallel dispatch.",
+        "Routes the work to subagent-driven-development, which runs one implementer at a time with a review after each task.",
+        "Does not start concurrent writers on the same module."
       ]
     }
   ]

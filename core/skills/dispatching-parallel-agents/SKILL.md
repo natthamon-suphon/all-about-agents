@@ -5,6 +5,7 @@ evaluationCases:
   - DP-TRIGGER-two-independent-reads
   - DP-NONTRIGGER-shared-state
   - DP-PRESSURE-tool-unavailable
+  - DP-NONTRIGGER-reviewed-plan-tasks
 ---
 
 # Dispatching Parallel Agents
@@ -17,6 +18,8 @@ authorization, integration, evidence, and final decision.
 **Core principle:** parallelism is a conditional optimization, not a quota.
 Independence, ownership, and native availability must all be true before a
 parallel dispatch.
+
+`subagent-driven-development` runs approved plan tasks one implementer at a time in the shared worktree, with a review after each task; `dispatching-parallel-agents` runs independent items at the same time, and allows writers only with disjoint write scopes.
 
 ## The threshold, resolved
 
@@ -40,10 +43,13 @@ run them sequentially.
 Run this gate before dispatching any parallel worker:
 
 1. Inspect the request, repository instructions, current branch and worktree
-   state, dependencies, and the executable plan.
-2. Require a **recorded, explicit human approval** of the executable plan.
+   state, dependencies, and the executable plan when one exists.
+2. Require a **recorded, explicit human approval** of the executable plan for
+   any worker that writes files, Git state, or another mutable resource.
    A draft, issue description, design approval, silence, or urgency is not
-   execution authorization. If approval is absent, return to planning.
+   execution authorization. If approval for a writer is absent, return to
+   planning. Read-only workers need no plan approval, but each still needs a
+   bounded brief and a named owner.
 3. Enumerate the work items and record why each is useful and independent.
    Record each item's inputs, outputs, dependencies, verification command, and
    one owner. Do not infer independence from labels or file names.
@@ -67,7 +73,7 @@ Each worker receives only the bounded brief it needs: its independent question,
 inputs, exact output shape, mutation scope (if any), safety constraints, and
 verification command. Do not leak unrelated conversation context or secrets.
 
-Start the approved workers concurrently only after the gate. Wait for every
+Start the workers concurrently only after the gate. Wait for every
 worker and preserve its report. The coordinator then checks that scopes did not
 drift, integrates in a deterministic order, and resolves conflicts rather than
 letting workers merge each other's work.
@@ -80,9 +86,9 @@ the workflow and is recorded; it is never hidden to preserve throughput.
 ## Non-triggers and safe fallback
 
 Do not dispatch in parallel for a single task, dependent steps, shared mutable
-state, overlapping writers, an unapproved plan, or work whose split is not
-useful. Serialize the work or return to planning with the missing decision
-named.
+state, overlapping writers, writers without an approved plan, or work whose
+split is not useful. Serialize the work or return to planning with the missing
+decision named.
 
 When native dispatch is unavailable, report the exact unavailable capability
 and status. A sequential run is valid only when it is authorized and preserves
@@ -101,7 +107,7 @@ cheaper, guessed, or shell-based substitute.
 |---|---|
 | At least two useful items, independent results, disjoint ownership, native dispatch verified | Parallel dispatch may proceed after the Skill Gate Protocol |
 | One item, or two items that are trivial, dependent, or share mutable state | Do not dispatch; combine or run sequentially |
-| Native dispatch unavailable or approval missing | Do not imitate parallelism; use authorized sequential fallback or stop |
+| Native dispatch unavailable, or plan approval missing for a writer | Do not imitate parallelism; use authorized sequential fallback or stop |
 | Any overlapping writer or unresolved review/verification finding | Serialize or stop and replan |
 
 ## Common mistakes

@@ -7,6 +7,8 @@ never weaken them.
 
 - Write every document in the language of the user's latest main message.
   If the user writes Thai, the document is Thai.
+- Once a document has a language, keep it in every update and new version,
+  unless the user asks for another language.
 - Keep technical terms, IDs (see IDs below), file names, and status words in
   English.
 - If the user asks for a language, use it. Their choice wins.
@@ -86,9 +88,9 @@ rebuild it from memory.
 
 ## IDs
 
-Each ID type has one meaning in every document: Q# question, D# decision,
-A# assumption, O# open question, R# research item, REQ# requirement, T# task,
-F# review finding.
+Each ID type has one meaning in every document: Q# question (Q0 is the
+opening message of an interview), D# decision, A# assumption, O# open
+question, R# research item, REQ# requirement, T# task, F# review finding.
 
 - Keep the IDs of earlier documents. Never renumber them.
 - Number a new item after the highest ID of its type.
@@ -107,4 +109,4 @@ not get this header.
 | Date | YYYY-MM-DD |
 | Status | draft, in progress, or complete |
 | Language | the document language |
-| Sources | earlier documents used, or "this chat" |
+| Sources | earlier documents, attached files by name, and "this chat" if used |

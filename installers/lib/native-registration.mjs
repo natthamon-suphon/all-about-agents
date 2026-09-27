@@ -1,5 +1,5 @@
 import { lstatSync, readFileSync, realpathSync } from "node:fs";
-import { lstat as defaultLstat, readFile as defaultReadFile } from "node:fs/promises";
+import { lstat as defaultLstat, readdir as defaultReaddir, readFile as defaultReadFile, realpath as defaultRealpath } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, relative, resolve, join } from "node:path";
 
@@ -19,6 +19,11 @@ const SURFACE_SET = SUPPORTED_SURFACE_SET;
 const PROFILE_SET = new Set(["portable", "template"]);
 const SHA256 = /^[0-9a-f]{64}$/u;
 const AUTHENTIC_PLANS = new WeakSet();
+const PLUGIN_SELECTOR = "all-about-agents@all-about-agents";
+// Observed in a live Claude cache: product in-use markers and the logs the
+// package hooks append beside themselves. Everything else must match.
+const RUNTIME_FILE_PREFIXES = [".in_use/", "hooks/audit/", "hooks/checkpoints/"];
+const RUNTIME_FILES = new Set([".all-about-agents/state.json"]);
 
 function object(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -236,8 +241,9 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push(deployFile("claude-statusline-windows-launcher-deploy", "statusline/statusline.ps1", "statusline/statusline.ps1"));
     actions.push(deployFile("claude-statusline-posix-launcher-deploy", "statusline/statusline.sh", "statusline/statusline.sh", { mode: 0o755 }));
     actions.push(processAction("claude-marketplace-add", "claude", ["plugin", "marketplace", "add", pkg, "--scope", "user"], pkg, "CLAUDE_CONFIG_DIR", "none"));
-    actions.push(processAction("claude-plugin-install", "claude", ["plugin", "install", "all-about-agents@all-about-agents", "--scope", "user"], pkg, "CLAUDE_CONFIG_DIR", "none"));
+    actions.push(processAction("claude-plugin-install", "claude", ["plugin", "install", PLUGIN_SELECTOR, "--scope", "user"], pkg, "CLAUDE_CONFIG_DIR", "none"));
     actions.push(processAction("claude-plugin-list", "claude", ["plugin", "list", "--json"], pkg, "CLAUDE_CONFIG_DIR", "json", false));
+    actions.push({ id: "claude-plugin-cache-check", kind: "plugin-cache-check", probe: "claude-plugin-list", mutates: false, required: true, expectedProbe: "installed-copy-matches-package" });
     actions.push(manualAction("claude-reload", "Restart Claude Code or reload the plugin before checking native behavior."));
   } else if (surface === "codex") {
     actions.push(deployFile("codex-instructions-deploy", "AGENTS.md", "AGENTS.md"));
@@ -247,8 +253,9 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
       actions.push(deployFile(`codex-agent-${role}-deploy`, `agents/${role}.toml`, `agents/${role}.toml`));
     }
     actions.push(processAction("codex-marketplace-add", "codex", ["plugin", "marketplace", "add", pkg, "--json"], pkg, "CODEX_HOME", "json"));
-    actions.push(processAction("codex-plugin-install", "codex", ["plugin", "add", "all-about-agents@all-about-agents", "--json"], pkg, "CODEX_HOME", "json"));
+    actions.push(processAction("codex-plugin-install", "codex", ["plugin", "add", PLUGIN_SELECTOR, "--json"], pkg, "CODEX_HOME", "json"));
     actions.push(processAction("codex-plugin-list", "codex", ["plugin", "list", "--available", "--json"], pkg, "CODEX_HOME", "json", false));
+    actions.push({ id: "codex-plugin-source-check", kind: "git-source-check", executable: "git", prefixArgs: ["-c", "core.fsmonitor=false", "rev-parse", "--show-prefix"], statusArgs: ["-c", "core.fsmonitor=false", "--no-optional-locks", "status", "--porcelain", "--untracked-files=all", "--", "."], cwd: pkg, environmentKeys: [], mutates: false, required: true, expectedProbe: "own-repository-clean-working-tree" });
     actions.push(manualAction("codex-hooks-trust", "Open `/hooks` in Codex and review/trust the registered hook only if the product presents that step."));
   } else if (surface === "antigravity") {
     // GEMINI.md is not a superset of the live file the way CLAUDE.md is: an
@@ -370,6 +377,128 @@ function revalidatePlan(plan, { validateState = true } = {}) {
   }
 }
 
+function fsOperation(fileSystem, name, fallback) {
+  return typeof fileSystem?.[name] === "function" ? fileSystem[name].bind(fileSystem) : fallback;
+}
+
+// File names come from the product cache; escape control characters so a
+// crafted name cannot forge extra lines in the text report or on stderr.
+function printable(value) {
+  return String(value).replace(/[\u0000-\u001f\u007f-\u009f]/gu, (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`);
+}
+
+function runtimeFile(relativePath) {
+  return RUNTIME_FILES.has(relativePath) || RUNTIME_FILE_PREFIXES.some((prefix) => relativePath.startsWith(prefix));
+}
+
+function contains(root, candidate) {
+  const suffix = relative(root, candidate);
+  return !isAbsolute(suffix) && suffix.split(/[\\/]/u)[0] !== "..";
+}
+
+// Symlinks are never followed: a linked folder is reported as drift, and an
+// owned file whose real parent leaves the copy is drift without being read.
+async function treeDrift(root, expected, fileSystem) {
+  const inspect = fsOperation(fileSystem, "lstat", defaultLstat);
+  const read = fsOperation(fileSystem, "readFile", defaultReadFile);
+  const list = fsOperation(fileSystem, "readdir", defaultReaddir);
+  const canonical = fsOperation(fileSystem, "realpath", defaultRealpath);
+  const realRoot = await canonical(root);
+  const drift = new Set();
+  for (const [relativePath, sha256] of expected) {
+    const path = join(root, ...relativePath.split("/"));
+    try {
+      if (!contains(realRoot, await canonical(dirname(path)))) {
+        drift.add(relativePath);
+        continue;
+      }
+      const metadata = await inspect(path);
+      if (!metadata.isFile() || hashBytes(await read(path)) !== sha256) drift.add(relativePath);
+    } catch (error) {
+      if (error?.code !== "ENOENT" && error?.code !== "ENOTDIR") throw error;
+      drift.add(relativePath);
+    }
+  }
+  const visit = async (directory, prefix) => {
+    for (const entry of await list(directory, { withFileTypes: true })) {
+      const relativePath = `${prefix}${entry.name}`;
+      if (entry.isDirectory()) await visit(join(directory, entry.name), `${relativePath}/`);
+      else if (!expected.has(relativePath) && !runtimeFile(relativePath)) drift.add(relativePath);
+    }
+  };
+  await visit(root, "");
+  return [...drift].sort();
+}
+
+async function claudeCacheCheck(plan, listing, fileSystem) {
+  const commands = [`claude plugin uninstall ${PLUGIN_SELECTOR} --scope user --keep-data`, `claude plugin install ${PLUGIN_SELECTOR} --scope user`];
+  const uncomparable = "so the copy Claude loads cannot be compared with the package";
+  const entry = Array.isArray(listing) ? listing.find((candidate) => object(candidate) && candidate.id === PLUGIN_SELECTOR && candidate.scope === "user") : undefined;
+  if (!entry) return { reason: `claude plugin list --json has no user-scope entry for ${PLUGIN_SELECTOR}, ${uncomparable}`, commands };
+  if (typeof entry.installPath !== "string" || entry.installPath.trim() === "") {
+    return { reason: `the user-scope ${PLUGIN_SELECTOR} entry in claude plugin list --json has no installPath, ${uncomparable}`, commands };
+  }
+  const installPath = resolve(plan.productRoot, entry.installPath);
+  const pluginCache = join(plan.productRoot, "plugins", "cache");
+  try {
+    assertSafeDestinationRoot(installPath, { allowedProductRoots: [pluginCache] });
+  } catch (error) {
+    return { reason: `the plugin copy Claude reports is outside the plugin cache ${pluginCache} or unsafe (${printable(error.message)}), ${uncomparable}`, commands };
+  }
+  const { ownershipPrefix, ownership } = validateManagedPackage(plan.packageRoot, plan.surface, plan.profile);
+  const expected = new Map([...ownership].map(([relativePath, sha256]) => [relativePath.slice(ownershipPrefix.length), sha256]));
+  let drift;
+  try {
+    await fsOperation(fileSystem, "lstat", defaultLstat)(installPath);
+    drift = await treeDrift(installPath, expected, fileSystem);
+  } catch (error) {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return { reason: `the plugin copy Claude reports at ${printable(installPath)} does not exist`, commands };
+    if (error?.code === "EACCES" || error?.code === "EPERM") return { reason: `the plugin copy Claude reports at ${printable(installPath)} cannot be read (${error.code}), ${uncomparable}`, commands };
+    throw error;
+  }
+  if (drift.length === 0) return { reason: null, result: { comparedFiles: expected.size } };
+  return { reason: `Claude loads the plugin from ${printable(installPath)}, which differs from the package in ${drift.length} file(s), such as ${drift.slice(0, 3).map(printable).join(", ")}. An install with an unchanged plugin version does not refresh that copy.`, commands };
+}
+
+// process-runner merges envOverrides into the ambient environment and cannot
+// unset a key, so git gets a full copy without inherited GIT_* repository
+// redirects. The copy is never written to a report.
+function gitEnvironment() {
+  return Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^GIT_/iu.test(key)));
+}
+
+async function codexSourceCheck(plan, action, runProcess) {
+  const git = async (args) => {
+    const result = await runProcess({ executable: action.executable, args: [...args], cwd: action.cwd, env: gitEnvironment(), shell: false });
+    if (!result || typeof result !== "object") throw pathError("invalid-process-result", `native action ${action.id} returned an invalid process result`);
+    return result;
+  };
+  const failed = (result) => result.timedOut || result.outputTooLarge || result.exitCode !== 0;
+  const prefix = await git(action.prefixArgs);
+  if (prefix.unavailable) return { reason: "git is unavailable, so it cannot be checked that Codex serves the current package. Install git, then register again.", commands: [] };
+  if (failed(prefix) || String(prefix.stdout ?? "").trim() !== "") {
+    return { reason: "the package root must be its own Git repository, because Codex installs a Git clone of it. See docs/maintenance/native-registration.md, section Codex CLI.", commands: [] };
+  }
+  const status = await git(action.statusArgs);
+  if (status.unavailable || failed(status)) return { reason: "git status could not read the package root, so it cannot be checked that Codex serves the current package.", commands: [] };
+  if (String(status.stdout ?? "").trim() !== "") {
+    const reason = "Codex installs a Git clone of the package root, and the package working tree differs from its HEAD commit, so Codex keeps serving the last commit.";
+    // A quote in the path would break out of the single-quoted argument.
+    if (plan.packageRoot.includes("'")) return { reason: `${reason} The package root contains a single quote, so no copyable commands are printed; follow docs/maintenance/native-registration.md, section Codex CLI.`, commands: [] };
+    return {
+      reason,
+      commands: [
+        `git -C '${plan.packageRoot}' status --short`,
+        `git -C '${plan.packageRoot}' add -A`,
+        `git -C '${plan.packageRoot}' -c user.name=all-about-agents -c user.email=all-about-agents@invalid.example commit -m "Update local Codex plugin source"`,
+        `codex plugin remove ${PLUGIN_SELECTOR} --json`,
+        `codex plugin add ${PLUGIN_SELECTOR} --json`
+      ]
+    };
+  }
+  return { reason: null, result: { exitCode: 0 } };
+}
+
 function failedLifecycle(plan, error) {
   return {
     ...plan.lifecycle,
@@ -437,7 +566,9 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
   }
   const completed = [];
   const actionReports = [];
+  const probes = new Map();
   let overlay = null;
+  let stale = null;
   for (let index = 0; index < plan.actions.length; index += 1) {
     const action = plan.actions[index];
     try {
@@ -446,6 +577,14 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
       revalidatePlan(plan, { validateState: index === 0 || action.kind === "process" || action.kind === "settings-overlay" });
       if (action.kind === "manual") {
         actionReports.push(reportAction(action, "manual-required"));
+      } else if (action.kind === "plugin-cache-check" || action.kind === "git-source-check") {
+        const check = action.kind === "plugin-cache-check" ? await claudeCacheCheck(plan, probes.get(action.probe), fileSystem) : await codexSourceCheck(plan, action, runProcess);
+        if (check.reason !== null) {
+          stale ??= check.reason;
+          actionReports.push(reportAction(action, "manual-required", { reason: check.reason, commands: check.commands }));
+          continue;
+        }
+        actionReports.push(reportAction(action, "complete", { result: check.result }));
       } else if (action.kind === "settings-overlay") {
         const transformOverlay = action.transform ? (bytes) => transformCopyContent(action, bytes, plan) : null;
         overlay = await mergeSettingsOverlay({ targetPath: action.targetPath, overlayPath: action.overlayPath, expectedOverlayHash: action.expectedOverlayHash, allowedRoot: action.allowedRoot, transformOverlay, fileSystem });
@@ -480,17 +619,21 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
         if (result.outputTooLarge) throw pathError("native-process-output-too-large", `${action.id} exceeded the bounded output capture`);
         if (result.exitCode !== 0) throw pathError("native-process-failed", `${action.id} exited with code ${String(result.exitCode)}`);
         const parsed = probeOutput(action, result);
+        probes.set(action.id, parsed);
         actionReports.push(reportAction(action, "complete", { result: { exitCode: result.exitCode, probe: parsed === null ? "not-run" : "valid-json" } }));
       }
       if (action.kind !== "manual") completed.push(action);
     } catch (error) {
-      const failed = { action: reportAction(action, "failed", { reason: error.message }), reason: error.message, error: { code: error.code || "native-action-failed", message: error.message } };
+      const message = printable(error.message);
+      const failed = { action: reportAction(action, "failed", { reason: message }), reason: message, error: { code: error.code || "native-action-failed", message } };
       actionReports.push(failed.action);
       return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: completed.length > 0 ? "partial" : "failed", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, instructionRoot: plan.instructionRoot, actions: actionReports, completed, failed, error: failed.error, notAttempted: plan.actions.slice(index + 1), lifecycle: failedLifecycle(plan, failed.error), ...(overlay ? { overlay } : {}) }, plan);
     }
   }
-  const lifecycle = { ...plan.lifecycle, registered: { status: "not-run", evidence: "Commands completed, but native semantic registration/discovery was not independently observed; run the product discovery probe and record T07 evidence." } };
-  return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: "complete", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, instructionRoot: plan.instructionRoot, actions: actionReports, completed, failed: null, notAttempted: [], lifecycle, ...(overlay ? { overlay } : {}) }, plan);
+  const registered = stale
+    ? { status: "fail", evidence: "The product still serves an older copy of the package; run the commands of the manual-required check, then register again." }
+    : { status: "not-run", evidence: "Commands completed, but native semantic registration/discovery was not independently observed; run the product discovery probe and record T07 evidence." };
+  return sanitizeReport({ schemaVersion: 1, action: "register", mode, status: stale ? "manual-required" : "complete", surface: plan.surface, profile: plan.profile, packageRoot: plan.packageRoot, productRoot: plan.productRoot, instructionRoot: plan.instructionRoot, actions: actionReports, completed, failed: null, notAttempted: [], lifecycle: { ...plan.lifecycle, registered }, ...(stale ? { error: { code: "installed-copy-not-confirmed", message: stale } } : {}), ...(overlay ? { overlay } : {}) }, plan);
 }
 
 export function resolveNativeProductRoot(surface, { env = process.env, homeDir = homedir(), platform = process.platform } = {}) {
@@ -509,7 +652,11 @@ export function resolveNativeInstructionRoot(surface, { env = process.env, homeD
 
 export function formatNativeRegistrationText(report) {
   const lines = [`action=${report.action} mode=${report.mode} status=${report.status}`, `surface=${report.surface} profile=${report.profile}`, `productRoot=${report.productRoot ?? "<NONE>"} instructionRoot=${report.instructionRoot ?? "<NONE>"}`];
-  for (const action of report.actions || []) lines.push(`${action.status}\t${action.id}\t${action.kind}`);
-  if (report.error) lines.push(`error\t${report.error.code}\t${report.error.message}`);
+  for (const action of report.actions || []) {
+    lines.push(`${action.status}\t${action.id}\t${action.kind}`);
+    if (action.status === "manual-required" && action.reason) lines.push(`reason\t${action.id}\t${printable(action.reason)}`);
+    for (const command of action.commands || []) lines.push(`run\t${action.id}\t${printable(command)}`);
+  }
+  if (report.error) lines.push(`error\t${report.error.code}\t${printable(report.error.message)}`);
   return `${lines.join("\n")}\n`;
 }

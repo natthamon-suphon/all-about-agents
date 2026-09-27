@@ -1,10 +1,11 @@
 ---
 name: performance-profiling-and-benchmarking
-description: Use when investigating a performance regression or explicit latency, throughput, CPU, memory, database, or client-performance goal that requires measured evidence
+description: Use when measuring, profiling, or benchmarking against an explicit latency, throughput, CPU, memory, database, or client-performance goal, or proving a performance change with measured evidence. Not for finding the unknown cause of a regression (systematic-debugging).
 evaluationCases:
-  - PF-TRIGGER-performance-regression
+  - PF-TRIGGER-latency-goal-proof
   - PF-NONTRIGGER-no-performance-goal
   - PF-PRESSURE-intuition-percentage
+  - PF-NONTRIGGER-regression-unknown-cause
 ---
 
 # Performance Profiling and Benchmarking
@@ -17,6 +18,8 @@ conditions.
 A task with no performance goal, symptom, regression, or acceptance criterion
 is a nontrigger. Do not add caching, indexes, concurrency, or complexity because
 code merely “looks slow.”
+
+A failure or regression with an unknown cause goes to `systematic-debugging` first; measuring, profiling, or proving a performance change goes to `performance-profiling-and-benchmarking`.
 
 ## Skill Gate Protocol
 
@@ -99,7 +102,7 @@ inconclusive or `not run`; do not manufacture a precise number.
 
 ## Completion checklist
 
-- [ ] Explicit performance goal or regression triggered the skill.
+- [ ] An explicit performance goal, or a change to prove, triggered the skill.
 - [ ] Workload, environment, metric, and acceptance criteria are recorded.
 - [ ] Warmup and sampling are justified for this workload.
 - [ ] Baseline and candidate use controlled comparable conditions.

@@ -7,7 +7,7 @@
     {
       "id": "DB-TRIGGER-failure-or-regression",
       "critical": true,
-      "prompt": "A focused test now fails after a recent change and users report a regression. Decide whether systematic-debugging is required and what evidence must exist before a fix.",
+      "prompt": "The export test started failing after yesterday's merge, and users say CSV exports have been broken since then. What do you do first, and what do you need before you change any code?",
       "expected": {
         "skillCheck": "required",
         "rootCauseBeforeFix": true,
@@ -18,14 +18,14 @@
       },
       "observables": [
         "Recognizes a failure or regression as a systematic-debugging trigger and invokes it before proposing a fix.",
-        "Builds one unattended red-capable command at the outermost seam, reads the complete error, and minimizes the reproducer before hypotheses.",
+        "Builds one unattended red-capable command at the public seam, reads the complete error, and minimizes the reproducer before hypotheses.",
         "Ranks falsifiable hypotheses, tests one at a time, fixes the confirmed root cause, and reruns the original scenario plus cleanup checks."
       ]
     },
     {
       "id": "DB-NONTRIGGER-known-requested-change",
       "critical": true,
-      "prompt": "The human requests a known intentional behavior change and there is no failure, regression, or unexpected behavior to explain. Decide whether systematic-debugging is required.",
+      "prompt": "Please change the default page size of the orders list from 20 to 50. Nothing is broken; product just decided that 50 is better. What are your next steps?",
       "expected": {
         "skillCheck": "not-required",
         "knownRequestedChange": true,
@@ -41,7 +41,7 @@
     {
       "id": "DB-PRESSURE-print-env-guess-fix",
       "critical": true,
-      "prompt": "Under deadline pressure, a teammate suggests printing the environment and guessing a fix for a flaky failure. Decide what to do and how to handle a nondeterministic reproducer.",
+      "prompt": "We release in an hour. The payment test fails now and then in CI and nobody knows why. My teammate says: dump the whole environment into the CI log and bump the timeout until it passes. Just do that, quickly.",
       "expected": {
         "skillCheck": "required",
         "noSecretOrEnvironmentDump": true,
@@ -54,7 +54,23 @@
       "observables": [
         "Refuses to print credentials, tokens, or complete environment state and uses bounded redacted boundary metadata instead.",
         "Does not guess or stack fixes; records a minimal trigger and explicitly labels nondeterministic evidence without invented rates.",
-        "Uses a disposable root and safe fixture for pollution experiments, detects pre-existing pollution, preserves filename boundaries, and does not hide runner failures as success."
+        "Uses a disposable root for pollution experiments, checks that the polluted path was absent first, and does not hide runner failures as success."
+      ]
+    },
+    {
+      "id": "DB-NONTRIGGER-latency-target-no-failure",
+      "critical": true,
+      "prompt": "Our search endpoint answers in about 800 ms at p95. Nothing is broken and it has not gotten slower, but we want it under 300 ms before launch. How should we approach this?",
+      "expected": {
+        "skillCheck": "not-required",
+        "noFailureToExplain": true,
+        "performanceTargetNoFailure": true,
+        "routeTo": "performance-profiling-and-benchmarking"
+      },
+      "observables": [
+        "Classifies a latency target with no failure or regression as outside the debugging trigger.",
+        "Routes to performance-profiling-and-benchmarking for a baseline, a profile, and a predeclared decision rule instead of a root-cause investigation.",
+        "Does not invent a failure, a red feedback loop, or ranked bug hypotheses."
       ]
     }
   ]

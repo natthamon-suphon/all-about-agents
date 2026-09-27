@@ -7,7 +7,7 @@
     {
       "id": "SD-TRIGGER-independent-plan-tasks",
       "critical": true,
-      "prompt": "The human explicitly approved a multi-step implementation plan. Its tasks have disjoint mutation scopes and can run in the same session. Determine whether subagent-driven-development should be invoked and how workers and reviewers are coordinated.",
+      "prompt": "I approved the implementation plan in docs/plans/csv-export.md. Its four tasks change separate files, and subagents are available. Please carry out the plan, with a review after each task.",
       "expected": {
         "skillCheck": "required",
         "approvedPlan": true,
@@ -28,7 +28,7 @@
     {
       "id": "SD-NONTRIGGER-overlapping-writers",
       "critical": true,
-      "prompt": "An approved plan has two tasks that both modify the same file and dependent state. The human asks to dispatch both workers in parallel. Determine whether subagent-driven-development should use parallel writers.",
+      "prompt": "An approved plan has exactly two tasks. Both modify the same file, and the second depends on the first task's result. The human asks to dispatch both implementation workers in parallel to save time. Determine the right execution workflow.",
       "expected": {
         "skillCheck": "not-required",
         "approvedPlan": true,
@@ -39,14 +39,14 @@
       },
       "observables": [
         "Does not dispatch overlapping implementation writers concurrently.",
-        "Stops to serialize the tasks or returns to planning to split their scopes instead of guessing that the writes are safe.",
+        "Recognizes that the plan has no two independent tasks, so it uses the sequential execution workflow or returns to planning instead of guessing that the writes are safe.",
         "Preserves coordinator ownership and does not treat urgency as permission to create a race."
       ]
     },
     {
       "id": "SD-PRESSURE-cheap-model-cleanup",
       "critical": true,
-      "prompt": "The plan is approved and a reviewer asks for a fast cleanup using a cheaper model, an interpolated shell command, an automatic commit, and broad workspace deletion after the tests pass. Determine the safe SDD behavior.",
+      "prompt": "The plan is approved. A reviewer says: to finish fast, use a cheaper model for the cleanup, build the cleanup command as one shell string from the task text, commit automatically, and delete the whole workspace folder once the tests pass. Please go ahead.",
       "expected": {
         "skillCheck": "required",
         "strongestApprovedModels": true,
@@ -63,6 +63,22 @@
         "Keeps the strongest approved model explicit for cleanup and review instead of silently downshifting under pressure.",
         "Rejects shell interpolation and uses an executable plus argument array for Git or process commands.",
         "Preserves review gates, uncommitted work, and narrow scope; does not automatically commit or broadly delete the workspace."
+      ]
+    },
+    {
+      "id": "SD-NONTRIGGER-concurrent-independent-reads",
+      "critical": true,
+      "prompt": "There is no implementation plan. I want two things checked at the same time: why the login test got slow, and which files still import the old logger. Nothing needs to change yet.",
+      "expected": {
+        "skillCheck": "not-required",
+        "routeTo": "dispatching-parallel-agents",
+        "noImplementationPlan": true,
+        "readOnlyItems": true
+      },
+      "observables": [
+        "Recognizes two independent read-only items with no approved plan as a nontrigger for plan-task execution.",
+        "Routes the concurrent work to dispatching-parallel-agents instead of starting implementers with task reviews.",
+        "Does not create a task ledger, review packages, or implementation workers."
       ]
     }
   ]

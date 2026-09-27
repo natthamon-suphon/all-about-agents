@@ -1,27 +1,32 @@
-# Session State Snapshot - <TOPIC_SLUG>
+# <Handoff|Snapshot>: <TOPIC_SLUG>
 
 - **Snapshot Timestamp:** <ISO_TIMESTAMP>
-- **Lead Goal:** <ONE_LINE_OBJECTIVE>
-- **Active Plan File:** <PLAN_FILE_PATH>
+- **Goal:** <one or two lines>
+- **Active Plan File:** <PLAN_FILE_PATH, or none>
 
----
+## State
 
-## Execution State & Milestones
+States: pending, in progress, completed, blocked, failed, not run, skipped.
+Give a reason for blocked, failed, not run, and skipped.
 
-| Task | Name / Component | Status | Notes / Verdict |
-|---|---|---|---|
-| <task> | <component> | COMPLETE / IN_PROGRESS / BLOCKED / PENDING | <evidence-backed note> |
+| Task | State | Evidence or reason |
+|---|---|---|
+| <task> | <state> | <observed evidence for completed work; reason otherwise> |
 
-## Inviolable Architectural Decisions
+## Decisions
 
-1. **<Decision>:** <rationale and boundary>
+- <decision> — <reason and boundary>; cite the artifact instead of restating it.
 
-## Verified State & Test Evidence
+## Evidence
 
-- **Completed evidence:** <observed commands and files>
-- **Unverified items:** <check> — `not run`: <reason>
-- **Blockers:** <blocker, or none>
+- command: `<structured command record>` — result: <observed result>
+- files: <repository-relative paths inspected>
+- unavailable: <check> — not run: <reason>
 
-## Immediate Next Step
+## Suggested skills
 
-> **Resume here:** <one concrete action that requires no guessing>
+- <skill> — invoke when <condition>
+
+## Next concrete step
+
+<exactly one action the next session can take without guessing>

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Extract one task's full text from an implementation plan. Cross-platform wrapper delegating to Node.js when available.
 set -euo pipefail
+CDPATH=''
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 if command -v node >/dev/null 2>&1; then
-  exec node "${SCRIPT_DIR}/task-brief.js" "$@"
+  exec node "${SCRIPT_DIR}/task-brief.cjs" "$@"
 fi
 
 if [ $# -lt 2 ] || [ $# -gt 3 ]; then
@@ -16,25 +17,50 @@ fi
 plan=$1
 n=$2
 [ -f "$plan" ] || { echo "no such plan file: $plan" >&2; exit 2; }
+case $n in
+  '' | *[!0-9]*) echo "invalid task number: $n" >&2; exit 2 ;;
+esac
+n=$((10#$n))
 
+plan_dir=$(cd "$(dirname "$plan")" && pwd -P)
+dir="$plan_dir/sdd"
+bad_out() { echo "OUTFILE must be inside ${dir} and not start with '.': ${out}" >&2; exit 2; }
+refuse_linked_sdd() {
+  if [ -L "$dir" ]; then
+    echo "refusing a symlinked sdd/ folder: ${dir}" >&2
+    exit 2
+  fi
+}
 if [ $# -eq 3 ]; then
   out=$3
+  case ${out##*/} in .*) bad_out ;; esac
+  out_parent=$(dirname "$out")
+  [ "${out_parent##*/}" = sdd ] && [ "$(cd "$(dirname "$out_parent")" 2>/dev/null && pwd -P)" = "$plan_dir" ] || bad_out
 else
-  dir=$("${SCRIPT_DIR}/sdd-workspace" "$plan")
   out="$dir/task-${n}-brief.md"
 fi
 
+"${SCRIPT_DIR}/sdd-workspace" "$plan" >/dev/null
+refuse_linked_sdd
+tmp=$(mktemp "$dir/.tmp-brief.XXXXXX")
+trap 'rm -f "$tmp"' EXIT
 awk -v n="$n" '
   /^```/ { infence = !infence }
   !infence && /^#+[ \t]+Task[ \t]+[0-9]+/ {
-    intask = ($0 ~ ("^#+[ \t]+Task[ \t]+" n "([^0-9]|$)"))
+    intask = ($0 ~ ("^#+[ \t]+Task[ \t]+0*" n "([^0-9]|$)"))
   }
   intask { print }
-' "$plan" > "$out"
+' "$plan" > "$tmp"
 
-if [ ! -s "$out" ]; then
+if [ ! -s "$tmp" ]; then
   echo "task ${n} not found in ${plan} (no heading matching 'Task ${n}')" >&2
   exit 3
 fi
 
+if [ -L "$out" ] || { [ -e "$out" ] && [ ! -f "$out" ]; }; then
+  echo "refusing ${out}: not a regular file" >&2
+  exit 2
+fi
+refuse_linked_sdd
+mv -f -- "$tmp" "$out"
 echo "wrote ${out}: $(wc -l < "$out" | tr -d ' ') lines"

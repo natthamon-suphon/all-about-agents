@@ -21,7 +21,7 @@
         "Creates or updates the approved semantic handoff artifact with the goal, state, decisions, evidence, suggested skills, and one concrete next step.",
         "Redacts secrets and labels untrusted source text as data before handing it to another session.",
         "Uses a live operation only with explicit authority and a documented adapter-native structured capability; otherwise records it as not run.",
-        "Separates completed, in-flight, blocked, and not-run work and makes no unsupported success claim."
+        "Records each task with one canonical state (pending, in progress, completed, blocked, failed, not run, skipped) and makes no unsupported success claim."
       ]
     },
     {

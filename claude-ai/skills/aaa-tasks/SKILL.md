@@ -25,7 +25,7 @@ Copy this checklist into your reply and keep it current:
 
 ```text
 - [ ] 1. Source read; one-step check done
-- [ ] 2. Header written
+- [ ] 2. Goal and criteria written
 - [ ] 3. Tasks written with done checks and flags
 - [ ] 4. Unknowns placed; coverage checked
 - [ ] 5. Self-review passed; task list shown
@@ -40,7 +40,7 @@ Copy this checklist into your reply and keep it current:
   even when the user asks for a minimum number of tasks: padded tasks hide the
   real work.
 
-## 2. Header
+## 2. Goal and criteria
 
 Write the goal, the acceptance criteria, and the non-goals, each with its
 source. Copy the acceptance criteria from the brief's success criteria. With
@@ -66,8 +66,9 @@ Use the task table in the [task list template](templates/tasks.md). Rules:
   change an account, a setting, or a connected system), or when it needs a
   decision the source does not make.
   Example: "yes: sends a message".
-- **Parallel-safe.** Mark it `yes` only when the task needs no output from an
-  unfinished task and changes nothing another task also changes.
+- **Parallel-safe.** Mark it `yes` when the task changes nothing that another
+  task also changes. A dependency alone does not make it `no`: the run loop
+  still waits for Depends on.
 - **Depends on.** List the T# it needs. Order the table so that every
   dependency comes first.
 - **Status** starts as `pending`.
@@ -78,7 +79,8 @@ line why: they tell the run loop when a task is finished and when it must
 stop.
 
 If the user sets a task limit, group related work into fewer tasks and keep
-full coverage. If the limit makes that impossible, say which requirement would
+full coverage. Keep each needs-approval step in its own task, apart from safe
+work. If the limit makes that impossible, say which requirement would
 be dropped and ask.
 
 ## 4. Unknowns and coverage
@@ -112,7 +114,8 @@ Before you show the list, check that:
 - dependencies come before the tasks that need them;
 - coverage is complete, and no task falls outside the source.
 
-Under the list, add one line: "Self-review: passed", or the fixes you made.
+In your reply, under the list, add one line: "Self-review: passed", or the
+fixes you made.
 Write `03-tasks.md` in the tier the conventions choose. Leave the run log
 empty. Then offer the next step: work through the tasks, for example with
 `/aaa-run`.

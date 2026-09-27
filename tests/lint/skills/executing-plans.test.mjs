@@ -98,3 +98,11 @@ test("core loader exposes executing-plans metadata and routing links", async () 
   assert.deepEqual(skill.evaluationCases, requiredCases);
   assert.deepEqual(core.evals.find((entry) => entry.id === "executing-plans-routing")?.cases.map((entry) => entry.id), requiredCases);
 });
+
+test("executing-plans runs inline in the current session and records every checkpoint state", async () => {
+  const skill = await readFile(skillPath, "utf8");
+  assert.doesNotMatch(skill, /separate session/iu);
+  assert.match(skill, /^description:.*current session/mu);
+  assert.match(skill, /`subagent-driven-development`/u);
+  assert.match(skill, /^State: pending \| in progress \| completed \| blocked \| failed \| not run \| skipped \(with a reason\)$/mu);
+});

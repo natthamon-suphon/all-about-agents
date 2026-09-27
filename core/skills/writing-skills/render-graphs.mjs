@@ -16,7 +16,9 @@ function parseArgs(argv) {
     if (value === "--check") result.check = true;
     else if (value === "--overwrite") result.overwrite = true;
     else if (value === "--output-dir") {
-      result.outputDir = argv[index + 1] ?? null;
+      const directory = argv[index + 1];
+      if (directory === undefined || directory.startsWith("--")) throw new RenderError("--output-dir needs a directory value");
+      result.outputDir = directory;
       index += 1;
     } else if (value.startsWith("--")) throw new RenderError(`unknown option: ${value}`);
     else result.inputs.push(value);
@@ -56,7 +58,13 @@ function checkDot(executable) {
 function inputRecord(value) {
   const path = resolve(value);
   if (extname(path).toLowerCase() !== ".dot") throw new RenderError(`input must be a .dot file: ${value}`);
-  const metadata = statSync(path);
+  let metadata;
+  try {
+    metadata = statSync(path);
+  } catch (error) {
+    if (error?.code === "ENOENT") throw new RenderError(`input not found: ${value}`);
+    throw error;
+  }
   if (!metadata.isFile() || metadata.size === 0 || metadata.size > MAX_SOURCE_BYTES) throw new RenderError(`input is empty, not a file, or too large: ${value}`);
   const stem = basename(path, extname(path));
   if (!/^[A-Za-z0-9._-]+$/u.test(stem)) throw new RenderError(`input basename is unsafe: ${value}`);
@@ -78,16 +86,17 @@ function writeOutput(target, content, overwrite) {
 
 function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
-  const executable = dotExecutable();
-  checkDot(executable);
   if (options.check) {
     if (options.outputDir || options.inputs.length > 0 || options.overwrite) throw new RenderError("--check cannot be combined with rendering arguments");
+    checkDot(dotExecutable());
     process.stdout.write(`Graphviz available on ${process.platform}\n`);
     return;
   }
   if (!options.outputDir || options.inputs.length === 0) throw new RenderError("--output-dir and at least one .dot input are required");
   const outputDir = resolve(options.outputDir);
   const records = options.inputs.map(inputRecord);
+  const executable = dotExecutable();
+  checkDot(executable);
   const rendered = records.map((record) => ({ ...record, svg: runDot(executable, ["-Tsvg"], record.source) }));
   mkdirSync(outputDir, { recursive: true });
   for (const record of rendered) {

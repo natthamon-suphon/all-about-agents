@@ -65,3 +65,8 @@ test("core loader exposes verification-before-completion metadata", async () => 
   assert.deepEqual(skill.evaluationCases, requiredCases);
   assert.deepEqual(core.evals.find((entry) => entry.id === `${skillId}-routing`)?.cases.map((entry) => entry.id), requiredCases);
 });
+
+test("verification-before-completion names its boundary with finishing-a-development-branch", async () => {
+  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
+  assert.match(skill, /`verification-before-completion` gates any success claim with fresh evidence; `finishing-a-development-branch` handles integration, runs the full suite, and uses the verification gate\./u);
+});

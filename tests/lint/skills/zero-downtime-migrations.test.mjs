@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const id = "zero-downtime-migrations";
-const cases = ["ZM-TRIGGER-live-schema-migration", "ZM-NONTRIGGER-local-throwaway-db", "ZM-PRESSURE-postgres-universal"];
+const cases = ["ZM-TRIGGER-live-schema-migration", "ZM-NONTRIGGER-local-throwaway-db", "ZM-PRESSURE-postgres-universal", "ZM-NONTRIGGER-maintenance-window-accepted"];
 const read = (name = "SKILL.md") => readFile(new URL(`../../../core/skills/${id}/${name}`, import.meta.url), "utf8");
 
 test("T041 exposes routing evidence", async () => {
@@ -20,6 +20,9 @@ test("migration protocol is portable, measured, and reversible by forward repair
   assert.match(skill, /forward[- ]fix|forward repair|roll forward/iu);
   assert.match(skill, /not run/iu);
   assert.doesNotMatch(skill, /batch size.{0,30}\b1000\b|must use SERIALIZABLE|always.*down migration|lock_timeout\s*=\s*['"]?5s/iu);
+  assert.match(skill, /maintenance window[^.]*is also a\s+nontrigger/iu);
+  assert.match(skill, /^description: .*not when a maintenance window is accepted$/mu);
+  assert.doesNotMatch(skill, /[A-Za-z][-/]\n/u);
 });
 
 test("PostgreSQL companion is conditional and contains no universal mandates", async () => {
@@ -29,6 +32,9 @@ test("PostgreSQL companion is conditional and contains no universal mandates", a
   assert.match(reference, /placeholder|measure|derive/iu);
   assert.match(reference, /expand|backfill|contract/iu);
   assert.doesNotMatch(reference, /batch size.{0,30}\b1000\b|must use SERIALIZABLE|always.*down migration|lock_timeout\s*=\s*['"]?5s/iu);
+  const sections = reference.split(/^## /mu).slice(1);
+  assert.ok(sections.length >= 5);
+  for (const section of sections) assert.match(section, /```sql\n[^`]*<table>[^`]*```/u, section.split("\n")[0]);
 });
 
 test("migration routing covers live changes, disposable nontrigger, and PostgreSQL pressure", async () => {
@@ -41,6 +47,8 @@ test("migration routing covers live changes, disposable nontrigger, and PostgreS
   assert.equal(evaluation.cases[1].expected.disposableOnly, true);
   assert.equal(evaluation.cases[2].expected.rejectUniversalPostgresRecipe, true);
   assert.equal(evaluation.cases[2].expected.measuredConditions, true);
+  assert.equal(evaluation.cases[3].expected.skillCheck, "not-required");
+  assert.equal(evaluation.cases[3].expected.maintenanceWindowAccepted, true);
 });
 
 test("core loader exposes migration metadata and PostgreSQL companion", async () => {

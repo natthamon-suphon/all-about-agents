@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: Use when an explicitly approved implementation plan is ready for inline execution in a separate session with review checkpoints.
+description: Use when an explicitly approved implementation plan is ready for inline execution in the current session, without subagents, with review checkpoints.
 evaluationCases:
   - EP-TRIGGER-approved-plan-inline
   - EP-NONTRIGGER-no-plan
@@ -9,10 +9,12 @@ evaluationCases:
 
 # Executing Plans
 
-Execute an explicitly approved, multi-step implementation plan in the current
-session. Treat the plan as the execution contract: preserve its boundaries,
-follow its task order, and leave an evidence trail that another session can
-resume without guessing.
+Execute an explicitly approved, multi-step implementation plan inline in the
+current session, without subagents. Treat the plan as the execution contract:
+preserve its boundaries, follow its task order, and leave an evidence trail
+that another session can resume without guessing. To run each task with an
+isolated writer and a review after it, use `subagent-driven-development`
+instead.
 
 **Core principle:** approval authorizes execution of the named plan, not an
 expanded task. Every checkpoint needs observable evidence, and every review
@@ -46,7 +48,7 @@ gate remains in force until its findings are resolved.
 8. Execute one plan task at a time in its stated order. Follow each task's
    exact implementation and verification instructions, keep the smallest
    scope that satisfies its acceptance criteria, and mark only evidence-backed
-   states (`in progress`, `blocked`, or `completed`).
+   states from the checkpoint contract below.
 9. At each checkpoint, report what changed, what was verified, what remains,
    and the exact resume point. Mark unavailable checks as `not run` with a
    reason; never claim completion from intent or from an unrun command.
@@ -60,12 +62,15 @@ Use one durable, concise record per plan task. A checkpoint has this shape:
 
 ```text
 Task: T<N> — <name>
-State: in progress | blocked | completed
+State: pending | in progress | completed | blocked | failed | not run | skipped (with a reason)
 Files: <exact paths>
 Verification: <exact command> → <observed result>
 Review: pending | passed | findings: <resolved or open findings>
 Next: <single next action or explicit stop reason>
 ```
+
+Use `skipped` only after a human decision to skip that task, and record the
+reason. Use `failed` for a failed check and stop there.
 
 Before resuming, read the last checkpoint and verify its files and evidence
 against the working tree. Do not replay a completed task blindly, and do not

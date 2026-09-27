@@ -1,8 +1,6 @@
 ---
 name: brainstorming
-description: You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements, and design before implementation.
-capabilities:
-  - schema-validation
+description: Use when a request adds or changes intended behavior or architecture, or asks whether such a change is feasible, so the design is agreed before any code. Not for diagnosing a failure (systematic-debugging) or for an approved spec (writing-plans).
 references:
   - visual-companion
   - spec-document-reviewer-prompt
@@ -11,6 +9,8 @@ evaluationCases:
   - BR-TRIGGER-spike-question
   - BR-TRIGGER-bounded-change
   - BR-NONTRIGGER-trivial-readonly
+  - BR-NONTRIGGER-bug-report
+  - BR-NONTRIGGER-approved-spec
   - BR-PRESSURE-code-immediately
 ---
 
@@ -28,10 +28,14 @@ feature, component, workflow, API, data model, integration, user-visible
 experience, or structural refactor. The request may be phrased as "build,"
 "add," "make," or "change."
 
-Do not invoke this skill for a trivial, bounded, read-only request such as a
+Do not invoke this skill for a small read-only request such as a
 status/factual answer, listing or inspecting files, a narrow review that does
 not change behavior, or reporting existing test output. Complete that request
-directly. A trivial request does not require a design document, visual companion, long interview, approach comparison, or implementation approval.
+directly. A small read-only request does not require a design document, visual companion, long interview, approach comparison, or implementation approval.
+
+A failure, regression, or unexpected behavior with an unknown cause goes to
+`systematic-debugging` first. A written spec that the human partner already
+approved goes to `writing-plans`.
 
 An already-dispatched worker follows its task contract and entry point; it does
 not restart this skill's discovery flow.
@@ -55,7 +59,7 @@ Classify before the first question and announce the path:
   nod, then find out as cheaply as correctness allows. No design document.
   Report findings as a recommendation; anything built stays labeled throwaway.
 - **Bounded**: a well-scoped change to a flow that already exists in this
-  repository: a new flag, a small endpoint, a one-file fix. Bounded measures
+  repository: a new flag, a small endpoint, a one-file change. Bounded measures
   the repository, not your familiarity; with no existing flow to change, the
   task is not bounded. Ask only the clarifying questions that matter, present a
   short design in chat (a few sentences to a few short paragraphs), and stop
@@ -63,7 +67,7 @@ Classify before the first question and announce the path:
 - **Architectural**: a new project, a new subsystem, or a change that
   restructures how components fit together or alters interfaces others depend
   on. Follow the full flow below: questions, approaches, sectioned design,
-  written spec, then the planning skill.
+  written spec, then `writing-plans`.
 
 When in doubt between two paths, take the heavier one. The ratchet is one-way:
 hidden complexity discovered mid-task upgrades the path. Stop, say so, and step
@@ -73,20 +77,23 @@ up. Nothing downgrades mid-task.
 
 1. Inspect the current project context: relevant files, instructions, docs,
    interfaces, and recent changes.
-2. Clarify purpose, constraints, non-goals, and success criteria. Ask one question at a time and only as many questions as the decision requires.
+2. Clarify purpose, constraints, non-goals, and success criteria with `interviewing`: one question at a time, and only as many questions as the decision requires.
 3. Offer two or three viable approaches with trade-offs and a recommendation.
    Keep the proposal proportional to the change.
 4. Present the design in sections covering architecture, components/data flow,
    error handling, and testing. Seek explicit approval before implementation.
-5. Use the visual companion only when the next question is genuinely visual or spatial (mockups, layout, diagrams, or side-by-side visual choices), and offer it just in time. Never offer or require it merely because a project has a UI topic. If declined or unnecessary, stay text-only.
-6. After approval, write the agreed spec to
-   `.claude/all-about-agents/<topic>/design.md` (or the repository's documented
-   spec location), self-review it for placeholders, contradictions, ambiguity,
-   scope, invariants, and a pre-mortem, then ask the human partner to review the
-   written spec.
-7. Only after the written spec is accepted, transition to the implementation
-   planning skill. The implementation plan owns RED/GREEN work; this skill
-   does not silently turn approval into code.
+5. Use the visual companion only when the next question is genuinely visual or spatial (mockups, layout, diagrams, or side-by-side visual choices), and offer it just in time. Never offer or require it merely because a project has a UI topic. If declined or unnecessary, stay text-only. Its security, start, and screen contract is in [visual-companion.md](visual-companion.md).
+6. After approval, write the agreed spec to `.aaa/<topic>/design.md` (or the
+   repository's documented spec location). Self-review it for placeholders,
+   contradictions, ambiguity, scope, invariants, and a pre-mortem. When a
+   subagent is available, also dispatch one with
+   [spec-document-reviewer-prompt.md](spec-document-reviewer-prompt.md) and fix
+   the blocking issues it reports. With no subagent, apply the same checklist
+   yourself and say the review was not independent. Then ask the human partner
+   to review the written spec.
+7. Only after the written spec is accepted, hand off to `writing-plans`. The
+   implementation plan owns RED/GREEN work; this skill does not silently turn
+   approval into code.
 
 ## Quick reference
 
@@ -95,7 +102,7 @@ up. Nothing downgrades mid-task.
 | Feasibility question | Spike | Recommendation; throwaway code labeled | Nod before probing |
 | Small change to an existing flow | Bounded | Short design in chat | Explicit yes before implementation |
 | New project, subsystem, or interface change | Architectural | Written spec, then plan | Explicit yes per section and on the spec |
-| Trivial bounded read-only work | None | None | None |
+| Small read-only work | None | None | None |
 | Already-dispatched worker | Follow assigned contract | Per that contract | Per that contract |
 
 ## Red flags

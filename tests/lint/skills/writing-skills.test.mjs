@@ -1,16 +1,19 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
+import { withTempRoot } from "../../helpers/temp-root.mjs";
 
 const id = "writing-skills";
 const cases = ["WS-TRIGGER-create-or-edit-skill", "WS-NONTRIGGER-use-existing-skill", "WS-PRESSURE-prose-only-confidence"];
 const companions = [
-  "anthropic-best-practices.md",
   "graphviz-conventions.dot",
   "persuasion-principles.md",
-  "render-graphs.js",
-  "testing-skills-with-subagents.md",
-  "examples/CLAUDE_MD_TESTING.md"
+  "render-graphs.mjs",
+  "testing-skills-with-subagents.md"
 ];
 const read = (name = "SKILL.md") => readFile(new URL(`../../../core/skills/${id}/${name}`, import.meta.url), "utf8");
 
@@ -30,13 +33,14 @@ test("skill authoring enforces behavioral RED GREEN REFACTOR and progressive dis
 
 test("all inventory companions are concise, routed, and cross-platform", async () => {
   for (const companion of companions) assert.ok((await read(companion)).trim().length > 80, companion);
-  const renderer = await read("render-graphs.js");
+  const renderer = await read("render-graphs.mjs");
   assert.match(renderer, /spawnSync|execFileSync/u);
   assert.match(renderer, /process\.platform|GRAPHVIZ_DOT|ENOENT/u);
   assert.doesNotMatch(renderer, /\bwhich\b|\bwhere(?:\.exe)?\b|shell\s*:\s*true|execSync\s*\(/iu);
   assert.match(renderer, /--check|--output-dir|--overwrite/u);
-  const historical = await read("anthropic-best-practices.md");
-  assert.match(historical, /historical|vendor|re-?verify|current official/iu);
+  const testing = await read("testing-skills-with-subagents.md");
+  assert.match(testing, /## Worked example/u);
+  for (const kind of ["Trigger", "Nontrigger", "Pressure"]) assert.match(testing, new RegExp(`### ${kind}\\n\\nPrompt:`, "u"));
   const persuasion = await read("persuasion-principles.md");
   assert.match(persuasion, /transparent|user autonomy|non-manipulative/iu);
 });
@@ -60,4 +64,44 @@ test("core loader exposes all writing-skill metadata and companions", async () =
   const source = core.inventory.skillSources.find((entry) => entry.name === id);
   assert.deepEqual(source?.assets, companions.map((name) => `skills/writing-skills/${name}`));
   assert.deepEqual(source?.scripts, []);
+});
+
+test("writing-skills states its budgets, renderer usage, and authority-aware evidence", async () => {
+  const skill = await read();
+  assert.match(skill, /under 1,500 words/u);
+  assert.match(skill, /\(the router\)[^.]{0,20}under 500/u);
+  assert.match(skill, /commit IDs when commits were authorized/u);
+  assert.match(skill, /node render-graphs\.mjs --output-dir <dir> <file\.dot>/u);
+  assert.match(skill, /node render-graphs\.mjs --check/u);
+  assert.match(skill, /Node(?:\.js)?\s+22\.12/u);
+  assert.match(skill, /time-sensitive[\s\S]{0,200}(?:adapter|source)[\s\S]{0,120}fail closed/iu);
+  assert.doesNotMatch(skill, /anthropic-best-practices|CLAUDE_MD_TESTING/u);
+  assert.doesNotMatch(skill, /[A-Za-z][-/]\n/u);
+});
+
+const renderer = fileURLToPath(new URL(`../../../core/skills/${id}/render-graphs.mjs`, import.meta.url));
+const render = (cwd, args) => spawnSync(process.execPath, [renderer, ...args], {
+  cwd,
+  encoding: "utf8",
+  shell: false,
+  env: { ...process.env, GRAPHVIZ_DOT: join(cwd, "no-such-dot") }
+});
+
+test("render-graphs rejects a flag given as the --output-dir value", async () => {
+  await withTempRoot(async (root) => {
+    const result = render(root, ["--output-dir", "--overwrite", "graph.dot"]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /--output-dir needs a directory value/u);
+    assert.equal(existsSync(join(root, "--overwrite")), false);
+  });
+});
+
+test("render-graphs reports a missing input before it looks for Graphviz", async () => {
+  await withTempRoot(async (root) => {
+    const output = join(root, "out");
+    const result = render(root, ["--output-dir", output, "missing.dot"]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /^Error: input not found: missing\.dot\n$/u);
+    assert.equal(existsSync(output), false);
+  });
 });

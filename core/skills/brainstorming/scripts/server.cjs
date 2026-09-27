@@ -15,11 +15,9 @@ const MAX_EVENT_QUEUE_LENGTH = 64;
 const MAX_EVENT_LOG_BYTES = 256 * 1024;
 const MAX_CONNECTIONS = 16;
 
-const SESSION_DIR = path.resolve(process.env.BRAINSTORM_DIR || path.join(os.tmpdir(), 'brainstorm'));
-const CONTENT_DIR = path.join(SESSION_DIR, 'content');
-const STATE_DIR = path.join(SESSION_DIR, 'state');
-const PORT_FILE = process.env.BRAINSTORM_PORT_FILE || null;
-const TOKEN_FILE = process.env.BRAINSTORM_TOKEN_FILE || null;
+const SESSION_DIR = process.env.BRAINSTORM_DIR ? path.resolve(process.env.BRAINSTORM_DIR) : null;
+const CONTENT_DIR = SESSION_DIR && path.resolve(process.env.BRAINSTORM_CONTENT_DIR || path.join(SESSION_DIR, 'content'));
+const STATE_DIR = SESSION_DIR && path.join(SESSION_DIR, 'state');
 const HOST = process.env.BRAINSTORM_HOST || '127.0.0.1';
 const URL_HOST = process.env.BRAINSTORM_URL_HOST || (HOST === '127.0.0.1' ? 'localhost' : HOST);
 const ALLOW_REMOTE = process.argv.includes('--allow-remote');
@@ -280,50 +278,34 @@ function sameOrigin(req) {
 }
 
 function startServer() {
+  if (!SESSION_DIR) throw new Error('BRAINSTORM_DIR must name a private session directory; start the companion with start-server.sh');
   assertBindPolicy();
   fs.mkdirSync(CONTENT_DIR, { recursive: true });
   fs.mkdirSync(STATE_DIR, { recursive: true });
   if (!safeRealpath(CONTENT_DIR) || !safeRealpath(STATE_DIR)) throw new Error('companion session roots could not be canonicalized');
 
   let port = Number(process.env.BRAINSTORM_PORT);
-  if (!Number.isInteger(port) || port < 1024 || port > 65535) {
-    try { port = Number(fs.readFileSync(PORT_FILE, 'utf8').trim()); } catch { port = 0; }
-  }
   if (!Number.isInteger(port) || port < 1024 || port > 65535) port = 0;
-  let tokenSource = 'generated';
-  let token = process.env.BRAINSTORM_TOKEN;
-  if (typeof token === 'string' && /^[0-9a-f]{32,}$/iu.test(token.trim())) {
-    token = token.trim();
-    tokenSource = 'environment';
-  } else {
-    token = null;
-    if (TOKEN_FILE) {
-      try {
-        const saved = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
-        if (/^[0-9a-f]{32,}$/iu.test(saved)) { token = saved; tokenSource = 'file'; }
-      } catch { /* first start */ }
-    }
-    if (!token) token = crypto.randomBytes(32).toString('hex');
-  }
-
-  TOKEN = token;
+  // A fresh key per start: never read from the environment or disk, never reused.
+  TOKEN = crypto.randomBytes(32).toString('hex');
   COOKIE_NAME = 'brainstorm-key-pending';
   const templates = loadTemplates();
   const clients = new Set();
   let lastActivity = Date.now();
   let browserOpened = false;
   let actualPort = port;
-  let fallbackTried = false;
   let lifecycleCheck;
 
   function touchActivity() { lastActivity = Date.now(); }
-  function shutdown(reason) {
+  function shutdown(reason, exitCode = 0) {
     watcher.close();
     clearInterval(lifecycleCheck);
     for (const socket of clients) { try { socket.destroy(); } catch { /* already closed */ } }
-    try { fs.rmSync(path.join(STATE_DIR, 'server-info'), { force: true }); } catch { /* best effort */ }
+    for (const name of ['server-info', 'connection-url']) {
+      try { fs.rmSync(path.join(STATE_DIR, name), { force: true }); } catch { /* best effort */ }
+    }
     fs.writeFileSync(path.join(STATE_DIR, 'server-stopped'), JSON.stringify({ reason: redactToken(reason) }) + '\n', { mode: 0o600 });
-    server.close(() => process.exit(0));
+    server.close(() => process.exit(exitCode));
   }
   function ownerAlive() {
     if (!OWNER_PID) return true;
@@ -334,7 +316,11 @@ function startServer() {
     browserOpened = true;
     const launcher = browserLauncherForPlatform(companionUrl(actualPort));
     if (!launcher) return;
-    try { require('child_process').execFile(launcher.bin, launcher.args, { windowsHide: true }, () => {}); } catch { /* optional browser launch */ }
+    try {
+      require('child_process').execFile(launcher.bin, launcher.args, { windowsHide: true }, (error) => {
+        if (error) console.error(redactToken(`browser launch failed: ${error.message}`));
+      });
+    } catch { /* optional browser launch */ }
   }
   function handleMessage(socket, text) {
     if (Buffer.byteLength(text, 'utf8') > MAX_EVENT_BYTES) return;
@@ -419,7 +405,11 @@ function startServer() {
     const message = encodeFrame(OPCODES.TEXT, Buffer.from(JSON.stringify({ type: 'reload' })));
     for (const socket of clients) { try { socket.write(message); } catch { clients.delete(socket); } }
   });
-  watcher.on('error', () => {});
+  watcher.on('error', (error) => {
+    const reason = `content watcher failed: ${error.message}`;
+    console.error(redactToken(reason));
+    shutdown(reason, 1);
+  });
   lifecycleCheck = setInterval(() => {
     if (!ownerAlive()) shutdown('owner process exited');
     else if (Date.now() - lastActivity > IDLE_TIMEOUT_MS) shutdown('idle timeout');
@@ -427,11 +417,8 @@ function startServer() {
   lifecycleCheck.unref();
 
   function onListen() {
+    actualPort = server.address().port;
     COOKIE_NAME = `brainstorm-key-${actualPort}`;
-    if (PORT_FILE && !fallbackTried) {
-      try { fs.writeFileSync(PORT_FILE, String(actualPort), { mode: 0o600 }); } catch { /* optional persistence */ }
-      if (TOKEN_FILE) { try { fs.writeFileSync(TOKEN_FILE, TOKEN + '\n', { mode: 0o600 }); } catch { /* optional persistence */ } }
-    }
     const info = {
       type: 'server-started',
       port: actualPort,
@@ -439,20 +426,13 @@ function startServer() {
       url_host: URL_HOST,
       screen_dir: CONTENT_DIR,
       state_dir: STATE_DIR,
-      idle_timeout_ms: IDLE_TIMEOUT_MS,
-      token_source: tokenSource
+      idle_timeout_ms: IDLE_TIMEOUT_MS
     };
     fs.writeFileSync(path.join(STATE_DIR, 'server-info'), JSON.stringify(info) + '\n', { mode: 0o600 });
     fs.writeFileSync(path.join(STATE_DIR, 'connection-url'), companionUrl(actualPort) + '\n', { mode: 0o600 });
     console.log(JSON.stringify(info));
   }
   server.on('error', (error) => {
-    if (error.code === 'EADDRINUSE' && !fallbackTried && !process.env.BRAINSTORM_PORT) {
-      fallbackTried = true;
-      actualPort = 0;
-      server.listen(actualPort, HOST, onListen);
-      return;
-    }
     console.error(`Server failed to bind: ${redactToken(error.message)}`);
     process.exit(1);
   });

@@ -5,6 +5,8 @@ import test from "node:test";
 
 const skillId = "handoff";
 const requiredCases = ["HO-TRIGGER-explicit-handoff", "HO-NONTRIGGER-normal-progress", "HO-PRESSURE-claude-only-shell"];
+const boundary = "`handoff` records a pause or transfer when the human asks for one; `session-compaction-resilience` keeps long-task state that must survive compaction. Both use the same record shape.";
+const canonicalStates = /pending,\s+in\s+progress,\s+completed,\s+blocked,\s+failed,\s+not\s+run,\s+skipped/u;
 
 test("T028 exposes its routing evidence", async () => {
   const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
@@ -25,13 +27,28 @@ test("handoff keeps the canonical workflow semantic and vendor-neutral", async (
   assert.match(skill, /semantic handoff|semantic artifact|continuation record/iu);
   assert.match(skill, /Goal[\s\S]*State[\s\S]*Decisions[\s\S]*Evidence[\s\S]*Suggested skills[\s\S]*Next concrete step/iu);
   assert.match(skill, /durable evidence|durable continuation/iu);
-  assert.match(skill, /completed[^\n]*in-flight[^\n]*blocked|blocked[^\n]*not run/isu);
+  assert.match(skill, canonicalStates);
   assert.match(skill, /not run/iu);
   assert.match(skill, /redact(?:s|ed)? secrets|<REDACTED>/iu);
   assert.match(skill, /untrusted[^\n]*(?:data|content)/iu);
   assert.match(skill, /do not interpolate|never interpolate|shell command/iu);
   assert.match(skill, /live handoff[^\n]*(?:only|when)[^\n]*adapter|adapter[^\n]*(?:documents|exposes)[^\n]*structured/isu);
   assert.doesNotMatch(skill, /(?:claude\s+--bg|Claude Code|Codex CLI|Gemini CLI|mcp__|spawn_agent|invoke_subagent)/iu);
+});
+
+test("handoff shares one record shape with session-compaction-resilience", async () => {
+  const skill = await readFile(resolve(process.cwd(), "core/skills/handoff/SKILL.md"), "utf8");
+  const description = /^description:\s*(.+)$/mu.exec(skill)?.[1] ?? "";
+  assert.ok(skill.includes(boundary), "handoff must carry the HANDOFF-COMPACTION boundary sentence");
+  assert.doesNotMatch(description, /durable continuation evidence/iu);
+  assert.match(skill, /`snapshot-template\.md` in `session-compaction-resilience`/u, "handoff must name the shared record template");
+  assert.doesNotMatch(skill, /\]\(\.\.\//u, "a skill may not link into another skill's folder");
+  await readFile(resolve(process.cwd(), "core/skills/session-compaction-resilience/snapshot-template.md"), "utf8");
+  assert.doesNotMatch(skill, /```markdown/u, "handoff must not inline a second record shape");
+  assert.match(skill, /\.aaa\/<topic>\/handoff\.md/u);
+  assert.doesNotMatch(skill, /\.claude/u);
+  assert.match(skill, /reviewed for secrets and completeness/u);
+  assert.doesNotMatch(skill, /\bis validated\b/u);
 });
 
 test("handoff evaluation defines the three critical routing cases", async () => {

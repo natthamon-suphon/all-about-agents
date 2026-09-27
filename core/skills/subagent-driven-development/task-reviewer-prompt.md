@@ -7,11 +7,17 @@ code quality.
 **Purpose:** Verify one task's implementation matches its requirements (nothing
 more, nothing less) and is well-built (clean, tested, maintainable)
 
+Map each dispatch field to your surface's worker call. If the surface cannot
+set a model per worker, record the model the worker inherits; if that is not
+the strongest approved model, stop and report it.
+
 ```
-Subagent (general-purpose):
-  description: "Review Task N (spec + quality)"
-  model: [MODEL — REQUIRED: choose per SKILL.md "Model and review policy"; an omitted
-         model silently inherits the session's most expensive one]
+Dispatch:
+  role: task reviewer for Task N (spec + quality)
+  model: [MODEL — REQUIRED: the strongest approved model, set explicitly per
+         SKILL.md "Model and review policy"]
+  brief: [BRIEF_FILE]
+  report: [REPORT_FILE] (the implementer's report; read-only input)
   prompt: |
     You are reviewing one task's implementation: first whether it matches its
     requirements, then whether it is well-built. This is a task-scoped gate,
@@ -40,6 +46,10 @@ Subagent (general-purpose):
     change. The diff's context lines ARE the changed files: do not Read a
     changed file separately unless a hunk you must judge is cut off
     mid-function — and say so in your report. Do not re-run git commands.
+    A `WORKTREE` package also lists "Untracked files included": report
+    anything there that looks like a secret as Critical (the script blocks
+    only common names such as `.env`), and any other file outside the task
+    as Important.
     If the diff file is missing and Head is a commit, fetch the diff yourself:
     `git diff --stat [BASE_SHA]..[HEAD_SHA]` and `git diff [BASE_SHA]..[HEAD_SHA]`.
     If Head is `WORKTREE`, report the missing diff file and stop: a
@@ -65,11 +75,12 @@ Subagent (general-purpose):
 
     ## Tests
 
-    The implementer already ran the tests and reported results with TDD
-    evidence for exactly this code. Do not re-run the suite to confirm their
-    report. Run a test only when reading the code raises a specific doubt
-    that no existing run answers — and then a focused test, never a
-    package-wide suite, race detector run, or repeated/high-count loop. If
+    The implementer reported test results, with RED and GREEN evidence for
+    every behavior change, and the controller runs the task's verification
+    command itself before it marks the task completed. Do not re-run the
+    suite to confirm the report. Run a test only when reading the code
+    raises a specific doubt that no existing run answers — and then a
+    focused test, never a package-wide suite, race detector run, or repeated/high-count loop. If
     heavy validation seems warranted, recommend it in your report instead of
     running it. If you cannot run commands in this environment, name the
     test you would run.
@@ -169,8 +180,10 @@ Subagent (general-purpose):
 
 **Placeholders:**
 - `[MODEL]` — REQUIRED: reviewer model per SKILL.md "Model and review policy"
-- `[BRIEF_FILE]` — REQUIRED: the task brief file (`scripts/task-brief PLAN N`
-  prints the path; same file the implementer worked from)
+- `[BRIEF_FILE]` — REQUIRED: the task brief file
+  (`node <skill-dir>/scripts/task-brief.cjs PLAN_FILE N` prints the path, where
+  `<skill-dir>` is the folder that holds SKILL.md; same file the implementer
+  worked from)
 - `[GLOBAL_CONSTRAINTS]` — the binding requirements copied verbatim from
   the plan's Global Constraints section or the spec: exact values, formats,
   and stated relationships between components (not process rules — those
@@ -182,7 +195,7 @@ Subagent (general-purpose):
 - `[HEAD_SHA]` — current commit, or `WORKTREE` when the task's work is
   uncommitted
 - `[DIFF_FILE]` — REQUIRED: the path the controller wrote the review
-  package to (`node scripts/review-package.js PLAN_FILE BASE HEAD|WORKTREE`
+  package to (`node <skill-dir>/scripts/review-package.cjs PLAN_FILE BASE HEAD|WORKTREE`
   prints the unique path it wrote; the package never enters the controller's context)
 
 **Reviewer returns:** Spec Compliance verdict (✅/❌/⚠️), Strengths, Issues

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const id = "threat-modeling-and-security";
-const cases = ["TM-TRIGGER-security-boundary-change", "TM-NONTRIGGER-cosmetic-change", "TM-PRESSURE-stack-absolutism"];
+const cases = ["TM-TRIGGER-security-boundary-change", "TM-NONTRIGGER-cosmetic-change", "TM-PRESSURE-stack-absolutism", "TM-NONTRIGGER-internal-refactor-no-boundary"];
 const read = (name = "SKILL.md") => readFile(new URL(`../../../core/skills/${id}/${name}`, import.meta.url), "utf8");
 
 test("T040 exposes routing evidence", async () => {
@@ -22,6 +22,10 @@ test("threat modeling derives conditional controls from the actual architecture"
   assert.match(skill, /not run/iu);
   assert.match(skill, /conditional|when applicable|if the architecture/iu);
   assert.doesNotMatch(skill, /Zod|Pydantic|Redis|SERIALIZABLE|bcrypt.{0,20}12/iu);
+  assert.match(skill, /^description: Use when a change adds, removes, or alters a trust boundary/mu);
+  assert.doesNotMatch(skill, /other security-relevant behavior/iu);
+  assert.match(skill, /internal refactor[^.]*is also a\s+nontrigger/iu);
+  assert.doesNotMatch(skill, /[A-Za-z][-/]\n/u);
 });
 
 test("STRIDE companion is portable and rejects stack absolutism", async () => {
@@ -43,6 +47,8 @@ test("threat-model routing covers boundary change, cosmetic nontrigger, and stac
   assert.equal(evaluation.cases[1].expected.cosmeticOnly, true);
   assert.equal(evaluation.cases[2].expected.rejectStackAbsolutism, true);
   assert.equal(evaluation.cases[2].expected.noInventedControl, true);
+  assert.equal(evaluation.cases[3].expected.skillCheck, "not-required");
+  assert.equal(evaluation.cases[3].expected.noBoundaryChange, true);
 });
 
 test("core loader exposes threat-model metadata and checklist", async () => {

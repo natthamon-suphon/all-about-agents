@@ -33,6 +33,7 @@ that Git has zero unresolved entries before continuing.
    - rebase: `git rebase --abort`
    - cherry-pick: `git cherry-pick --abort`
    - revert: `git revert --abort`
+   - stash: no abort command exists; see "Stash conflicts" below
 
    A user-selected abort is a valid outcome. Never promise that abort is
    available without confirming the active operation; never simulate it with
@@ -76,6 +77,18 @@ git diff --cached -- <resolved-path>
 
 Pass paths as separate argv values or use the current shell's safe literal-path
 mechanism. Do not interpolate untrusted filenames into a shell command string.
+
+## Stash conflicts
+
+- `git stash pop` and `git stash apply` have no `--abort`.
+- After a conflicted pop, the stash entry stays in `git stash list`. Check it
+  there before you edit anything; it is the recovery copy.
+- Resolve and stage the exact paths as above. Never run `git stash drop` or
+  `git stash clear` without explicit authority, even after the resolution is
+  verified.
+- Backing out of a stash conflict is a destructive restore of the affected
+  files, and it can discard unrelated work. Explain what would be lost and ask
+  first.
 
 ## Resolution reasoning
 
@@ -125,3 +138,5 @@ If asked to "stage everything and never abort":
 - [ ] No unresolved conflict marker remains in resolved source paths.
 - [ ] Focused behavior checks ran, or are explicitly `not run` with reasons.
 - [ ] No commit, continue, push, discard, or cleanup occurred without authority.
+- [ ] After a stash conflict, the stash entry was kept unless its drop was
+      authorized.

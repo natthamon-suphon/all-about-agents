@@ -30,11 +30,11 @@ shape. An expectation computed by the code under test - or its helpers -
 passes no matter what that code does:
 
 ```typescript
-// ? Mirror assertion: the same builder computes both sides - always true
+// Bad: Mirror assertion: the same builder computes both sides - always true
 const expected = buildSearchQuery({ tag: 'urgent' });
 expect(buildSearchQuery({ tag: 'urgent' })).toBe(expected);
 
-// ? Hand-derived literal
+// Good: Hand-derived literal
 expect(buildSearchQuery({ tag: 'urgent' })).toBe('tag:"urgent"');
 ```
 
@@ -48,7 +48,7 @@ retried 5 times and the 6th attempt never happens."
 contains an exact line proves only that the source is the source. Run
 scripts against controlled inputs and assert outputs, side effects, or
 exit codes. Documents that instruct agents are tested by the consuming
-agent's behavior (all-about-agents:writing-skills); prose for humans earns no
+agent's behavior (`writing-skills`); prose for humans earns no
 test at all.
 
 **Your code, not the framework.** Test the contract your code makes at
@@ -68,10 +68,10 @@ otherwise assert the first consumer-visible result that depends on them.
 BEFORE writing the test body:
   Name the production change that would make this test fail.
 
-  Cannot name one             redesign around an observable behavior
-  "The source text changed"   run the artifact and assert its effects
-  Only intentional decisions  change detector; test the behavior
-                               that depends on the decision
+  Cannot name one            -> redesign around an observable behavior
+  "The source text changed"  -> run the artifact and assert its effects
+  Only intentional decisions -> change detector; test the behavior
+                                that depends on the decision
 
   Confirm the expected value is derived without the code under test.
   IF it reuses the code's logic or helpers:
@@ -86,10 +86,10 @@ component. Assert the real component's behavior; if the mock is what you
 are checking, unmock it or delete the assertion.
 
 ```typescript
-// ? Real behavior
+// Good: Real behavior
 expect(screen.getByRole('navigation')).toBeInTheDocument();
 
-// ? Mock existence
+// Bad: Mock existence
 expect(screen.getByTestId('sidebar-mock')).toBeInTheDocument();
 ```
 
@@ -102,12 +102,12 @@ the test depends on real. When unsure, run the test against the real
 implementation first and observe what actually needs to happen.
 
 ```typescript
-// ? The mock swallows the config write that duplicate detection reads
+// Bad: The mock swallows the config write that duplicate detection reads
 vi.mock('ToolCatalog', () => ({
   discoverAndCacheTools: vi.fn().mockResolvedValue(undefined)
 }));
 
-// ? Mock only the slow server startup; the config write stays real
+// Good: Mock only the slow server startup; the config write stays real
 vi.mock('MCPServerManager');
 ```
 
@@ -124,7 +124,7 @@ the test passes while integration breaks.
 **Production classes carry production methods only.** Cleanup that only
 tests need lives in test utilities, never as a `destroy()` on the
 production class. Ask: is this method called only from tests? Does this
-class own this resource's lifecycle? Wrong answers  test utility.
+class own this resource's lifecycle? Wrong answers -> test utility.
 
 **Prefer real components over complex mocks.** When mock setup outgrows
 the test logic, mocks miss methods the real components have, or tests

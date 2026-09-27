@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 # Find the first test that creates unwanted filesystem state.
-# Usage: ./find-polluter.sh <file_or_dir_to_check> <test_pattern> [runner]
-# The optional runner is a package-manager command (npm, pnpm, yarn, bun) or
-# an executable path. TEST_RUNNER provides the same override for CI.
+# Usage, from the project root:
+#   bash <skill-dir>/find-polluter.sh <path_that_must_not_exist_yet> <test_pattern> [runner]
+# A package-manager runner (npm, pnpm, yarn, bun) is called as
+# "<runner> test -- <file>"; any other runner is an executable path called as
+# "<runner> <file>". TEST_RUNNER provides the same override for CI. Confirm by
+# hand that one runner call executes a single test file before trusting a result.
 
 set -u
 
 if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
-  echo "Usage: $0 <file_to_check> <test_pattern> [runner]" >&2
-  echo "Example: $0 '.git' 'src/**/*.test.ts' npm" >&2
+  echo "Usage: $0 <path_that_must_not_exist_yet> <test_pattern> [runner]" >&2
+  echo "Example: $0 'packages/core/.git' 'packages/core/src/**/*.test.ts' npm" >&2
   exit 2
 fi
 
@@ -25,7 +28,7 @@ TEST_FILES=()
 COLLAPSED_PATTERN=${TEST_PATTERN//\*\*\//}
 while IFS= read -r -d '' TEST_FILE; do
   TEST_FILES+=("$TEST_FILE")
-done < <(find . -type f \( -path "./$TEST_PATTERN" -o -path "./$COLLAPSED_PATTERN" \) -print0)
+done < <(find . -name node_modules -prune -o -type f \( -path "./$TEST_PATTERN" -o -path "./$COLLAPSED_PATTERN" \) -print0)
 
 TOTAL=${#TEST_FILES[@]}
 echo "Found $TOTAL test files"
@@ -57,6 +60,11 @@ select_runner() {
 }
 
 RUNNER=$(select_runner)
+# Windows exposes package managers as npm.cmd or bun.exe; compare the bare name.
+RUNNER_NAME=${RUNNER##*/}
+case "$RUNNER_NAME" in
+  *.[cC][mM][dD] | *.[eE][xX][eE]) RUNNER_NAME=${RUNNER_NAME%.*} ;;
+esac
 RUNNER_STATUS=0
 COUNT=0
 
@@ -65,7 +73,10 @@ for TEST_FILE in "${TEST_FILES[@]}"; do
   echo "[$COUNT/$TOTAL] Testing: $TEST_FILE (runner: $RUNNER)"
 
   # Pass the filename as one argument. Do not use eval or a command string.
-  "$RUNNER" test -- "$TEST_FILE"
+  case "$RUNNER_NAME" in
+    npm | pnpm | yarn | bun) "$RUNNER" test -- "$TEST_FILE" ;;
+    *) "$RUNNER" "$TEST_FILE" ;;
+  esac
   TEST_STATUS=$?
   if [ "$TEST_STATUS" -ne 0 ]; then
     echo "ERROR: test failed (exit $TEST_STATUS): $TEST_FILE" >&2

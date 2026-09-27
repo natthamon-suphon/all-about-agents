@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Generate a review package: commit list, stat summary, and net diff. Cross-platform wrapper delegating to Node.js when available.
 set -euo pipefail
+CDPATH=''
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 if command -v node >/dev/null 2>&1; then
-  exec node "${SCRIPT_DIR}/review-package.js" "$@"
+  exec node "${SCRIPT_DIR}/review-package.cjs" "$@"
 fi
 
 if [ "${1:-}" = "--snapshot" ] || [ "${3:-}" = "WORKTREE" ]; then
@@ -23,32 +24,55 @@ base=$2
 head=$3
 [ -f "$plan" ] || { echo "no such plan file: $plan" >&2; exit 2; }
 
-git rev-parse --verify --quiet --end-of-options "${base}^{commit}" >/dev/null 2>&1 || { echo "bad BASE commit: $base" >&2; exit 2; }
-git rev-parse --verify --quiet --end-of-options "${head}^{commit}" >/dev/null 2>&1 || { echo "bad HEAD commit: $head" >&2; exit 2; }
-if git diff --quiet "$base" "$head"; then
+git rev-parse --show-toplevel >/dev/null 2>&1 || { echo "review-package: not inside a Git work tree" >&2; exit 2; }
+base_sha=$(git rev-parse --verify --quiet --end-of-options "${base}^{commit}" 2>/dev/null) || { echo "bad BASE commit: $base" >&2; exit 2; }
+head_sha=$(git rev-parse --verify --quiet --end-of-options "${head}^{commit}" 2>/dev/null) || { echo "bad HEAD commit: $head" >&2; exit 2; }
+
+plan_dir=$(cd "$(dirname "$plan")" && pwd -P)
+dir="$plan_dir/sdd"
+bad_out() { echo "OUTFILE must be inside ${dir} and not start with '.': ${out}" >&2; exit 2; }
+refuse_linked_sdd() {
+  if [ -L "$dir" ]; then
+    echo "refusing a symlinked sdd/ folder: ${dir}" >&2
+    exit 2
+  fi
+}
+if [ $# -eq 4 ]; then
+  out=$4
+  case ${out##*/} in .*) bad_out ;; esac
+  out_parent=$(dirname "$out")
+  [ "${out_parent##*/}" = sdd ] && [ "$(cd "$(dirname "$out_parent")" 2>/dev/null && pwd -P)" = "$plan_dir" ] || bad_out
+else
+  out="$dir/review-$(git rev-parse --short "$base_sha")..$(git rev-parse --short "$head_sha").diff"
+fi
+
+if git diff --quiet --no-ext-diff "$base_sha" "$head_sha" --; then
   echo "empty review package: nothing changed between ${base} and ${head}; do not dispatch a review" >&2
   exit 3
 fi
 
-if [ $# -eq 4 ]; then
-  out=$4
-else
-  dir=$("${SCRIPT_DIR}/sdd-workspace" "$plan")
-  out="$dir/review-$(git rev-parse --short "$base")..$(git rev-parse --short "$head").diff"
-fi
-
+"${SCRIPT_DIR}/sdd-workspace" "$plan" >/dev/null
+refuse_linked_sdd
+tmp=$(mktemp "$dir/.tmp-review.XXXXXX")
+trap 'rm -f "$tmp"' EXIT
 {
   echo "# Review package: ${base}..${head}"
   echo
   echo "## Commits"
-  git log --oneline "${base}..${head}"
+  git log --no-color --oneline "${base_sha}..${head_sha}"
   echo
   echo "## Files changed"
-  git diff --stat "${base}..${head}"
+  git diff --no-color --no-ext-diff --stat "${base_sha}..${head_sha}"
   echo
   echo "## Diff"
-  git diff -U10 "${base}..${head}"
-} > "$out"
+  git diff --no-color --no-ext-diff -U10 "${base_sha}..${head_sha}"
+} > "$tmp"
+if [ -L "$out" ] || { [ -e "$out" ] && [ ! -f "$out" ]; }; then
+  echo "refusing ${out}: not a regular file" >&2
+  exit 2
+fi
+refuse_linked_sdd
+mv -f -- "$tmp" "$out"
 
-commits=$(git rev-list --count "${base}..${head}")
+commits=$(git rev-list --count "${base_sha}..${head_sha}")
 echo "wrote ${out}: ${commits} commit(s), $(wc -c < "$out" | tr -d ' ') bytes"

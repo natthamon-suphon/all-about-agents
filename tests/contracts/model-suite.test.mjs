@@ -137,7 +137,7 @@ test("a fake claude executable drives PASS and FAIL classification per case", as
       assert.equal(args[0], "-p", "the prompt travels as a structured argument, never through a shell");
       const prompt = args[1];
       assert.match(prompt, /^skill: /mu, "every case prompt must carry the trailer instruction");
-      const answer = /trivial|read-only|bounded read-only|status or file listing/iu.test(prompt)
+      const answer = /trivial|read-only|bounded read-only|status or file listing|find out why|implementation plan/iu.test(prompt)
         ? "The listing is short.\n\nskill: none"
         : "A behavior change needs a design first.\n\nskill: brainstorming";
       return { ...ok, stdout: JSON.stringify({ result: answer }) };

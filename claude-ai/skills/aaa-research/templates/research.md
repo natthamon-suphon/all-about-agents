@@ -1,4 +1,4 @@
-# Research: topic
+# Research report: topic
 
 | Field | Value |
 | --- | --- |

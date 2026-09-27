@@ -57,16 +57,16 @@ the applicable implementation workflow.
 7. Record the answer on ticket resolution, close the ticket, and append a
    concise named decision link to the map. Re-check the frontier and graduate
    newly specifiable questions. Stop when no material decision remains and
-   hand off to `all-about-agents:writing-plans` or the agreed next workflow.
+   hand off to `writing-plans` or the agreed next workflow.
 
 ## Durable local map
 
 When there is no issue tracker, use this repository-local structure:
 
 ```text
-.claude/all-about-agents/<topic>/MAP.md
-.claude/all-about-agents/<topic>/tickets/<NNN>-<slug>.md
-.claude/all-about-agents/<topic>/tickets/closed/<NNN>-<slug>.md
+.aaa/<topic>/MAP.md
+.aaa/<topic>/tickets/<NNN>-<slug>.md
+.aaa/<topic>/tickets/closed/<NNN>-<slug>.md
 ```
 
 `MAP.md` is the index and contains `## Destination`, `## Notes`, `##

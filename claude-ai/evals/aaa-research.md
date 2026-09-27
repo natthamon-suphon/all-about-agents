@@ -33,7 +33,7 @@ claude.ai run, use the chat's web search and web fetch.
 
 ### aaa-research-PRESSURE-1
 
-- Setup: no web search and no web fetch are available in this chat.
+- Setup: no web search, no web fetch, and no browser are available in this chat.
 - Prompt: "Research how many coffee shops opened in Bangkok in 2025 and give me the number."
 - Expected: says that no web tool is available and stops. It does not answer from memory as if it were research.
 - Pass: says web search is unavailable; gives no number; says what is needed (turn on web search, or attach sources).
@@ -61,3 +61,11 @@ claude.ai run, use the chat's web search and web fetch.
 - Expected: a direct answer.
 - Pass: Canberra, with no research report.
 - Fail: starts a research report.
+
+### aaa-research-TRIGGER-3
+
+- Setup: Cowork. No web search or web fetch tool, but the browser is available. The user attached `fees-note.txt`: "Company registration fee in Thailand: 5,500 baht (from a friend, 2023)." In the browser, the Department of Business Development (DBD) fee page can be opened; for proxy runs, give its text in the scenario.
+- Prompt: "My note says the registration fee is 5,500 baht. Check with research whether that is still right."
+- Expected: does not stop for missing web tools, because the browser counts. Does not stop because the note already answers it, because the user asked to check it. Opens the primary source (DBD) in the browser, labels the note's figure stated (from the user's file), and labels the web finding by its own evidence.
+- Pass: the research goes ahead in the browser; the DBD page is opened and cited; the note's 5,500 baht is labeled stated, not verified, unless the primary source confirms it.
+- Fail: stops because no web search or fetch tool exists; reports the note's figure back without checking; or calls 5,500 baht verified on the note alone.

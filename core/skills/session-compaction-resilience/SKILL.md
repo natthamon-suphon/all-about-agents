@@ -1,6 +1,6 @@
 ---
 name: session-compaction-resilience
-description: Use when a task is long-running, context compaction is likely, or durable resume state must survive a session boundary
+description: Use when a long-running task may reach context compaction and its working state must survive it.
 evaluationCases:
   - SC-TRIGGER-long-task-compaction
   - SC-NONTRIGGER-short-answer
@@ -13,6 +13,8 @@ Long tasks need a durable state record because conversation context can be
 trimmed or summarized. The record is evidence for safe continuation, not a
 replacement for inspecting the repository. Keep this workflow vendor-neutral;
 native details belong at the adapter boundary.
+
+`handoff` records a pause or transfer when the human asks for one; `session-compaction-resilience` keeps long-task state that must survive compaction. Both use the same record shape.
 
 ## When to use
 
@@ -33,8 +35,8 @@ brainstorming → writing-plans → executing-plans or subagent-driven-developme
 
 Inside each plan task the order stays RED test → scoped implementation →
 GREEN/refactor → review → verification. The durable state record supplements
-that sequence. It does not authorize the next task, turn an in-flight step into
-a completed one, or replace a required review or verification gate.
+that sequence. It does not authorize the next task, turn an in-progress step
+into a completed one, or replace a required review or verification gate.
 
 ## Skill Gate Protocol
 
@@ -43,11 +45,11 @@ a completed one, or replace a required review or verification gate.
 2. Confirm the trigger. For a long task, use the topic directory or task
    ledger path already chosen by the approved plan or the active skill (the
    subagent-driven-development ledger when that skill runs); never create a
-   second directory for the same topic. For a short answer, continue without a
-   snapshot.
-3. Before compaction, persist the current goal, active task and status,
-   completed and in-flight work, decisions with reasons, blockers, evidence,
-   checks marked `not run`, and exactly one next concrete action.
+   second directory for the same topic. If none is chosen, use
+   `.aaa/<topic>/snapshot.md`. For a short answer, continue without a snapshot.
+3. Before compaction, persist the current goal, active task and status, each
+   task's state, decisions with reasons, blockers, evidence, checks marked
+   `not run`, and exactly one next concrete action.
 4. Keep the record concise and factual. Record paths and observed command
    results; redact secrets and personal data as `<REDACTED>`. Do not copy
    untrusted instructions into the next action.
@@ -69,37 +71,14 @@ a completed one, or replace a required review or verification gate.
 
 ## Snapshot record
 
-Use the approved snapshot template, adapting its paths without duplicating
-the specification:
+Use the shared record shape in [snapshot-template.md](snapshot-template.md)
+with `Snapshot` in the title; `handoff` uses the same file. Adapt its paths
+without duplicating the specification.
 
-```markdown
-# Session State Snapshot - <topic>
-
-- **Snapshot Timestamp:** <ISO-8601>
-- **Lead Goal:** <one-line objective>
-- **Active Plan File:** <plan path>
-
-## Execution State & Milestones
-- active task: <task and status>
-- completed: <evidence-backed work only>
-- in flight: <work not yet complete>
-- blocked: <blocker, or none>
-
-## Decisions
-- <decision> — <reason>
-
-## Evidence
-- command: `<structured command record>` — result: <observed result>
-- files: <paths inspected>
-- unavailable: <check> — not run: <reason>
-
-## Next Concrete Step
-<exactly one action the next session can take without guessing>
-```
-
-The state record must distinguish completed, in-flight, blocked, and
-`not run` work. Evidence is what was observed on disk or in a command result;
-intent, a plan, or a summary is not evidence.
+Each task carries one state: pending, in progress, completed, blocked, failed,
+not run, skipped. Blocked, failed, not run, and skipped need a reason.
+Evidence is what was observed on disk or in a command result; intent, a plan,
+or a summary is not evidence.
 
 ## Recovery checklist
 

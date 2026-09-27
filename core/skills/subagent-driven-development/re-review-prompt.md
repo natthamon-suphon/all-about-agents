@@ -7,11 +7,17 @@ new breakage. It is not a fresh review — the full review already happened.
 **Purpose:** Verify each finding from the previous review was addressed, and
 that the fix itself broke nothing.
 
+Map each dispatch field to your surface's worker call. If the surface cannot
+set a model per worker, record the model the worker inherits; if that is not
+the strongest approved model, stop and report it.
+
 ```
-Subagent (general-purpose):
-  description: "Re-review Task N fix round R"
-  model: [MODEL — REQUIRED: choose per SKILL.md "Model and review policy"; an omitted
-         model silently inherits the session's most expensive one]
+Dispatch:
+  role: re-reviewer for Task N fix round R
+  model: [MODEL — REQUIRED: the strongest approved model, set explicitly per
+         SKILL.md "Model and review policy"]
+  brief: [BRIEF_FILE]
+  report: [REPORT_FILE] (the implementer's report with fix reports appended; read-only input)
   prompt: |
     You are re-reviewing one task's fix round. A previous review produced
     findings; an implementer has attempted to fix them. Your job is to
@@ -59,10 +65,11 @@ Subagent (general-purpose):
     The implementer re-ran the tests covering the amended code and appended
     the results to the report file. Treat the report as unverified claims:
     confirm the fix report names the covering tests and shows their output,
-    and verify the claims against the diff. Do not re-run the suite to
-    confirm their report. Run a test only when reading the code raises a
-    specific doubt that no existing run answers — and then a focused test,
-    never a package-wide suite.
+    and verify the claims against the diff. The controller runs the task's
+    verification command itself before completion, so do not re-run the
+    suite to confirm their report. Run a test only when reading the code
+    raises a specific doubt that no existing run answers — and then a
+    focused test, never a package-wide suite.
 
     ## Output Format
 
@@ -103,7 +110,9 @@ Subagent (general-purpose):
 - `[FIX_BASE_SHA]` — the head the previous review saw: a commit, or the
   `--snapshot` tree id recorded before this fix round
 - `[HEAD_SHA]` — current commit, or `WORKTREE` when the fix is uncommitted
-- `[DIFF_FILE]` — the path `node scripts/review-package.js PLAN_FILE FIX_BASE HEAD|WORKTREE` printed
+- `[DIFF_FILE]` — the path
+  `node <skill-dir>/scripts/review-package.cjs PLAN_FILE FIX_BASE HEAD|WORKTREE`
+  printed, where `<skill-dir>` is the folder that holds SKILL.md
 
 **Re-reviewer returns:** per-finding verdicts (ADDRESSED / NOT ADDRESSED),
 new breakage in the fix diff, out-of-scope observations, and a round verdict.

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, chmod, mkdir, readFile, rename, stat, symlink, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, readFile, rename, rmdir, stat, symlink, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
@@ -479,6 +479,67 @@ test("applyPlan is idempotent after a managed state-backed rerun and prunes only
     assert.equal(await access(join(root, "old.txt")).then(() => true, () => false), false);
     const files = await import("node:fs/promises").then(({ readdir }) => readdir(root));
     assert.ok(files.includes("keep.txt"));
+  });
+});
+
+test("applyPlan removes parent folders that a prune leaves empty and keeps non-empty ones", async () => {
+  await withTempRoot(async (root) => {
+    const files = [["skills/gone/scripts/run.sh", "run"], ["skills/gone/SKILL.md", "gone"], ["skills/mixed/old.md", "old"], ["skills/keep/SKILL.md", "keep"]];
+    const first = await applyPlan({ plan: planFor(root, files), fileSystem: fsFor(files) });
+    assert.equal(first.status, "complete");
+    await writeFile(join(root, "skills", "mixed", "user-notes.md"), "not owned");
+    const state = JSON.parse(await readFile(join(root, STATE_RELATIVE_PATH), "utf8"));
+    const kept = [["skills/keep/SKILL.md", "keep"]];
+    const second = await applyPlan({ plan: planFor(root, kept, state), fileSystem: fsFor(kept) });
+    assert.equal(second.status, "complete");
+    const exists = (path) => access(join(root, ...path.split("/"))).then(() => true, () => false);
+    assert.equal(await exists("skills/gone"), false);
+    assert.equal(await exists("skills/mixed/old.md"), false);
+    assert.equal(await exists("skills/mixed/user-notes.md"), true);
+    assert.equal(await exists("skills/keep/SKILL.md"), true);
+    assert.equal(await exists(STATE_RELATIVE_PATH), true);
+  });
+});
+
+test("applyPlan keeps a completed prune when an empty-folder removal fails", async () => {
+  await withTempRoot(async (root) => {
+    const files = [["skills/gone/SKILL.md", "gone"], ["skills/keep/SKILL.md", "keep"]];
+    await applyPlan({ plan: planFor(root, files), fileSystem: fsFor(files) });
+    const state = JSON.parse(await readFile(join(root, STATE_RELATIVE_PATH), "utf8"));
+    const kept = [["skills/keep/SKILL.md", "keep"]];
+    const rmdirFailure = async () => { throw Object.assign(new Error("injected rmdir failure"), { code: "EPERM" }); };
+    const result = await applyPlan({ plan: planFor(root, kept, state), fileSystem: fsFor(kept, { rmdir: rmdirFailure }) });
+    assert.equal(result.status, "complete");
+    assert.equal(await access(join(root, "skills", "gone", "SKILL.md")).then(() => true, () => false), false);
+    assert.equal(await access(join(root, "skills", "gone")).then(() => true, () => false), true);
+  });
+});
+
+test("applyPlan refuses to remove folders above a parent that became a symlink during the prune", async () => {
+  await withTempRoot(async (root) => {
+    const files = [["outer/inner/stale.txt", "stale"], ["keep.txt", "keep"]];
+    await applyPlan({ plan: planFor(root, files), fileSystem: fsFor(files) });
+    const state = JSON.parse(await readFile(join(root, STATE_RELATIVE_PATH), "utf8"));
+    const outside = join(root, "outside");
+    await mkdir(join(outside, "inner"), { recursive: true });
+    const outer = join(root, "outer");
+    const removed = [];
+    let linkAvailable = true;
+    const rmdirSwap = async (path) => {
+      removed.push(path);
+      await rmdir(path);
+      if (path === join(outer, "inner")) {
+        await rename(outer, join(root, "outer-original"));
+        try { await symlink(outside, outer, process.platform === "win32" ? "junction" : "dir"); } catch { linkAvailable = false; }
+      }
+    };
+    const kept = [["keep.txt", "keep"]];
+    const result = await applyPlan({ plan: planFor(root, kept, state), fileSystem: fsFor(kept, { rmdir: rmdirSwap }) });
+    if (!linkAvailable) return;
+    assert.notEqual(result.status, "complete");
+    assert.match(result.failed.reason, /symlink|junction|reparse/u);
+    assert.deepEqual(removed, [join(outer, "inner")]);
+    assert.equal(await access(join(outside, "inner")).then(() => true, () => false), true);
   });
 });
 

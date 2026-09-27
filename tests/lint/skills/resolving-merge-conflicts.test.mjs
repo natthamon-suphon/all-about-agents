@@ -73,3 +73,12 @@ test("core loader exposes resolving-merge-conflicts metadata", async () => {
   assert.equal(skill.name, skillId);
   assert.deepEqual(skill.evaluationCases, requiredCases);
 });
+
+test("resolving-merge-conflicts gives a safe path for a conflicted stash", async () => {
+  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
+  assert.match(skill, /## Stash conflicts/u);
+  assert.match(skill, /no `--abort`/u);
+  assert.match(skill, /stays in `git stash list`/u);
+  assert.match(skill, /Never run `git stash drop`[^.]*without explicit authority/u);
+  assert.match(skill, /destructive restore[\s\S]{0,160}ask\s+first/u);
+});

@@ -17,8 +17,8 @@ document language, the evidence labels, where documents go, and the header.
 - The user asks you to interview or question them about it.
 
 Do not use it to summarize a finished chat into a document, to answer a direct
-factual question, to give a quick opinion on an idea, or for work that is
-already fully specified.
+factual question, to give a quick opinion on an idea, to list ideas on
+request, or for work that is already fully specified.
 
 ## Checklist
 
@@ -39,12 +39,14 @@ attached), continue it: keep its IDs, and ask its Next question. If it is
 complete, show the coverage and ask "anything else?". Never start a second
 record. Otherwise:
 
-- Restate the idea in one line.
+- Restate the idea in one line. It goes under Topic.
+- Log the user's opening message as Q0, in their words.
 - State the project slug you will use, for example "I'll call this project
   `herbal-tea-shop`." The user can correct it. It is not a question.
 - Create `01-interview-record.md` from the
   [record template](templates/interview-record.md), in the tier the
-  conventions choose.
+  conventions choose. Name every attached file in the Sources row, and put
+  the facts it gives under Other facts given.
 - Ask the first question.
 
 ## 2. Topics
@@ -63,8 +65,9 @@ somewhere else:
 9. Deliverable form
 
 Add the extra topics for this kind of work from the
-[topic list](references/topics.md). Mark a topic n/a only when the user agrees
-that it does not apply.
+[topic list](references/topics.md). In the coverage table, replace the
+placeholder row with one row per extra topic. Mark a topic n/a only when the
+user agrees that it does not apply.
 
 ## 3. Ask
 
@@ -97,6 +100,9 @@ update the record:
 
 - Q&A log: Q#, the question, the answer in the user's own words, and your
   one-line reading of it. Cut only filler. Keep every fact, number, and name.
+- Other facts given: each fact the user gave outside an answer, such as in an
+  attached file, in their words, with its source. Name each new file in the
+  Sources row.
 - Decisions D#, assumptions A#, open questions O#, research items R#.
 - Coverage table: each topic is clear, open, or n/a.
 - Next question: the one question you will ask next.
@@ -122,7 +128,8 @@ If the user says stop, enough, or skip the questions, stop at once. Do not ask
 another interview question.
 
 1. Mark every unanswered topic open.
-2. Update the record and show the coverage table.
+2. Update the record. Keep its status in progress, and set Next question to
+   a question on the first open topic. Show the coverage table.
 3. Offer to turn what is known into a brief.
 
 Never fill the gaps with your own ideas. A plan, prices, products, or

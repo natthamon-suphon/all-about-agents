@@ -9,6 +9,8 @@ const requiredCases = [
   "SC-NONTRIGGER-short-answer",
   "SC-PRESSURE-assume-commit",
 ];
+const boundary = "`handoff` records a pause or transfer when the human asks for one; `session-compaction-resilience` keeps long-task state that must survive compaction. Both use the same record shape.";
+const canonicalStates = /pending,\s+in\s+progress,\s+completed,\s+blocked,\s+failed,\s+not\s+run,\s+skipped/u;
 
 test("T029 exposes its routing evidence", async () => {
   const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
@@ -33,12 +35,28 @@ test("session-compaction-resilience preserves durable evidence and safe recovery
   assert.match(skill, /verify[^\n]*disk|current bytes/iu);
   assert.match(skill, /conversation summary|handoff claim|model-generated status/iu);
   assert.match(skill, /redact(?:s|ed)? secrets|<REDACTED>/iu);
-  assert.match(skill, /completed[\s\S]*in-flight[\s\S]*blocked[\s\S]*not run/iu);
+  assert.match(skill, canonicalStates);
   assert.match(skill, /one next concrete action/iu);
   assert.match(skill, /explicit human authority/iu);
   assert.match(skill, /dependency installation/iu);
   assert.match(skill, /live transfer/iu);
   assert.doesNotMatch(skill, /(?:git log|commit SHA|commits?\s*[:<])/iu);
+});
+
+test("session-compaction-resilience owns the one record shape shared with handoff", async () => {
+  const skill = await readFile(resolve(process.cwd(), "core/skills/session-compaction-resilience/SKILL.md"), "utf8");
+  const template = await readFile(resolve(process.cwd(), "core/skills/session-compaction-resilience/snapshot-template.md"), "utf8");
+  const description = /^description:\s*(.+)$/mu.exec(skill)?.[1] ?? "";
+  assert.ok(skill.includes(boundary), "session-compaction-resilience must carry the HANDOFF-COMPACTION boundary sentence");
+  assert.match(description, /compaction/iu);
+  assert.doesNotMatch(description, /session boundary/iu);
+  assert.match(skill, /\]\(snapshot-template\.md\)/u, "the skill must link its template by path");
+  assert.doesNotMatch(skill, /```markdown/u, "the skill must not inline a second record shape");
+  assert.match(skill, /\.aaa\/<topic>\/snapshot\.md/u);
+  assert.match(template, /Goal[\s\S]*State[\s\S]*Decisions[\s\S]*Evidence[\s\S]*Suggested skills[\s\S]*Next concrete step/u);
+  assert.match(template, canonicalStates);
+  assert.doesNotMatch(template, /COMPLETE|IN_PROGRESS|PENDING|BLOCKED|Inviolable/u);
+  assert.doesNotMatch(template, /git log|commit SHA/iu);
 });
 
 test("session-compaction-resilience evaluation covers trigger, non-trigger, and pressure cases", async () => {

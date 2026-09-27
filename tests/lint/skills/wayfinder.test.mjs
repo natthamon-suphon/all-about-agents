@@ -32,7 +32,7 @@ test("wayfinder routes only unclear multi-session efforts", async () => {
   assert.match(skill, /approved,? bounded.*plan|approved.*executable.*plan/iu);
   assert.match(skill, /non-trigger|do not route.*plan|do not invoke.*wayfinder/iu);
   assert.match(skill, /Skill Gate Protocol/iu);
-  assert.doesNotMatch(skill, /(?:\.codex|\.gemini|mcp__|WebSearch|WebFetch|spawn_agent|invoke_subagent)/iu);
+  assert.doesNotMatch(skill, /(?:\.claude|\.codex|\.gemini|all-about-agents:|mcp__|WebSearch|WebFetch|spawn_agent|invoke_subagent)/iu);
 });
 
 test("wayfinder provides a durable local-markdown fallback under tracker pressure", async () => {
@@ -40,7 +40,8 @@ test("wayfinder provides a durable local-markdown fallback under tracker pressur
   assert.match(skill, /issue tracker/iu);
   assert.match(skill, /local-markdown tracker/iu);
   assert.match(skill, /no setup or dependency|no dependency/iu);
-  assert.match(skill, /\.claude\/all-about-agents\/<topic>\/MAP\.md/iu);
+  assert.match(skill, /\.aaa\/<topic>\/MAP\.md/u);
+  assert.match(skill, /\.aaa\/<topic>\/tickets\/closed\//u);
   assert.match(skill, /tickets\/.*\.md/iu);
   assert.match(skill, /Blocked by:/u);
   assert.match(skill, /Claimed:/u);

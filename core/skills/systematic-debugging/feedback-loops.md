@@ -22,9 +22,9 @@ Try them in roughly this order — cheapest and tightest first.
 5. **Replay a captured trace.** Save a real network request / payload / event log to disk; replay it through the code path in isolation.
 6. **Throwaway harness.** Spin up a minimal subset of the system (one service, mocked deps) that exercises the bug code path with a single function call.
 7. **Property / fuzz loop.** If the bug is "sometimes wrong output", run 1000 random inputs and look for the failure mode.
-8. **Bisection harness.** If the bug appeared between two known states (commit, dataset, version), automate "boot at state X, check, repeat" so you can `git bisect run` it.
+8. **Bisection harness.** If the bug appeared between two known states (commit, dataset, version), automate "boot at state X, check, repeat" so you can `git bisect run` it. Bisect moves `HEAD`: run it in a disposable worktree (`using-git-worktrees`) or ask first, and end with `git bisect reset`.
 9. **Differential loop.** Run the same input through old-version vs new-version (or two configs) and diff outputs.
-10. **Human-in-the-loop bash script.** Last resort. If a human must click, drive *them* with [`hitl-loop.template.sh`](hitl-loop.template.sh) so the loop is still structured. Captured output feeds back to you.
+10. **Human-in-the-loop bash script.** Last resort. If a human must click, drive *them* with [`hitl-loop.template.sh`](hitl-loop.template.sh) so the loop is still structured. Your tool shell has no interactive input, so the user runs the script in their own terminal and pastes the `--- Captured ---` block back to you.
 
 ## Tighten the loop
 
@@ -50,9 +50,9 @@ For flakiness caused by test pollution rather than the code under test, use [`fi
 Phase 1 is not done until you can name **one command** — a script path, a test invocation, a curl — that you have **already run at least once** (show the invocation and its output), and that is:
 
 - [ ] **Red-capable** — it drives the actual bug code path and asserts the **exact symptom your human partner described**, so it can go red on this bug and green once fixed. Not "runs without erroring" — it must be able to *catch this specific bug*.
-- [ ] **Deterministic** — same verdict every run (flaky bugs: a pinned, high reproduction rate, per above).
+- [ ] **Deterministic** — same verdict every run (flaky bugs: a measured reproduction rate, labeled nondeterministic).
 - [ ] **Fast** — seconds, not minutes.
-- [ ] **Agent-runnable** — you can run it unattended; a human enters the loop only via `hitl-loop.template.sh`.
+- [ ] **Agent-runnable** — you can run it unattended. The one exception is a human-in-the-loop repro: the user runs `hitl-loop.template.sh` in their own terminal and pastes the captured block back.
 
 If you catch yourself reading code to build a theory before this command exists, **stop — jumping straight to a hypothesis is the exact failure this skill prevents.** No red-capable command, no hypotheses.
 

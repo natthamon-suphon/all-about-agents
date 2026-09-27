@@ -44,11 +44,13 @@ Copy this checklist into your reply and keep it current:
 ## 2. Resume point
 
 - Start at the first task, in table order, that is `in progress` or
-  `pending` and whose dependencies are done. When the user resolves a
-  blocker, set that task back to `pending`.
-- Before you rely on a task marked done, check that its output exists in the
-  folder, the chat, or an attachment. If it is missing, set the task back to
-  `pending`, say so, and redo it if you can. Otherwise ask for the file.
+  `pending` and whose dependencies are done. A dependency counts as done
+  when its status starts with `done`. When the user resolves a blocker, set
+  that task back to `pending`.
+- Before you rely on a task whose status starts with `done`, check that its
+  output exists in the folder, the chat, or an attachment. If it is missing,
+  set the task back to `pending`, say so, and redo it if you can. Otherwise
+  ask for the file.
 - An output that is not a file, such as a live post or a sent email, counts
   as existing only when a tool shows it or the user confirms it.
 
@@ -113,7 +115,7 @@ An approval given in advance for "everything" does not replace this stop: one
 approval covers one step. After the user approves, do that step, record it,
 and continue the loop.
 
-While a task waits for approval, keep it `pending` and write "waiting for
+While a task waits for approval, its status is `pending`. Write "waiting for
 approval" in its run-log line. If no tool here can do the task (for example,
 posting in an app you cannot reach), set it `blocked`, name what is missing,
 and tell the user they can do it and report back.
@@ -121,10 +123,12 @@ and tell the user they can do it and report back.
 ## 5. Parallel work
 
 If subagents are available (for example in Cowork), you may give tasks marked
-parallel-safe to subagents. Give each one the task row, its inputs, and the
-brief. When a result comes back, check its output and run its done check
-yourself. Never copy a worker's "done" into the task file without your own
-check.
+parallel-safe to subagents at the same time, once their dependencies are
+done. Give each one the task row, its inputs, and the brief. When a result
+comes back, check its output and run its done check yourself. Never copy a
+worker's "done" into the task file without your own check. Never give a
+subagent a task flagged needs approval: stop for it (section 4) and do that
+step yourself after the user approves.
 
 ## 6. End
 

@@ -68,3 +68,12 @@ test("core loader exposes finishing-a-development-branch metadata and routing li
   assert.deepEqual(skill.evaluationCases, requiredCases);
   assert.deepEqual(core.evals.find((entry) => entry.id === `${skillId}-routing`)?.cases.map((entry) => entry.id), requiredCases);
 });
+
+test("finishing-a-development-branch runs tests for unknown status and names the verification boundary", async () => {
+  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
+  assert.match(skill, /`verification-before-completion` gates any success claim with fresh evidence; `finishing-a-development-branch` handles integration, runs the full suite, and uses the verification gate\./u);
+  assert.doesNotMatch(skill, /incomplete, failing,\s+or unknown/iu);
+  assert.match(skill, /status is unknown[^.]*step 3/isu);
+  assert.doesNotMatch(skill, /unknown, record it as `not run`/iu);
+  assert.match(skill, /record it as unknown/iu);
+});

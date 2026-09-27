@@ -455,6 +455,7 @@ function capabilityGuidance(profile) {
     "- To select the explicit CLI recovery profile, run `codex --profile terra-max`; the adapter does not configure an automatic Sol-to-Terra fallback.",
     "- Native `workspace-write` is workspace-wide; the implementer's declared task paths remain an outer approval boundary and are not enforced by this adapter.",
     "- Codex Desktop Terra/max selection is manual in its model controls.",
+    "- Codex-only tool notes, including the multi-agent feature flag and worktree detection, are in [Codex tool notes](./codex-tools.md).",
     "",
     "This adapter does not define repository schedules or a native statusline. If a selected Codex capability, path, syntax, or product surface is unavailable, report that condition and stop or ask for direction rather than inferring support.",
     ""

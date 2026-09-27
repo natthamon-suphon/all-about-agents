@@ -35,7 +35,7 @@ package was loaded.
 
 | Capability | Current evidence | Boundary |
 | --- | --- | --- |
-| Skills and roles | `agy plugin validate` reported 28 skills and 7 agents; a headless session named real skills and `agy agents` listed all seven | Desktop loading is not claimed. |
+| Skills and roles | `agy plugin validate` reported 28 skills and 7 agents, before `nano-image-generator` was removed in `19f0b4f` (the package now has 27 skills and was not re-validated); a headless session named real skills and `agy agents` listed all seven | Desktop loading is not claimed. |
 | `GEMINI.md` | Deployed only when the destination does not already differ | On a machine with an existing file, the routing contract needs one manual merge. |
 | Plugin registration | `agy plugin install <dir>`, then `agy plugin list` and `agy agents` listed the package and all seven roles | The install is a copy; it does not follow later renders. |
 | Routing contract | Inlined into `GEMINI.md`; a headless session quoted its first heading | Whether the model follows the contract is a behavior question, not a discovery one. |

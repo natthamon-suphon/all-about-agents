@@ -18,6 +18,8 @@ scoped command output from this turn.
 **Core principle:** Never turn an old observation, an inference, or a partial
 check into a current success claim.
 
+`verification-before-completion` gates any success claim with fresh evidence; `finishing-a-development-branch` handles integration, runs the full suite, and uses the verification gate.
+
 ## Skill Gate Protocol
 
 1. Classify the statement you are about to make. A progress update such as

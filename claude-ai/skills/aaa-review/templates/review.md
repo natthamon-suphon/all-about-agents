@@ -8,7 +8,7 @@
 | Date | YYYY-MM-DD |
 | Status | complete |
 | Language | the document language |
-| Sources | `01-interview-record.md`, `02-brief.md`, `03-tasks.md`, outputs |
+| Sources | `01-interview-record.md`, `02-brief.md`, `03-tasks.md`, research files, outputs |
 
 ## Scope
 
@@ -17,7 +17,8 @@ What was reviewed, and what was left out on purpose.
 ## Sources of truth
 
 The brief, then task acceptance criteria and done checks, then the interview
-record.
+record. The record wins where the brief copied it wrong, unless the brief's
+change log shows a later correction by the user.
 
 ## Verdict
 
@@ -29,6 +30,9 @@ record.
 | --- | --- | --- |
 
 ## Findings
+
+Status is open, fixed, or needs your decision. A re-review adds addressed or
+not addressed. Only fixed and addressed findings are closed.
 
 | F# | Severity | Location | Finding | Evidence | Status |
 | --- | --- | --- | --- | --- | --- |

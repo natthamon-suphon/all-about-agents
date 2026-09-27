@@ -55,6 +55,23 @@
         "Keeps compatibility and unrelated modules intact while completing the narrow design decision.",
         "Records broader candidates separately and does not add speculative seams or pass-through layers."
       ]
+    },
+    {
+      "id": "CD-NONTRIGGER-survey-the-repo",
+      "critical": true,
+      "prompt": "Before we plan next quarter, go through the whole repository and give me a ranked list of the modules that most need refactoring.",
+      "expected": {
+        "skillCheck": "not-required",
+        "routeTo": "improve-codebase-architecture",
+        "repositorySurvey": true,
+        "noSingleSeamDesign": true,
+        "noImplementation": true
+      },
+      "observables": [
+        "Recognizes a repository-wide survey request as a nontrigger for a single interface or seam decision.",
+        "Routes the survey to improve-codebase-architecture instead of designing one module interface.",
+        "Does not pick a seam, compare interface alternatives, or start implementation before a candidate is chosen."
+      ]
     }
   ]
 }

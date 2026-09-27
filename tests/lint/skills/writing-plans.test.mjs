@@ -95,3 +95,17 @@ test("core loader exposes writing-plans metadata and routing links", async () =>
   assert.deepEqual(skill.evaluationCases, requiredCases);
   assert.deepEqual(core.evals.find((entry) => entry.id === "writing-plans-routing")?.cases.map((entry) => entry.id), requiredCases);
 });
+
+test("writing-plans names test commands without running them and links its reviewer prompt", async () => {
+  const skill = await readFile(skillPath, "utf8");
+  const flat = skill.replace(/\s+/gu, " ");
+  const reviewer = (await readFile(new URL("../../../core/skills/writing-plans/plan-document-reviewer-prompt.md", import.meta.url), "utf8")).replace(/\s+/gu, " ");
+  assert.doesNotMatch(flat, /Run the focused test command and record/iu);
+  assert.match(flat, /names the focused test command and the expected RED\/GREEN result that the executor records as verification evidence/u);
+  assert.match(flat, /Planning runs no tests/u);
+  assert.match(flat, /\[plan-document-reviewer-prompt\.md\]\(plan-document-reviewer-prompt\.md\)/u);
+  assert.match(flat, /`Approved` is not human plan approval/u);
+  assert.match(reviewer, /`Approved` is not human plan approval/u);
+  assert.doesNotMatch(flat, /exact file paths and exact portable paths/iu);
+  assert.doesNotMatch(flat, /Record parameters and return types for every interface/iu);
+});

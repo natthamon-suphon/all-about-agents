@@ -1,10 +1,11 @@
 ---
 name: zero-downtime-migrations
-description: Use when changing a live or long-lived database schema, stored data, index, constraint, or application/data contract while old and new application versions may overlap
+description: Use when changing a live or long-lived database schema, stored data, index, constraint, or application/data contract while old and new application versions may overlap, not when a maintenance window is accepted
 evaluationCases:
   - ZM-TRIGGER-live-schema-migration
   - ZM-NONTRIGGER-local-throwaway-db
   - ZM-PRESSURE-postgres-universal
+  - ZM-NONTRIGGER-maintenance-window-accepted
 ---
 
 # Zero-Downtime Migrations
@@ -17,6 +18,11 @@ migration is safe on every database, version, topology, or workload.
 A schema reset used only by one developer in an explicitly disposable local
 database is a nontrigger unless the task also changes a shared migration,
 release workflow, production-like fixture, or compatibility contract.
+
+A change made during an accepted maintenance window, when no old and new
+application versions run against the database at the same time, is also a
+nontrigger. Plan it as an ordinary migration with its own recovery path; the
+skill applies again if traffic or an old version can overlap the change.
 
 ## Skill Gate Protocol
 
@@ -37,9 +43,9 @@ release workflow, production-like fixture, or compatibility contract.
    observable success, pause/abort signals, owner, and a tested recovery path.
    Derive numeric thresholds from representative measurements and the service's
    error budget; do not invent universal values.
-5. **Expand compatibly.** Prefer additive, nullable or otherwise backward-
-   compatible structures and code paths when supported by verified vendor
-   behavior. Separate potentially blocking validation/index work when the
+5. **Expand compatibly.** Prefer additive, nullable or otherwise
+   backward-compatible structures and code paths when supported by verified
+   vendor behavior. Separate potentially blocking validation/index work when the
    actual engine permits it. Keep old readers and writers safe.
 6. **Deploy compatible code.** Introduce tolerant reads and controlled writes.
    If dual writes are necessary, define ordering, retries, idempotency,

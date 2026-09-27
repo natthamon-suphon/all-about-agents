@@ -92,3 +92,9 @@ test("core loader exposes using-git-worktrees metadata and routing links", async
   assert.deepEqual(skill.evaluationCases, requiredCases);
   assert.deepEqual(core.evals.find((entry) => entry.id === "using-git-worktrees-routing")?.cases.map((entry) => entry.id), requiredCases);
 });
+
+test("using-git-worktrees prefers a target outside the repository working tree", async () => {
+  const flat = (await readFile(skillPath, "utf8")).replace(/\s+/gu, " ");
+  assert.match(flat, /Prefer a target outside the repository working tree/u);
+  assert.match(flat, /inside the repository only when[^.]*already ignores/u);
+});

@@ -121,6 +121,66 @@ All notable changes to all-about-agents. The format follows
 
 ### Changed
 
+- A second full review of the 27 core skills was fixed in one pass. The
+  owner chose three defaults:
+  - Skill records now default to `.aaa/<topic>/`, because Codex and
+    Antigravity use them too. `handoff.md`, brainstorming's `design.md`, and
+    wayfinder's `MAP.md` and `tickets/` move there from
+    `.claude/all-about-agents/<topic>/`; session-compaction's `snapshot.md`
+    and loop-me's `workflow-spec.md` get it as their first default path; and
+    brainstorming screens made with `--project-dir` go to `.aaa/brainstorm/`.
+    Older folders are not moved.
+  - `writing-skills` now caps a `SKILL.md` body at 1,500 words, and the
+    router at 500. `systematic-debugging` moved its red flags to
+    `red-flags.md`, and `subagent-driven-development` moved its conflict scan
+    to `conflict-scan.md`, to fit.
+  - The orphan `systematic-debugging/condition-based-waiting-example.ts` is
+    deleted.
+- The Claude package now renders `adapter-capability-guidance.md` for the
+  router, like Codex and Antigravity, so the router's surface-specific steps
+  no longer stop on Claude. The Codex guidance links the Codex-only tool
+  notes.
+- The `subagent-driven-development` scripts are now `.cjs` and the
+  `writing-skills` renderer is `render-graphs.mjs`, so they run from the
+  source tree under `"type": "module"`.
+- Boundaries that two skills both claimed are now stated on both sides:
+  debugging versus performance work, plan-task execution versus parallel
+  dispatch (with a routing case in each eval), handoff versus compaction
+  state (one shared record shape), and verification versus branch finishing.
+- `dispatching-parallel-agents` needs recorded plan approval only for workers
+  that write; read-only workers need a bounded brief and a named owner.
+- `receiving-code-review` now reproduces a confirmed defect with a failing
+  test before the fix. `writing-plans` runs no tests while planning.
+  `subagent-driven-development` makes TDD required for behavior changes, and
+  the coordinator runs each task's verification command itself.
+- `register --apply` reports `manual-required` (exit 1) when Claude's plugin
+  cache for the installed version differs from the package (a missing or
+  changed file, a symlinked folder, or any extra file except Claude's
+  `.in_use/` markers and the hook logs under `hooks/audit/` and
+  `hooks/checkpoints/`), or when the Codex plugin's package root has
+  uncommitted changes or is not its own Git repository. The cache must sit
+  below `<product root>/plugins/cache`. The report prints the exact reinstall
+  commands, with control characters escaped; for a package root that holds
+  `'` it prints none. See `docs/maintenance/native-registration.md`.
+- Several descriptions were narrowed so their triggers no longer overlap:
+  brainstorming, performance-profiling-and-benchmarking (goal and proof work;
+  an unknown-cause regression goes to systematic-debugging),
+  threat-modeling-and-security (trust-boundary changes), zero-downtime-migrations
+  (not when a maintenance window is accepted), handoff, session-compaction-resilience,
+  and executing-plans. `resolving-merge-conflicts` gained a stash-conflict
+  section, and the code reviewer template no longer creates a worktree.
+- claude.ai pack: the interview record keeps the topic, the opening message
+  (Q0), facts given outside a question, and attached files, and a document
+  keeps its language unless the user asks for another. The brief keeps both
+  values when the source contradicts itself. A task is parallel-safe when it
+  changes nothing another task changes; a dependency counts as done when its
+  status starts with `done`; and `aaa-run` never gives a task that needs
+  approval to a subagent. `aaa-research` counts a browser as a web tool and
+  checks an attached answer when the user asks. `aaa-review` counts a success
+  criterion that can only be measured later as "not checked", does not report
+  an open question that no output answers, rates a missing extra that no
+  requirement names as minor, and asks for any fact only the user has.
+
 - The claude.ai skill pack was revised after a pre-upload review. The shared
   conventions now define one meaning per ID type (including `REQ#` and `F#`),
   keep IDs across documents, and treat updates to the project's own documents
@@ -182,6 +242,9 @@ All notable changes to all-about-agents. The format follows
 
 ### Removed
 
+- `writing-skills/anthropic-best-practices.md` and
+  `writing-skills/examples/CLAUDE_MD_TESTING.md`: their content moved into
+  `SKILL.md` and `testing-skills-with-subagents.md`.
 - The `nano-image-generator` skill, its Gemini image script, routing eval,
   lint test, inventory and emoji entries, and its collision set. The
   portfolio is now 27 skills, and the inventory schema pins 27. Its user
@@ -190,6 +253,34 @@ All notable changes to all-about-agents. The format follows
 
 ### Fixed
 
+- `brainstorming`: the visual companion always reported port 0, so its URL
+  never opened. Each start now makes a new session key, kept only in a
+  private temp folder, never in the project. `stop-server.sh` now cleans up
+  on macOS, where `TMPDIR` and `/tmp` resolve through `/private`, and also
+  after the server stopped by itself. A start that times out no longer leaves
+  a keyed server running. A second stop reports `not_running` as JSON, a path
+  outside the temp root is refused untouched, a crash before ready keeps only
+  the log, a reused process ID is never force-killed, and a symlinked `.aaa`
+  or `.aaa/brainstorm` is refused.
+- `systematic-debugging`: `find-polluter.sh` passes `test --` only to package
+  managers and skips `node_modules`; its documented example no longer checks a
+  path that always exists. The containment example uses `realpath` and
+  `path.relative`, and the human-in-the-loop template is run by the user.
+- `subagent-driven-development` scripts refuse an output file outside the
+  plan's `sdd/` folder, a name that starts with a dot, a symlinked `sdd/`
+  folder or output, a task number that is not a whole number, and a folder
+  that is not a Git work tree. Diffs over 1 MiB now package, packages ignore
+  color and external diff settings, and both the Node scripts and the bash
+  fallback write a temporary file and rename it. The bash fallback passes
+  only resolved commit IDs to Git, so a ref cannot act as an option. A
+  `WORKTREE` package lists the untracked files it includes and refuses
+  (exit 2, paths only, nothing written) untracked files with common secret
+  names such as `.env`, `*.pem`, or `id_rsa*`. Packages and briefs are
+  written with mode 0600, and SIGHUP now cleans up like the other signals.
+- `test-driven-development/writing-good-tests.md` has its good and bad labels
+  back; an encoding error had replaced them with `// ?`.
+- The installer's prune step now removes folders it left empty, up to the
+  package root, and never a folder that still holds files.
 - `npm run test:model` scored the announcement by a literal `Using skill **<skill>`
   string, with a fallback that accepted the skill name plus the word "skill"
   anywhere in the answer. Nothing rendered into the package carries that literal
@@ -203,7 +294,7 @@ All notable changes to all-about-agents. The format follows
   fixed 180000 ms to 300000 ms and reads `AAA_CASE_TIMEOUT_MS` when it is set.
 - `subagent-driven-development` built its review package from commits only.
   The skill's default is to not commit, so the package held an empty diff and
-  a task could still be reviewed and completed. `review-package.js` now takes
+  a task could still be reviewed and completed. `review-package.cjs` now takes
   `WORKTREE` as the head to package uncommitted work, and `--snapshot` prints a
   tree id to use as the per-task base. Both write Git objects only, with no
   commit, ref, index, or working-tree change. An empty package is refused with

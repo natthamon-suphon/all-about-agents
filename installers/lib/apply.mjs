@@ -1,4 +1,4 @@
-import { lstat, readFile, unlink } from "node:fs/promises";
+import { lstat, readFile, rmdir, unlink } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 
 import { assertSafeDestinationRoot } from "./roots.mjs";
@@ -176,6 +176,19 @@ async function validatePreconditions({ plan, actions, contents, fileSystem }) {
   return null;
 }
 
+async function removeEmptyParents(root, start, fileSystem) {
+  const remove = operation(fileSystem, "rmdir", rmdir);
+  for (let directory = start; relative(root, directory) !== ""; directory = dirname(directory)) {
+    assertSafeDestinationRoot(directory, { allowedProductRoots: [root] });
+    try {
+      await remove(directory);
+    } catch {
+      // The owned file is already gone; a folder that stays behind must not fail the prune.
+      return;
+    }
+  }
+}
+
 async function applyAction({ plan, action, contents, fileSystem }) {
   const target = safeTarget(plan.root, action.relativePath);
   assertSafeDestinationRoot(dirname(target), { allowedProductRoots: [plan.root] });
@@ -188,6 +201,7 @@ async function applyAction({ plan, action, contents, fileSystem }) {
     assertSafeDestinationRoot(dirname(target), { allowedProductRoots: [plan.root] });
     const observed = await inspectTarget(target, fileSystem);
     if (observed.kind !== "missing") throw new Error("pruned destination still exists");
+    await removeEmptyParents(plan.root, dirname(target), fileSystem);
   } else if (action.kind === "reject") {
     throw new Error(action.reason || "plan action rejected");
   }
@@ -347,7 +361,7 @@ export async function applyPreparedSurface(prepared) {
  * relativePath to its exact Uint8Array. It additionally supplies the required
  * repositoryVersion, profile, and surfaces metadata. Optional standard
  * fs/promises-compatible methods (lstat, readFile, mkdir, writeFile, rename,
- * unlink, chmod) are accepted for disposable failure injection.
+ * unlink, rmdir, chmod) are accepted for disposable failure injection.
  */
 export async function applyPlan({ plan, fileSystem } = {}) {
   if (!object(fileSystem) || Array.isArray(fileSystem)) throw new TypeError("fileSystem must be an object");

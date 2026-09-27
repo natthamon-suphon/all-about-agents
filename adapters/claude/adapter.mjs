@@ -305,8 +305,11 @@ function renderSkill(name, record, presentation) {
   const sourceBody = hasSource
     ? stripFrontmatter(record.content)
     : "DEFERRED: canonical source is missing.\nOwner: cycle-05-skill-remediation (T017-T043).\n";
+  const guidanceReference = name === "using-all-about-agents"
+    ? "\nSee [Claude adapter capability guidance](./references/adapter-capability-guidance.md).\n"
+    : "";
   return {
-    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${sourceBody}`),
+    content: ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${sourceBody}${guidanceReference}`),
     hasSource
   };
 }
@@ -486,6 +489,30 @@ function mappingsDocument() {
   return ensureText(lines.join("\n"));
 }
 
+function capabilityGuidance(semanticProfile) {
+  const code = (value) => `\`${value}\``;
+  const policy = CLAUDE_MODEL_POLICY.template;
+  const modelGuidance = semanticProfile.modelPolicies[CLAUDE_SURFACE] === "surface-default"
+    ? "- The portable profile leaves the model and effort unchanged."
+    : `- The template profile sets ${code(policy.model)}, fallback ${policy.fallbackModel.map(code).join(", ")}, advisor ${code(policy.advisorModel)}, and \`CLAUDE_CODE_EFFORT_LEVEL\` ${code(policy.env.CLAUDE_CODE_EFFORT_LEVEL)} in \`settings.json\`. Account, organization, plan, provider, consent, and product-version conditions can limit advisor access.`;
+  return ensureText([
+    "# Claude adapter capability guidance",
+    "",
+    "This package is the Claude adapter's documented surface map.",
+    "",
+    "- `CLAUDE_CONFIG_DIR` selects the settings root shared by Claude Code CLI and Claude Desktop local Code; the fallback is the user's `.claude` directory.",
+    "- Skills are packaged under `skills/<skill>/SKILL.md`, roles under `agents/<role>.md`, and rules as independent files under `rules/`. `CLAUDE.md` is deployed to `<CLAUDE_CONFIG_DIR>/CLAUDE.md`; the plugin never loads a root `CLAUDE.md`.",
+    `- \`docs/semantic-mappings.md\` at the package root maps each semantic capability to Claude Code tools; \`role-dispatch\` maps to ${CLAUDE_SEMANTIC_MAPPINGS["role-dispatch"].map(code).join(", ")}.`,
+    `- Read-only roles use \`disallowedTools\` for ${READ_ONLY_NATIVE_TOOLS.map(code).join(", ")}. The implementer's native \`Write\`/\`Edit\` controls are workspace-wide; its declared task paths remain an outer approval boundary.`,
+    `- \`hooks/hooks.json\` runs \`node\` in exec form from \`\${CLAUDE_PLUGIN_ROOT}\`: ${claudeBootstrapTemplate.event} (${code(claudeBootstrapTemplate.nativeMatcher)}) adds this skill as session context, ${claudeActivityTemplate.event} writes the optional activity audit and statusline tracker, and ${claudeCheckpointTemplate.event} writes a checkpoint. No PreToolUse hook is rendered.`,
+    `- \`settings.json\` sets \`permissions.defaultMode\` to ${code(semanticProfile.authority === "full" ? "bypassPermissions" : "default")} and keeps the emergency Bash deny rules. The statusline renders under \`statusline/\` and is wired through \`statusLine\`.`,
+    modelGuidance,
+    "",
+    "If a selected Claude capability, path, syntax, or product surface is unavailable, report that condition and stop or ask for direction rather than inferring support.",
+    ""
+  ].join("\n"));
+}
+
 function addFile(files, relativePath, content, mode = null, contentKind = "generated") {
   const body = contentKind === "companion" ? content : ensureText(content);
   if (typeof body !== "string") throw new TypeError("rendered file content must be a string");
@@ -543,6 +570,7 @@ export function renderClaude(input = {}) {
   addFile(files, "statusline/statusline.sh", STATUSLINE_POSIX_SOURCE_TEXT, 0o755);
 
   const missingSkills = [];
+  addFile(files, "skills/using-all-about-agents/references/adapter-capability-guidance.md", capabilityGuidance(semanticProfile));
   for (const skill of canonicalSkillIds(core)) {
     const rendered = renderSkill(skill, skillRecords.get(skill), core.presentation);
     if (!rendered.hasSource) missingSkills.push(skill);

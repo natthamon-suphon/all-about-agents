@@ -7,8 +7,12 @@
 | Version | v1 |
 | Date | YYYY-MM-DD |
 | Status | in progress |
-| Language | the chat language |
-| Sources | this chat |
+| Language | the document language |
+| Sources | this chat, and attached files by name |
+
+## Topic
+
+One line that restates the idea (Q0).
 
 ## Coverage
 
@@ -25,13 +29,24 @@ Status is clear, open, or n/a. "Where" points to the Q# or D# that covers it.
 | Resources and dependencies | open | |
 | Risks and unknowns | open | |
 | Deliverable form | open | |
-| Extra topic for this kind of work | open | |
+| One row per extra topic from the topic list | open | |
 
 ## Q&A log
 
+Q0 is the user's opening message.
+
 | Q# | Question | Answer (user's words) | Reading |
 | --- | --- | --- | --- |
+| Q0 | Opening message | | |
 | Q1 | | | |
+
+## Other facts given
+
+Facts the user gave outside an answer. Source: the file name, or "chat, after
+Q4".
+
+| Fact (user's words) | Source |
+| --- | --- |
 
 ## Decisions
 

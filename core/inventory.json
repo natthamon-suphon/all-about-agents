@@ -36,11 +36,11 @@
       "name": "brainstorming",
       "source": "skills/brainstorming/SKILL.md",
       "assets": [
+        "skills/brainstorming/scripts/frame-template.html",
         "skills/brainstorming/spec-document-reviewer-prompt.md",
         "skills/brainstorming/visual-companion.md"
       ],
       "scripts": [
-        "skills/brainstorming/scripts/frame-template.html",
         "skills/brainstorming/scripts/helper.js",
         "skills/brainstorming/scripts/server.cjs",
         "skills/brainstorming/scripts/start-server.sh",
@@ -206,17 +206,18 @@
       "name": "subagent-driven-development",
       "source": "skills/subagent-driven-development/SKILL.md",
       "assets": [
+        "skills/subagent-driven-development/conflict-scan.md",
         "skills/subagent-driven-development/implementer-prompt.md",
         "skills/subagent-driven-development/re-review-prompt.md",
         "skills/subagent-driven-development/task-reviewer-prompt.md"
       ],
       "scripts": [
         "skills/subagent-driven-development/scripts/review-package",
-        "skills/subagent-driven-development/scripts/review-package.js",
+        "skills/subagent-driven-development/scripts/review-package.cjs",
         "skills/subagent-driven-development/scripts/sdd-workspace",
-        "skills/subagent-driven-development/scripts/sdd-workspace.js",
+        "skills/subagent-driven-development/scripts/sdd-workspace.cjs",
         "skills/subagent-driven-development/scripts/task-brief",
-        "skills/subagent-driven-development/scripts/task-brief.js"
+        "skills/subagent-driven-development/scripts/task-brief.cjs"
       ],
       "auditDisposition": {
         "status": "stable",
@@ -227,15 +228,15 @@
       "name": "systematic-debugging",
       "source": "skills/systematic-debugging/SKILL.md",
       "assets": [
-        "skills/systematic-debugging/condition-based-waiting-example.ts",
         "skills/systematic-debugging/condition-based-waiting.md",
         "skills/systematic-debugging/defense-in-depth.md",
         "skills/systematic-debugging/feedback-loops.md",
-        "skills/systematic-debugging/find-polluter.sh",
+        "skills/systematic-debugging/hitl-loop.template.sh",
+        "skills/systematic-debugging/red-flags.md",
         "skills/systematic-debugging/root-cause-tracing.md"
       ],
       "scripts": [
-        "skills/systematic-debugging/hitl-loop.template.sh"
+        "skills/systematic-debugging/find-polluter.sh"
       ],
       "auditDisposition": {
         "status": "stable",
@@ -275,7 +276,7 @@
       "scripts": [],
       "auditDisposition": {
         "status": "stable",
-        "reason": "Legacy source retained while the canonical portable replacement is staged under core/skills/using-all-about-agents/."
+        "reason": "Current public skill retained in the unified baseline."
       }
     },
     {
@@ -334,12 +335,10 @@
       "name": "writing-skills",
       "source": "skills/writing-skills/SKILL.md",
       "assets": [
-        "skills/writing-skills/anthropic-best-practices.md",
         "skills/writing-skills/graphviz-conventions.dot",
         "skills/writing-skills/persuasion-principles.md",
-        "skills/writing-skills/render-graphs.js",
-        "skills/writing-skills/testing-skills-with-subagents.md",
-        "skills/writing-skills/examples/CLAUDE_MD_TESTING.md"
+        "skills/writing-skills/render-graphs.mjs",
+        "skills/writing-skills/testing-skills-with-subagents.md"
       ],
       "scripts": [],
       "auditDisposition": {
@@ -531,7 +530,7 @@
     },
     {
       "path": "core/skills/brainstorming/scripts/server.cjs",
-      "kind": "metadata",
+      "kind": "script",
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."
@@ -738,6 +737,14 @@
       }
     },
     {
+      "path": "core/skills/subagent-driven-development/conflict-scan.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
       "path": "core/skills/subagent-driven-development/implementer-prompt.md",
       "kind": "source",
       "auditDisposition": {
@@ -755,14 +762,14 @@
     },
     {
       "path": "core/skills/subagent-driven-development/scripts/review-package",
-      "kind": "metadata",
+      "kind": "script",
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."
       }
     },
     {
-      "path": "core/skills/subagent-driven-development/scripts/review-package.js",
+      "path": "core/skills/subagent-driven-development/scripts/review-package.cjs",
       "kind": "script",
       "auditDisposition": {
         "status": "stable",
@@ -771,14 +778,14 @@
     },
     {
       "path": "core/skills/subagent-driven-development/scripts/sdd-workspace",
-      "kind": "metadata",
+      "kind": "script",
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."
       }
     },
     {
-      "path": "core/skills/subagent-driven-development/scripts/sdd-workspace.js",
+      "path": "core/skills/subagent-driven-development/scripts/sdd-workspace.cjs",
       "kind": "script",
       "auditDisposition": {
         "status": "stable",
@@ -787,14 +794,14 @@
     },
     {
       "path": "core/skills/subagent-driven-development/scripts/task-brief",
-      "kind": "metadata",
+      "kind": "script",
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."
       }
     },
     {
-      "path": "core/skills/subagent-driven-development/scripts/task-brief.js",
+      "path": "core/skills/subagent-driven-development/scripts/task-brief.cjs",
       "kind": "script",
       "auditDisposition": {
         "status": "stable",
@@ -812,14 +819,6 @@
     {
       "path": "core/skills/systematic-debugging/SKILL.md",
       "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
-      "path": "core/skills/systematic-debugging/condition-based-waiting-example.ts",
-      "kind": "asset",
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."
@@ -858,6 +857,14 @@
       }
     },
     {
+      "path": "core/skills/systematic-debugging/red-flags.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
       "path": "core/skills/systematic-debugging/root-cause-tracing.md",
       "kind": "source",
       "auditDisposition": {
@@ -867,7 +874,7 @@
     },
     {
       "path": "core/skills/systematic-debugging/hitl-loop.template.sh",
-      "kind": "script",
+      "kind": "asset",
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."
@@ -978,22 +985,6 @@
       }
     },
     {
-      "path": "core/skills/writing-skills/anthropic-best-practices.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
-      "path": "core/skills/writing-skills/examples/CLAUDE_MD_TESTING.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
       "path": "core/skills/writing-skills/graphviz-conventions.dot",
       "kind": "asset",
       "auditDisposition": {
@@ -1010,7 +1001,7 @@
       }
     },
     {
-      "path": "core/skills/writing-skills/render-graphs.js",
+      "path": "core/skills/writing-skills/render-graphs.mjs",
       "kind": "script",
       "auditDisposition": {
         "status": "stable",

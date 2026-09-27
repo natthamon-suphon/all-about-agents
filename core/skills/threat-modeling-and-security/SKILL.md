@@ -1,10 +1,11 @@
 ---
 name: threat-modeling-and-security
-description: Use when a change affects authentication, authorization, trust boundaries, sensitive assets, external input, execution, data isolation, availability, or other security-relevant behavior
+description: Use when a change adds, removes, or alters a trust boundary, such as a new entry point or untrusted input path, an authentication or authorization rule, a sensitive data flow, privileged execution, or tenant isolation
 evaluationCases:
   - TM-TRIGGER-security-boundary-change
   - TM-NONTRIGGER-cosmetic-change
   - TM-PRESSURE-stack-absolutism
+  - TM-NONTRIGGER-internal-refactor-no-boundary
 ---
 
 # Threat Modeling and Security
@@ -15,7 +16,9 @@ infrastructure recipes require verified architecture and current authoritative
 documentation.
 
 A cosmetic change that does not affect data, behavior, parsing, rendering,
-execution, dependencies, permissions, or a trust boundary is a nontrigger.
+execution, dependencies, permissions, or a trust boundary is a nontrigger. An
+internal refactor that keeps every entry point, input source, privilege, data
+flow, and dependency the same is also a nontrigger.
 
 ## Skill Gate Protocol
 
@@ -56,16 +59,16 @@ execution, dependencies, permissions, or a trust boundary is a nontrigger.
   credential/token lifecycle handled by the actual identity architecture?
 - Authorization: which subject may perform which action on which resource and
   tenant, and where is that decision enforced server-side?
-- Input and output: what syntax, size, semantics, canonicalization, and context-
-  specific encoding are required before data crosses a sensitive sink?
+- Input and output: what syntax, size, semantics, canonicalization, and
+  context-specific encoding are required before data crosses a sensitive sink?
 - Secrets and privacy: can collection be reduced, access narrowed, storage and
   logs redacted, rotation supported, and retention/deletion enforced?
 - Execution: can untrusted values reach interpreters, queries, templates, file
   paths, network destinations, deserializers, or plugin/tool invocation?
 - Availability: which resources are attacker-amplifiable, and what quotas,
   timeouts, backpressure, cancellation, pagination, or circuit behavior applies?
-- Integrity and concurrency: what replay, duplicate, race, ordering, or partial-
-  failure conditions can violate an invariant?
+- Integrity and concurrency: what replay, duplicate, race, ordering, or
+  partial-failure conditions can violate an invariant?
 - Audit and recovery: which security decisions need tamper-resistant evidence,
   alerting, revocation, rollback, or incident recovery?
 

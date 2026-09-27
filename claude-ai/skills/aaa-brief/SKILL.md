@@ -18,8 +18,8 @@ document language, the evidence labels, where documents go, and the header.
 - An interview record exists and the user wants the formal version.
 
 Do not use it to explore a new idea, to translate text, to answer a question,
-to summarize an article, a web page, or a file, or to write content that
-nobody has discussed yet.
+to summarize an article, a web page, or a file, to give a short recap in
+your reply, or to write content that nobody has discussed yet.
 
 ## Checklist
 
@@ -41,9 +41,10 @@ Copy this checklist into your reply and keep it current:
 3. If there is nothing real to summarize, say so and stop. Do not build a
    brief from almost nothing.
 
-Name the source in the header's Sources row. Read an interview record by its
-header table and its ID tables (Q#, D#, A#, O#, R#). Its section titles may be
-in another language.
+Name every source in the header's Sources row, including attached files by
+name. Read an interview record by its header table, its Topic line, its ID
+tables (Q0 and up, D#, A#, O#, R#), and its Other facts given table (fact,
+source). Its section titles may be in another language.
 
 ## 2. Draft
 
@@ -68,11 +69,18 @@ template's section order:
 
 ## 3. Trace every line
 
-- End each statement with its source: `(Q3)`, `(D2)`, or `(chat)`.
+- End each statement with its source: `(Q3)`, `(D2)`, `(chat)`, or an
+  attached file such as `(prices.txt)`. A fact from the record's Other facts
+  given table carries that row's source, for example `(chat, after Q4)`.
 - `(chat)` covers only what the user said or accepted. An idea that only you
   suggested is not a source: leave it out, or list it as an open question
   that says it was your suggestion.
 - A line you concluded yourself carries `inferred` and what it is based on.
+  So does a line that rests only on the record's Reading column: trace to the
+  user's words in the Answer column.
+- If the source conflicts, use the later statement only when the user clearly
+  changed it. Otherwise add an O# that names both. In the section, point to
+  that O#, and do not pick one yourself.
 - A section nobody discussed holds only "Not discussed." Add the gap to the
   open questions.
 - Carry every research item R# into the open questions with its question.
@@ -81,7 +89,8 @@ template's section order:
   source does not contain.
 - Put each fact in one section only. A stated fact is a requirement, a
   constraint, or background. It becomes a decision only when the user chose
-  it over another option.
+  it over another option. Resources and dependencies go to Constraints or
+  Background; the deliverable form goes to Requirements.
 
 ## 4. When the user asks you to add or remove
 
@@ -109,13 +118,17 @@ Then check these, and never fix them by adding a number, a date, or a target:
 - success criteria that nobody could check: keep them, write "Not discussed"
   under How to check it, and add an open question that asks for the measure.
 
-Under the brief, add one line: "Self-review: passed", or the fixes you made.
+In your reply, under the brief, add one line: "Self-review: passed", or the
+fixes you made.
 
 ## 6. Versions
 
 Show the brief and ask for corrections. Each round of corrections makes a new
 version: v2, v3, and so on. Update the Version row, and add one line to the
 change log: version, date, and what changed.
+
+Then offer the next step: split the work into tasks, for example with
+`/aaa-tasks`, or run it with `/aaa-run`.
 
 ## Red flags
 

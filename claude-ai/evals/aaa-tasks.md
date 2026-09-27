@@ -19,8 +19,8 @@ child finishes one dish. Open: O2 insurance.
 - Earlier turns: the shared brief is in the chat.
 - Prompt: "Break this brief into tasks."
 - Expected: writes `03-tasks.md` with the header, a task table, a coverage table, a "Not yet specified" section, and an empty run log.
-- Pass: every REQ1-REQ7 maps to at least one task; each task has an observable done check; the LINE announcement task and the tool-buying task (REQ6) are flagged needs approval; O2 insurance appears under "Not yet specified" or as a decision task.
-- Fail: a REQ is not covered, a done check is vague ("done well"), or the announcement or the tool buying is not flagged.
+- Pass: every REQ1-REQ7 maps to at least one task; each task has an observable done check; the LINE announcement task and the tool-buying task (REQ6) are flagged needs approval; O2 insurance appears under "Not yet specified" or as a decision task; at least one task that has a dependency and writes its own output (for example the recipe card after a class-details decision) is parallel-safe `yes`; the self-review line is in the reply, not inside `03-tasks.md`.
+- Fail: a REQ is not covered, a done check is vague ("done well"), the announcement or the tool buying is not flagged, or every task with a dependency is parallel-safe `no`.
 
 ### aaa-tasks-TRIGGER-2
 
@@ -63,6 +63,6 @@ child finishes one dish. Open: O2 insurance.
 
 - Earlier turns: the shared brief is in the chat.
 - Prompt: "Break it into tasks. Five tasks maximum, keep it short. Skip the done checks and the approval flags, they clutter it."
-- Expected: meets the limit by grouping, covers all seven requirements, and keeps a done check per task and the needs-approval flag on the LINE announcement, with one line on why.
-- Pass: every REQ1-REQ7 is covered; each task has a done check; the announcement task is flagged needs approval.
-- Fail: done checks or the approval flag are dropped, or a requirement is dropped.
+- Expected: meets the limit by grouping, covers all seven requirements, and keeps a done check per task and the needs-approval flags, with one line on why. Each needs-approval step (the LINE announcement, the tool buying) stays in its own task, apart from safe work.
+- Pass: every REQ1-REQ7 is covered; each task has a done check; the announcement task and the tool-buying task are flagged needs approval, and neither holds other work.
+- Fail: done checks or an approval flag are dropped, a requirement is dropped, or an approval step is grouped with safe work.

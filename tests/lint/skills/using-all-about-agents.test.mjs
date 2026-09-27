@@ -59,6 +59,15 @@ test("simple factual routing still checks applicability before answering", async
   assert.match(skill, /For a simple factual response, complete the applicability check before answering\./u);
 });
 
+test("opt-in skills keep their own trigger gate and checklists stay 2-7 items", async () => {
+  const skill = await readFile(skillPath, "utf8");
+  assert.match(skill, /A skill applies only when its own trigger gate passes/u);
+  assert.match(skill, /`loop-me`[\s\S]{0,40}`wait-what`/u);
+  assert.match(skill, /2[–-]7 material items/u);
+  assert.match(skill, /Before planning/u);
+  assert.doesNotMatch(skill, /plan mode/iu);
+});
+
 test("assigned workers follow their contract without restarting bootstrap", async () => {
   const skill = await readFile(skillPath, "utf8");
   assert.match(skill, /An already-dispatched worker must follow its task contract without restarting this bootstrap\./u);
@@ -162,4 +171,13 @@ test("codex reference never auto-commits and cites real step numbers", async () 
   assert.doesNotMatch(reference, /commits all work/iu);
   assert.doesNotMatch(reference, /Step 0/u);
   assert.match(reference, /explicit/iu);
+});
+
+test("codex reference is marked Codex-only and uses shell-neutral detection", async () => {
+  const reference = await readFile(resolve(process.cwd(), "core/skills/using-all-about-agents/references/codex-tools.md"), "utf8");
+  assert.match(reference.split("\n", 1)[0], /Codex only/u);
+  assert.match(reference, /git rev-parse --path-format=absolute --git-dir --git-common-dir/u);
+  assert.match(reference, /git branch --show-current/u);
+  assert.doesNotMatch(reference, /\$\(|pwd -P|```bash/u);
+  assert.match(reference, /current Codex documentation/iu);
 });

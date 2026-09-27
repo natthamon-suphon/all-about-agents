@@ -2,11 +2,12 @@
 # Resolve and ensure the working-tree directory SDD uses for one plan's
 # short-lived artifacts. Cross-platform wrapper delegating to Node.js when available.
 set -euo pipefail
+CDPATH=''
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 if command -v node >/dev/null 2>&1; then
-  exec node "${SCRIPT_DIR}/sdd-workspace.js" "$@"
+  exec node "${SCRIPT_DIR}/sdd-workspace.cjs" "$@"
 fi
 
 if [ $# -ne 1 ]; then
@@ -19,6 +20,10 @@ plan=$1
 
 plan_dir=$(cd "$(dirname "$plan")" && pwd)
 dir="$plan_dir/sdd"
+if [ -L "$dir" ]; then
+  echo "refusing a symlinked sdd/ folder: $dir" >&2
+  exit 2
+fi
 mkdir -p "$dir"
-printf '*\n' > "$dir/.gitignore"
+[ -e "$dir/.gitignore" ] || [ -L "$dir/.gitignore" ] || (set -C; printf '*\n' > "$dir/.gitignore")
 cd "$dir" && pwd

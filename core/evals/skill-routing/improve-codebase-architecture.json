@@ -56,6 +56,23 @@
         "Treats HTML, browser preview, CDN, and diagrams as optional and reports unavailable checks truthfully.",
         "Does not fabricate a visual result or insert unescaped repository content, and the analysis still completes."
       ]
+    },
+    {
+      "id": "IA-NONTRIGGER-decide-one-seam",
+      "critical": true,
+      "prompt": "Every caller of the payments client repeats the same retry and error mapping. Where should that logic live in the client's interface?",
+      "expected": {
+        "skillCheck": "not-required",
+        "routeTo": "codebase-design",
+        "singleSeamDecision": true,
+        "noArchitectureSurvey": true,
+        "noScopeExpansion": true
+      },
+      "observables": [
+        "Recognizes one known interface or seam decision as a nontrigger for a codebase-wide survey.",
+        "Routes the decision to codebase-design and inspects only the named module, its callers, and its tests.",
+        "Does not rank candidates across unrelated modules or produce a survey report."
+      ]
     }
   ]
 }

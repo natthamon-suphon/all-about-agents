@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const skillId = "improve-codebase-architecture";
-const requiredCases = ["IA-TRIGGER-explicit-architecture-survey", "IA-NONTRIGGER-fix-one-bug", "IA-PRESSURE-require-HTML"];
+const requiredCases = ["IA-TRIGGER-explicit-architecture-survey", "IA-NONTRIGGER-fix-one-bug", "IA-PRESSURE-require-HTML", "IA-NONTRIGGER-decide-one-seam"];
 
 async function readSkill(relativePath = "SKILL.md") {
   return readFile(new URL(`../../../core/skills/${skillId}/${relativePath}`, import.meta.url), "utf8");
@@ -28,6 +28,11 @@ test("architecture improvement is an evidence-first survey with a design boundar
   assert.match(skill, /evidence/iu);
   assert.match(skill, /do not implement|not implementation authority|separate approval/iu);
   assert.match(skill, /codebase-design/iu);
+  assert.match(skill, /one known interface or seam[^.]*belongs to `codebase-design`/iu);
+  assert.doesNotMatch(skill, /another skill recommended/iu);
+  const description = /^description: Use when the user explicitly asks for (.+) before choosing a design$/mu.exec(skill)?.[1];
+  assert.ok(description);
+  assert.ok(skill.replace(/\s+/gu, " ").includes(`Use this skill when the user explicitly asks for ${description}.`));
 });
 
 test("plain Markdown is complete and HTML is optional without blocking analysis", async () => {
@@ -65,6 +70,8 @@ test("architecture improvement evaluation covers survey, bug-fix nontrigger, and
   assert.equal(evaluation.cases[2].expected.markdownFallback, true);
   assert.equal(evaluation.cases[2].expected.htmlOptional, true);
   assert.equal(evaluation.cases[2].expected.analysisNotBlocked, true);
+  assert.equal(evaluation.cases[3].expected.skillCheck, "not-required");
+  assert.equal(evaluation.cases[3].expected.routeTo, "codebase-design");
 });
 
 test("core loader exposes architecture-improvement metadata and its HTML companion", async () => {

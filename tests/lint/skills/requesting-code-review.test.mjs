@@ -74,3 +74,20 @@ test("reviewer template accepts every review package form, not only a commit ran
   assert.match(template, /git diff --cached/u);
   assert.match(template, /SHA is optional/iu);
 });
+
+test("requesting-code-review links a read-only reviewer template with evidence-backed strengths", async () => {
+  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
+  const template = await readFile(new URL(`../../../core/skills/${skillId}/code-reviewer.md`, import.meta.url), "utf8");
+  assert.match(skill, /\[code-reviewer\.md\]\(code-reviewer\.md\)/u);
+  assert.doesNotMatch(template, /git worktree add|\/tmp\//u);
+  assert.match(template, /git show <rev>:<path>/u);
+  assert.match(template, /report[^.]*to the coordinator[^.]*`using-git-worktrees`/isu);
+  assert.doesNotMatch(template, /Subagent \(general-purpose\)/u);
+  assert.match(template, /^Reviewer:$/mu);
+  assert.match(template, /### Strengths \(optional\)/u);
+  assert.doesNotMatch(template, /Acknowledge (?:what was done well|strengths)/u);
+  const example = template.slice(template.indexOf("## Example Output"));
+  const strengths = example.slice(example.indexOf("### Strengths"), example.indexOf("### Issues")).split("\n").filter((line) => line.startsWith("- "));
+  assert.ok(strengths.length > 0);
+  for (const line of strengths) assert.match(line, /\([\w.-]+:\d+(?:-\d+)?\)/u, `strength without file:line: ${line}`);
+});

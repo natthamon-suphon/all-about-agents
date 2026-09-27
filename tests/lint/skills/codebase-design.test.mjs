@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const skillId = "codebase-design";
-const requiredCases = ["CD-TRIGGER-interface-seam-decision", "CD-NONTRIGGER-local-rename", "CD-PRESSURE-refactor-everything"];
+const requiredCases = ["CD-TRIGGER-interface-seam-decision", "CD-NONTRIGGER-local-rename", "CD-PRESSURE-refactor-everything", "CD-NONTRIGGER-survey-the-repo"];
 
 async function readSkill(relativePath = "SKILL.md") {
   return readFile(new URL(`../../../core/skills/${skillId}/${relativePath}`, import.meta.url), "utf8");
@@ -19,6 +19,7 @@ test("T037 exposes its routing evidence", async () => {
 
 test("codebase-design preserves the deep-module vocabulary and evidence gate", async () => {
   const skill = await readSkill();
+  assert.match(skill, /survey[^.]*belongs to `improve-codebase-architecture`/iu);
   for (const term of ["Module", "Interface", "Implementation", "Depth", "Seam", "Adapter", "Leverage", "Locality"]) {
     assert.match(skill, new RegExp(`\\*\\*${term}\\*\\*`, "u"));
   }
@@ -45,6 +46,9 @@ test("codebase-design owns its deepening and alternative-design references", asy
   assert.match(designTwice, /depth/iu);
   assert.match(designTwice, /locality/iu);
   assert.match(designTwice, /seam placement/iu);
+  assert.match(skill, /at least two sound/iu);
+  assert.match(designTwice, /at least two radically different/iu);
+  assert.doesNotMatch(designTwice, /at least three/iu);
 });
 
 test("codebase-design evaluation makes trigger, nontrigger, and pressure outcomes explicit", async () => {
@@ -63,6 +67,8 @@ test("codebase-design evaluation makes trigger, nontrigger, and pressure outcome
   assert.equal(evaluation.cases[1].expected.localChangeOnly, true);
   assert.equal(evaluation.cases[2].expected.rejectRepositoryWideRefactor, true);
   assert.equal(evaluation.cases[2].expected.requireEvidence, true);
+  assert.equal(evaluation.cases[3].expected.skillCheck, "not-required");
+  assert.equal(evaluation.cases[3].expected.routeTo, "improve-codebase-architecture");
 });
 
 test("core loader exposes codebase-design metadata and companion files", async () => {

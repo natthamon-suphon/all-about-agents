@@ -14,6 +14,8 @@ then offer optional Git integration. A request to finish does not itself grant
 authority to commit, push, open a pull request, merge, discard work, or clean
 up a branch or workspace.
 
+`verification-before-completion` gates any success claim with fresh evidence; `finishing-a-development-branch` handles integration, runs the full suite, and uses the verification gate.
+
 ## When to use
 
 Use this skill when the implementation is complete, all required tests and
@@ -26,9 +28,10 @@ urgency into Git authority.
 1. Read the active request, repository instructions, approved plan, current
    task record, and relevant branch/worktree state.
 2. Confirm both predicates: the human is asking to finish or integrate, and
-   implementation verification is complete. If tests are incomplete, failing,
-   or unknown, report the evidence and stop before presenting integration
-   options.
+   the implementation is complete. If tests are failing or the work is
+   incomplete, report the evidence and stop before presenting integration
+   options. If the test status is unknown, do not stop: step 3 produces fresh
+   evidence.
 3. Run the project's complete test suite and the required focused checks. Keep
    the command, exit status, and failure details as evidence. Never rely on an
    earlier session's claim that tests passed.
@@ -87,7 +90,7 @@ everything in place.
 For a normal repository or named branch worktree, report the known base branch
 and offer the choices above. For a detached workspace, explain that merging
 requires a named branch and do not invent one. If the base branch, remote, or
-native integration capability is unknown, record it as `not run` and ask the
+native integration capability is unknown, record it as unknown and ask the
 human for the missing fact or authority.
 
 ## Common mistakes

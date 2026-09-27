@@ -34,7 +34,10 @@ test("loop-me is explicit-invocation-first and keeps ordinary brainstorming sepa
   assert.match(skill, /normal feature[\s\S]*brainstorming/iu);
   assert.match(skill, /must not route here automatically|do not invoke.*automatically/iu);
   assert.match(skill, /Skill Gate Protocol/iu);
-  assert.match(skill, /wrapper owns the workflow specification artifact/iu);
+  assert.match(skill, /This skill owns the workflow specification artifact/u);
+  assert.match(skill, /\.aaa\/<topic>\/workflow-spec\.md/u);
+  assert.match(skill, /do not run this skill's protocol/u);
+  assert.doesNotMatch(skill, /wrapper-owned|to the wrapper|skill check is not required/iu);
   assert.match(skill, /exactly one material question per message/iu);
   assert.match(skill, /recommendation/iu);
   assert.doesNotMatch(skill, /(?:\.claude|\.codex|\.gemini|mcp__|WebSearch|WebFetch|spawn_agent|invoke_subagent)/iu);
@@ -74,6 +77,9 @@ test("loop-me routing evaluation defines three complete critical cases", async (
   assert.equal(evaluation.cases[0].expected.explicitInvocation, true);
   assert.equal(evaluation.cases[0].expected.oneQuestionAtATime, true);
   assert.equal(evaluation.cases[0].expected.specificationReadyStop, true);
+  assert.equal(evaluation.cases[0].expected.skillOwnsArtifact, true);
+  assert.equal(Object.hasOwn(evaluation.cases[0].expected, "wrapperOwnsArtifact"), false);
+  assert.doesNotMatch(JSON.stringify(evaluation), /wrapper-owned/u);
   assert.equal(evaluation.cases[1].expected.skillCheck, "not-required");
   assert.equal(evaluation.cases[1].expected.explicitInvocation, false);
   assert.equal(evaluation.cases[1].expected.autoInvokeLoopMe, false);

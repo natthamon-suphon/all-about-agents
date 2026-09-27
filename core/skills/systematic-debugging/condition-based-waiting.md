@@ -61,7 +61,7 @@ Generic polling function:
 ```typescript
 async function waitFor<T>(
   condition: () => T | undefined | null | false,
-  description: string,
+  description = 'condition',
   timeoutMs = 5000
 ): Promise<T> {
   const startTime = Date.now();
@@ -79,9 +79,10 @@ async function waitFor<T>(
 }
 ```
 
-Adapt the inline helper above to the domain-specific condition you need, such
-as an event, event count, or matching event. Keep the predicate observable and
-the timeout explicit.
+Reuse this one helper with a domain-specific predicate instead of writing a new
+helper per case. Pass a `description` whenever the default error message would
+not say what was missing. Keep the predicate observable and the timeout
+explicit.
 
 ## Common Mistakes
 
@@ -98,7 +99,7 @@ the timeout explicit.
 
 ```typescript
 // Tool ticks every 100ms - need 2 ticks to verify partial output
-await waitForEvent(manager, 'TOOL_STARTED'); // First: wait for condition
+await waitFor(() => events.find(e => e.type === 'TOOL_STARTED'), 'TOOL_STARTED event'); // First: wait for condition
 await new Promise(r => setTimeout(r, 200));   // Then: wait for timed behavior
 // 200ms = 2 ticks at 100ms intervals - documented and justified
 ```

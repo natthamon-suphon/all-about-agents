@@ -11,9 +11,11 @@ evaluationCases:
 
 # Loop Me
 
-Specify recurring workflows when the human explicitly invokes this skill. The
-wrapper owns the workflow specification artifact; this skill owns the
-questioning discipline and the readiness contract.
+Specify recurring workflows when the human explicitly invokes this skill.
+This skill owns the workflow specification artifact and the readiness
+contract, and it is the wrapping skill for `interviewing`. Use the artifact path
+set by the active plan or brief; otherwise write
+`.aaa/<topic>/workflow-spec.md`.
 
 **Core principle:** ask only questions whose answers can change the workflow
 specification, then stop as soon as an implementer can build it without
@@ -31,9 +33,9 @@ or invokes `loop-me`, or directly asks to be grilled about a workflow.
 
 1. Inspect the request, existing brief, workspace notes, repository evidence,
    and recorded decisions. Resolve answerable facts before asking anything.
-2. Confirm explicit invocation and identify the wrapper-owned workflow
-   artifact. Without explicit invocation, the skill check is not required; do
-   not ask Loop Me questions.
+2. Confirm explicit invocation, then open or create the workflow artifact.
+   Without explicit invocation, do not run this skill's protocol and do not
+   ask Loop Me questions.
 3. Define the single workflow in scope. Use `interviewing` for the questioning
    discipline: ask exactly one material question per message and attach a
    recommendation with a short reason.
@@ -41,8 +43,8 @@ or invokes `loop-me`, or directly asks to be grilled about a workflow.
    answer, hide an unresolved branch, or replace a human decision with a
    guess.
 5. Re-check the readiness contract after every answer. Stop immediately when
-   the workflow is specification-ready; return the finished artifact to the
-   wrapper instead of continuing to interview.
+   the workflow is specification-ready; report the finished artifact path to
+   the human instead of continuing to interview.
 
 ## Specification-ready stop condition
 

@@ -20,7 +20,8 @@ document language, where documents go, and how to treat web content.
 
 Do not use it for arithmetic, for opinions, for summarizing a chat, for a
 simple fact question that needs no report, or for a question the attached
-material already answers. Answer those directly.
+material already answers, unless the user asks you to verify it. Answer those
+directly.
 
 ## Checklist
 
@@ -39,13 +40,14 @@ Copy this checklist into your reply and keep it current:
 
 - Write the question in one sentence, and the decision it helps with.
 - Check attachments and this chat first. If they already answer it, report
-  that with its source and stop.
+  that with its source and stop, unless the user asked you to verify it.
 - For a broad topic, split it into three to six sub-questions and research
   each one.
 
 ## 2. Confirm the web tools
 
-You need web search or web fetch. If neither is available, say so and stop.
+You need web search, web fetch, or a browser. If none is available, say so
+and stop.
 Say what would unblock you: turning on web search, or attaching sources. Never
 answer from memory as if it were research, and never invent a source, a
 quote, or a search.

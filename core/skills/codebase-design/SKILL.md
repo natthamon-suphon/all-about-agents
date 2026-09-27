@@ -5,6 +5,7 @@ evaluationCases:
   - CD-TRIGGER-interface-seam-decision
   - CD-NONTRIGGER-local-rename
   - CD-PRESSURE-refactor-everything
+  - CD-NONTRIGGER-survey-the-repo
 ---
 
 # Codebase Design
@@ -16,7 +17,9 @@ locality for maintainers, and evidence-based proportional change.
 This is a design reference, not permission to refactor. Use it when a real
 interface or seam decision exists. A local rename, formatting edit, or isolated
 implementation-only change is a nontrigger unless it changes what callers must
-know. Never turn a narrow request into a repository-wide redesign.
+know. A request to survey the repository for refactoring candidates, before any
+one seam is chosen, belongs to `improve-codebase-architecture`. Never turn a
+narrow request into a repository-wide redesign.
 
 ## Vocabulary
 

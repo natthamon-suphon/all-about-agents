@@ -31,7 +31,7 @@
       "prompt": "A user asks whether the app could switch its queue library and says quick and dirty is fine. Determine the next step.",
       "expected": {
         "skillCheck": "required",
-        "behaviorOrArchitectureChange": true,
+        "behaviorOrArchitectureChange": false,
         "path": "spike",
         "designGate": "required",
         "implementationBeforeApproval": false,
@@ -70,7 +70,7 @@
     {
       "id": "BR-NONTRIGGER-trivial-readonly",
       "critical": true,
-      "prompt": "A user asks for a bounded read-only status or file listing. Determine the next step without adding ceremony.",
+      "prompt": "A user asks for a small read-only status or file listing. Determine the next step without adding ceremony.",
       "expected": {
         "skillCheck": "not-required",
         "behaviorOrArchitectureChange": false,
@@ -81,9 +81,43 @@
         "trivialReadOnlyShortcut": true
       },
       "observables": [
-        "Recognizes that the bounded request does not change behavior or architecture.",
+        "Recognizes that the small read-only request does not change behavior or architecture.",
         "Answers or performs the read-only inspection directly.",
         "Does not force a design document, visual companion, or long interview."
+      ]
+    },
+    {
+      "id": "BR-NONTRIGGER-bug-report",
+      "critical": true,
+      "prompt": "Since yesterday's merge, the CSV export drops the last row and its test fails with 'expected 10 rows, got 9'. Nothing else changed on our side. Can you find out why?",
+      "expected": {
+        "skillCheck": "not-required",
+        "behaviorOrArchitectureChange": false,
+        "designGate": "not-required",
+        "routeTo": "systematic-debugging",
+        "visualCompanion": "not-offered"
+      },
+      "observables": [
+        "Treats the report as a failure with an unknown cause, not as a design request.",
+        "Routes to systematic-debugging to reproduce the failure and find the root cause before any fix.",
+        "Does not open a design gate, spec, or visual companion for the diagnosis."
+      ]
+    },
+    {
+      "id": "BR-NONTRIGGER-approved-spec",
+      "critical": true,
+      "prompt": "I approved the design in docs/specs/csv-export-design.md this morning. Please turn it into a step-by-step implementation plan.",
+      "expected": {
+        "skillCheck": "not-required",
+        "approvedDesign": true,
+        "designGate": "not-required",
+        "routeTo": "writing-plans",
+        "visualCompanion": "not-offered"
+      },
+      "observables": [
+        "Recognizes that the design is already approved in a written spec.",
+        "Routes to writing-plans instead of reopening questions, approaches, or design sections.",
+        "Does not restart discovery or rewrite the approved spec."
       ]
     },
     {
@@ -95,7 +129,7 @@
         "behaviorOrArchitectureChange": true,
         "designGate": "required",
         "implementationBeforeApproval": false,
-        "visualCompanion": "just-in-time",
+        "visualCompanion": "not-offered",
         "longInterview": false,
         "trivialReadOnlyShortcut": false,
         "pressureResistance": true

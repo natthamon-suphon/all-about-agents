@@ -1,7 +1,6 @@
 # Extra topics by kind of work
 
-Add every set that fits; several can apply. Ask each extra topic after the
-core topic it belongs to.
+Add every set that fits; several can apply.
 
 ## Software or app
 

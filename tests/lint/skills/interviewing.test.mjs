@@ -35,6 +35,13 @@ test("interviewing keeps a concise portable wrapper-owned contract", async () =>
   assert.doesNotMatch(skill, /(?:\.claude|\.codex|\.gemini|spawn_agent|invoke_subagent|mcp__)/iu);
 });
 
+test("the ownership gate accepts the artifacts that loop-me and brainstorming own", async () => {
+  const skill = await readFile(skillPath, "utf8");
+  const gate = skill.slice(skill.indexOf("\n1. Confirm"), skill.indexOf("\n2. "));
+  assert.match(gate, /`loop-me`[^.]*workflow specification|workflow specification[^.]*`loop-me`/u);
+  assert.match(gate, /`brainstorming`/u);
+});
+
 test("Skill Gate Protocol discovers facts and filters material decisions", async () => {
   const skill = await readFile(skillPath, "utf8");
   assert.match(skill, /Inspect the request, existing brief, repository evidence/iu);

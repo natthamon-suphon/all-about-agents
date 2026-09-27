@@ -1,8 +1,8 @@
 # Spec Document Reviewer Prompt
 
-Use this prompt after a behavior or architecture design has been written and
-before implementation planning. Do not dispatch it for a bounded read-only
-request that did not invoke brainstorming.
+Use this prompt only on the Architectural path, after the design spec has been
+written and before implementation planning. The Spike and Bounded paths write
+no spec, so they never dispatch it.
 
 ```text
 You are reviewing an approved design specification for implementation readiness.

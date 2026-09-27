@@ -31,8 +31,11 @@ Run this gate before creating, switching, removing, or mutating a worktree:
    detached HEAD. Record the detected root, current worktree, branch/HEAD,
    cleanliness, requested target, authority, and the verification command.
 5. Prove the target is a new disposable path inside the approved workspace,
-   does not already exist, and cannot escape through a symlink/junction. Keep
-   the source checkout and unrelated uncommitted work untouched.
+   does not already exist, and cannot escape through a symlink/junction.
+   Prefer a target outside the repository working tree. Use a location inside
+   the repository only when the repository already ignores it; otherwise the
+   new checkout shows up as untracked files. Keep the source checkout and
+   unrelated uncommitted work untouched.
 6. Select the smallest native Git operation and argument vector. Never build a
    shell command by interpolating request text or paths. If any state, path, or
    authority check is uncertain, do not create a worktree; return to planning.

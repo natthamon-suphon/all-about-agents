@@ -7,7 +7,7 @@ the observable pass and fail signals.
 
 - Prompt: "I have an idea for a small online shop that sells Thai herbal tea. Can you help me think it through?"
 - Expected: starts the interview, states a project slug, creates the record, asks one question.
-- Pass: the reply holds exactly one question, and a record header or record file with a coverage table.
+- Pass: the reply holds exactly one question, and a record header or record file with a coverage table; the coverage table lists the business extra topics as their own rows, with no placeholder row; the Q&A log starts with Q0, the opening message.
 - Fail: two or more questions in one reply, or a finished plan instead of a question.
 
 ### aaa-interview-TRIGGER-2
@@ -44,8 +44,8 @@ the observable pass and fail signals.
 - Earlier turns: Q1 "What is the main goal?", answer "Extra income, about 20,000 baht a month." Q2 "Who will buy it?", answer "Office workers in Bangkok."
 - Prompt: "I'm done, stop asking."
 - Expected: stops at once, updates the record, shows topic coverage, and offers the brief.
-- Pass: no new interview question; the record lists Q1-Q2 with the user's words and marks the other topics open; the next step is offered.
-- Fail: asks another interview question, or drops the user's answers.
+- Pass: no new interview question; the record lists Q1-Q2 with the user's words and marks the other topics open; the record status stays in progress, and Next question asks about the first open topic; the next step is offered.
+- Fail: asks another interview question, drops the user's answers, or sets the record status to complete.
 
 ### aaa-interview-PRESSURE-3
 
@@ -93,3 +93,26 @@ the observable pass and fail signals.
 - Expected: continues the attached record. The stop rule is already met, so it shows the coverage table and asks "anything else?" as its only question. It does not start a new record or a new topic question.
 - Pass: the coverage table is shown; the only question is "anything else?" or the same in other words; no fresh record.
 - Fail: starts a new record, or asks a new topic question.
+
+### aaa-interview-TRIGGER-6
+
+- Earlier turns: none. The user attaches `prices.txt`, which says: "Lemongrass tea 120 baht per box. Supplier: Chiang Mai Herb Co."
+- Prompt: "Interview me about my plan: an online shop for Thai herbal tea. I already sell at the Sunday market in Chatuchak, about 40 boxes a month."
+- Expected: starts the interview. The record holds the one-line topic under Topic, the opening message as Q0, the price and the supplier from `prices.txt` under Other facts given with the file as source, and `prices.txt` in the Sources row. It does not ask for what the message or the file already gave. One question.
+- Pass: Topic has one line; the Q0 row keeps the Sunday market, Chatuchak, and 40 boxes a month; Other facts given lists 120 baht per box and Chiang Mai Herb Co. with source `prices.txt`; the Sources row names `prices.txt`; exactly one question, and it does not ask for the price, the supplier, or the current sales.
+- Fail: any of those facts is missing from the record, the file is not in the Sources row, or the question asks for something the message or the file already gave.
+
+### aaa-interview-TRIGGER-7
+
+- Earlier turns: the interview on `herbal-tea-shop` runs in Thai, and the record is in Thai with Q1-Q2 answered. Claude asked Q3 in Thai: "ลูกค้าหลักคือใคร"
+- Prompt: "Mostly office workers in Bangkok."
+- Expected: records the answer in the user's words and keeps the record in Thai. A short answer in English is not a request to change the language.
+- Pass: the updated record keeps its Thai section titles, and its new rows use Thai for the reading; the Q3 answer keeps the user's English words; one question follows.
+- Fail: the record, or its new rows, switch to English.
+
+### aaa-interview-NONTRIGGER-4
+
+- Prompt: "Give me 10 name ideas for a Thai herbal tea shop."
+- Expected: a list of names, not an interview.
+- Pass: ten names; no project slug, no record, no interview question.
+- Fail: starts an interview record, or asks about the goal first.

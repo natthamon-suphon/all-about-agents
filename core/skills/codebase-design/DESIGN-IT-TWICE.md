@@ -21,8 +21,8 @@ When parallel subagents are available and authorized, give each the same brief
 and vocabulary but a different constraint. Otherwise, design the alternatives
 sequentially and keep their reasoning independent.
 
-Produce at least three radically different interfaces for a consequential
-decision:
+Produce at least two radically different interfaces for a consequential
+decision. Give each design a different constraint, for example:
 
 1. minimum interface—one to three entry points with maximum leverage;
 2. common-caller interface—the default path is trivial and safe; and

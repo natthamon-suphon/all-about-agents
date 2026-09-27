@@ -57,17 +57,27 @@ quote or a location): met, partly met, missing, or extra.
   the task is not done, whatever the log says.
 - An output you cannot see goes under "not checked", and its requirement is
   not checked. Never count it as met.
+- A success criterion that can only be measured after the work is used, such
+  as sales or repeat visits, goes under "not checked" with the reason. It is not a
+  finding and does not change the verdict.
 
 ## 3. Pass B: documents
 
-Walk the chain record → brief → tasks → outputs. Look for:
+Walk the chain record → brief → tasks → outputs. Also check each research
+file against the brief and the tasks. In the folder tier, list every file in
+the project folder; a file that no task or document names is extra or not
+checked. Look for:
 
 - a decision or an answer that changed or got lost on the way;
 - an open question that disappeared without an answer;
+- a research answer (R#) that the brief or the tasks do not carry;
 - a number, name, or date that differs between documents;
 - a fact in an output that no source contains, for example a price while the
   price is still an open question;
 - placeholders, contradictions, broken references, and stale statuses.
+
+An open question that no output answers is not a finding. Name it in the
+verdict line as still open.
 
 ## 4. Pass C: quality
 
@@ -91,11 +101,15 @@ document, message or post, code, research, data.
 - a fact that no source contains: ask whether to keep, change, or remove it;
 - scope creep: extra work that no requirement asks for. Do not remove it
   yourself;
+- a gap you can close only with a fact only the user has, such as a
+  contact detail or an address that no document holds, whatever its
+  severity;
 - a change to many lines.
 
 When you are unsure, treat it as big. Apply small fixes in the tier the
 conventions choose: in the folder tier, edit the file in place without asking,
-because it is an update of a project file; otherwise show the corrected text.
+because it is an update of a project file; in the file tier, give the
+corrected file; in the inline tier, show the corrected text.
 When you fix a document that has a change log, such as `02-brief.md`, raise
 its Version and add a change-log row. Never delete a file.
 
@@ -106,11 +120,13 @@ Severity:
 - **critical**: using the work now would cause harm, a wrong commitment, or a
   failed goal, for example an undecided price sent to customers.
 - **important**: a requirement is missing or wrong.
-- **minor**: a quality issue that breaks no requirement.
+- **minor**: a quality issue that breaks no requirement. A missing extra that
+  no requirement names, such as a helpful link in a newsletter, is minor even
+  when it might affect a later success criterion.
 
 Verdict:
 
-- **ready**: no open critical or important finding.
+- **ready**: no open finding.
 - **ready with notes**: only minor findings are open.
 - **not ready**: a critical or important finding is open, including one that
   needs your decision.
@@ -129,7 +145,8 @@ that did the work is checking it.
 
 Write `04-review.md` from the [review template](templates/review.md), in the
 tier the conventions choose. It holds: scope, sources of truth, the verdict,
-requirement results, findings (F#, severity, location, evidence, status),
+requirement results, findings (F#, severity, location, evidence, status:
+open, fixed, or needs your decision),
 fixed, needs your decision, not checked, and a self-review line.
 
 ## 9. Re-review

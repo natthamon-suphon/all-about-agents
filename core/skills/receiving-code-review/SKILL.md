@@ -46,12 +46,18 @@ not improve correctness, safety, maintainability, or an explicit requirement.
    every finding. Do not blindly agree, use performative praise, or reject a
    correct issue defensively. For uncertain claims, say what remains unknown
    and which bounded check would resolve it.
-6. **Act only within scope.** Implement confirmed findings when the active task
-   authorizes implementation. Decline or defer out-of-scope work; do not
-   implement style-only policing that does not improve correctness.
-7. **Verify the resolution.** Reproduce the defect when possible, add or run the
-   smallest regression check, and report the exact result. A reviewer's approval
-   is not completion evidence.
+6. **Act only within scope.** Change code only for confirmed findings, and only
+   when the active task authorizes implementation. Decline or defer
+   out-of-scope work; do not implement style-only policing that does not
+   improve correctness.
+7. **Reproduce before the fix.** Reproduce each confirmed defect with the
+   smallest failing test or check, and record the failing result. When a
+   defect cannot be expressed as a test, record why and name the check you
+   will use instead.
+8. **Implement the smallest change** that fixes the root cause.
+9. **Verify the resolution.** Rerun the failing test or check and the relevant
+   regression checks, and report the exact results. A reviewer's approval is
+   not completion evidence.
 
 ## Trigger boundary
 
@@ -120,5 +126,6 @@ Under pressure to "accept everything":
 - [ ] Confirmed correctness and safety defects were prioritized.
 - [ ] Style-only changes with no correctness impact were omitted or declined.
 - [ ] Incorrect or unsupported claims were answered with evidence.
+- [ ] Each fixed defect was reproduced by a failing test or check before the fix.
 - [ ] Implemented findings have fresh scoped verification.
 - [ ] Unavailable checks are explicitly `not run` with a reason.

@@ -210,6 +210,31 @@ claude plugin install all-about-agents@all-about-agents --scope user
 claude plugin list --json
 ```
 
+Claude loads the plugin from a cache folder keyed by the plugin version, not
+from `<PACKAGE_ROOT>`. An install with an unchanged version does not refresh
+that copy, so a removed or changed skill can stay loaded. After the list
+command, the plan runs `claude-plugin-cache-check`. It reads `installPath` from
+the `claude plugin list --json` output. That folder must sit below
+`<CLAUDE_CONFIG_DIR>/plugins/cache`. The check compares it with the package:
+
+- Every managed file must be present and equal.
+- Every other file is drift, except these runtime files: anything under
+  `.in_use/` (Claude in-use markers), anything under `hooks/audit/` and
+  `hooks/checkpoints/` (logs the package hooks write), and
+  `.all-about-agents/state.json`.
+- A symlink is never followed. A linked folder counts as drift, and a managed
+  file whose real folder is outside the copy counts as drift and is not read.
+
+When the copy differs, cannot be read, or the output names no comparable copy,
+the check reports `manual-required` and lists these commands:
+
+```text
+claude plugin uninstall all-about-agents@all-about-agents --scope user --keep-data
+claude plugin install all-about-agents@all-about-agents --scope user
+```
+
+Run them with the same `CLAUDE_CONFIG_DIR`, then run `register --apply` again.
+
 You can also run the product validator from the package root:
 
 ```text
@@ -256,6 +281,36 @@ codex plugin marketplace add "<PACKAGE_ROOT>" --json
 codex plugin add all-about-agents@all-about-agents --json
 codex plugin list --available --json
 ```
+
+Codex serves a Git clone of `<PACKAGE_ROOT>`, so a new render reaches Codex
+only through a new commit in that folder. After the native commands, the plan
+runs `codex-plugin-source-check` in `<PACKAGE_ROOT>`. It writes nothing. It
+removes inherited `GIT_*` variables from the git environment and passes
+`-c core.fsmonitor=false` to each git call, so no fsmonitor hook runs.
+
+1. `git rev-parse --show-prefix` must print an empty prefix. The package root
+   must be its own Git repository, not a folder inside a larger repository.
+   When it is not, the check reports `manual-required` with no commands.
+   Prepare the folder with the Git commands at the start of this section.
+2. `git --no-optional-locks status --porcelain --untracked-files=all -- .`
+   must print nothing. When the working tree differs from `HEAD`, the check
+   reports `manual-required` and lists these commands:
+
+```text
+git -C '<PACKAGE_ROOT>' status --short
+git -C '<PACKAGE_ROOT>' add -A
+git -C '<PACKAGE_ROOT>' -c user.name=all-about-agents -c user.email=all-about-agents@invalid.example commit -m "Update local Codex plugin source"
+codex plugin remove all-about-agents@all-about-agents --json
+codex plugin add all-about-agents@all-about-agents --json
+```
+
+Registration never commits for you. Read the `git status --short` output
+before `git add -A`, run the commands with the same `CODEX_HOME`, then run
+`register --apply` again. When `<PACKAGE_ROOT>` contains a single quote, the
+check prints no commands. Run the same steps by hand and quote the path for
+your shell. The
+check cannot see a commit that Codex has not cloned yet, so run the remove and
+add commands after every new commit.
 
 `plugin list --available --json` must show the registered package. That result
 is `registered`; it is not proof that hooks are `trusted`, `active`, or
@@ -304,6 +359,12 @@ The apply report can say `complete` even when native semantic discovery still
 needs a separate probe. Record the lifecycle state from observed product
 output. A failed action reports `registered: fail` or a partial result. It does
 not claim rollback or a backup.
+
+The report says `manual-required` when the Claude plugin cache or the Codex
+source clone can still differ from the package. The command then exits with
+code 1 and reports `registered: fail`. The check action lists the exact
+commands. Run them, then run `register --apply` again until the report says
+`complete`.
 
 ## Boundaries
 

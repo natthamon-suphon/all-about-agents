@@ -12,7 +12,7 @@
         "skillCheck": "required",
         "explicitInvocation": true,
         "workflowScope": true,
-        "wrapperOwnsArtifact": true,
+        "skillOwnsArtifact": true,
         "useInterviewing": true,
         "oneQuestionAtATime": true,
         "recommendationAttached": true,
@@ -22,7 +22,7 @@
       },
       "observables": [
         "Recognizes the explicit loop-me invocation and limits the session to a workflow specification.",
-        "Uses one material question at a time with a recommendation and records each decision in the wrapper-owned artifact.",
+        "Uses one material question at a time with a recommendation and records each decision in the workflow artifact that loop-me owns.",
         "Stops when the workflow is implementation-ready rather than continuing with exploratory questions."
       ]
     },

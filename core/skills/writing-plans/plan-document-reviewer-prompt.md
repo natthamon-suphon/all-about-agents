@@ -44,3 +44,6 @@ Reviewer:
 ```
 
 **Reviewer returns:** Status, Issues (if any), Recommendations.
+
+`Approved` is not human plan approval. It means the reviewer found no blocking
+issue. Execution still needs the human's recorded approval of the plan.

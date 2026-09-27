@@ -216,6 +216,9 @@ test("Codex bootstrap skill links to a resolvable factual capability guide", () 
   assert.match(guidance, /standalone custom-agent TOML/u);
   assert.match(guidance, /Desktop.*manual/u);
   assert.doesNotMatch(guidance, /Claude|spawn_agent|mcp__/iu);
+  const toolNotes = guidance.match(/\[Codex tool notes\]\(([^)]+)\)/u)?.[1];
+  assert.ok(toolNotes, "guidance must link the Codex-only tool notes");
+  assert.ok(files.get(posix.normalize(posix.join(posix.dirname(guidancePath), toolNotes))), "tool notes link must resolve");
 });
 
 test("Codex AGENTS.md remains a regular file in a Windows checkout with core.symlinks=false", async (t) => {

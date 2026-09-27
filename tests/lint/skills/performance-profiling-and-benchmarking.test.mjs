@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const skillId = "performance-profiling-and-benchmarking";
-const requiredCases = ["PF-TRIGGER-performance-regression", "PF-NONTRIGGER-no-performance-goal", "PF-PRESSURE-intuition-percentage"];
+const requiredCases = ["PF-TRIGGER-latency-goal-proof", "PF-NONTRIGGER-no-performance-goal", "PF-PRESSURE-intuition-percentage", "PF-NONTRIGGER-regression-unknown-cause"];
 const readSkill = (name = "SKILL.md") => readFile(new URL(`../../../core/skills/${skillId}/${name}`, import.meta.url), "utf8");
 
 test("T039 exposes its routing evidence", async () => {
@@ -39,7 +39,8 @@ test("profiling recipes are illustrative and avoid universal benchmark parameter
   assert.doesNotMatch(recipes, /-c 100 -d 10|2026-01-01|zero-overhead/iu);
 });
 
-test("performance routing covers regression, non-goal, and intuition pressure", async () => {
+test("performance routing covers a goal proof, non-goals, and intuition pressure", async () => {
+  const skill = await readSkill();
   const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
   assert.deepEqual(evaluation.cases.map((entry) => entry.id), requiredCases);
@@ -50,6 +51,11 @@ test("performance routing covers regression, non-goal, and intuition pressure", 
   assert.equal(evaluation.cases[1].expected.noOptimizationClaim, true);
   assert.equal(evaluation.cases[2].expected.rejectIntuitionClaim, true);
   assert.equal(evaluation.cases[2].expected.noInventedPercentage, true);
+  assert.equal(evaluation.cases[3].expected.skillCheck, "not-required");
+  assert.equal(evaluation.cases[3].expected.routeTo, "systematic-debugging");
+  const description = /^description:\s*(.+)$/mu.exec(skill)?.[1] ?? "";
+  assert.doesNotMatch(description, /investigating a performance regression/iu);
+  assert.match(description, /systematic-debugging/u);
 });
 
 test("core loader exposes performance metadata and recipes", async () => {
@@ -57,4 +63,13 @@ test("core loader exposes performance metadata and recipes", async () => {
   const core = await loadCore(process.cwd());
   assert.deepEqual(core.skills.find((entry) => entry.id === skillId)?.evaluationCases, requiredCases);
   assert.deepEqual(core.inventory.skillSources.find((entry) => entry.name === skillId)?.assets, ["skills/performance-profiling-and-benchmarking/profiling-recipes.md"]);
+});
+
+test("performance skill names the debugging boundary and uses correct profiler command shapes", async () => {
+  const skill = await readSkill();
+  const recipes = await readSkill("profiling-recipes.md");
+  assert.match(skill, /A failure or regression with an unknown cause goes to `systematic-debugging` first; measuring, profiling, or proving a performance change goes to `performance-profiling-and-benchmarking`\./u);
+  assert.match(recipes, /--cpu-prof-dir=<DIR> --cpu-prof-name=<FILE>\.cpuprofile/u);
+  assert.doesNotMatch(recipes, /--cpu-prof-name=<PROFILE_PATH>/u);
+  assert.match(recipes, /py-spy[\s\S]*macOS[\s\S]*elevated rights/u);
 });

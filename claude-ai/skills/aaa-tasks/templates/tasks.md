@@ -1,4 +1,4 @@
-# Tasks: project name
+# Task list: project name
 
 | Field | Value |
 | --- | --- |
@@ -8,7 +8,7 @@
 | Date | YYYY-MM-DD |
 | Status | draft |
 | Language | the document language |
-| Sources | `02-brief.md`, or the plan the user gave |
+| Sources | `02-brief.md` or the plan the user gave, and attached files by name |
 
 ## Goal
 

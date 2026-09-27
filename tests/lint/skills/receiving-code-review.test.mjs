@@ -62,3 +62,13 @@ test("core loader exposes receiving-code-review metadata", async () => {
   assert.deepEqual(skill.evaluationCases, requiredCases);
   assert.deepEqual(core.evals.find((entry) => entry.id === `${skillId}-routing`)?.cases.map((entry) => entry.id), requiredCases);
 });
+
+test("receiving-code-review reproduces a confirmed defect with a failing test before the fix", async () => {
+  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
+  const reproduce = skill.search(/Reproduce[^.]*failing (?:test|check)/u);
+  const implement = skill.search(/Implement the smallest change/u);
+  const rerun = skill.search(/Rerun the failing (?:test|check)/u);
+  assert.ok(reproduce > 0, "missing the failing-test reproduction step");
+  assert.ok(implement > reproduce, "the fix must come after the failing test");
+  assert.ok(rerun > implement, "the rerun must come after the fix");
+});

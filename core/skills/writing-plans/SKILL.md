@@ -35,23 +35,24 @@ interfaces, and attach observable test evidence to every implementation slice.
    failure behavior, authorization boundaries, and exact acceptance criteria.
    Preserve explicit user authority for filesystem, dependency, external
    service, and Git actions.
-6. Map every file or artifact before decomposing tasks. Name exact file paths and exact portable
-   paths and one responsibility per file.
-7. For every task, specify exact interfaces: the names, parameters, parameter
-   types, return types, errors, and authorization assumptions it consumes and
+6. Map every file or artifact before decomposing tasks. Name each exact path
+   in portable form, with one responsibility per file.
+7. For every task, specify exact interfaces: the names, parameters and
+   return types, errors, and authorization assumptions it consumes and
    produces. A prose promise such as “wire this up” is not an interface.
-   Record parameters and return types for every interface.
 8. Make each task a vertical, independently testable slice. Write the failing
    test first, state the command that runs it and the expected RED evidence,
    then describe the smallest implementation and the expected GREEN evidence.
    Include regression, error-path, security, and deterministic checks when
-   they belong to the changed interface.
-   Run the focused test command and record its exact failing or passing result
-   as verification evidence.
+   they belong to the changed interface. Each task names the focused
+   test command and the expected RED/GREEN result that the executor records
+   as verification evidence. Planning runs no tests.
 9. Include a plan self-review for spec coverage, placeholders, interface
    consistency, scope, and test evidence. A plan is not complete while a
    task says “TBD,” “TODO,” “implement later,” “handle edge cases,” or leaves
-   its command or expected result implicit.
+   its command or expected result implicit. For an independent review, use
+   [plan-document-reviewer-prompt.md](plan-document-reviewer-prompt.md). A
+   reviewer's `Approved` is not human plan approval.
 10. Save the plan at the location named by the approved specification. If no
     location was approved, ask rather than scattering planning documents.
     Hand the finished plan to the agreed execution workflow; do not implement

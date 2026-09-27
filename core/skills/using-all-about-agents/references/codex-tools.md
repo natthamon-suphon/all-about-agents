@@ -1,3 +1,7 @@
+> Codex only. Every surface ships this file, but it applies only when the
+> selected adapter is Codex. Check the feature flag and tool names below against
+> the current Codex documentation before use; this file cites no source for them.
+
 ## Subagent dispatch requires multi-agent support
 
 Add to your Codex config (`~/.codex/config.toml`):
@@ -12,16 +16,18 @@ This enables `spawn_agent`, `wait_agent`, and `close_agent` for skills like `dis
 ## Environment Detection
 
 Skills that create worktrees or finish branches should detect their
-environment with read-only git commands before proceeding:
+environment with read-only git commands before proceeding. Both commands work
+the same in any shell; `--path-format` needs Git 2.31 or later:
 
-```bash
-GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
-GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
-BRANCH=$(git branch --show-current)
+```text
+git rev-parse --path-format=absolute --git-dir --git-common-dir
+git branch --show-current
 ```
 
-- `GIT_DIR != GIT_COMMON` → already in a linked worktree (skip creation)
-- `BRANCH` empty → detached HEAD (cannot branch/push/PR from sandbox)
+- The first command prints two lines. Two different paths → already in a
+  linked worktree (skip creation).
+- The second command prints nothing → detached HEAD (cannot branch/push/PR
+  from sandbox).
 
 See `using-git-worktrees` steps 3-4 and `finishing-a-development-branch`
 step 4 for how each skill uses these signals.

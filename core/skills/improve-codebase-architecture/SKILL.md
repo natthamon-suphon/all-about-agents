@@ -5,6 +5,7 @@ evaluationCases:
   - IA-TRIGGER-explicit-architecture-survey
   - IA-NONTRIGGER-fix-one-bug
   - IA-PRESSURE-require-HTML
+  - IA-NONTRIGGER-decide-one-seam
 ---
 
 # Improve Codebase Architecture
@@ -14,12 +15,13 @@ The survey produces candidates, not implementation authority. It uses the
 module, interface, implementation, depth, seam, adapter, leverage, and locality
 vocabulary from `codebase-design`.
 
-Use this skill when the user explicitly asks for an architecture survey or
-codebase-wide improvement candidates, or agrees to a survey that another skill
-recommended after its own work finished. A request to fix one bug, rename one
-symbol, or make a local behavior change is a nontrigger. Route the narrow task
-to the appropriate debugging or implementation workflow and mention a broader
-survey only after the task if concrete evidence supports it.
+Use this skill when the user explicitly asks for an architecture survey,
+refactoring candidates, or codebase-wide deepening opportunities. A yes to a
+survey you offered counts as an explicit ask. A request to fix one bug, rename
+one symbol, or make a local behavior change is a nontrigger. A decision about
+one known interface or seam belongs to `codebase-design`. Route the narrow task
+to the appropriate debugging, design, or implementation workflow and mention a
+broader survey only after the task if concrete evidence supports it.
 
 ## Skill Gate Protocol
 

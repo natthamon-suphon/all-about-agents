@@ -12,14 +12,14 @@ Bugs often manifest deep in the call stack (git init in wrong directory, file cr
 digraph when_to_use {
     "Bug appears deep in stack?" [shape=diamond];
     "Can trace backwards?" [shape=diamond];
-    "Fix at symptom point" [shape=box];
+    "Report the dead end and ask" [shape=box];
     "Trace to original trigger" [shape=box];
-    "BETTER: Also add defense-in-depth" [shape=box];
+    "Optional: propose defense-in-depth after the fix" [shape=box];
 
     "Bug appears deep in stack?" -> "Can trace backwards?" [label="yes"];
     "Can trace backwards?" -> "Trace to original trigger" [label="yes"];
-    "Can trace backwards?" -> "Fix at symptom point" [label="no - dead end"];
-    "Trace to original trigger" -> "BETTER: Also add defense-in-depth";
+    "Can trace backwards?" -> "Report the dead end and ask" [label="no - dead end"];
+    "Trace to original trigger" -> "Optional: propose defense-in-depth after the fix";
 }
 ```
 
@@ -28,6 +28,35 @@ digraph when_to_use {
 - Stack trace shows long call chain
 - Unclear where invalid data originated
 - Need to find which test/code triggers the problem
+
+## Find the Failing Boundary
+
+When the system has several components (CI → build → signing, API → service →
+database), instrument each component boundary before proposing fixes:
+
+- what data enters and exits the component
+- whether environment and config propagate
+- the state at each layer
+
+Run once to see WHERE it breaks. Analyze that evidence to find the failing
+component, then investigate only that component.
+
+Print presence and shape, never values, and tag every line for cleanup:
+
+```bash
+# Layer 1: workflow step
+printf '[DEBUG-a4f2] workflow: signing key set=%s\n' "${SIGNING_KEY:+yes}"
+# Layer 2: build script
+printf '[DEBUG-a4f2] build: signing key set=%s\n' "${SIGNING_KEY:+yes}"
+printf '[DEBUG-a4f2] build: artifact present=%s\n' "$(test -f "$ARTIFACT_PATH" && printf yes)"
+# Layer 3: signing script
+printf '[DEBUG-a4f2] signing: signing key set=%s\n' "${SIGNING_KEY:+yes}"
+# Never print credentials or complete process environments.
+```
+
+An empty field means absent. The first layer where a field turns empty is the
+broken boundary: `set=yes` in the workflow but `set=` in the build means the
+secret does not reach the build step.
 
 ## The Tracing Process
 
@@ -71,7 +100,7 @@ When you can't trace manually, add instrumentation:
 // Before the problematic operation
 async function gitInit(directory: string) {
   const stack = new Error().stack;
-  console.error('DEBUG git init:', {
+  console.error('[DEBUG-a4f2] git init:', {
     directory,
     cwd: process.cwd(),
     nodeEnvConfigured: Object.hasOwn(process.env, 'NODE_ENV'),
@@ -86,7 +115,7 @@ async function gitInit(directory: string) {
 
 **Run and capture:**
 ```bash
-npm test 2>&1 | grep 'DEBUG git init'
+npm test 2>&1 | grep -F '[DEBUG-a4f2]'
 ```
 
 **Analyze stack traces:**
@@ -96,15 +125,19 @@ npm test 2>&1 | grep 'DEBUG git init'
 
 ## Finding Which Test Causes Pollution
 
-If something appears during tests but you don't know which test:
-
-Use the bisection script `find-polluter.sh` in this directory:
+If something appears during tests but you don't know which test, use the
+bisection script `find-polluter.sh` in this skill directory. Run it from the
+project root. The checked path must not already exist; an existing path is
+pre-existing pollution and the script refuses to guess.
 
 ```bash
-./find-polluter.sh '.git' 'src/**/*.test.ts'
+bash <skill-dir>/find-polluter.sh 'packages/core/.git' 'packages/core/src/**/*.test.ts'
 ```
 
-Runs tests one-by-one, stops at first polluter. See script for usage.
+It runs tests one by one and stops at the first polluter. A package-manager
+runner is called as `<runner> test -- <file>`; any other runner is an
+executable path called as `<runner> <file>`. Confirm by hand that one runner
+call executes a single test file before you trust the result.
 
 ## Real Example: Empty projectDir
 
@@ -121,11 +154,8 @@ Runs tests one-by-one, stops at first polluter. See script for usage.
 
 **Fix:** Made tempDir a getter that throws if accessed before beforeEach
 
-**Also added defense-in-depth:**
-- Layer 1: Project.create() validates directory
-- Layer 2: WorkspaceManager validates not empty
-- Layer 3: NODE_ENV guard refuses git init outside tmpdir
-- Layer 4: Stack trace logging before git init
+**Then proposed defense-in-depth as a separate change** (see
+`defense-in-depth.md`), added only after approval.
 
 ## Key Principle
 
@@ -136,22 +166,22 @@ digraph principle {
     "Trace backwards" [shape=box];
     "Is this the source?" [shape=diamond];
     "Fix at source" [shape=box];
-    "Add validation at each layer" [shape=box];
-    "Bug impossible" [shape=doublecircle];
-    "NEVER fix just the symptom" [shape=octagon, style=filled, fillcolor=red, fontcolor=white];
+    "Propose extra layers (separate approval)" [shape=box];
+    "Report the dead end and ask" [shape=octagon, style=filled, fillcolor=red, fontcolor=white];
 
     "Found immediate cause" -> "Can trace one level up?";
     "Can trace one level up?" -> "Trace backwards" [label="yes"];
-    "Can trace one level up?" -> "NEVER fix just the symptom" [label="no"];
+    "Can trace one level up?" -> "Report the dead end and ask" [label="no"];
     "Trace backwards" -> "Is this the source?";
     "Is this the source?" -> "Trace backwards" [label="no - keeps going"];
     "Is this the source?" -> "Fix at source" [label="yes"];
-    "Fix at source" -> "Add validation at each layer";
-    "Add validation at each layer" -> "Bug impossible";
+    "Fix at source" -> "Propose extra layers (separate approval)";
 }
 ```
 
-**NEVER fix just where the error appears.** Trace back to find the original trigger.
+**NEVER fix just where the error appears.** Trace back to find the original
+trigger. At a dead end, report what you traced and ask your human partner; do
+not silently fix at the symptom.
 
 ## Stack Trace Tips
 
@@ -161,11 +191,4 @@ digraph principle {
 explicitly allowlisted configuration keys. Redact every value; never dump the
 environment.
 **Capture stack:** `new Error().stack` shows complete call chain
-
-## Real-World Impact
-
-From debugging session (2025-10-03):
-- Found root cause through 5-level trace
-- Fixed at source (getter validation)
-- Added 4 layers of defense
-- 1847 tests passed, zero pollution
+**Tag it:** Use one `[DEBUG-...]` prefix so cleanup is a single grep

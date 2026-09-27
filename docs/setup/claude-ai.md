@@ -81,6 +81,10 @@ rendered (ZIP built) -> validated (pack and export tests)
 -> runtime verified (eval cases pass in a real chat)
 ```
 
+The repo lifecycle also has a `trusted` state. claude.ai has no separate
+trust step, so this flow skips it (inferred: the upload steps above name only
+the upload and the toggle).
+
 Until a dated `claude.ai` pass exists for a skill, its status is "validated,
 claude.ai run pending".
 

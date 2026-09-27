@@ -19,14 +19,14 @@ An already-dispatched worker must follow its task contract without restarting th
 </SUBAGENT-STOP>
 
 <EXTREMELY-IMPORTANT>
-If there is even a 1% chance that a skill applies to what you are doing, invoke it. When a skill applies, using it is not a choice, and no rationalization changes that.
+If there is even a 1% chance that a skill applies to what you are doing, invoke it. When a skill applies, using it is not a choice, and no rationalization changes that. A skill applies only when its own trigger gate passes; opt-in skills such as `loop-me` and `wait-what` wait for the human's explicit signal.
 </EXTREMELY-IMPORTANT>
 
 ## The rule
 
 Check the installed skill descriptions before any response or action, including clarifying questions, codebase exploration, and file checks. Classify the request as an answer, review, implementation, diagnosis, or another explicit user-authorized action. For a simple factual response, complete the applicability check before answering. For a fresh implementation request, complete the applicability check before the first implementation action. When no skill applies, answer directly.
 
-Before entering plan mode, invoke `brainstorming` first if the design has not been brainstormed. Announce the chosen skill with its label and one short reason, then follow the skill exactly and derive the checklist from the skill's own steps.
+Before planning, invoke `brainstorming` if the design has not been brainstormed. Announce the chosen skill with its label and one short reason, then follow the skill exactly and group its steps into a checklist of 2–7 material items.
 
 ## Skill priority
 
@@ -53,9 +53,9 @@ These thoughts mean stop: you are rationalizing.
 
 ## Portable routing
 
-Keep this routing behavior portable. For surface-specific capability names, paths, syntax, or lifecycle details, use the selected adapter's capability guidance. Do not copy native details into this skill or infer them when guidance is missing.
+For surface-specific capability names, paths, syntax, or lifecycle details, use the selected adapter's capability guidance. Do not copy native details into this skill or infer them when guidance is missing.
 
-When selected adapter guidance, native paths, or syntax are unavailable, name the unavailable capability and affected step, then stop or ask for direction. Do not continue as if supported or invent a path or syntax. The same applies to an applicable skill that is unavailable: say which capability is missing and which step it affects, and do not invent a skill or a result.
+When selected adapter guidance, native paths, or syntax are unavailable, name the unavailable capability and affected step, then stop or ask for direction. Do not continue as if supported or invent a path or syntax. The same applies to an unavailable applicable skill: do not invent a skill or a result.
 
 ## User instructions
 

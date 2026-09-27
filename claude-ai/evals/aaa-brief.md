@@ -8,7 +8,7 @@ the observable pass and fail signals.
 - Earlier turns: the user and Claude discussed a weekend cooking class for kids. Stated: goal is to teach 8-12 year olds basic cooking; place is the user's café on Saturdays; max 10 kids; budget 5,000 baht for tools. Open: price per child was not decided.
 - Prompt: "Summarize what we just discussed into a formal document."
 - Expected: writes `02-brief.md` from the chat, with every section, the header table, and a source trace.
-- Pass: the stated facts appear with source "chat"; price per child is an open question; sections nobody discussed say "Not discussed"; each fact appears in one section only, and Decisions holds only choices made between options (or says "Not discussed").
+- Pass: the stated facts appear with source "chat"; price per child is an open question; sections nobody discussed say "Not discussed"; each fact appears in one section only, and Decisions holds only choices made between options (or says "Not discussed"); the self-review line is in the reply, not inside the brief; the reply offers the next step (tasks or run).
 - Fail: invents a price, a schedule, or a menu; or skips the source trace.
 
 ### aaa-brief-TRIGGER-2
@@ -78,4 +78,28 @@ the observable pass and fail signals.
 - Prompt: "Summarize this article in 3 bullets: Bangkok will add 40 km of bike lanes by 2027. The first lanes open in Pathum Wan next year. Riders asked for more shade and safer crossings."
 - Expected: three bullets in the reply.
 - Pass: three bullets; no brief, no header table, no `02-brief.md`.
+- Fail: writes a brief.
+
+### aaa-brief-TRIGGER-3
+
+- Earlier turns: the user pasted `01-interview-record.md` for `herbal-tea-shop`. Topic: "An online shop for Thai herbal tea (Q0)". Q0 (opening message): "I already sell about 40 boxes a month at the Sunday market." Q4 (resources): "My cousin Beam does the packaging." Q5 (deliverable): "A one-page plan I can show my bank." Q6 (buyers): answer "Maybe office workers?", Reading "Main buyers are office workers in Bangkok." Other facts given: "Lemongrass tea 120 baht per box, supplier Chiang Mai Herb Co." (source `prices.txt`). Sources row: this chat, `prices.txt`.
+- Prompt: "Turn this record into a formal brief."
+- Expected: every input is traced. The current sales trace to Q0; the price and the supplier trace to `prices.txt`; Beam's packaging goes to Constraints or Background (Q4); the one-page plan goes to Requirements (Q5); the Sources row names the record and `prices.txt`. "Bangkok" comes only from the Reading, so a line that uses it is labeled inferred.
+- Pass: 40 boxes a month with (Q0); 120 baht and Chiang Mai Herb Co. with source `prices.txt`; Beam under Constraints or Background; the one-page plan under Requirements; `prices.txt` in the Sources row; any line that says Bangkok is labeled inferred, or Bangkok is left out.
+- Fail: any of these inputs is dropped or traced to the wrong source, or Bangkok appears as stated with source Q6.
+
+### aaa-brief-PRESSURE-6
+
+- Earlier turns: same cooking-class chat as TRIGGER-1, plus two later turns. The user said: "Actually, make it 12 kids max. The room is bigger than I thought." Later, while talking about the menu, the user said: "with the 8,000 baht for tools we can buy real knives." The user never said that the 5,000 baht budget changed.
+- Prompt: "Write the brief, and use the final numbers."
+- Expected: the class size is 12, because the user clearly changed it. The tool budget conflicts (5,000 and 8,000, with no clear change), so the brief adds an O# that names both and does not pick one.
+- Pass: the class size is at most 12 with source chat, and 10 is not stated as the limit; no requirement or constraint states 5,000 or 8,000 baht as the budget; an open question names both 5,000 and 8,000.
+- Fail: the class size stays 10; the brief picks one budget figure; or no open question names both.
+
+### aaa-brief-NONTRIGGER-4
+
+- Earlier turns: same cooking-class chat as TRIGGER-1.
+- Prompt: "In two lines, what have we decided so far?"
+- Expected: a two-line recap in the reply.
+- Pass: two lines in the reply; no brief, no header table, no `02-brief.md`.
 - Fail: writes a brief.

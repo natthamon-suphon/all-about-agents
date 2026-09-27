@@ -86,6 +86,9 @@ The package is complete when it identifies the diff or artifact, requirements,
 evidence, and limitations. “Please review” without scope is not a review
 request. “All good” is not an independent finding.
 
+To brief a reviewer, fill the placeholders in
+[code-reviewer.md](code-reviewer.md) with this package.
+
 ## No commit required
 
 A reviewer can inspect an unstaged or staged diff, a local commit range, or a

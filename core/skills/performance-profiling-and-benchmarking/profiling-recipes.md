@@ -16,14 +16,21 @@ raw output path, failures, and acceptance criteria.
 Node-compatible runtimes, when the built-in profiler is supported:
 
 ```text
-node --cpu-prof --cpu-prof-name=<PROFILE_PATH> <APPLICATION_ENTRY> <WORKLOAD_ARGS...>
+node --cpu-prof --cpu-prof-dir=<DIR> --cpu-prof-name=<FILE>.cpuprofile <APPLICATION_ENTRY> <WORKLOAD_ARGS...>
 ```
+
+`--cpu-prof-name` is a file name, not a path. Node joins it to `--cpu-prof-dir`
+(default: the current directory). A path in the name can fail to write while
+Node still exits 0 (observed on Node 24.4), so check that the profile file exists.
 
 Python sampling profiler, when already installed and authorized:
 
 ```text
 py-spy record --output <PROFILE_PATH> --pid <PID>
 ```
+
+On macOS, `py-spy` needs elevated rights (for example `sudo`) to attach to a
+running process. Elevation is a separate authority; ask before you use it.
 
 Choose duration from the representative workload. Check sampling overhead and
 whether startup or steady-state behavior is the target.

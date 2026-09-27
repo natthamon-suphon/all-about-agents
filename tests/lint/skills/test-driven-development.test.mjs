@@ -77,3 +77,18 @@ test("writing-good-tests companion starts with its title, not captured shell noi
   assert.match(companion, /^# Writing Good Tests\n/u);
   assert.doesNotMatch(companion, /PowerShell_profile|Cannot dot-source/u);
 });
+
+test("writing-good-tests keeps its good/bad labels and arrows, and SKILL.md links it", async () => {
+  const companion = await readFile(new URL("../../../core/skills/test-driven-development/writing-good-tests.md", import.meta.url), "utf8");
+  const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
+  assert.doesNotMatch(companion, /^\/\/ \?/mu);
+  assert.doesNotMatch(companion, /[�\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u);
+  assert.equal(companion.match(/^\/\/ Bad: /gmu)?.length, 3);
+  assert.equal(companion.match(/^\/\/ Good: /gmu)?.length, 3);
+  for (const line of ["Cannot name one", "\"The source text changed\"", "Only intentional decisions"]) {
+    assert.match(companion, new RegExp(`${line} +-> \\S`, "u"));
+  }
+  assert.match(companion, /Wrong answers -> test utility\./u);
+  assert.doesNotMatch(companion, /all-about-agents:/u);
+  assert.match(skill, /\[writing-good-tests\.md\]\(writing-good-tests\.md\)/u);
+});

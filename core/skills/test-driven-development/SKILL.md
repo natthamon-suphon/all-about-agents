@@ -145,6 +145,10 @@ mock configuration. If a test is hard to write at the public seam, simplify
 the interface or treat the difficulty as design feedback; do not move the
 test inside the implementation merely to make it easy.
 
+Before you write or change a test, add a mock, or add a test helper, read
+[writing-good-tests.md](writing-good-tests.md) for expectation design, mock
+rules, and the mutation check.
+
 ## Common rationalizations
 
 | Excuse | Correct response |

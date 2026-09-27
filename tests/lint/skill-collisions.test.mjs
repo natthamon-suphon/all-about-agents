@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 const collisionSets = [
-  { id: "brainstorm-interview-loop", samples: 5, candidates: ["brainstorming", "interviewing", "loop-me"], boundary: "design, wrapper-owned decisions, or workflow specification" },
+  { id: "brainstorm-interview-loop", samples: 5, candidates: ["brainstorming", "interviewing", "loop-me"], boundary: "design, clarifying questions for an owned artifact, or workflow specification" },
   { id: "research-investigation", samples: 5, candidates: ["research", "systematic-debugging"], boundary: "external fact or local failure cause" },
   { id: "verification-review", samples: 5, candidates: ["verification-before-completion", "requesting-code-review"], boundary: "fresh execution evidence or independent critique" },
   { id: "planning-execution", samples: 5, candidates: ["writing-plans", "executing-plans"], boundary: "write an approved plan or execute one" },
