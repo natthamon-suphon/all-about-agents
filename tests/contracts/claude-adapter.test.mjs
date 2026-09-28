@@ -48,7 +48,7 @@ test("egroup house rules reach Claude Code only while RTK house rules reach ever
     assert.doesNotMatch(rendered, /egroup house rules|coding-guidelines\/Rules\/RULES\.md/u, `${surface} must not receive the Claude-only appendix`);
   }
   for (const rendered of [claude, codex, antigravity]) assert.match(rendered, /^## RTK house rules \(rust-token-killer\)$/mu);
-  assert.ok(claude.startsWith(renderSharedGlobalInstructions(core).trimEnd()));
+  assert.ok(claude.slice(claude.indexOf("\n") + 1).startsWith(renderSharedGlobalInstructions(core).trimEnd()), "the shared body opens the marked block");
 });
 
 function resultFor(profileId = "portable", overrides = {}) {
@@ -69,7 +69,7 @@ function fileMap(result) {
 
 test("Claude model policy uses exact documented template fields", () => {
   assert.deepEqual(CLAUDE_MODEL_POLICY.template, {
-    model: "claude-opus-5",
+    model: "opus[1m]",
     fallbackModel: ["claude-sonnet-5"],
     advisorModel: "claude-fable-5-1",
     env: { CLAUDE_CODE_EFFORT_LEVEL: "xhigh" }
@@ -120,7 +120,10 @@ test("Claude render emits the canonical global file and one presentation contrac
   const result = resultFor();
   const files = fileMap(result);
   assert.equal(files.get("CLAUDE.md"), renderClaudeGlobalInstructions(core));
-  assert.equal(files.get("CLAUDE.md").endsWith("\n"), true);
+  const block = files.get("CLAUDE.md").match(/^<!-- all-about-agents:begin [^\n]*-->\n([\s\S]*)\n<!-- all-about-agents:end -->\n$/u);
+  assert.ok(block, "CLAUDE.md is one marked block, so registration can keep the operator's text around it");
+  assert.equal((files.get("CLAUDE.md").match(/<!-- all-about-agents:(?:begin|end)\b/gu) ?? []).length, 2);
+  assert.ok(block[1].startsWith(core.globalInstructions.content), "canonical global body must be first inside the block");
   const presentationRule = files.get("rules/presentation.md");
   assert.match(presentationRule, /brainstorming 🧠/u);
   assert.match(presentationRule, /architect 🏛️/u);
@@ -149,7 +152,7 @@ test("Claude plugin relies on conventional hook discovery without duplicate mani
 test("template Claude render emits full-access settings without unsupported effortLevel", () => {
   const files = fileMap(resultFor("template"));
   const settings = JSON.parse(files.get("config/settings.json"));
-  assert.equal(settings.model, "claude-opus-5");
+  assert.equal(settings.model, "opus[1m]");
   assert.deepEqual(settings.fallbackModel, ["claude-sonnet-5"]);
   assert.equal(settings.advisorModel, "claude-fable-5-1");
   assert.equal(settings.env.CLAUDE_CODE_EFFORT_LEVEL, "xhigh");

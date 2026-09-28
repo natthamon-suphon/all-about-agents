@@ -80,7 +80,7 @@ export const CLAUDE_SEMANTIC_MAPPINGS = Object.freeze({
 export const CLAUDE_MODEL_POLICY = Object.freeze({
   portable: Object.freeze({}),
   template: Object.freeze({
-    model: "claude-opus-5",
+    model: "opus[1m]",
     fallbackModel: Object.freeze(["claude-sonnet-5"]),
     advisorModel: "claude-fable-5-1",
     env: Object.freeze({ CLAUDE_CODE_EFFORT_LEVEL: "xhigh" })

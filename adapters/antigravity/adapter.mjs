@@ -358,8 +358,7 @@ export function renderAntigravity(input = {}) {
       },
       {
         // GEMINI.md is shared with everything else the operator keeps in the
-        // Gemini home. Unlike Claude's CLAUDE.md this render is not a superset
-        // of that file, so registration never replaces it; a file that already
+        // Gemini home, so registration never replaces it; a file that already
         // contains the managed body is complete.
         kind: "instructions",
         relativePath: "GEMINI.md",

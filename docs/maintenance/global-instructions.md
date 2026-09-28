@@ -77,19 +77,31 @@ product variable: the `agy` commands still act on the live product.
 `CLAUDE.local.md` is a private project file, not a global destination. Do not
 use it for installation.
 
-Global files are managed files. An explicitly authorized native apply may
-overwrite the approved global file without a backup. It does not change
+Global files are shared: this package owns only its managed part of each. An
+explicitly authorized native apply creates no backup, and it does not change
 project-specific files or unknown neighboring files.
 
-`GEMINI.md` is the one exception to that overwrite rule. Its deploy carries
-`guard: "no-clobber"`, so an existing file is never overwritten. It is
-complete when it already contains the managed body as one contiguous block;
-your own sections before or after it stay. When the body is missing or one of
-its lines was edited, registration writes nothing, reports `manual-required`,
-and ends with exit code 1 (`manual-step-required`). The Claude render is a
-superset of the live `CLAUDE.md`, so replacing it loses nothing; the
-Antigravity render is not a superset of a live `GEMINI.md`, which may hold
-operator sections this package does not own. Merge the managed body by hand.
+`CLAUDE.md` and `AGENTS.md` are rendered as one marked block. The first line of
+the block begins `<!-- all-about-agents:begin`, and the last line is
+`<!-- all-about-agents:end -->`. An authorized native apply writes the whole
+file when it is missing. Otherwise it replaces only the lines from the begin
+line to the end line, and every byte of your own text above or below the block
+stays. When the live file has no intact block (no markers, two begin lines, a
+begin line with no end line, or an end line first), registration writes
+nothing, reports `manual-required`, and ends with exit code 1
+(`manual-step-required`). The reason names the fix: every line that is not in
+the package file is your own text, so keep it above or below the markers, put
+the package file in place of the rest, and register again. A file written
+before the markers existed needs this step once.
+
+`GEMINI.md` is never overwritten. Its deploy carries `guard: "no-clobber"`.
+It is complete when it already contains the managed body as one contiguous
+block; your own sections before or after it stay. When the body is missing or
+one of its lines was edited, registration writes nothing, reports
+`manual-required`, and ends with exit code 1 (`manual-step-required`). A live
+`GEMINI.md` may hold operator sections this package does not own, or a body
+condensed to fit the Antigravity rule size limit, so merge the managed body by
+hand.
 
 ## Install and registration boundaries
 

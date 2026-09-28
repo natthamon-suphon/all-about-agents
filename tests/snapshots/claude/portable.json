@@ -133,7 +133,7 @@
   "ownershipHashes": {
     ".claude-plugin/marketplace.json": "27b4897d5d32ed0b2e9888370e47708f873c5aa769fdfb62f422235b060c913a",
     ".claude-plugin/plugin.json": "2547cc0e5fcbe76c1f2a82d9a42fb2e3e4648e9ef13bb00b8a3feffae8479eed",
-    "CLAUDE.md": "c217a27e588a9d1a5bc1ec3bb19a3103e54886110e36ec5f34a4f63b082a9c22",
+    "CLAUDE.md": "0b371d6276cfbb6541aa3dfc6b28d3284b171e1eb77fcab586074150fbf0e890",
     "agents/architect.md": "af5e2370ff8f2708c1171e7e81f0643432e44e06f8a6232f4600af98c3a39b59",
     "agents/implementer.md": "55a9d95270c42bfc6e852d35f09fe22da97fa60ee38ff653ffebe2e60e955799",
     "agents/investigator.md": "3523e06a3f89df8993fa61389fdb514c061e64bdb3c7b9f7619baa8f23e8b0f3",

@@ -45,7 +45,10 @@ checklist only when a state changes. This prompt improves model guidance; it
 does not guarantee a vendor UI presentation.
 
 Do not run `register --apply` from a pull, quality check, doctor, or normal
-dry-run. Record `rendered`, `validated`, `registered`, `trusted`, `active`, and
+dry-run. When the task is a setup or install with exact authority, follow
+"Setup run by an agent" in docs/maintenance/sync-and-update.md: do every
+`manual-required` step its reason names, and never put my own text inside the
+all-about-agents block of CLAUDE.md or AGENTS.md. Record `rendered`, `validated`, `registered`, `trusted`, `active`, and
 `runtime verified` separately. Record unavailable work as
 `NOT_RUN_UNAVAILABLE`.
 

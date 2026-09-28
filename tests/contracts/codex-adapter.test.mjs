@@ -122,8 +122,12 @@ test("Codex AGENTS.md composes the canonical body, labeled catalog, and rules", 
   const files = fileMap(result);
   const agents = files.get("AGENTS.md");
   const canonicalBody = core.globalInstructions.content;
-  assert.ok(agents.startsWith(canonicalBody), "canonical global body must be first");
-  assert.match(agents.slice(canonicalBody.length), /^\n---\n# All About Agents for Codex\n/u);
+  const block = agents.match(/^(<!-- all-about-agents:begin [^\n]*-->)\n([\s\S]*)\n<!-- all-about-agents:end -->\n$/u);
+  assert.ok(block, "AGENTS.md is one marked block, so registration can keep the operator's text around it");
+  assert.equal((agents.match(/<!-- all-about-agents:(?:begin|end)\b/gu) ?? []).length, 2);
+  const inner = `${block[2]}\n`;
+  assert.ok(inner.startsWith(canonicalBody), "canonical global body must be first inside the block");
+  assert.match(inner.slice(canonicalBody.length), /^\n---\n# All About Agents for Codex\n/u);
   assert.equal((agents.match(/# Global Operating Rules/g) ?? []).length, 1);
   assert.equal((agents.match(/Presentation catalog/g) ?? []).length, 1);
   assert.equal((agents.match(/## Canonical repository rules/g) ?? []).length, 1);

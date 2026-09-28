@@ -104,10 +104,17 @@ contiguous block; your own sections before or after it stay. When the body is
 missing or edited, registration reports `manual-required`, writes nothing, and
 the run ends with exit code 1 (`manual-step-required`).
 
-This differs from Claude on purpose. `CLAUDE.md` is deployed without the guard
-because the Claude render is a superset of the live file. The Antigravity render
-is not: an operator may keep unrelated always-on sections in `~/.gemini/GEMINI.md`,
-and overwriting would delete them. Merge the managed body by hand instead.
+This differs from Claude and Codex on purpose. `CLAUDE.md` and `AGENTS.md`
+carry a marked block that registration replaces in place. `GEMINI.md` does
+not: an operator may keep unrelated always-on sections in `~/.gemini/GEMINI.md`
+or condense the managed body to fit the rule size limit below, and a replaced
+block would undo that. Merge the managed body by hand instead.
+
+Observed on `agy 1.2.7`: agy keeps only the first 24,020 characters of
+`~/.gemini/GEMINI.md` and drops the rest without a session-visible error. The
+only signal is a `Global rule truncated` line in
+`~/.gemini/antigravity-cli/cli.log`. After a merge, count the characters of
+the file and search that log for `truncated`.
 `<ROOT>/GEMINI.md` is the exact file registration deploys, so compare it
 with `~/.gemini/GEMINI.md` directly. To preview the plan, set
 `AAA_ANTIGRAVITY_ROOT` to a disposable directory and run `register --dry-run`.

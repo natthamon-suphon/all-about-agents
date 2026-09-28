@@ -317,6 +317,9 @@ async function runCommandStep(step, run) {
 // but a required step is left to the operator. Only these two codes mean that;
 // any other code fails closed, except a missing product CLI (see below).
 const MANUAL_FOLLOW_UP_CODES = new Set(["manual-step-required", "installed-copy-not-confirmed"]);
+// A manual step's reason is the fix itself, often done by an agent, so it is
+// kept whole; the cap only bounds a runaway report.
+const MANUAL_REASON_LIMIT = 1000;
 
 function manualFollowUps(report) {
   const actions = Array.isArray(report?.actions) ? report.actions : [];
@@ -324,7 +327,7 @@ function manualFollowUps(report) {
     .filter((action) => action?.status === "manual-required")
     .map((action) => {
       const note = action.reason ?? action.message;
-      return typeof note === "string" && note.trim() !== "" ? `${action.id} (${oneLine(note, 120)})` : action.id;
+      return typeof note === "string" && note.trim() !== "" ? `${action.id} (${oneLine(note, MANUAL_REASON_LIMIT)})` : action.id;
     });
 }
 

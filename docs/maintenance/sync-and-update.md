@@ -46,6 +46,13 @@ whole rendered body, or append the body as one block when no managed block is
 there. In `config.toml`, add the missing tables and change the named lines, so
 each key still appears only once. Then register again.
 
+`<CLAUDE_CONFIG_DIR>/CLAUDE.md` and `<CODEX_HOME>/AGENTS.md` are updated in
+place instead. Each is rendered as one marked block, and registration replaces
+only that block, so your own sections above or below it survive every run. A
+file with no intact block is left unchanged and reported `manual-required`;
+the reason names the one-time fix. See
+[global instructions](global-instructions.md).
+
 ## One-command setup
 
 `npm run setup` runs the whole receiving-machine order as one guarded
@@ -98,7 +105,8 @@ creates it.
 
 It never deletes anything inside `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, or the
 Gemini home, so personal skills, settings, credentials, and history stay in
-place; registration then overwrites only the files the package owns. The run
+place; registration then writes only the files and marked blocks the package
+owns. The run
 refuses a package root that is a home directory, or that is, contains, or sits
 inside a live product root (`~/.claude`, `~/.codex`, `~/.gemini`, or the root
 named by `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, or `AAA_ANTIGRAVITY_ROOT`) or this
@@ -165,6 +173,25 @@ Registration still ends in manual steps the products own: restart each product
 that registered, then confirm the hook under its own review screen. Verify with
 `claude plugin list`, `codex plugin list`, `agy plugin list`, and
 `npm run test:model`.
+
+### Setup run by an agent
+
+An agent session (Antigravity, Claude Code, or Codex) may run the whole setup
+for the operator. The agent then owns every `manual-required` step:
+
+1. Run `node scripts/setup.mjs --mode update`, review the plan, then run it
+   again with `--apply`. Use `--mode fresh` only when the report says so.
+2. For each `manual-required` step, do exactly what its reason says, then run
+   setup again until no step needs it.
+3. For a `CLAUDE.md` or `AGENTS.md` with no intact block, compare the live
+   file with the package file. Keep every line that is not in the package file,
+   above the begin line or below the end line. Never put the operator's text
+   inside the block, because the next run replaces it.
+4. For `GEMINI.md`, diff the previous and the new package render, apply only
+   the changed lines to the live file, and keep it at or below 24,020
+   characters (see [Antigravity](../compatibility/antigravity.md)).
+5. Prove the result with a new headless session of each product: ask it to
+   quote a line that changed, or to answer `NOT PRESENT`.
 
 ## Source machine (author machine)
 

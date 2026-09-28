@@ -62,7 +62,7 @@ explicit registration apply, restart, and verify loaded instructions.
 The `portable` profile uses Claude's surface default with controlled
 permissions. The `template` profile uses:
 
-- model `claude-opus-5`;
+- model `opus[1m]`, the alias for the latest Opus with a 1M-token context window;
 - `CLAUDE_CODE_EFFORT_LEVEL=xhigh`;
 - server-failure fallback `claude-sonnet-5` at the same effort level;
 - advisor `claude-fable-5-1` when the account and product permit it;
@@ -127,10 +127,12 @@ node scripts/aaa.mjs register --surface claude --profile <PROFILE> --package-roo
 
 Run the same command with `--apply` only after exact authority.
 
-During apply, the installer first overwrites `CLAUDE.md`,
-`all-about-agents/statusline.json`, and the four files under `statusline/` in
+During apply, the installer first writes the marked block of `CLAUDE.md`:
+your own text above or below the block stays, and a file with no intact block
+is left unchanged and reported `manual-required`. It then overwrites
+`all-about-agents/statusline.json` and the four files under `statusline/` in
 `CLAUDE_CONFIG_DIR`: `statusline.mjs`, `track-tool.mjs`, `statusline.ps1`, and
-`statusline.sh`. `CLAUDE.md` has no guard.
+`statusline.sh`.
 `settings.json` is merged, not replaced: keys the package declares win, and
 every other key already in the file is preserved. An array the package
 declares replaces the existing one, except `permissions.allow` and

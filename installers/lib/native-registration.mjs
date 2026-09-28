@@ -13,6 +13,7 @@ import { hashBytes } from "./hash.mjs";
 import { parseManagedState, STATE_RELATIVE_PATH } from "./state.mjs";
 import { runProcess as defaultRunProcess } from "../../scripts/lib/process-runner.mjs";
 import { SURFACES, SURFACE_SET as SUPPORTED_SURFACE_SET } from "../../adapters/shared/surfaces.mjs";
+import { MANAGED_BLOCK_BEGIN_PREFIX, MANAGED_BLOCK_END_PREFIX } from "../../adapters/shared/global-instructions.mjs";
 
 export const REGISTRATION_SURFACES = SURFACES;
 const SURFACE_SET = SUPPORTED_SURFACE_SET;
@@ -188,9 +189,10 @@ function fileCopyAction(id, packageRoot, destinationRoot, sourceRelativePath, de
   const suffix = relative(destinationRoot, targetPath);
   if (isAbsolute(suffix) || suffix.split(/[\\/]/u)[0] === "..") throw pathError("destination-escape", "native config destination escapes the selected native root");
   assertSafeDestinationRoot(dirname(targetPath), { allowedProductRoots: [allowedRoot] });
-  if (!(guard === null || guard === "no-clobber")) throw new TypeError("unsupported native config copy guard");
+  if (!(guard === null || guard === "no-clobber" || guard === "managed-block")) throw new TypeError("unsupported native config copy guard");
   if (guard === "no-clobber" ? !CONTAINMENT_CHECKS.has(match) : match !== null) throw new TypeError("a no-clobber native config copy needs a supported match, and only it takes one");
-  return { id, kind: "file-copy", sourcePath, sourceRelativePath, expectedSourceHash, targetPath, destinationRelativePath, allowedRoot, mode, transform, guard, match, mutates: true, required: true, expectedProbe: guard === "no-clobber" ? "hash-verified-write-or-refuse" : "hash-verified-overwrite", automaticWrite: true };
+  const expectedProbe = { "no-clobber": "hash-verified-write-or-refuse", "managed-block": "hash-verified-block-replace-or-refuse" }[guard] ?? "hash-verified-overwrite";
+  return { id, kind: "file-copy", sourcePath, sourceRelativePath, expectedSourceHash, targetPath, destinationRelativePath, allowedRoot, mode, transform, guard, match, mutates: true, required: true, expectedProbe, automaticWrite: true };
 }
 
 // A linked or non-folder rules path, or a linked or non-file rule target
@@ -271,6 +273,24 @@ function missingTextBlock(managed, existing) {
 // content; the operator and the product may keep more beside it.
 const CONTAINMENT_CHECKS = new Map([["toml-tables", missingTomlTables], ["text-block", missingTextBlock]]);
 
+// Swap the one marked block for the managed text and keep every byte around it.
+// Returns null when the file is not UTF-8 or lacks exactly one begin line
+// followed by exactly one end line.
+function replaceManagedBlock(existingBytes, managed) {
+  let existing;
+  try {
+    existing = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(existingBytes);
+  } catch {
+    return null;
+  }
+  const lines = existing.split(/(?<=\n)/u);
+  const find = (prefix) => lines.flatMap((line, index) => (line.trim().startsWith(prefix) ? [index] : []));
+  const begins = find(MANAGED_BLOCK_BEGIN_PREFIX);
+  const ends = find(MANAGED_BLOCK_END_PREFIX);
+  if (begins.length !== 1 || ends.length !== 1 || ends[0] < begins[0]) return null;
+  return new TextEncoder().encode([...lines.slice(0, begins[0]), managed, ...lines.slice(ends[0] + 1)].join(""));
+}
+
 function lifecycle(surface) {
   const registrationEvidence = "Native registration has not been attempted by this dry-run plan.";
   const trust = surface === "claude"
@@ -318,7 +338,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
   });
 
   if (surface === "claude") {
-    actions.push(deployFile("claude-instructions-deploy", "CLAUDE.md", "CLAUDE.md"));
+    actions.push(deployFile("claude-instructions-deploy", "CLAUDE.md", "CLAUDE.md", { guard: "managed-block" }));
     actions.push({ id: "claude-settings-deploy", kind: "settings-overlay", targetPath: join(product, "settings.json"), overlayPath: join(pkg, "settings.json"), expectedOverlayHash: managedPackage.ownership.get(`${managedPackage.ownershipPrefix}settings.json`), allowedRoot: product, transform: "claude-statusline-product-root", mutates: true, required: true, expectedProbe: "settings-merge", automaticWrite: true });
     actions.push(deployFile("claude-statusline-config-deploy", "all-about-agents/statusline.json", "all-about-agents/statusline.json"));
     actions.push(deployFile("claude-statusline-renderer-deploy", "statusline/statusline.mjs", "statusline/statusline.mjs", { mode: 0o755 }));
@@ -345,7 +365,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push({ id: "claude-plugin-cache-check", kind: "plugin-cache-check", probe: "claude-plugin-list", mutates: false, required: true, expectedProbe: "installed-copy-matches-package" });
     actions.push(manualAction("claude-reload", "Restart Claude Code or reload the plugin before checking native behavior."));
   } else if (surface === "codex") {
-    actions.push(deployFile("codex-instructions-deploy", "AGENTS.md", "AGENTS.md"));
+    actions.push(deployFile("codex-instructions-deploy", "AGENTS.md", "AGENTS.md", { guard: "managed-block" }));
     actions.push(deployFile("codex-config-deploy", "config.toml", "config.toml", { guard: "no-clobber", match: "toml-tables" }));
     if (profile === "template") actions.push(deployFile("codex-terra-profile-deploy", "terra-max.config.toml", "terra-max.config.toml"));
     for (const role of ["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]) {
@@ -357,9 +377,9 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push({ id: "codex-plugin-source-check", kind: "git-source-check", executable: "git", prefixArgs: ["-c", "core.fsmonitor=false", "rev-parse", "--show-prefix"], statusArgs: ["-c", "core.fsmonitor=false", "--no-optional-locks", "status", "--porcelain", "--untracked-files=all", "--", "."], cwd: pkg, environmentKeys: [], mutates: false, required: true, expectedProbe: "own-repository-clean-working-tree" });
     actions.push(manualAction("codex-hooks-trust", "Open `/hooks` in Codex and review/trust the registered hook only if the product presents that step."));
   } else if (surface === "antigravity") {
-    // GEMINI.md is not a superset of the live file the way CLAUDE.md is: an
-    // operator may keep unrelated always-on sections there. Refuse rather than
-    // replace. See docs/plans/2026-09-19-restore-antigravity.md decision A6.
+    // An operator may keep unrelated always-on sections in GEMINI.md and may
+    // condense it under agy's rule size cap, so it is refused, not replaced.
+    // See docs/plans/2026-09-19-restore-antigravity.md decision A6.
     actions.push(deployFile("antigravity-instructions-deploy", "GEMINI.md", "GEMINI.md", { guard: "no-clobber", match: "text-block" }, instruction));
     actions.push(processAction("antigravity-plugin-validate", "agy", ["plugin", "validate", pkg], pkg, null, "none", false));
     actions.push(processAction("antigravity-plugin-install", "agy", ["plugin", "install", pkg], pkg, null, "none"));
@@ -730,8 +750,24 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
           actionReports.push(reportAction(action, "manual-required", { reason }));
           continue;
         }
-        const written = await atomicReplaceFile({ destination: action.targetPath, content, expectedHash, mode: action.mode, allowedProductRoots: [action.allowedRoot], fileSystem });
-        actionReports.push(reportAction(action, "complete", { result: { bytes: content.byteLength, sha256: written.sha256, overwrite: true, changed: true } }));
+        let target = content;
+        if (action.guard === "managed-block" && existing !== null && !sameBytes) {
+          const merged = replaceManagedBlock(existing.content, new TextDecoder("utf-8").decode(content));
+          if (merged === null) {
+            const reason = `${action.destinationRelativePath} has no intact all-about-agents block (exactly one "${MANAGED_BLOCK_BEGIN_PREFIX}" line, then exactly one "${MANAGED_BLOCK_END_PREFIX}" line) or is not UTF-8, so it was left unchanged. Every line in it that is not in the package ${action.sourceRelativePath} is the operator's own text: keep that text above the "${MANAGED_BLOCK_BEGIN_PREFIX}" line or below the "${MANAGED_BLOCK_END_PREFIX}" line, put the whole package ${action.sourceRelativePath} in place of the rest, then register again`;
+            followUp ??= reason;
+            actionReports.push(reportAction(action, "manual-required", { reason }));
+            continue;
+          }
+          if (hashBytes(merged) === hashBytes(existing.content) && modeMatches(action, existing)) {
+            actionReports.push(reportAction(action, "complete", { result: { bytes: merged.byteLength, sha256: hashBytes(merged), overwrite: false, changed: false } }));
+            completed.push(action);
+            continue;
+          }
+          target = merged;
+        }
+        const written = await atomicReplaceFile({ destination: action.targetPath, content: target, expectedHash: hashBytes(target), mode: action.mode, allowedProductRoots: [action.allowedRoot], fileSystem });
+        actionReports.push(reportAction(action, "complete", { result: { bytes: target.byteLength, sha256: written.sha256, overwrite: true, changed: true } }));
       } else {
         const explicitEnv = envFor(plan, action);
         // Codex clones the package with git, so a GIT_* redirect inherited from

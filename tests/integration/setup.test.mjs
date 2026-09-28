@@ -608,6 +608,24 @@ test("a registration that ends with a required manual step goes on to the next s
   });
 });
 
+test("a manual step keeps its whole reason, so the agent running setup can follow the fix", async () => {
+  await withTempRoot(async (root) => {
+    const target = await packageRoot(root, ["antigravity", "claude", "codex"]);
+    const fix = 'CLAUDE.md has no intact all-about-agents block (exactly one "<!-- all-about-agents:begin" line, then exactly one "<!-- all-about-agents:end" line) or is not UTF-8, so it was left unchanged. Every line in it that is not in the package CLAUDE.md is the operator\'s own text: keep that text above the "<!-- all-about-agents:begin" line or below the "<!-- all-about-agents:end" line, put the whole package CLAUDE.md in place of the rest, then register again';
+    const claudeManual = JSON.stringify({
+      action: "register",
+      status: "manual-required",
+      actions: [{ id: "claude-instructions-deploy", kind: "file-copy", status: "manual-required", reason: fix }],
+      error: { code: "manual-step-required", message: fix }
+    });
+    const runner = recorder({ [registerApply("claude")]: { exitCode: 1, stdout: claudeManual } });
+    const result = await runMain(["--mode", "update", "--surface", "all", "--package-root", target, "--apply", "--format", "json"], { runProcess: runner.run });
+
+    assert.equal(result.code, 1);
+    assert.equal(stepsById(JSON.parse(result.stdout))["register-claude"].reason, `1 step(s) need a manual follow-up: claude-instructions-deploy (${fix})`);
+  });
+});
+
 test("a refused no-clobber deploy that registration marks as a required manual step ends setup manual-required", async () => {
   await withTempRoot(async (root) => {
     const target = await packageRoot(root, ["antigravity", "claude", "codex"]);

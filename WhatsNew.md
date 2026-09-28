@@ -36,11 +36,11 @@ from there, and the Antigravity manifest names it in its description.
   - `--surface all` now means three surfaces. A rerun renders one more package
     and, with a single explicit root, adds `<root>/antigravity` beside the two
     existing namespaces. Sibling packages are untouched.
-  - `GEMINI.md` is deployed with a no-clobber guard, unlike `CLAUDE.md`. The
-    Claude render is a superset of the live file, so overwriting is safe there;
-    the Antigravity render is not, because the Gemini home may hold always-on
-    sections this package does not own. An existing file is never overwritten;
-    it counts as complete when it contains the managed body (see Fixed).
+  - `GEMINI.md` is deployed with a no-clobber guard, because the Gemini home may
+    hold always-on sections this package does not own. An existing file is
+    never overwritten; it counts as complete when it contains the managed body
+    (see Fixed). `CLAUDE.md` and `AGENTS.md` now update only their marked block
+    (see Fixed).
   - Antigravity documents no environment variable for its home, so a dry-run
     would resolve to the operator's live `~/.gemini`. The installer therefore
     defines `AAA_ANTIGRAVITY_ROOT` for qualification runs. It is this
@@ -400,6 +400,22 @@ from there, and the Antigravity manifest names it in its description.
   `.aaa/eval-runs/` and `.aaa/claude-ai/` lines, which `.aaa/` already covered.
 
 ### Fixed
+
+- `register --apply` no longer deletes the operator's own sections in
+  `<CLAUDE_CONFIG_DIR>/CLAUDE.md` and `<CODEX_HOME>/AGENTS.md`. Both files are
+  now rendered as one block between a `<!-- all-about-agents:begin` line and a
+  `<!-- all-about-agents:end -->` line, and registration replaces only that
+  block. A file with no intact block is left unchanged and reported
+  `manual-required`, and the reason names the one-time fix. Before, both files
+  were overwritten whole, which silently removed an operator's own rules and
+  the Codex always-on caveman and ponytail sections on every setup run.
+- The template profile sets the Claude `model` to `opus[1m]`, the alias for the
+  latest Opus with a 1M-token context window. The pinned `claude-opus-5` had
+  gone stale and replaced a newer operator choice on every setup run.
+- `docs/maintenance/sync-and-update.md` gains "Setup run by an agent", and the
+  session prompt points to it, so an agent that runs setup knows how to finish
+  each `manual-required` step. `docs/compatibility/antigravity.md` records the
+  24,020-character `GEMINI.md` limit observed on `agy 1.2.7`.
 
 - `npm run setup -- --mode fresh` could delete a parent folder: a package root
   such as `..` passed the equality-only reserved-root check, and the clear

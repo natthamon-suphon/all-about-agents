@@ -71,7 +71,7 @@ test("template contains only semantic full-access, maximum-reasoning, model, and
     codex: "approved-sol-terra"
   });
   const body = JSON.stringify(profiles.template);
-  for (const forbidden of ["claude-opus-5", "gpt-5.6-sol", "gemini-3.1-pro-high", "bypassPermissions", "danger-full-access", "statuslineName", "skills"]) {
+  for (const forbidden of ["opus[1m]", "gpt-5.6-sol", "gemini-3.1-pro-high", "bypassPermissions", "danger-full-access", "statuslineName", "skills"]) {
     assert.equal(body.includes(forbidden), false, `template leaks native value ${forbidden}`);
   }
 });
@@ -128,7 +128,7 @@ test("portable renders safe permissions without pinning personal model choices",
   });
   assert.equal(claudeSettings.statusLine.type, "command");
   assert.equal(typeof claudeSettings.statusLine.command, "string");
-  assert.doesNotMatch(serializedFiles(outputs.claude), /claude-(?:opus|sonnet|fable)-5|CLAUDE_CODE_EFFORT_LEVEL/u);
+  assert.doesNotMatch(serializedFiles(outputs.claude), /claude-(?:opus|sonnet|fable)-5|"opus\[1m\]"|CLAUDE_CODE_EFFORT_LEVEL/u);
   assert.doesNotMatch(serializedFiles(outputs.codex), /gpt-5\.6-(?:sol|terra)|model_reasoning_effort/u);
   assert.equal(files(outputs.codex).has("terra-max.config.toml"), false);
 });
@@ -136,7 +136,7 @@ test("portable renders safe permissions without pinning personal model choices",
 test("template renders approved native model contracts and Fable only where supported", () => {
   const outputs = Object.fromEntries(Object.entries(renderers).map(([surface, render]) => [surface, render(profiles.template)]));
   const claude = JSON.parse(files(outputs.claude).get("config/settings.json"));
-  assert.equal(claude.model, "claude-opus-5");
+  assert.equal(claude.model, "opus[1m]");
   assert.deepEqual(claude.fallbackModel, ["claude-sonnet-5"]);
   assert.equal(claude.advisorModel, "claude-fable-5-1");
   assert.equal(claude.env.CLAUDE_CODE_EFFORT_LEVEL, "xhigh");

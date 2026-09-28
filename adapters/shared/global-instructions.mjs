@@ -43,6 +43,18 @@ digests arrive separately through the guideline-dispatch hook.
 
 @~/Workspaces/coding-guidelines/Rules/RULES.md`;
 
+// Registration replaces only the lines from a begin-prefixed line to an
+// end-prefixed line, so operator text around them survives every update.
+// These structural comments are added after the body passes its no-HTML check.
+export const MANAGED_BLOCK_BEGIN_PREFIX = "<!-- all-about-agents:begin";
+export const MANAGED_BLOCK_END_PREFIX = "<!-- all-about-agents:end";
+const MANAGED_BLOCK_BEGIN = `${MANAGED_BLOCK_BEGIN_PREFIX} (managed by setup; keep your own text above or below this block) -->`;
+const MANAGED_BLOCK_END = `${MANAGED_BLOCK_END_PREFIX} -->`;
+
+function managedBlock(body) {
+  return `${MANAGED_BLOCK_BEGIN}\n${normalizeBody(body).trimEnd()}\n${MANAGED_BLOCK_END}\n`;
+}
+
 /** Render the canonical body every surface shares. */
 export function renderSharedGlobalInstructions(core) {
   return normalizeBody(globalInstructionContent(ensureCore(core)));
@@ -50,7 +62,7 @@ export function renderSharedGlobalInstructions(core) {
 
 /** Render the shared canonical body plus the Claude-only house rules import. */
 export function renderClaudeGlobalInstructions(core) {
-  return normalizeBody(renderSharedGlobalInstructions(core).trimEnd() + CLAUDE_HOUSE_RULES);
+  return managedBlock(renderSharedGlobalInstructions(core).trimEnd() + CLAUDE_HOUSE_RULES);
 }
 
 /** Render Codex's shared global body followed by its canonical local sections. */
@@ -58,7 +70,7 @@ export function renderCodexGlobalInstructions(core, { canonicalRules } = {}) {
   const loaded = ensureCore(core);
   const rules = canonicalRules === undefined ? loaded.rules : ensureRecords(canonicalRules, "canonicalRules");
   if (!loaded.presentation || typeof loaded.presentation !== "object") throw new TypeError("core.presentation is required for Codex rendering");
-  return normalizeBody([
+  return managedBlock([
     renderSharedGlobalInstructions(loaded).trimEnd(),
     "",
     "---",

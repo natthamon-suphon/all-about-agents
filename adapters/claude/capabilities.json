@@ -22,10 +22,10 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-model-policy-claude.md",
-      "checkedAt": "2026-08-31",
-      "productVersion": "2.1.251",
-      "value": "claude-opus-5",
-      "notes": "Documented pinned Claude model ID."
+      "checkedAt": "2026-09-28",
+      "productVersion": "2.1.283",
+      "value": "opus[1m]",
+      "notes": "Documented alias for the latest Opus model with a 1M-token context window; an alias does not go stale when a new Opus ships."
     },
     {
       "feature": "model.fallback",

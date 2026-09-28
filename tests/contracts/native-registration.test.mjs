@@ -24,6 +24,10 @@ const CLAUDE_RULE_IDS = CLAUDE_RULE_FILES.map((name) => `claude-rule-${name.slic
 // Shaped like the rendered files: top-level keys, then one table per role.
 const CODEX_CONFIG = 'model = "gpt-5.6-sol"\nsandbox_mode = "danger-full-access"\n[agents.reviewer]\nconfig_file = "agents/reviewer.toml"\ndescription = "Reviews."\n\n[agents.verifier]\nconfig_file = "agents/verifier.toml"\ndescription = "Verifies."\n';
 const GEMINI_BODY = "# Global Operating Rules\n\n## Routing contract\n\nRoute each task to one skill.\n";
+// Shaped like the rendered CLAUDE.md and AGENTS.md: one marked block.
+const BLOCK_BEGIN = "<!-- all-about-agents:begin (managed by setup; keep your own text above or below this block) -->";
+const BLOCK_END = "<!-- all-about-agents:end -->";
+const MANAGED_INSTRUCTIONS = `${BLOCK_BEGIN}\n# Global instructions\n${BLOCK_END}\n`;
 
 async function generatedTempRoot(prefix) {
   const root = await makeTempRoot(prefix);
@@ -65,13 +69,13 @@ async function fixture(profile = "template", { layout = "own" } = {}) {
   await writeFile(join(packageRoot, ".agents", "plugins", "marketplace.json"), "{}\n");
   await writeFile(join(packageRoot, ".agents", "plugins", "all-about-agents", "plugin.json"), "{}\n");
   await writeFile(join(packageRoot, "settings.json"), '{"permissions":{"defaultMode":"bypassPermissions","deny":["Bash(rm -rf /)"]},"statusLine":{"type":"command","command":"stale-package-root-command"}}\n');
-  await writeFile(join(packageRoot, "CLAUDE.md"), "# Global instructions\n");
+  await writeFile(join(packageRoot, "CLAUDE.md"), MANAGED_INSTRUCTIONS);
   await writeFile(join(packageRoot, "all-about-agents", "statusline.json"), '{"schemaVersion":1,"displayName":"Test"}\n');
   await writeFile(join(packageRoot, "statusline", "statusline.mjs"), "// renderer\n");
   await writeFile(join(packageRoot, "statusline", "track-tool.mjs"), "// tracker\n");
   await writeFile(join(packageRoot, "statusline", "statusline.ps1"), "# windows launcher\n");
   await writeFile(join(packageRoot, "statusline", "statusline.sh"), "#!/bin/sh\n# posix launcher\n");
-  await writeFile(join(packageRoot, "AGENTS.md"), "# Global instructions\n");
+  await writeFile(join(packageRoot, "AGENTS.md"), MANAGED_INSTRUCTIONS);
   await writeFile(join(packageRoot, "config.toml"), CODEX_CONFIG);
   await writeFile(join(packageRoot, "terra-max.config.toml"), 'model = "gpt-5.6-terra"\n');
   for (const role of ["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]) {
@@ -593,11 +597,11 @@ test("apply stops on a timed-out native process and does not run later actions",
 
 test("apply atomically overwrites approved Claude and Codex config destinations", async () => {
   const input = await fixture();
-  await writeFile(join(input.productRoot, "CLAUDE.md"), "old instructions\n");
+  await writeFile(join(input.productRoot, "CLAUDE.md"), `mine above\n${BLOCK_BEGIN}\nold instructions\n${BLOCK_END}\nmine below\n`);
   await writeFile(join(input.productRoot, "settings.json"), '{"old":true}\n');
   const claude = await runNativeRegistration(base(input, "claude"), { mode: "apply", runProcess: fakeProducts(input).run });
   assert.equal(claude.status, "complete");
-  assert.equal(await readFile(join(input.productRoot, "CLAUDE.md"), "utf8"), "# Global instructions\n");
+  assert.equal(await readFile(join(input.productRoot, "CLAUDE.md"), "utf8"), `mine above\n${MANAGED_INSTRUCTIONS}mine below\n`);
   const productEntries = await (await import("node:fs/promises")).readdir(input.productRoot);
   assert.equal(productEntries.some((entry) => entry.includes("backup")), false);
   const installedClaudeSettings = JSON.parse(await readFile(join(input.productRoot, "settings.json"), "utf8"));
@@ -643,7 +647,7 @@ test("a linked Claude rules folder degrades to one manual step instead of blocki
     assert.equal(applied.actions.find((action) => action.id === "claude-rules-deploy").status, "manual-required");
     assert.match(formatNativeRegistrationText(applied), /^reason\tclaude-rules-deploy\t<CLAUDE_CONFIG_DIR>\/rules/mu);
     assert.deepEqual(await readdir(outside), []);
-    assert.equal(await readFile(join(input.productRoot, "CLAUDE.md"), "utf8"), "# Global instructions\n");
+    assert.equal(await readFile(join(input.productRoot, "CLAUDE.md"), "utf8"), MANAGED_INSTRUCTIONS);
   }
 });
 
@@ -674,7 +678,7 @@ test("a linked or non-file rule target degrades to the manual rules step before 
     assert.equal(applied.failed, null, kind);
     assert.equal(await readFile(outsideFile, "utf8"), "# Outside\n");
     assert.deepEqual((await readdir(namespace)).sort(), ["presentation.md"], kind);
-    assert.equal(await readFile(join(input.productRoot, "CLAUDE.md"), "utf8"), "# Global instructions\n");
+    assert.equal(await readFile(join(input.productRoot, "CLAUDE.md"), "utf8"), MANAGED_INSTRUCTIONS);
   }
 });
 
@@ -758,6 +762,55 @@ test("a refused no-clobber file needs a manual step, exits 1, and stays untouche
     assert.equal(code, 1, surface);
     assert.equal(JSON.parse(stdout).error.code, "manual-step-required", surface);
     assert.equal(await readFile(join(input.productRoot, file), "utf8"), body, surface);
+  }
+});
+
+const INSTRUCTION_DEPLOYS = [["claude", "CLAUDE.md", "claude-instructions-deploy"], ["codex", "AGENTS.md", "codex-instructions-deploy"]];
+
+test("a global instruction file keeps every byte outside its marked block", async () => {
+  const cases = [
+    ["missing file", null, MANAGED_INSTRUCTIONS, true],
+    ["block already current", `# Top rules\n\n${MANAGED_INSTRUCTIONS}\n## Caveman mode\n`, `# Top rules\n\n${MANAGED_INSTRUCTIONS}\n## Caveman mode\n`, false],
+    ["CRLF and BOM outside, older marker wording, end at EOF", `﻿# Top rules\r\n\r\n  <!-- all-about-agents:begin old wording -->\r\nold body\r\n<!-- all-about-agents:end -->`, `﻿# Top rules\r\n\r\n${MANAGED_INSTRUCTIONS}`, true],
+    ["text after the block", `${BLOCK_BEGIN}\nold body\n${BLOCK_END}\n\n@RTK.md\n\n## Ponytail mode\r\nlazy\r\n`, `${MANAGED_INSTRUCTIONS}\n@RTK.md\n\n## Ponytail mode\r\nlazy\r\n`, true]
+  ];
+  for (const [surface, file, id] of INSTRUCTION_DEPLOYS) {
+    for (const [label, before, after, changed] of cases) {
+      const input = await fixture();
+      if (before !== null) await writeFile(join(input.productRoot, file), before);
+      const report = await runNativeRegistration(base(input, surface), { mode: "apply", runProcess: fakeProducts(input).run });
+      assert.equal(report.status, "complete", `${surface} ${label}`);
+      const deploy = report.actions.find((action) => action.id === id);
+      assert.equal(deploy.status, "complete", `${surface} ${label}`);
+      assert.equal(deploy.result.changed, changed, `${surface} ${label}`);
+      assert.equal(await readFile(join(input.productRoot, file), "utf8"), after, `${surface} ${label}`);
+      assert.equal(await registerExitCode(input, surface), 0, `${surface} ${label}`);
+    }
+  }
+});
+
+test("a global instruction file without one intact block stays untouched and names the fix", async () => {
+  const bodies = [
+    "# My own instructions\n\nold managed text\n",
+    `${BLOCK_BEGIN}\none\n${BLOCK_END}\n${BLOCK_BEGIN}\ntwo\n${BLOCK_END}\n`,
+    `${BLOCK_END}\nbody\n${BLOCK_BEGIN}\n`,
+    `mine\n${BLOCK_BEGIN}\nbody without an end\n`
+  ];
+  for (const [surface, file, id] of INSTRUCTION_DEPLOYS) {
+    for (const body of bodies) {
+      const input = await fixture();
+      await writeFile(join(input.productRoot, file), body);
+      const report = await runNativeRegistration(base(input, surface), { mode: "apply", runProcess: fakeProducts(input).run });
+      assert.equal(report.status, "manual-required", `${surface} ${body}`);
+      assert.equal(report.error.code, "manual-step-required", surface);
+      const deploy = report.actions.find((action) => action.id === id);
+      assert.equal(deploy.status, "manual-required", surface);
+      assert.match(deploy.reason, new RegExp(`${file.replace(".", "\\.")} has no intact all-about-agents block`, "u"), surface);
+      assert.match(deploy.reason, /above the "<!-- all-about-agents:begin" line or below the "<!-- all-about-agents:end" line[\s\S]*register again/u, surface);
+      assert.equal(await readFile(join(input.productRoot, file), "utf8"), body, surface);
+      assert.equal(await registerExitCode(input, surface), 1, surface);
+      assert.equal(await readFile(join(input.productRoot, file), "utf8"), body, surface);
+    }
   }
 });
 

@@ -65,6 +65,24 @@ Amended 2026-09-02 on operator instruction. The decision below uses the
 - Use this record as the source for `model.primary`, `model.fallback`,
   `model.advisor`, and `effort.xhigh` in `adapters/claude/capabilities.json`.
 
+## Amendment facts - 2026-09-28
+
+Retrieved: 2026-09-28. Observed local CLI: `claude --version` returned
+`2.1.283 (Claude Code)` on Windows.
+
+- The [model configuration guide](https://code.claude.com/docs/en/model-config)
+  documents `opus` as "the latest Opus model" and `opus[1m]` as Opus with a
+  1 million token context window. The `[1m]` suffix works with aliases and
+  full model names.
+- A `register --apply` run on 2026-09-28 replaced the operator's
+  `"model": "opus[1m]"` with the pinned `claude-opus-5`, which was no longer
+  the latest Opus. A pinned full name goes stale each time a new Opus ships.
+
+Amended decision, on operator instruction: the template `model` is
+`opus[1m]`, so it follows the latest Opus. The fallback and advisor pins stay
+unchanged. `model.primary` in `adapters/claude/capabilities.json` now cites
+this amendment.
+
 ## Unconfirmed
 
 - This session did not authenticate to Claude or make a model request.
