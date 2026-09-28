@@ -7,6 +7,8 @@ from there, and the Antigravity manifest names it in its description.
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-09-28
+
 ### Added
 
 - `antigravity` is a supported surface again, beside `claude` and `codex`; this

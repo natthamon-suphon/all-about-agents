@@ -8,7 +8,7 @@
     },
     {
       "relativePath": "README.md",
-      "sha256": "aaa9de16174bf8da49ee2998d60f1256aa5fd6a1c353dc22e5e2b3a6dfe5e71f",
+      "sha256": "bbffa74ac56a81190b8c88f8bddfddae3d90ec6f4dced6ddf3e0420adfc6f287",
       "mode": null
     },
     {
@@ -58,7 +58,7 @@
     },
     {
       "relativePath": "plugin.json",
-      "sha256": "9ae1285e867c9094d0b3e517d9ee0d95b29559a3155bc37ef7bdfb984a5c0f61",
+      "sha256": "fa3f93e9c4a5e42c0e9ea843a4b1349e571e0566c41b71c5fea3236c42c93ae4",
       "mode": null
     },
     {
@@ -404,7 +404,7 @@
     },
     {
       "relativePath": "README.md",
-      "sha256": "aaa9de16174bf8da49ee2998d60f1256aa5fd6a1c353dc22e5e2b3a6dfe5e71f"
+      "sha256": "bbffa74ac56a81190b8c88f8bddfddae3d90ec6f4dced6ddf3e0420adfc6f287"
     },
     {
       "relativePath": "agents/architect.md",
@@ -444,7 +444,7 @@
     },
     {
       "relativePath": "plugin.json",
-      "sha256": "9ae1285e867c9094d0b3e517d9ee0d95b29559a3155bc37ef7bdfb984a5c0f61"
+      "sha256": "fa3f93e9c4a5e42c0e9ea843a4b1349e571e0566c41b71c5fea3236c42c93ae4"
     },
     {
       "relativePath": "skills/brainstorming/SKILL.md",
