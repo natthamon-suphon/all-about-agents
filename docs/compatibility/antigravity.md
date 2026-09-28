@@ -3,13 +3,18 @@
 Sibling pages: [Claude Code](claude-code.md) and [Codex](codex.md).
 
 This page covers the Antigravity package and its native boundary. The observed
-runtime is the `agy` CLI `1.2.7` on Windows.
+runtime is the `agy` CLI on Windows: `1.2.7` through 2026-09-21 and `1.2.12`
+on 2026-09-28.
 
 The rendered package was installed on 2026-09-19 with
 `setup --mode update --surface antigravity --apply`. `agy plugin list` reported
 it, `agy agents` listed all seven roles, and a headless `agy -p` session run
 from a directory with no `.agents/` folder named real skills and confirmed the
 inlined routing contract. That is `runtime verified` for the CLI.
+
+On 2026-09-28, on `agy 1.2.12`, `agy plugin validate` reported 27 skills and 7
+agents, and headless sessions quoted the last line of `~/.gemini/GEMINI.md` and
+both ends of an always-on rule file in `~/.gemini/config/rules/`.
 
 Antigravity Desktop and Antigravity IDE are two more apps. Both read the global
 plugin slot that `agy plugin install` fills; without `agy`, the slot takes a
@@ -40,8 +45,9 @@ package was loaded.
 
 | Capability | Current evidence | Boundary |
 | --- | --- | --- |
-| Skills and roles | `agy plugin validate` reported 28 skills and 7 agents, before `nano-image-generator` was removed in `19f0b4f` (the package now has 27 skills and was not re-validated); a headless session named real skills and `agy agents` listed all seven | Desktop loading is not claimed. |
-| `GEMINI.md` | Written when absent; never overwritten; an existing file is complete when it already contains the managed body as one block | Otherwise registration reports `manual-required` with exit code 1, and the routing contract needs one manual merge. |
+| Skills and roles | `agy plugin validate` reported 27 skills and 7 agents on `agy 1.2.12` (2026-09-28); a headless session named real skills and `agy agents` listed all seven | Desktop loading is not claimed. |
+| `GEMINI.md` | One marked block; registration writes the file when absent and otherwise replaces only the block, keeping your own sections | A file with no intact block is left unchanged and reported `manual-required` with exit code 1. |
+| Global rule file | `config/rules/all-about-agents.md` is copied to `~/.gemini/config/rules/all-about-agents.md` with `trigger: always_on`; a headless session quoted a probe file there on `agy 1.2.12` | The package owns this one file name; other files in that folder are never touched. |
 | Plugin registration | `agy plugin install <dir>`, then `agy plugin list` and `agy agents` listed the package and all seven roles | The install is a copy; it does not follow later renders. |
 | Routing contract | Inlined into `GEMINI.md`; a headless session quoted its first heading | Whether the model follows the contract is a behavior question, not a discovery one. |
 | Hooks | None rendered | No session-start event can be named with current evidence; the recorded event list is inherited from the 1.1.22 evaluation. Do not infer hook support from another product. |
@@ -53,7 +59,8 @@ package was loaded.
 
 ```text
 plugin.json                 name and description only, at the package root
-GEMINI.md                   canonical rules, inlined routing contract, presentation
+GEMINI.md                   marked block: canonical global body, inlined routing contract
+config/rules/all-about-agents.md  always-on rule: canonical rules, presentation
 README.md                   install summary
 agents/<role>.md            7 roles, Markdown with YAML frontmatter
 skills/<skill>/SKILL.md     27 skills and their companion files
@@ -77,13 +84,13 @@ node scripts/aaa.mjs register --surface antigravity --package-root "<ROOT>" --ap
 rendered the package; `npm run setup` renders `template` by default. A mismatch
 fails with `package-profile-mismatch`.
 
-Registration first deploys `GEMINI.md` (see below), then runs
-`agy plugin validate`, `agy plugin install`, and `agy plugin list`. `agy` must
-resolve on `PATH`. When it does not, `register` still deploys `GEMINI.md`
-first, then stops at the validate step with error
+Registration first deploys `GEMINI.md` and the global rule file (see below),
+then runs `agy plugin validate`, `agy plugin install`, and `agy plugin list`.
+`agy` must resolve on `PATH`. When it does not, `register` still deploys both
+files first, then stops at the validate step with error
 `native-executable-unavailable` and exit code 1. The report status is `partial`
-when `GEMINI.md` was written or already held the managed body, and `failed`
-when the no-clobber guard refused it. `npm run setup` reports that step as
+when `GEMINI.md` was written or already held the current block, and `failed`
+when `GEMINI.md` had no intact block and was left unchanged. `npm run setup` reports that step as
 `not-run-unavailable` in the first case and `manual-required` in the second.
 Either way it continues with the other surfaces, and a `manual-required` step
 ends the run with exit code 1.
@@ -96,27 +103,36 @@ even for a name that was never installed, so its exit code is not evidence that
 anything was removed. `setup` runs it only to clear a cached copy before the
 reinstall, and treats it as best-effort.
 
-## GEMINI.md is never overwritten
+## GEMINI.md keeps your own sections
 
-The `GEMINI.md` deploy carries `guard: "no-clobber"`. When the destination
-already exists, it is complete when it contains the managed body as one
-contiguous block; your own sections before or after it stay. When the body is
-missing or edited, registration reports `manual-required`, writes nothing, and
-the run ends with exit code 1 (`manual-step-required`).
+`GEMINI.md` is rendered as one block from a `<!-- all-about-agents:begin` line
+to a `<!-- all-about-agents:end -->` line, the same as `CLAUDE.md` and
+`AGENTS.md`. Registration writes the file when it is missing and otherwise
+replaces only that block, so your own sections above or below it stay byte for
+byte. When the live file has no intact block, registration writes nothing,
+reports `manual-required`, and the run ends with exit code 1
+(`manual-step-required`). The reason names the one-time fix: keep your own
+lines above or below the markers and put the package `GEMINI.md` in place of
+the rest.
 
-This differs from Claude and Codex on purpose. `CLAUDE.md` and `AGENTS.md`
-carry a marked block that registration replaces in place. `GEMINI.md` does
-not: an operator may keep unrelated always-on sections in `~/.gemini/GEMINI.md`
-or condense the managed body to fit the rule size limit below, and a replaced
-block would undo that. Merge the managed body by hand instead.
+The canonical rules and the presentation catalog are not in `GEMINI.md`. They
+ship as `config/rules/all-about-agents.md`, which registration copies to
+`~/.gemini/config/rules/all-about-agents.md` with `trigger: always_on`.
+Google's [Rules](https://antigravity.google/docs/rules) page lists that folder as a global rule
+location, truncates one rule file at 24,000 bytes, and gives all active global
+and `always_on` rules a 20,000-token budget. On `agy 1.2.12`, a rule file there
+without a `trigger` was rejected (`Invalid rule trigger` in the log), and one
+with `trigger: always_on` loaded next to a 23,678-character `GEMINI.md`. The
+rendered `GEMINI.md` is about 9,700 bytes, which leaves room for your own
+always-on sections.
 
-Observed on `agy 1.2.7`: agy keeps only the first 24,020 characters of
-`~/.gemini/GEMINI.md` and drops the rest without a session-visible error. The
+Observed on `agy 1.2.7`: agy kept only the first 24,020 characters of
+`~/.gemini/GEMINI.md` and dropped the rest without a session-visible error. The
 only signal is a `Global rule truncated` line in
-`~/.gemini/antigravity-cli/cli.log`. After a merge, count the characters of
-the file and search that log for `truncated`.
-`<ROOT>/GEMINI.md` is the exact file registration deploys, so compare it
-with `~/.gemini/GEMINI.md` directly. To preview the plan, set
+`~/.gemini/antigravity-cli/cli.log`. After you add your own sections, keep the
+file under 24,000 bytes and search that log for `truncated`.
+`<ROOT>/GEMINI.md` is the exact block registration deploys, so compare it with
+the block in `~/.gemini/GEMINI.md` directly. To preview the plan, set
 `AAA_ANTIGRAVITY_ROOT` to a disposable directory and run `register --dry-run`.
 Do not use `--apply` for a preview: the `agy` steps do not read that variable,
 so `agy plugin install` still writes the live Antigravity plugin folder.

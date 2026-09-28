@@ -187,7 +187,7 @@ test("entry and platform docs link the maintenance workflow", async () => {
   }
 });
 
-test("no-clobber GEMINI.md docs state the containment rule and the exit-1 refusal", async () => {
+test("GEMINI.md docs state the marked-block rule and the exit-1 refusal", async () => {
   for (const relativePath of [
     "docs/maintenance/global-instructions.md",
     "docs/maintenance/native-verification.md",
@@ -196,9 +196,8 @@ test("no-clobber GEMINI.md docs state the containment rule and the exit-1 refusa
     "docs/setup/companion-tooling.md"
   ]) {
     const body = await text(relativePath);
-    assert.match(body, /already\s+contains\s+the\s+managed\s+body[\s\S]{0,400}exit\s+code\s+1/iu, `${relativePath} omits the containment rule or the exit-1 refusal`);
-    assert.doesNotMatch(body, /differs(?:(?!lack|missing|contain)[^.|]){0,120}`manual-required`/iu, `${relativePath} still says any difference is refused`);
-    assert.doesNotMatch(body, /does\s+not\s+already\s+differ|rather\s+than\s+replacing\s+a\s+file\s+that\s+already\s+differs|green\s+registration\s+is\s+not\s+evidence/iu, `${relativePath} keeps the old no-clobber claim`);
+    assert.match(body, /all-about-agents:begin[\s\S]{0,900}exit\s+code\s+1/iu, `${relativePath} omits the marked-block rule or the exit-1 refusal`);
+    assert.doesNotMatch(body, /GEMINI\.md`?\s+(?:is|stays)\s+never\s+overwritten|never\s+overwritten:\s+`~\/\.gemini\/GEMINI\.md`|never\s+overwrites\s+a\s+differing\s+`GEMINI\.md`|global\s+instructions,\s+and\s+that\s+file\s+is\s+never\s+overwritten/iu, `${relativePath} keeps the old no-clobber claim for GEMINI.md`);
   }
 });
 

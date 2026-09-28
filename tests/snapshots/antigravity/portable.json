@@ -1,14 +1,14 @@
 {
-  "fileCount": 78,
+  "fileCount": 79,
   "files": [
     {
       "relativePath": "GEMINI.md",
-      "sha256": "605cddb869587b8e51834d3ffdb51e71b632a4db45cb41d37256e579c92688b8",
+      "sha256": "24f2a81f96c5333485a4fc3501ace63ad8e1c7f7f2c08d4cbb5278507d2d552e",
       "mode": null
     },
     {
       "relativePath": "README.md",
-      "sha256": "6275080dcbcce451bb960d79a32fcaf2562d39ee95bc50a9dc6728bbdc580afe",
+      "sha256": "aaa9de16174bf8da49ee2998d60f1256aa5fd6a1c353dc22e5e2b3a6dfe5e71f",
       "mode": null
     },
     {
@@ -47,8 +47,13 @@
       "mode": null
     },
     {
+      "relativePath": "config/rules/all-about-agents.md",
+      "sha256": "bf5ddc57dc1b42f72a7b629bc09dd92e349ee72dc44a8ba8cbf4223fe9926dcb",
+      "mode": null
+    },
+    {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "fbee93666e1dd719f40816d1f1baf305c55376e1ea1c98e470169270163f0a57",
+      "sha256": "0e99772a61760bcd215b97629ae9e9b6f11e6d8aec91213481348bc1e613080b",
       "mode": null
     },
     {
@@ -318,7 +323,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "767aa6a0ddafbaede5b8dd9b1d5e3c0c844f19362e22038620b0174761f91024",
+      "sha256": "0c451cc7c4d42391593c0692b887d017780c16b080207aa20ba036fceadb0276",
       "mode": null
     },
     {
@@ -395,11 +400,11 @@
   "ownership": [
     {
       "relativePath": "GEMINI.md",
-      "sha256": "605cddb869587b8e51834d3ffdb51e71b632a4db45cb41d37256e579c92688b8"
+      "sha256": "24f2a81f96c5333485a4fc3501ace63ad8e1c7f7f2c08d4cbb5278507d2d552e"
     },
     {
       "relativePath": "README.md",
-      "sha256": "6275080dcbcce451bb960d79a32fcaf2562d39ee95bc50a9dc6728bbdc580afe"
+      "sha256": "aaa9de16174bf8da49ee2998d60f1256aa5fd6a1c353dc22e5e2b3a6dfe5e71f"
     },
     {
       "relativePath": "agents/architect.md",
@@ -430,8 +435,12 @@
       "sha256": "10399485ad8fdf0b15097109663d063a5e65b8777f9f3e7c2b62c340285f3369"
     },
     {
+      "relativePath": "config/rules/all-about-agents.md",
+      "sha256": "bf5ddc57dc1b42f72a7b629bc09dd92e349ee72dc44a8ba8cbf4223fe9926dcb"
+    },
+    {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "fbee93666e1dd719f40816d1f1baf305c55376e1ea1c98e470169270163f0a57"
+      "sha256": "0e99772a61760bcd215b97629ae9e9b6f11e6d8aec91213481348bc1e613080b"
     },
     {
       "relativePath": "plugin.json",
@@ -647,7 +656,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "767aa6a0ddafbaede5b8dd9b1d5e3c0c844f19362e22038620b0174761f91024"
+      "sha256": "0c451cc7c4d42391593c0692b887d017780c16b080207aa20ba036fceadb0276"
     },
     {
       "relativePath": "skills/using-all-about-agents/references/codex-tools.md",
@@ -778,7 +787,17 @@
       "kind": "instructions",
       "relativePath": "GEMINI.md",
       "destination": "GEMINI.md",
-      "guard": "no-clobber",
+      "guard": "managed-block",
+      "consumers": [
+        "antigravity-cli",
+        "antigravity-desktop"
+      ]
+    },
+    {
+      "kind": "global-rules",
+      "relativePath": "config/rules/all-about-agents.md",
+      "destination": "config/rules/all-about-agents.md",
+      "trigger": "always_on",
       "consumers": [
         "antigravity-cli",
         "antigravity-desktop"

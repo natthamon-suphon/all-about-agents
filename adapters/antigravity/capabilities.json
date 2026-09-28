@@ -9,18 +9,36 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-antigravity.md",
-      "checkedAt": "2026-09-19",
-      "productVersion": "1.2.7",
+      "checkedAt": "2026-09-28",
+      "productVersion": "1.2.12",
       "value": {
         "package": "GEMINI.md",
         "destination": "~/.gemini/GEMINI.md",
-        "guard": "no-clobber",
+        "guard": "managed-block",
         "consumers": [
           "antigravity-cli",
           "antigravity-desktop"
         ]
       },
-      "notes": "A headless agy session quoted the first heading of the live file, so the product loads it. The destination is shared with operator-owned sections, so registration never overwrites a differing file: it is complete when the file already contains the managed body as one block, and manual-required otherwise."
+      "notes": "A headless agy session quoted the last line of the live file, so the product loads all of it. The destination is shared with operator-owned sections, so registration replaces only the block from the all-about-agents begin line to the end line and keeps the text around it; a file with no intact block is manual-required. The canonical rules live in the global rule file so this file stays well under agy's 24,000-byte per-file limit."
+    },
+    {
+      "feature": "rules.global",
+      "support": "supported",
+      "stability": "stable",
+      "source": "docs/evaluations/research-antigravity.md",
+      "checkedAt": "2026-09-28",
+      "productVersion": "1.2.12",
+      "value": {
+        "package": "config/rules/all-about-agents.md",
+        "destination": "~/.gemini/config/rules/all-about-agents.md",
+        "trigger": "always_on",
+        "consumers": [
+          "antigravity-cli",
+          "antigravity-desktop"
+        ]
+      },
+      "notes": "Google's Rules page lists ~/.gemini/config/rules/*.md as global rules, truncates one rule file at 24,000 bytes, and gives all active global and always_on rules a 20,000-token budget. On agy 1.2.12 a rule file without a trigger was rejected (rules.go: Invalid rule trigger); with trigger: always_on a headless session quoted its first and last line while it also quoted the last line of a 23,678-character GEMINI.md, so the byte limit applies per file."
     },
     {
       "feature": "skills.discovery",

@@ -89,10 +89,13 @@ function requiredPackageFiles(surface) {
     : [".codex-plugin/plugin.json", ".agents/plugins/marketplace.json"];
 }
 
+// agy reads always-on global rules from <Gemini home>/config/rules/*.md.
+const ANTIGRAVITY_RULES_FILE = "config/rules/all-about-agents.md";
+
 function requiredRegistrationSourceFiles(surface, profile) {
   const markers = requiredPackageFiles(surface);
   if (surface === "claude") return [...markers, "CLAUDE.md", "settings.json", "all-about-agents/statusline.json", "statusline/statusline.mjs", "statusline/track-tool.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", `${CLAUDE_RULES_FOLDER}/presentation.md`];
-  if (surface === "antigravity") return [...markers, "GEMINI.md", ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.md`)];
+  if (surface === "antigravity") return [...markers, "GEMINI.md", ANTIGRAVITY_RULES_FILE, ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.md`)];
   if (surface === "codex") return [...markers, "AGENTS.md", "config.toml", ...(profile === "template" ? ["terra-max.config.toml"] : []), ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.toml`)];
   return markers;
 }
@@ -264,14 +267,9 @@ function missingTomlTables(managed, existing) {
     .map(([header]) => header === "" ? "top-level keys" : header);
 }
 
-function missingTextBlock(managed, existing) {
-  const block = textLines(managed).join("\n").replace(/^\n+|\n+$/gu, "");
-  return `\n${textLines(existing).join("\n")}\n`.includes(`\n${block}\n`) ? [] : ["the managed GEMINI.md body as one block"];
-}
-
 // A shared destination is complete when it already contains the managed
 // content; the operator and the product may keep more beside it.
-const CONTAINMENT_CHECKS = new Map([["toml-tables", missingTomlTables], ["text-block", missingTextBlock]]);
+const CONTAINMENT_CHECKS = new Map([["toml-tables", missingTomlTables]]);
 
 // Swap the one marked block for the managed text and keep every byte around it.
 // Returns null when the file is not UTF-8 or lacks exactly one begin line
@@ -377,10 +375,8 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push({ id: "codex-plugin-source-check", kind: "git-source-check", executable: "git", prefixArgs: ["-c", "core.fsmonitor=false", "rev-parse", "--show-prefix"], statusArgs: ["-c", "core.fsmonitor=false", "--no-optional-locks", "status", "--porcelain", "--untracked-files=all", "--", "."], cwd: pkg, environmentKeys: [], mutates: false, required: true, expectedProbe: "own-repository-clean-working-tree" });
     actions.push(manualAction("codex-hooks-trust", "Open `/hooks` in Codex and review/trust the registered hook only if the product presents that step."));
   } else if (surface === "antigravity") {
-    // An operator may keep unrelated always-on sections in GEMINI.md and may
-    // condense it under agy's rule size cap, so it is refused, not replaced.
-    // See docs/plans/2026-09-19-restore-antigravity.md decision A6.
-    actions.push(deployFile("antigravity-instructions-deploy", "GEMINI.md", "GEMINI.md", { guard: "no-clobber", match: "text-block" }, instruction));
+    actions.push(deployFile("antigravity-instructions-deploy", "GEMINI.md", "GEMINI.md", { guard: "managed-block" }, instruction));
+    actions.push(deployFile("antigravity-rules-deploy", ANTIGRAVITY_RULES_FILE, ANTIGRAVITY_RULES_FILE, {}, instruction));
     actions.push(processAction("antigravity-plugin-validate", "agy", ["plugin", "validate", pkg], pkg, null, "none", false));
     actions.push(processAction("antigravity-plugin-install", "agy", ["plugin", "install", pkg], pkg, null, "none"));
     actions.push(processAction("antigravity-plugin-list", "agy", ["plugin", "list"], pkg, null, "json", false));
@@ -754,7 +750,7 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
         if (action.guard === "managed-block" && existing !== null && !sameBytes) {
           const merged = replaceManagedBlock(existing.content, new TextDecoder("utf-8").decode(content));
           if (merged === null) {
-            const reason = `${action.destinationRelativePath} has no intact all-about-agents block (exactly one "${MANAGED_BLOCK_BEGIN_PREFIX}" line, then exactly one "${MANAGED_BLOCK_END_PREFIX}" line) or is not UTF-8, so it was left unchanged. Every line in it that is not in the package ${action.sourceRelativePath} is the operator's own text: keep that text above the "${MANAGED_BLOCK_BEGIN_PREFIX}" line or below the "${MANAGED_BLOCK_END_PREFIX}" line, put the whole package ${action.sourceRelativePath} in place of the rest, then register again`;
+            const reason = `${action.destinationRelativePath} has no intact all-about-agents block (exactly one "${MANAGED_BLOCK_BEGIN_PREFIX}" line, then exactly one "${MANAGED_BLOCK_END_PREFIX}" line) or is not UTF-8, so it was left unchanged. Every section in it with no counterpart in the package ${action.sourceRelativePath} is the operator's own text, and a shortened or reworded copy of package content is not: keep the operator's text above the "${MANAGED_BLOCK_BEGIN_PREFIX}" line or below the "${MANAGED_BLOCK_END_PREFIX}" line, put the whole package ${action.sourceRelativePath} in place of the rest, then register again`;
             followUp ??= reason;
             actionReports.push(reportAction(action, "manual-required", { reason }));
             continue;

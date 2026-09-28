@@ -108,6 +108,12 @@ is left unchanged and reported `manual-required`. It then overwrites
 files in `CODEX_HOME`. Native registration runs after these files are present,
 so product-written plugin metadata is not erased by a later config deployment.
 
+`AGENTS.md` also inlines the `using-all-about-agents` routing contract. On
+Windows, Codex 0.152.1 fails every plugin command hook: on 2026-09-28 a
+`codex exec` run logged `hook: SessionStart Failed` twice, so the bootstrap
+hook never injects the contract there. Where the hook does run, the contract
+reaches the session twice, which costs context but changes no rule.
+
 `config.toml` is written only when it is absent. Codex keeps its own
 `[marketplaces.*]` and `[plugins.*]` tables there, and users add MCP servers and
 sandbox settings, so an existing file is never replaced. It is complete when it

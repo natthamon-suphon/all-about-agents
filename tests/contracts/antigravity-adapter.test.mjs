@@ -53,28 +53,50 @@ test("the bootstrap surface list still excludes Antigravity", async () => {
   assert.equal(declaration[1].includes("antigravity"), false, "Antigravity has no SessionStart event to hook");
 });
 
-test("GEMINI.md inlines the routing contract because no hook can inject it", () => {
+test("GEMINI.md is one marked block that inlines the routing contract because no hook can inject it", () => {
   const gemini = fileMap(render()).get("GEMINI.md");
   const bootstrap = core.skills.find((record) => (record.id ?? record.name) === "using-all-about-agents");
   assert.ok(bootstrap, "core must provide the bootstrap skill");
-  assert.match(gemini, /^# Global Operating Rules/u);
+  const block = gemini.match(/^<!-- all-about-agents:begin [^\n]*-->\n([\s\S]*)\n<!-- all-about-agents:end -->\n$/u);
+  assert.ok(block, "GEMINI.md is one marked block, so registration can keep the operator's text around it");
+  assert.match(block[1], /^# Global Operating Rules/u);
   assert.match(gemini, /## Routing contract/u);
   for (const marker of ["<SUBAGENT-STOP>", "<EXTREMELY-IMPORTANT>", "## Red flags"]) {
     assert.ok(gemini.includes(marker), `GEMINI.md must inline the bootstrap body (${marker})`);
   }
   assert.equal(gemini.includes("---\nname: using-all-about-agents"), false, "the inlined body must not carry skill frontmatter");
-  assert.match(gemini, /## Presentation/u);
+  assert.doesNotMatch(gemini, /## Canonical repository rules|Presentation catalog/u, "the canonical rules and the catalog live in the global rule file");
 });
 
-test("the global instruction deploy refuses to clobber an unowned GEMINI.md", () => {
+test("the canonical rules and the catalog render as one always-on global rule file", () => {
+  const rules = fileMap(render()).get("config/rules/all-about-agents.md");
+  assert.ok(rules, "agy reads global rules from ~/.gemini/config/rules/*.md");
+  assert.match(rules, /^---\ntrigger: always_on\n---\n/u, "a global rule file without a trigger is rejected");
+  assert.match(rules, /\n## Canonical repository rules\n/u);
+  for (const rule of core.rules) assert.ok(rules.includes(`### ${rule.title}`), `missing canonical rule ${rule.id}`);
+  assert.match(rules, /Presentation catalog/u);
+  assert.doesNotMatch(rules, /all-about-agents:(?:begin|end)/u, "the package owns this whole file");
+  const [record] = registrationOfKind(render(), "global-rules");
+  assert.deepEqual({ relativePath: record.relativePath, destination: record.destination }, { relativePath: "config/rules/all-about-agents.md", destination: "config/rules/all-about-agents.md" });
+});
+
+test("GEMINI.md leaves half of agy's 24,000-byte rule file limit for the operator", () => {
+  for (const profileId of ["portable", "template"]) {
+    const files = render(profileId).files;
+    const bytes = (path) => files.find((file) => file.relativePath === path).content.byteLength;
+    assert.ok(bytes("GEMINI.md") <= 12000, `${profileId} GEMINI.md is ${bytes("GEMINI.md")} bytes`);
+    assert.ok(bytes("config/rules/all-about-agents.md") < 24000, `${profileId} global rule file is ${bytes("config/rules/all-about-agents.md")} bytes`);
+  }
+});
+
+test("the global instruction deploy replaces only the marked block of GEMINI.md", () => {
   const [instructions] = registrationOfKind(render(), "instructions");
   assert.equal(instructions.relativePath, "GEMINI.md");
   assert.equal(instructions.destination, "GEMINI.md");
-  assert.equal(instructions.guard, "no-clobber", "a live GEMINI.md may hold sections this package does not own");
+  assert.equal(instructions.guard, "managed-block", "a live GEMINI.md may hold sections this package does not own");
   const readme = fileMap(render()).get("README.md");
-  assert.match(readme, /never overwritten/u);
-  assert.match(readme, /already contains the managed body as one block/u);
-  assert.doesNotMatch(readme, /when a different file is already there,\s+registration reports `manual-required`/u, "a differing file that contains the managed body is complete");
+  assert.match(readme, /all-about-agents:begin/u);
+  assert.match(readme, /config\/rules\/all-about-agents\.md/u);
 });
 
 test("skills and roles use the layout agy plugin validate accepts", () => {

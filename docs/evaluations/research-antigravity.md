@@ -157,3 +157,30 @@ slot; on a host without `agy`, the package is copied there by hand.
 
 Not run: whether Desktop or the IDE loaded the copy. Neither app has a
 headless mode; the check is the app's Customizations view.
+
+## Addendum - 2026-09-28: global rule files and size limits
+
+Observed local CLI: `agy --version` returned `1.2.12` on Windows (it was
+`1.2.7` earlier the same day and updated itself).
+
+- Google's [Rules](https://antigravity.google/docs/rules) page lists `~/.gemini/AGENTS.md` or
+  `~/.gemini/GEMINI.md`, `~/.gemini/config/AGENTS.md` or
+  `~/.gemini/config/GEMINI.md`, and `~/.gemini/config/rules/*.md` as global
+  rules. It says "Antigravity truncates any single rule file that exceeds
+  24,000 bytes" and "All active global and `always_on` rules share a
+  20,000-token budget". A rule file needs a `trigger` of `always_on`,
+  `model_decision`, `glob`, or `manual`.
+- A probe file in `~/.gemini/config/rules/` without frontmatter was rejected:
+  the log line was `rules.go:413] Invalid rule trigger:
+  CORTEX_MEMORY_TRIGGER_UNSPECIFIED`, and a headless session answered NOT
+  PRESENT for its first and last line.
+- The same 8,633-character file with `trigger: always_on` was loaded: a
+  headless session quoted its first and last line and, in the same answer,
+  the last line of the 23,678-character live `GEMINI.md`. The byte limit is
+  therefore per file, not one shared budget of 24,000.
+- The probe file was deleted afterwards.
+
+Consequence: the canonical rules and the presentation catalog move to
+`config/rules/all-about-agents.md`, and `GEMINI.md` becomes a marked block
+like `CLAUDE.md` and `AGENTS.md`. The operator's always-on sections then fit
+beside the block without a hand-condensed copy.

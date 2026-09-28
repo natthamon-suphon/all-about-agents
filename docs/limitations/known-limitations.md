@@ -28,7 +28,9 @@ evidence only.
 
 T07 Windows checks observed Claude Code `2.1.251` and Codex CLI
 `0.151.0-alpha.7.2` for only the operations listed in the evaluation records.
-The Antigravity surface was checked separately on `agy 1.2.7` on 2026-09-19.
+The Antigravity surface was checked separately on `agy 1.2.7` on 2026-09-19,
+and its validate, list, and headless rule-loading checks again on `agy 1.2.12`
+on 2026-09-28.
 Codex Desktop, Antigravity Desktop and IDE loading, native checks on macOS, authenticated model
 transport outside the manual `npm run test:model` suite, hook trust, hook execution, permission blocking, persistence, and Gate 3 remain
 `NOT_RUN` or `NOT_RUN_UNAVAILABLE`.
@@ -39,7 +41,7 @@ transport outside the manual `npm run test:model` suite, hook trust, hook execut
 | --- | --- | --- |
 | [Claude Code](../compatibility/claude-code.md) | Package validation, disposable marketplace registration, plugin discovery, and both statusline fixtures passed on Windows. | Authenticated model and component use, hook trust and execution, Fable access, deny blocking, persistence, Desktop behavior, and native use on macOS are not qualified. |
 | [Codex](../compatibility/codex.md) | Marketplace add, plugin add, exact available-plugin discovery, and discovered hook-file checks passed in an isolated Windows CLI home. | `/hooks` trust, hook execution, authenticated model use, Desktop behavior, persistence, and native use on macOS are not qualified. Automatic fallback is unsupported. |
-| [Antigravity](../compatibility/antigravity.md) | `agy plugin validate`, `agy plugin install`, `agy plugin list`, and `agy agents` passed on `agy 1.2.7`, and a headless session named real skills and the inlined routing contract from outside any workspace copy. | Antigravity Desktop and IDE loading (without `agy` their plugin copy is manual), native use on macOS, permission deny blocking, and persistence are not qualified. There is no hook or status line to qualify: none is rendered. |
+| [Antigravity](../compatibility/antigravity.md) | `agy plugin validate`, `agy plugin install`, `agy plugin list`, and `agy agents` passed on `agy 1.2.7` (validate again on `1.2.12`), and a headless session named real skills and the inlined routing contract from outside any workspace copy. | Antigravity Desktop and IDE loading (without `agy` their plugin copy is manual), native use on macOS, permission deny blocking, and persistence are not qualified. There is no hook or status line to qualify: none is rendered. |
 
 ## Safety and setup constraints
 
@@ -48,20 +50,24 @@ transport outside the manual `npm run test:model` suite, hook trust, hook execut
   `destination-root-required`; for install, automatic root discovery serves
   only `--dry-run`, `doctor`, and `diff`. `register` always targets the product
   root: the environment root when it is set, otherwise the live home. For
-  Antigravity, `AAA_ANTIGRAVITY_ROOT` moves only the `GEMINI.md` destination;
+  Antigravity, `AAA_ANTIGRAVITY_ROOT` moves only the `GEMINI.md` and global rule
+  file destinations;
   `agy plugin install` always writes the live plugin folder.
 - Full-access profiles keep emergency denies. A product that has not been
   observed cannot be described as enforcing them.
 - The Claude `disableAllHooks` setting disables hooks globally. It does not
   prove emergency deny behavior.
 - Codex hooks are not automatic. Registration, trust, active loading, and
-  runtime behavior are separate states.
+  runtime behavior are separate states. On Windows, Codex 0.152.1 fails every
+  plugin command hook (`hook: SessionStart Failed` on 2026-09-28), so the
+  routing contract is inlined into `AGENTS.md` instead of relying on the
+  bootstrap hook. Where the hook does run, the contract reaches the session twice.
 - Antigravity renders no hooks at all, because no session-start event can be
   named with current evidence. The recorded event list is inherited from the
   2026-08-31 evaluation of `agy 1.1.22` and was not re-verified on 1.2.7. Its
-  routing contract lives in `GEMINI.md`, which is never overwritten. A
-  registration completes only when that file already contains the managed body,
-  but that does not prove the product loads it. Ask the product; do not infer it
+  routing contract lives in the marked block of `GEMINI.md`. A registration
+  completes only when that block is in place, but that does not prove the
+  product loads it. Ask the product; do not infer it
   from a green run.
 - `agy plugin uninstall <name>` exits 0 even for a name that was never
   installed, so its exit code proves nothing was removed.

@@ -43,6 +43,7 @@ test("Antigravity install materializes the layout agy reads and is idempotent", 
     const core = await loadCore(process.cwd());
     await access(resolve(destination, "plugin.json"));
     await access(resolve(destination, "GEMINI.md"));
+    await access(resolve(destination, "config", "rules", "all-about-agents.md"));
     for (const skill of core.skills) await access(resolve(destination, "skills", skill.id, "SKILL.md"));
     for (const role of core.roles) await access(resolve(destination, "agents", `${role.id}.md`));
 
@@ -64,7 +65,7 @@ test("Antigravity install materializes the layout agy reads and is idempotent", 
   });
 });
 
-test("registration refuses to overwrite an existing GEMINI.md it does not own", async () => {
+test("registration plans to replace only the marked block of an existing GEMINI.md", async () => {
   await withTempRoot(async (root) => {
     const destination = resolve(root, "antigravity");
     const productRoot = resolve(root, "gemini-home");
@@ -86,8 +87,10 @@ test("registration refuses to overwrite an existing GEMINI.md it does not own", 
 
     const deploy = plan.actions.find((action) => action.id === "antigravity-instructions-deploy");
     assert.ok(deploy, "the plan must deploy GEMINI.md");
-    assert.equal(deploy.guard, "no-clobber");
-    assert.equal(deploy.expectedProbe, "hash-verified-write-or-refuse");
+    assert.equal(deploy.guard, "managed-block");
+    assert.equal(deploy.expectedProbe, "hash-verified-block-replace-or-refuse");
+    const rules = plan.actions.find((action) => action.id === "antigravity-rules-deploy");
+    assert.equal(rules.targetPath, resolve(productRoot, "config", "rules", "all-about-agents.md"));
 
     // The adapter declares the guard and the registration planner enforces it.
     // They are separate code paths, so assert they agree: dropping the guard in

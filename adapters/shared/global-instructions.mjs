@@ -65,7 +65,11 @@ export function renderClaudeGlobalInstructions(core) {
   return managedBlock(renderSharedGlobalInstructions(core).trimEnd() + CLAUDE_HOUSE_RULES);
 }
 
-/** Render Codex's shared global body followed by its canonical local sections. */
+/**
+ * Render Codex's shared global body followed by its canonical local sections.
+ * The routing contract is inlined because Codex on Windows fails every plugin
+ * command hook, so the SessionStart bootstrap never injects it there.
+ */
 export function renderCodexGlobalInstructions(core, { canonicalRules } = {}) {
   const loaded = ensureCore(core);
   const rules = canonicalRules === undefined ? loaded.rules : ensureRecords(canonicalRules, "canonicalRules");
@@ -76,6 +80,8 @@ export function renderCodexGlobalInstructions(core, { canonicalRules } = {}) {
     "---",
     "# All About Agents for Codex",
     "",
+    ...routingContract(loaded),
+    "",
     ...renderRules(rules),
     "",
     "## Presentation",
@@ -84,7 +90,7 @@ export function renderCodexGlobalInstructions(core, { canonicalRules } = {}) {
   ].join("\n"));
 }
 
-const ANTIGRAVITY_ROUTING_SKILL = "using-all-about-agents";
+const ROUTING_SKILL = "using-all-about-agents";
 
 function skillBody(core, skillId) {
   const records = Array.isArray(core.skills) ? core.skills : [];
@@ -96,31 +102,47 @@ function skillBody(core, skillId) {
   return (end < 0 ? content : content.slice(end + 5)).trim();
 }
 
+function routingContract(core) {
+  return [
+    "## Routing contract",
+    "",
+    "This contract is inlined, so it applies even when no session-start hook runs.",
+    "It is the body of the `using-all-about-agents` skill and it applies to every",
+    "session.",
+    "",
+    skillBody(core, ROUTING_SKILL)
+  ];
+}
+
 /**
- * Render Antigravity's global body.
- *
- * Claude and Codex receive the routing contract from the SessionStart bootstrap
- * hook. Antigravity has no SessionStart event, so its always-loaded instruction
- * file is the only carrier and the bootstrap skill is inlined here instead.
- * See docs/plans/2026-09-19-restore-antigravity.md decision A7.
+ * Render Antigravity's GEMINI.md block: the shared body and the inlined routing
+ * contract, because Antigravity has no SessionStart event (decision A7 of
+ * docs/plans/2026-09-19-restore-antigravity.md). agy truncates one rule file
+ * at 24,000 bytes, so the canonical rules ship in a separate rule file.
  */
-export function renderAntigravityGlobalInstructions(core, { canonicalRules } = {}) {
+export function renderAntigravityGlobalInstructions(core) {
   const loaded = ensureCore(core);
-  const rules = canonicalRules === undefined ? loaded.rules : ensureRecords(canonicalRules, "canonicalRules");
-  if (!loaded.presentation || typeof loaded.presentation !== "object") throw new TypeError("core.presentation is required for Antigravity rendering");
-  return normalizeBody([
+  return managedBlock([
     renderSharedGlobalInstructions(loaded).trimEnd(),
     "",
     "---",
     "# All About Agents for Antigravity",
     "",
-    "## Routing contract",
+    ...routingContract(loaded)
+  ].join("\n"));
+}
+
+/** Render the always-on global rule file that carries Antigravity's canonical rules and catalog. */
+export function renderAntigravityGlobalRules(core, { canonicalRules } = {}) {
+  const loaded = ensureCore(core);
+  const rules = canonicalRules === undefined ? loaded.rules : ensureRecords(canonicalRules, "canonicalRules");
+  if (!loaded.presentation || typeof loaded.presentation !== "object") throw new TypeError("core.presentation is required for Antigravity rendering");
+  return normalizeBody([
+    "---",
+    "trigger: always_on",
+    "---",
     "",
-    "This contract is inlined rather than injected by a session-start hook. It",
-    "is the body of the `using-all-about-agents` skill and it applies to every",
-    "session.",
-    "",
-    skillBody(loaded, ANTIGRAVITY_ROUTING_SKILL),
+    "# All About Agents rules for Antigravity",
     "",
     ...renderRules(rules),
     "",

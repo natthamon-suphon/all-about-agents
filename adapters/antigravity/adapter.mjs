@@ -10,7 +10,7 @@ import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeScopeDiagnostics } from "../../core/roles/contract.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
-import { renderAntigravityGlobalInstructions } from "../shared/global-instructions.mjs";
+import { renderAntigravityGlobalInstructions, renderAntigravityGlobalRules } from "../shared/global-instructions.mjs";
 
 const ANTIGRAVITY_SURFACE = "antigravity";
 const ANTIGRAVITY_TARGET_RUNTIMES = Object.freeze(["cli", "desktop"]);
@@ -150,7 +150,7 @@ function capabilityGuidance(semanticProfile) {
     "This package is the Antigravity adapter's documented surface map.",
     "",
     `- The configuration root is the user's \`.gemini\` directory. Antigravity documents no environment variable for it; this installer reads its own repository-scoped override, \`${ANTIGRAVITY_ROOT_ENV}\`.`,
-    "- `GEMINI.md` carries the canonical global body, the inlined routing contract, the canonical rules, and the presentation catalog.",
+    "- `GEMINI.md` carries the canonical global body and the inlined routing contract as one marked block; `config/rules/all-about-agents.md` carries the canonical rules and the presentation catalog as an always-on global rule.",
     "- Skills are packaged under `skills/<skill>/SKILL.md` and roles under `agents/<role>.md`; `agy plugin validate` reports both counts.",
     "- There is no session-start event. The routing contract is inlined into `GEMINI.md` rather than injected, and this adapter renders no hook files.",
     "- This adapter renders no status line. The removed adapters built one from a plugin path the product never creates.",
@@ -181,8 +181,10 @@ function desktopInstructions(semanticProfile) {
     "~/.gemini/config/plugins/all-about-agents/",
     "```",
     "",
-    "Replace an older copy there; do not merge into it. `GEMINI.md` is not part",
-    "of the plugin: registration deploys it to `~/.gemini/GEMINI.md`.",
+    "Replace an older copy there; do not merge into it. `GEMINI.md` and",
+    "`config/rules/all-about-agents.md` are not part of the plugin: registration",
+    "deploys them to `~/.gemini/GEMINI.md` and",
+    "`~/.gemini/config/rules/all-about-agents.md`.",
     "",
     "Do not also keep a copy in `<workspace>/.agents/plugins/all-about-agents/`.",
     "A workspace copy has a higher priority. The IDE's built-in guide says a",
@@ -220,11 +222,16 @@ function packageReadme(semanticProfile) {
     "## Global instructions",
     "",
     "`GEMINI.md` belongs at the root of the user's `.gemini` directory. It is",
-    "deployed with a no-clobber guard, so an existing file is never overwritten,",
-    "because it may hold sections this package does not own. A different file",
-    "is complete when it already contains the managed body as one block;",
-    "otherwise registration reports `manual-required` and writes nothing, and",
-    "the missing body must be merged by hand.",
+    "one block from a `<!-- all-about-agents:begin` line to a",
+    "`<!-- all-about-agents:end -->` line. Registration replaces only that block,",
+    "so your own sections above or below it stay. A file with no intact block is",
+    "left unchanged and reported `manual-required`.",
+    "",
+    "`config/rules/all-about-agents.md` holds the canonical rules and the",
+    "presentation catalog. Registration copies it to",
+    "`~/.gemini/config/rules/all-about-agents.md`, an always-on global rule. agy",
+    "truncates one rule file at 24,000 bytes, so the rules live outside",
+    "`GEMINI.md` and leave room there for your own sections.",
     "",
     "## Antigravity Desktop and IDE",
     "",
@@ -322,7 +329,8 @@ export function renderAntigravity(input = {}) {
 
   const files = [];
   addFile(files, "plugin.json", renderJson(pluginManifest()));
-  addFile(files, "GEMINI.md", renderAntigravityGlobalInstructions(core, { canonicalRules: core.rules }));
+  addFile(files, "GEMINI.md", renderAntigravityGlobalInstructions(core));
+  addFile(files, "config/rules/all-about-agents.md", renderAntigravityGlobalRules(core, { canonicalRules: core.rules }));
   addFile(files, "README.md", packageReadme(semanticProfile));
   addFile(files, "docs/manual-desktop.md", desktopInstructions(semanticProfile));
 
@@ -358,12 +366,18 @@ export function renderAntigravity(input = {}) {
       },
       {
         // GEMINI.md is shared with everything else the operator keeps in the
-        // Gemini home, so registration never replaces it; a file that already
-        // contains the managed body is complete.
+        // Gemini home, so registration replaces only its marked block.
         kind: "instructions",
         relativePath: "GEMINI.md",
         destination: "GEMINI.md",
-        guard: "no-clobber",
+        guard: "managed-block",
+        consumers: ["antigravity-cli", "antigravity-desktop"]
+      },
+      {
+        kind: "global-rules",
+        relativePath: "config/rules/all-about-agents.md",
+        destination: "config/rules/all-about-agents.md",
+        trigger: "always_on",
         consumers: ["antigravity-cli", "antigravity-desktop"]
       },
       {

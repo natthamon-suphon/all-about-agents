@@ -34,7 +34,8 @@ An authorized apply replaces only the marked all-about-agents block in
 `CLAUDE.md` and `AGENTS.md` and keeps the text around it; it creates no
 backup. A file with no intact block is left unchanged and reported
 `manual-required` (see [global instructions](global-instructions.md)).
-It never overwrites a differing `GEMINI.md` or Codex `config.toml`. Such a file
+The same holds for `GEMINI.md`. It never overwrites a differing Codex
+`config.toml`. Such a file
 is complete when it already contains the managed content; otherwise the step is
 `manual-required` and the command exits 1. It must not guess a product root
 or replace unknown neighboring files.
@@ -167,20 +168,20 @@ agy plugin list
 `agy plugin install` takes a plain directory. Unlike Codex it does not clone the
 source, so `<PACKAGE_ROOT>` needs no Git repository.
 
-`GEMINI.md` is the only deployed file, and it is **not** overwritten. It carries
-`guard: "no-clobber"`. A live `~/.gemini/GEMINI.md` can hold always-on sections
-this package does not own, and the Antigravity render is not a superset of
-them. So an existing file is complete when it already contains
-the managed body as one contiguous block, after line endings and trailing
-whitespace are normalized; your own sections before or after it stay. When the
-body is missing or one of its lines was edited, the action reports
-`manual-required`, writes nothing, and the report ends `manual-required` with
-exit code 1 and error code `manual-step-required`. Merge the managed body by
-hand.
+Two files are deployed. `GEMINI.md` is one marked block: registration writes
+the file when it is missing and otherwise replaces only the block from the
+`<!-- all-about-agents:begin` line to the `<!-- all-about-agents:end -->` line,
+so the always-on sections you keep above or below it stay. A file with no
+intact block is left unchanged, and the report ends `manual-required` with
+exit code 1 and error code `manual-step-required`. The canonical rules and the
+presentation catalog go to `~/.gemini/config/rules/all-about-agents.md`, an
+always-on global rule file this package owns whole; other files in that
+folder are never touched.
 
 No hooks and no status line are registered. No session-start event can be
 named for this surface with current evidence, so the routing contract is
-inlined into `GEMINI.md` instead of injected. See
+inlined into `GEMINI.md` instead of injected. Codex inlines it into `AGENTS.md`
+as well, because Codex on Windows fails every plugin command hook. See
 [the product contract evidence](../evaluations/research-antigravity.md).
 
 `agy plugin list` output is `registered` evidence. There is no separate trust
@@ -445,8 +446,8 @@ run `register --apply` again until the report says `complete`.
 
 The Claude steps `claude-rules-deploy`, `claude-rules-extra-files`, and a
 refused `claude-settings-deploy`, a `CLAUDE.md` or `AGENTS.md` with no intact
-marked block, and a no-clobber file (`GEMINI.md` or the Codex `config.toml`)
-that lacks managed content, also end the report as
+marked block (or a `GEMINI.md` without one), and a Codex `config.toml` that
+lacks managed content, also end the report as
 `manual-required` with exit code 1. The error code is `manual-step-required`,
 unless the cache or source check above also fired: then it is
 `installed-copy-not-confirmed`, and every manual step still appears in the

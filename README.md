@@ -87,8 +87,9 @@ tool. Installation always needs a separate, exact action.
 
 The global layer gives shared safety and quality behavior. Project files are
 the more specific second layer. The nine core rules belong to the global layer:
-Codex and Antigravity get them inside the global file, and Claude gets them as
-files in `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`. Read [global instructions and
+Codex gets them inside the global file, Claude gets them as files in
+`<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, and Antigravity gets them as the
+always-on rule file `~/.gemini/config/rules/all-about-agents.md`. Read [global instructions and
 presentation](docs/maintenance/global-instructions.md) for the exact files,
 destinations, emoji labels, and checklist rules.
 
@@ -127,7 +128,8 @@ resolve to the live Gemini home. `install --apply` refuses to run without `--des
 automatic discovery. For install, only `--dry-run`, `doctor`, and `diff` may
 resolve a root from the environment. `register` always targets the product
 root: the environment root when it is set, otherwise the live home. For
-Antigravity only the `GEMINI.md` deploy follows `AAA_ANTIGRAVITY_ROOT`; the
+Antigravity only the `GEMINI.md` and global rule file deploys follow
+`AAA_ANTIGRAVITY_ROOT`; the
 `agy` steps still write the live plugin folder (see
 [Antigravity](docs/compatibility/antigravity.md)).
 

@@ -60,3 +60,16 @@ records; it is not promoted to a timeless command guarantee.
 - Codex Desktop and IDE behavior were not checked separately.
 - The alpha CLI may change command flags or output. Re-run the version-scoped
   help checks after an upgrade.
+
+## Addendum - 2026-09-28: plugin command hooks on Windows
+
+Observed local CLI: `codex-cli 0.152.1` on Windows. A `codex exec
+--skip-git-repo-check "reply ok"` run logged `hook: SessionStart` twice and
+`hook: SessionStart Failed` twice, one per installed plugin with a
+SessionStart hook. The `Stop` entries that completed are not command hooks.
+The same failure was recorded on 2026-09-21 with the cause
+`Shell snapshot not supported yet for PowerShell`.
+
+Consequence: the `using-all-about-agents` routing contract is inlined into the
+rendered `AGENTS.md`, as it already is for Antigravity. The bootstrap hook
+stays in the package for hosts where Codex can run it.

@@ -41,7 +41,7 @@ test("shared global renderers use the loaded canonical body and normalize only l
 test("egroup house rules reach Claude Code only while RTK house rules reach every surface", () => {
   const claude = renderClaudeGlobalInstructions(core);
   const codex = codexBody();
-  const antigravity = renderAntigravityGlobalInstructions(core, { canonicalRules: core.rules.slice(0, 1) });
+  const antigravity = renderAntigravityGlobalInstructions(core);
   assert.match(claude, /^## egroup house rules \(coding-guidelines\)$/mu);
   assert.match(claude, /^@~\/Workspaces\/coding-guidelines\/Rules\/RULES\.md$/mu);
   for (const [surface, rendered] of [["codex", codex], ["antigravity", antigravity]]) {

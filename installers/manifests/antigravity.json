@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "surface": "antigravity",
   "product": "Antigravity CLI (agy), Antigravity Desktop, and Antigravity IDE",
-  "productVersion": "1.2.7",
+  "productVersion": "1.2.12",
   "package": "all-about-agents",
   "pluginManifest": "plugin.json",
   "pluginRegistration": {
@@ -37,7 +37,8 @@
     "skills": "skills/{skill}/SKILL.md",
     "agents": "agents/{role}.md",
     "manualDesktop": "docs/manual-desktop.md",
-    "readme": "README.md"
+    "readme": "README.md",
+    "globalRules": "config/rules/all-about-agents.md"
   },
   "profileContract": {
     "source": "profiles/{profile}/profile.json",
@@ -111,6 +112,7 @@
     "GEMINI.md",
     "README.md",
     "agents/{role}.md",
+    "config/rules/all-about-agents.md",
     "docs/manual-desktop.md",
     "plugin.json",
     "skills/{skill}/**",
@@ -119,9 +121,9 @@
   "presentation": {
     "registry": "core/presentation/emoji-registry.json",
     "progressContract": "core/presentation/progress-contract.json",
-    "renderedIn": "GEMINI.md and native skill/role prompts"
+    "renderedIn": "config/rules/all-about-agents.md and native skill/role prompts"
   },
-  "rootInstructionContext": "GEMINI.md is emitted with the canonical global body first, then the inlined using-all-about-agents routing contract, then Antigravity rules and the presentation catalog; a workspace GEMINI.md remains the more specific layer",
+  "rootInstructionContext": "GEMINI.md is emitted as one marked block: the canonical global body, then the inlined using-all-about-agents routing contract; the canonical rules and the presentation catalog ship in config/rules/all-about-agents.md; a workspace GEMINI.md remains the more specific layer",
   "hooks": {
     "rendered": false,
     "reason": "Antigravity documents PreToolUse, PostToolUse, PreInvocation, PostInvocation, and Stop. There is no SessionStart event, so the routing contract is inlined into GEMINI.md instead of injected by a hook."

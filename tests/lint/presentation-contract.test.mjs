@@ -230,10 +230,10 @@ test("every surface uses the same normative presentation clauses and native labe
   }
 
   // The normative clauses live once per package: the rendered catalog for Claude,
-  // the AGENTS.md presentation section for Codex, and GEMINI.md for Antigravity.
-  // Skills and roles carry no copy.
+  // the AGENTS.md presentation section for Codex, and the always-on global rule
+  // file for Antigravity. Skills and roles carry no copy.
   const placements = {
-    antigravity: ["GEMINI.md"],
+    antigravity: ["config/rules/all-about-agents.md"],
     claude: ["rules/presentation.md"],
     codex: ["AGENTS.md"]
   };

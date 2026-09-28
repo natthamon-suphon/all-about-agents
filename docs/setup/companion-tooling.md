@@ -182,7 +182,7 @@ codex plugin add caveman@caveman
 Antigravity has no hook to use. The event list on record is `PreToolUse`,
 `PostToolUse`, `PreInvocation`, `PostInvocation`, and `Stop`, with no
 `SessionStart`. That list is inherited from `agy 1.1.22` and not re-verified on
-`1.2.7`; see
+`1.2.7` or `1.2.12`; see
 [the Antigravity research note](../evaluations/research-antigravity.md#lifecycle-events---inherited-not-re-verified).
 Hooks written into `~/.gemini/settings.json` or
 `~/.gemini/antigravity-cli/settings.json` did not fire in testing.
@@ -199,11 +199,12 @@ CAVEMAN MODE ACTIVE - level: full
 ```
 
 That file is also where this repository deploys the Antigravity global
-instructions, and that file is never overwritten. `register --apply` counts it
-as complete when it already contains the managed body as one block, so a
-caveman section before or after that block is fine. When the managed body is
-missing or edited, it writes nothing, reports `manual-required`, and ends with
-exit code 1; merge the new body by hand. So the caveman section survives a
+instructions, as one block from a `<!-- all-about-agents:begin` line to a
+`<!-- all-about-agents:end -->` line. `register --apply` replaces only that
+block, so a caveman section above or below it is kept. A file with no intact
+block is left unchanged, reported `manual-required`, and the run ends with
+exit code 1; move your own sections outside the markers once. Keep the whole
+file under 24,000 bytes, agy's limit for one rule file. So the caveman section survives a
 registration either way. Keep the marker heading so a later edit or removal
 stays one operation.
 

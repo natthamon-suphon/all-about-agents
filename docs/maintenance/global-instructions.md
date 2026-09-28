@@ -37,8 +37,10 @@ source:
 | `# All About Agents for Codex` | Codex only | `adapters/shared/global-instructions.mjs` |
 | `# All About Agents for Antigravity` | Antigravity only | `adapters/shared/global-instructions.mjs` |
 
-The Codex and Antigravity appendices also carry the nine core rules and the
-presentation catalog. Claude gets the same content as files instead:
+The Codex appendix also carries the nine core rules and the presentation
+catalog. Antigravity gets them as the always-on rule file
+`~/.gemini/config/rules/all-about-agents.md` (see below). Claude gets the same
+content as files instead:
 `register --surface claude --apply` copies them to
 `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, and Claude Code loads every
 `.md` file under its rules folder, subfolders included
@@ -49,11 +51,12 @@ Antigravity renderers build on that function, never on the Claude renderer, so
 the Claude-only appendix cannot reach `AGENTS.md` or `GEMINI.md`. A contract
 test in `tests/contracts/claude-adapter.test.mjs` holds that boundary.
 
-The Antigravity appendix carries one thing the others do not: the body of the
-`using-all-about-agents` skill. Claude and Codex receive that routing contract
-from the `SessionStart` bootstrap hook, and Antigravity has no such event, so
-the always-loaded instruction file is its only carrier. See
-`docs/plans/2026-09-19-restore-antigravity.md` decision A7.
+The Codex and Antigravity appendices carry one thing the Claude file does not:
+the body of the `using-all-about-agents` skill. Claude receives that routing
+contract from the `SessionStart` bootstrap hook. Antigravity has no such event
+(`docs/plans/2026-09-19-restore-antigravity.md` decision A7), and Codex on
+Windows fails every plugin command hook, so for both the always-loaded
+instruction file is the carrier.
 
 The egroup appendix uses Claude's `@` import syntax and one operator-specific
 path. Other surfaces do not resolve `@` imports, and the path is absent on a
@@ -81,7 +84,8 @@ Global files are shared: this package owns only its managed part of each. An
 explicitly authorized native apply creates no backup, and it does not change
 project-specific files or unknown neighboring files.
 
-`CLAUDE.md` and `AGENTS.md` are rendered as one marked block. The first line of
+`CLAUDE.md`, `AGENTS.md`, and `GEMINI.md` are rendered as one marked block. The
+first line of
 the block begins `<!-- all-about-agents:begin`, and the last line is
 `<!-- all-about-agents:end -->`. An authorized native apply writes the whole
 file when it is missing. Otherwise it replaces only the lines from the begin
@@ -94,14 +98,10 @@ the package file is your own text, so keep it above or below the markers, put
 the package file in place of the rest, and register again. A file written
 before the markers existed needs this step once.
 
-`GEMINI.md` is never overwritten. Its deploy carries `guard: "no-clobber"`.
-It is complete when it already contains the managed body as one contiguous
-block; your own sections before or after it stay. When the body is missing or
-one of its lines was edited, registration writes nothing, reports
-`manual-required`, and ends with exit code 1 (`manual-step-required`). A live
-`GEMINI.md` may hold operator sections this package does not own, or a body
-condensed to fit the Antigravity rule size limit, so merge the managed body by
-hand.
+Antigravity truncates one rule file at 24,000 bytes, so its canonical rules and
+presentation catalog are not in `GEMINI.md`. Registration copies them to
+`~/.gemini/config/rules/all-about-agents.md`, an always-on global rule file
+this package owns whole. See [Antigravity](../compatibility/antigravity.md).
 
 ## Install and registration boundaries
 

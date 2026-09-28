@@ -144,13 +144,15 @@ authorized decision and after reviewing the dry-run report.
 
 4. Record `agy plugin list` and `agy agents`. All seven role names must appear.
 
-5. Check the `GEMINI.md` deploy step. The file is never overwritten. An
-   existing file that already contains the managed body as one block is
-   `complete` and stays untouched. When the body is missing or edited, the step
-   reports `manual-required`, nothing is written, and the run ends with exit
-   code 1; the routing contract stays absent until you merge it by hand. A
-   `complete` step shows the file holds the managed body. It does not show that
-   the product loads it; step 6 checks that.
+5. Check the `GEMINI.md` and global rule deploy steps. `GEMINI.md` is one
+   block from a `<!-- all-about-agents:begin` line to a
+   `<!-- all-about-agents:end -->` line; registration replaces only that block
+   and keeps your own sections. A file with no intact block is left unchanged,
+   the step reports `manual-required`, and the run ends with exit code 1; the
+   routing contract stays absent until the block is in place.
+   `~/.gemini/config/rules/all-about-agents.md` must exist and start with
+   `trigger: always_on`. A `complete` step shows the files are in place. It
+   does not show that the product loads them; step 6 checks that.
 
 6. Ask the product, from a directory that has **no** `.agents/` folder:
 

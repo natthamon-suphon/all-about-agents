@@ -133,7 +133,19 @@ test("Codex AGENTS.md composes the canonical body, labeled catalog, and rules", 
   assert.equal((agents.match(/## Canonical repository rules/g) ?? []).length, 1);
   assert.equal(agents.includes(renderPresentationCatalog(core.presentation)), true);
   assert.ok(new TextEncoder().encode(agents).byteLength < 32768);
-  assert.doesNotMatch(agents, /<\/?[A-Za-z][^>]*>|\u001b/iu);
+  // The bootstrap body's two structural tags are the only markup allowed.
+  assert.doesNotMatch(agents.replace(/<\/?(?:SUBAGENT-STOP|EXTREMELY-IMPORTANT)>/gu, ""), /<\/?[A-Za-z][^>]*>|\u001b/iu);
+});
+
+test("Codex AGENTS.md inlines the routing contract because Windows Codex cannot run the session-start hook", () => {
+  const agents = fileMap(resultFor()).get("AGENTS.md");
+  const routing = agents.indexOf("\n## Routing contract\n");
+  assert.ok(routing > agents.indexOf("# All About Agents for Codex"), "the routing contract opens the Codex section");
+  assert.ok(routing < agents.indexOf("## Canonical repository rules"), "the routing contract comes before the canonical rules");
+  for (const marker of ["<SUBAGENT-STOP>", "<EXTREMELY-IMPORTANT>", "## Red flags", "If there is even a 1% chance that a skill applies"]) {
+    assert.ok(agents.includes(marker), `AGENTS.md must inline the bootstrap body (${marker})`);
+  }
+  assert.equal(agents.includes("---\nname: using-all-about-agents"), false, "the inlined body must not carry skill frontmatter");
 });
 
 test("Codex docs place the canonical rules in the global layer and project files in the second", async () => {

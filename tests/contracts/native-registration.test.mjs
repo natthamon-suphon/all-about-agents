@@ -23,11 +23,11 @@ const CLAUDE_RULE_FILES = [
 const CLAUDE_RULE_IDS = CLAUDE_RULE_FILES.map((name) => `claude-rule-${name.slice(0, -".md".length)}-deploy`);
 // Shaped like the rendered files: top-level keys, then one table per role.
 const CODEX_CONFIG = 'model = "gpt-5.6-sol"\nsandbox_mode = "danger-full-access"\n[agents.reviewer]\nconfig_file = "agents/reviewer.toml"\ndescription = "Reviews."\n\n[agents.verifier]\nconfig_file = "agents/verifier.toml"\ndescription = "Verifies."\n';
-const GEMINI_BODY = "# Global Operating Rules\n\n## Routing contract\n\nRoute each task to one skill.\n";
 // Shaped like the rendered CLAUDE.md and AGENTS.md: one marked block.
 const BLOCK_BEGIN = "<!-- all-about-agents:begin (managed by setup; keep your own text above or below this block) -->";
 const BLOCK_END = "<!-- all-about-agents:end -->";
 const MANAGED_INSTRUCTIONS = `${BLOCK_BEGIN}\n# Global instructions\n${BLOCK_END}\n`;
+const GLOBAL_RULES = "---\ntrigger: always_on\n---\n\n## Canonical repository rules\n";
 
 async function generatedTempRoot(prefix) {
   const root = await makeTempRoot(prefix);
@@ -83,7 +83,9 @@ async function fixture(profile = "template", { layout = "own" } = {}) {
     await writeFile(join(packageRoot, "agents", `${role}.md`), `# ${role}\n`);
   }
   await writeFile(join(packageRoot, "plugin.json"), "{}\n");
-  await writeFile(join(packageRoot, "GEMINI.md"), GEMINI_BODY);
+  await writeFile(join(packageRoot, "GEMINI.md"), MANAGED_INSTRUCTIONS);
+  await mkdir(join(packageRoot, "config", "rules"), { recursive: true });
+  await writeFile(join(packageRoot, "config", "rules", "all-about-agents.md"), GLOBAL_RULES);
   const prefix = layout === "parent" ? "claude/" : "";
   const ownedPaths = (await treeBytes(packageRoot)).map(([relativePath, content]) => ({
     relativePath: `${prefix}${relativePath.replaceAll("\\", "/")}`,
@@ -165,7 +167,8 @@ test("planner creates deterministic known actions for every surface", async () =
   const input = await fixture();
   const expected = {
     claude: ["claude-instructions-deploy", "claude-settings-deploy", "claude-statusline-config-deploy", "claude-statusline-renderer-deploy", "claude-statusline-tracker-deploy", "claude-statusline-windows-launcher-deploy", "claude-statusline-posix-launcher-deploy", ...CLAUDE_RULE_IDS, "claude-marketplace-add", "claude-plugin-install", "claude-plugin-list", "claude-plugin-cache-check", "claude-reload"],
-    codex: ["codex-instructions-deploy", "codex-config-deploy", "codex-terra-profile-deploy", "codex-agent-architect-deploy", "codex-agent-implementer-deploy", "codex-agent-investigator-deploy", "codex-agent-researcher-deploy", "codex-agent-reviewer-deploy", "codex-agent-security-reviewer-deploy", "codex-agent-verifier-deploy", "codex-marketplace-add", "codex-plugin-install", "codex-plugin-list", "codex-plugin-source-check", "codex-hooks-trust"]
+    codex: ["codex-instructions-deploy", "codex-config-deploy", "codex-terra-profile-deploy", "codex-agent-architect-deploy", "codex-agent-implementer-deploy", "codex-agent-investigator-deploy", "codex-agent-researcher-deploy", "codex-agent-reviewer-deploy", "codex-agent-security-reviewer-deploy", "codex-agent-verifier-deploy", "codex-marketplace-add", "codex-plugin-install", "codex-plugin-list", "codex-plugin-source-check", "codex-hooks-trust"],
+    antigravity: ["antigravity-instructions-deploy", "antigravity-rules-deploy", "antigravity-plugin-validate", "antigravity-plugin-install", "antigravity-plugin-list", "antigravity-desktop-slot"]
   };
   for (const [surface, ids] of Object.entries(expected)) {
     const plan = base(input, surface);
@@ -184,6 +187,21 @@ test("the Antigravity plan points Desktop and IDE at the global plugin slot and 
   assert.ok(slot.message.includes("~/.gemini/config/plugins/all-about-agents/"), slot.message);
   assert.match(slot.message, /Without agy/u);
   assert.match(slot.message, /agy plugin install fills the same folder/u);
+});
+
+test("Antigravity registration owns only config/rules/all-about-agents.md among the global rule files", async () => {
+  const input = await fixture();
+  const rulesRoot = join(input.productRoot, "config", "rules");
+  const mine = "---\ntrigger: always_on\n---\nmy rule\n";
+  await mkdir(rulesRoot, { recursive: true });
+  await writeFile(join(rulesRoot, "all-about-agents.md"), "stale rules\n");
+  await writeFile(join(rulesRoot, "mine.md"), mine);
+  const report = await runNativeRegistration(base(input, "antigravity"), { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(report.status, "complete");
+  assert.equal(report.actions.find((action) => action.id === "antigravity-rules-deploy").status, "complete");
+  assert.equal(await readFile(join(rulesRoot, "all-about-agents.md"), "utf8"), GLOBAL_RULES);
+  assert.equal(await readFile(join(rulesRoot, "mine.md"), "utf8"), mine);
+  assert.deepEqual((await readdir(rulesRoot)).sort(), ["all-about-agents.md", "mine.md"]);
 });
 
 test("planner records Claude trust as unavailable because no native trust step exists", async () => {
@@ -705,9 +723,7 @@ async function registerExitCode(input, surface) {
 test("a no-clobber destination that contains the managed content is complete and untouched", async () => {
   const cases = [
     ["codex", "config.toml", "codex-config-deploy",
-      'model = "gpt-5.6-sol"  \nsandbox_mode = "danger-full-access"\napproval_policy = "never"\n\n[features]\nmulti_agent = true\n\n[agents.verifier]\nconfig_file = "agents/verifier.toml"\ndescription = "Verifies."\n[marketplaces.all-about-agents]\nsource = "/somewhere"\n\n[agents.reviewer]\n  config_file = "agents/reviewer.toml"\ndescription = "Reviews."\n\n[plugins."all-about-agents@all-about-agents"]\nenabled = true\n'],
-    ["antigravity", "GEMINI.md", "antigravity-instructions-deploy",
-      `# My own section\r\n\r\nkeep me\r\n\r\n${GEMINI_BODY.replaceAll("\n", "  \r\n")}\r\n## Caveman mode\r\n\r\nalways on\r\n`]
+      'model = "gpt-5.6-sol"  \nsandbox_mode = "danger-full-access"\napproval_policy = "never"\n\n[features]\nmulti_agent = true\n\n[agents.verifier]\nconfig_file = "agents/verifier.toml"\ndescription = "Verifies."\n[marketplaces.all-about-agents]\nsource = "/somewhere"\n\n[agents.reviewer]\n  config_file = "agents/reviewer.toml"\ndescription = "Reviews."\n\n[plugins."all-about-agents@all-about-agents"]\nenabled = true\n']
   ];
   for (const [surface, file, id, body] of cases) {
     const input = await fixture();
@@ -726,8 +742,7 @@ test("a no-clobber destination that misses managed content names it and stays un
   const cases = [
     ["codex", "config.toml", "codex-config-deploy", CODEX_CONFIG.replace('[agents.verifier]\nconfig_file = "agents/verifier.toml"\ndescription = "Verifies."\n', "") + "[marketplaces.all-about-agents]\nsource = \"/somewhere\"\n", /\[agents\.verifier\]/u],
     ["codex", "config.toml", "codex-config-deploy", CODEX_CONFIG.replace('description = "Reviews."', 'description = "Edited."'), /\[agents\.reviewer\]/u],
-    ["codex", "config.toml", "codex-config-deploy", CODEX_CONFIG.replace('model = "gpt-5.6-sol"\n', 'model = "other"\n'), /top-level keys/u],
-    ["antigravity", "GEMINI.md", "antigravity-instructions-deploy", `# Mine\n\n${GEMINI_BODY.replace("Route each task to one skill.", "Route each task to two skills.")}`, /managed GEMINI\.md body/u]
+    ["codex", "config.toml", "codex-config-deploy", CODEX_CONFIG.replace('model = "gpt-5.6-sol"\n', 'model = "other"\n'), /top-level keys/u]
   ];
   for (const [surface, file, id, body, named] of cases) {
     const input = await fixture();
@@ -743,7 +758,7 @@ test("a no-clobber destination that misses managed content names it and stays un
 });
 
 test("a refused no-clobber file needs a manual step, exits 1, and stays untouched", async () => {
-  for (const [surface, file, id] of [["codex", "config.toml", "codex-config-deploy"], ["antigravity", "GEMINI.md", "antigravity-instructions-deploy"]]) {
+  for (const [surface, file, id] of [["codex", "config.toml", "codex-config-deploy"]]) {
     const input = await fixture();
     const body = `# The operator's own ${file}\n`;
     await writeFile(join(input.productRoot, file), body);
@@ -765,7 +780,7 @@ test("a refused no-clobber file needs a manual step, exits 1, and stays untouche
   }
 });
 
-const INSTRUCTION_DEPLOYS = [["claude", "CLAUDE.md", "claude-instructions-deploy"], ["codex", "AGENTS.md", "codex-instructions-deploy"]];
+const INSTRUCTION_DEPLOYS = [["claude", "CLAUDE.md", "claude-instructions-deploy"], ["codex", "AGENTS.md", "codex-instructions-deploy"], ["antigravity", "GEMINI.md", "antigravity-instructions-deploy"]];
 
 test("a global instruction file keeps every byte outside its marked block", async () => {
   const cases = [

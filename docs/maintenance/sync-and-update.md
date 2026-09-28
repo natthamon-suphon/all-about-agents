@@ -28,29 +28,27 @@ from Git pull. An authorized native apply may overwrite them without a backup.
 
 The global destinations are `<CLAUDE_CONFIG_DIR>/CLAUDE.md`,
 `<CODEX_HOME>/AGENTS.md`, and `~/.gemini/GEMINI.md`. Claude also gets the core
-rules as files in `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`. Project
+rules as files in `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, and Antigravity
+as `~/.gemini/config/rules/all-about-agents.md`. Project
 instruction files remain the more specific second layer. Read
 [global instructions](global-instructions.md) for the complete model.
 
-Two destinations are never overwritten: `~/.gemini/GEMINI.md` and
-`<CODEX_HOME>/config.toml`. The product and the operator may keep their own
-content there. Registration writes such a file only when it is missing. An
-existing file is complete when it already contains the managed body. For
-`GEMINI.md` that is the whole rendered body as one block. For `config.toml` it
-is every managed table with all its managed lines, plus the managed top-level
-keys (a line-based check that assumes one key per line). Otherwise
-registration writes nothing to that file, reports it `manual-required` with
-the missing parts named, and ends with exit code 1. To fix it, merge the
-managed content by hand. In `GEMINI.md`, replace the old managed block with the
-whole rendered body, or append the body as one block when no managed block is
-there. In `config.toml`, add the missing tables and change the named lines, so
-each key still appears only once. Then register again.
+One destination is never overwritten: `<CODEX_HOME>/config.toml`. Codex and
+the operator keep their own tables there. Registration writes it only when it
+is missing. An existing file is complete when it holds every managed table with
+all its managed lines, plus the managed top-level keys (a line-based check that
+assumes one key per line). Otherwise registration writes nothing to it, reports
+it `manual-required` with the missing parts named, and ends with exit code 1.
+To fix it, add the missing tables and change the named lines, so each key still
+appears only once. Then register again.
 
-`<CLAUDE_CONFIG_DIR>/CLAUDE.md` and `<CODEX_HOME>/AGENTS.md` are updated in
-place instead. Each is rendered as one marked block, and registration replaces
-only that block, so your own sections above or below it survive every run. A
-file with no intact block is left unchanged and reported `manual-required`;
-the reason names the one-time fix. See
+`<CLAUDE_CONFIG_DIR>/CLAUDE.md`, `<CODEX_HOME>/AGENTS.md`, and
+`~/.gemini/GEMINI.md` are updated in place instead. Each is rendered as one
+block from a `<!-- all-about-agents:begin` line to a
+`<!-- all-about-agents:end -->` line, and registration replaces only that
+block, so your own sections above or below it survive every run. A file with no
+intact block is left unchanged, reported `manual-required`, and the run ends
+with exit code 1; the reason names the one-time fix. See
 [global instructions](global-instructions.md).
 
 ## One-command setup
@@ -183,13 +181,14 @@ for the operator. The agent then owns every `manual-required` step:
    again with `--apply`. Use `--mode fresh` only when the report says so.
 2. For each `manual-required` step, do exactly what its reason says, then run
    setup again until no step needs it.
-3. For a `CLAUDE.md` or `AGENTS.md` with no intact block, compare the live
-   file with the package file. Keep every line that is not in the package file,
-   above the begin line or below the end line. Never put the operator's text
-   inside the block, because the next run replaces it.
-4. For `GEMINI.md`, diff the previous and the new package render, apply only
-   the changed lines to the live file, and keep it at or below 24,020
-   characters (see [Antigravity](../compatibility/antigravity.md)).
+3. For a `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md` with no intact block,
+   compare the live file with the package file. Keep every section that has no
+   counterpart in the package file, above the begin line or below the end line.
+   A shortened or reworded copy of package content is managed text: drop it.
+   Never put the operator's text inside the block, because the next run
+   replaces it.
+4. Keep `GEMINI.md` under 24,000 bytes, the limit agy applies to one rule file
+   (see [Antigravity](../compatibility/antigravity.md)).
 5. Prove the result with a new headless session of each product: ask it to
    quote a line that changed, or to answer `NOT PRESENT`.
 
