@@ -418,6 +418,25 @@ test("Codex product commands get the product root without inherited GIT_* redire
   }
 });
 
+test("codex-plugin-list runs with an output budget that fits the remote catalog", async () => {
+  const input = await fixture();
+  const products = fakeProducts(input);
+  const budgets = new Map();
+  const report = await runNativeRegistration(base(input, "codex"), {
+    mode: "apply",
+    runProcess: async (request) => {
+      budgets.set(request.args.join(" "), request.maxOutputBytes);
+      return products.run(request);
+    }
+  });
+  assert.equal(report.status, "complete");
+  // codex plugin list --available --json printed 2.5 MB on Codex 0.162.0, above the runner's 1 MiB default.
+  assert.ok(budgets.get("plugin list --available --json") >= 8 * 1024 * 1024, "the catalog listing needs more than the default capture");
+  for (const [args, budget] of budgets) {
+    if (!args.startsWith("plugin list")) assert.equal(budget, undefined, `${args} keeps the runner default`);
+  }
+});
+
 test("successful native commands remain registered not-run until semantic discovery is observed", async () => {
   const input = await fixture();
   const report = await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: fakeProducts(input).run });

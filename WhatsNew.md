@@ -25,6 +25,13 @@ from there, and the Antigravity manifest names it in its description.
   `@~/Workspaces/coding-guidelines/Rules/RULES.md` import. Keep an import that
   exists on one machine only in your own text outside the marked block.
 
+### Fixed
+
+- `register --surface codex` no longer fails at `codex-plugin-list` with
+  `native-process-output-too-large`. `codex plugin list --available --json`
+  lists the remote catalog (2.5 MB on Codex 0.162.0), so that one action now
+  runs with a 16 MiB output budget.
+
 ## [2.2.0] - 2026-09-28
 
 ### Added

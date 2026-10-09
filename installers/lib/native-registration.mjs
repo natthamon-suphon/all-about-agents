@@ -173,8 +173,12 @@ function validateManagedPackage(packageRoot, surface, profile) {
   return { state, ownershipPrefix, ownership };
 }
 
-function processAction(id, executable, args, cwd, environmentKey, expectedProbe, mutates = true) {
-  return { id, kind: "process", executable, args: [...args], cwd, environmentKeys: environmentKey ? [environmentKey] : [], mutates, required: true, expectedProbe };
+// `codex plugin list --available --json` also lists the remote catalog: 2.5 MB
+// on Codex 0.162.0, above the runner's 1 MiB default.
+const CODEX_PLUGIN_LIST_OUTPUT_BYTES = 16 * 1024 * 1024;
+
+function processAction(id, executable, args, cwd, environmentKey, expectedProbe, mutates = true, { maxOutputBytes } = {}) {
+  return { id, kind: "process", executable, args: [...args], cwd, environmentKeys: environmentKey ? [environmentKey] : [], mutates, required: true, expectedProbe, ...(maxOutputBytes === undefined ? {} : { maxOutputBytes }) };
 }
 
 // A required manual step marks work the plan could not do, so the apply
@@ -371,7 +375,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     }
     actions.push(processAction("codex-marketplace-add", "codex", ["plugin", "marketplace", "add", pkg, "--json"], pkg, "CODEX_HOME", "json"));
     actions.push(processAction("codex-plugin-install", "codex", ["plugin", "add", PLUGIN_SELECTOR, "--json"], pkg, "CODEX_HOME", "json"));
-    actions.push(processAction("codex-plugin-list", "codex", ["plugin", "list", "--available", "--json"], pkg, "CODEX_HOME", "json", false));
+    actions.push(processAction("codex-plugin-list", "codex", ["plugin", "list", "--available", "--json"], pkg, "CODEX_HOME", "json", false, { maxOutputBytes: CODEX_PLUGIN_LIST_OUTPUT_BYTES }));
     actions.push({ id: "codex-plugin-source-check", kind: "git-source-check", executable: "git", prefixArgs: ["-c", "core.fsmonitor=false", "rev-parse", "--show-prefix"], statusArgs: ["-c", "core.fsmonitor=false", "--no-optional-locks", "status", "--porcelain", "--untracked-files=all", "--", "."], cwd: pkg, environmentKeys: [], mutates: false, required: true, expectedProbe: "own-repository-clean-working-tree" });
     actions.push(manualAction("codex-hooks-trust", "Open `/hooks` in Codex and review/trust the registered hook only if the product presents that step."));
   } else if (surface === "antigravity") {
@@ -769,7 +773,7 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
         // Codex clones the package with git, so a GIT_* redirect inherited from
         // a git hook must not reach that clone.
         const environment = plan.surface === "codex" ? { env: { ...gitEnvironment(), ...explicitEnv } } : { envOverrides: explicitEnv };
-        const result = await runProcess({ executable: action.executable, args: [...action.args], cwd: action.cwd, environmentKeys: [...(action.environmentKeys || [])], ...environment, shell: false });
+        const result = await runProcess({ executable: action.executable, args: [...action.args], cwd: action.cwd, environmentKeys: [...(action.environmentKeys || [])], ...environment, ...(action.maxOutputBytes === undefined ? {} : { maxOutputBytes: action.maxOutputBytes }), shell: false });
         if (!result || typeof result !== "object") throw pathError("invalid-process-result", `native action ${action.id} returned an invalid process result`);
         if (result.unavailable) throw pathError("native-executable-unavailable", `${action.executable} is unavailable; install it and retry registration`);
         if (result.timedOut) throw pathError("native-process-timeout", `${action.id} timed out`);
