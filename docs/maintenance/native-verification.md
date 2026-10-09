@@ -204,7 +204,7 @@ event is proved by package output.
 
 7. Open `/hooks` and review or trust changed hook hashes when the product asks.
 
-8. Record `gpt-5.6-sol` with `max` as primary or the explicit `terra-max`
+8. Record `gpt-6.1-sol` with `xhigh` as primary or the explicit `terra-max`
    recovery choice. Do not record automatic fallback.
 
 ## Evidence record

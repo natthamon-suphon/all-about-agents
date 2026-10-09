@@ -57,10 +57,10 @@ test("Codex resolves CODEX_HOME with an explicit override and platform default",
   );
 });
 
-test("Codex model policy keeps Sol/max primary and Terra/max explicitly selectable", () => {
+test("Codex model policy keeps Sol/xhigh primary and Terra/max explicitly selectable", () => {
   assert.deepEqual(adapter.CODEX_MODEL_POLICY.template, {
-    model: "gpt-5.6-sol",
-    model_reasoning_effort: "max",
+    model: "gpt-6.1-sol",
+    model_reasoning_effort: "xhigh",
     sandbox_mode: "danger-full-access",
     approval_policy: "never"
   });
@@ -81,12 +81,12 @@ test("Codex semantic mappings contain only documented native surfaces", () => {
   }
 });
 
-test("Codex template emits the exact Sol/max primary and Terra/max alternate policy", () => {
+test("Codex template emits the exact Sol/xhigh primary and Terra/max alternate policy", () => {
   const files = fileMap(resultFor("template"));
   const primary = files.get("config.toml");
   const alternate = files.get("terra-max.config.toml");
-  assert.match(primary, /model = "gpt-5\.6-sol"/u);
-  assert.match(primary, /model_reasoning_effort = "max"/u);
+  assert.match(primary, /model = "gpt-6\.1-sol"/u);
+  assert.match(primary, /model_reasoning_effort = "xhigh"/u);
   assert.match(primary, /sandbox_mode = "danger-full-access"/u);
   assert.match(primary, /approval_policy = "never"/u);
   assert.match(alternate, /model = "gpt-5\.6-terra"/u);

@@ -393,12 +393,12 @@
     },
     {
       "relativePath": "config.toml",
-      "sha256": "00536cae2e752bd234525f8c4ba5510dd544db6a9dd890e9d93a2ba3692be4fb",
+      "sha256": "7751acfcd34cc956a60d5ebf880e570e9ffd3da335388996bad815641efaa484",
       "mode": null
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "3008723619a913c3620b9f319db874b8561785dc88248721dcc94d05e899bcb1",
+      "sha256": "84178994c38081a34151c330702720c885d651b962b488d1452f393c64d9531c",
       "mode": null
     },
     {
@@ -1097,11 +1097,11 @@
     },
     {
       "relativePath": "config.toml",
-      "sha256": "00536cae2e752bd234525f8c4ba5510dd544db6a9dd890e9d93a2ba3692be4fb"
+      "sha256": "7751acfcd34cc956a60d5ebf880e570e9ffd3da335388996bad815641efaa484"
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "3008723619a913c3620b9f319db874b8561785dc88248721dcc94d05e899bcb1"
+      "sha256": "84178994c38081a34151c330702720c885d651b962b488d1452f393c64d9531c"
     },
     {
       "relativePath": "hooks/activity-audit.json",

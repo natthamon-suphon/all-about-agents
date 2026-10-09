@@ -396,7 +396,7 @@ is `registered`; it is not proof that hooks are `trusted`, `active`, or
 
 After a new or changed hook package, inspect `/hooks` in Codex. Trust is a
 separate product action when Codex requests it. Do not call a hook automatic.
-Use `gpt-5.6-sol` with `max` as the primary template policy. Select the
+Use `gpt-6.1-sol` with `xhigh` as the primary template policy. Select the
 `terra-max` profile or `gpt-5.6-terra` with `max` only as an explicit recovery
 choice. No automatic model fallback is claimed.
 

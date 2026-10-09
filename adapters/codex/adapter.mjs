@@ -49,8 +49,8 @@ export const CODEX_MODEL_POLICY = Object.freeze({
     approval_policy: "on-request"
   }),
   template: Object.freeze({
-    model: "gpt-5.6-sol",
-    model_reasoning_effort: "max",
+    model: "gpt-6.1-sol",
+    model_reasoning_effort: "xhigh",
     sandbox_mode: "danger-full-access",
     approval_policy: "never"
   }),
@@ -352,7 +352,7 @@ function desktopInstructions(profile) {
   const modelLines = profile.modelPolicies[CODEX_SURFACE] === "surface-default"
     ? ["The portable profile keeps the current Codex model and reasoning controls unchanged."]
     : [
-      "The template profile selects gpt-5.6-sol with max reasoning.",
+      "The template profile selects gpt-6.1-sol with xhigh reasoning.",
       "",
       "To use the explicit alternate in Codex Desktop, select gpt-5.6-terra and max reasoning in the Desktop model controls for the current thread.",
       "",

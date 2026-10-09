@@ -44,8 +44,8 @@ Plugin registration is a manual product action.
 The `portable` profile uses `sandbox_mode=workspace-write` and
 `approval_policy=on-request`. The `template` profile uses:
 
-- model `gpt-5.6-sol`;
-- `model_reasoning_effort=max`;
+- model `gpt-6.1-sol`;
+- `model_reasoning_effort=xhigh`;
 - `sandbox_mode=danger-full-access`;
 - `approval_policy=never`.
 

@@ -9,6 +9,10 @@ from there, and the Antigravity manifest names it in its description.
 
 ### Changed
 
+- The Codex template profile selects `gpt-6.1-sol` with `xhigh` reasoning. The
+  ChatGPT desktop app writes that pair into `config.toml` on launch, so the
+  rendered file and the app no longer disagree. The `terra-max` alternate is
+  unchanged.
 - The Claude package renders its global instruction file at `config/CLAUDE.md`
   instead of the package root. Registration still deploys it to
   `<CLAUDE_CONFIG_DIR>/CLAUDE.md`. Claude Code 2.1.295 warns that a plugin-root

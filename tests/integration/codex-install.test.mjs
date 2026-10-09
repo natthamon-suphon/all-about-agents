@@ -54,7 +54,7 @@ test("Codex clean-profile materializes declared destinations and is idempotent",
     await access(resolve(destination, "config.toml"));
     await access(resolve(destination, "terra-max.config.toml"));
     const config = await readFile(resolve(destination, "config.toml"), "utf8");
-    assert.match(config, /model = "gpt-5\.6-sol"/u);
+    assert.match(config, /model = "gpt-6\.1-sol"/u);
     assert.match(config, /approval_policy = "never"/u);
     assert.match(config, /sandbox_mode = "danger-full-access"/u);
     assert.match(await readFile(resolve(destination, "terra-max.config.toml"), "utf8"), /gpt-5\.6-terra/u);

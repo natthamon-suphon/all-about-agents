@@ -71,7 +71,7 @@ test("template contains only semantic full-access, maximum-reasoning, model, and
     codex: "approved-sol-terra"
   });
   const body = JSON.stringify(profiles.template);
-  for (const forbidden of ["opus[1m]", "gpt-5.6-sol", "gemini-3.1-pro-high", "bypassPermissions", "danger-full-access", "statuslineName", "skills"]) {
+  for (const forbidden of ["opus[1m]", "gpt-6.1-sol", "gemini-3.1-pro-high", "bypassPermissions", "danger-full-access", "statuslineName", "skills"]) {
     assert.equal(body.includes(forbidden), false, `template leaks native value ${forbidden}`);
   }
 });
@@ -140,7 +140,7 @@ test("template renders approved native model contracts and Fable only where supp
   assert.deepEqual(claude.fallbackModel, ["claude-sonnet-5"]);
   assert.equal(claude.advisorModel, "claude-fable-5-1");
   assert.equal(claude.env.CLAUDE_CODE_EFFORT_LEVEL, "xhigh");
-  assert.match(files(outputs.codex).get("config.toml"), /model = "gpt-5\.6-sol"[\s\S]*model_reasoning_effort = "max"/u);
+  assert.match(files(outputs.codex).get("config.toml"), /model = "gpt-6\.1-sol"[\s\S]*model_reasoning_effort = "xhigh"/u);
   assert.match(files(outputs.codex).get("terra-max.config.toml"), /model = "gpt-5\.6-terra"[\s\S]*model_reasoning_effort = "max"/u);
 });
 

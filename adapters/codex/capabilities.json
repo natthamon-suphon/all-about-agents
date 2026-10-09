@@ -36,13 +36,13 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-model-policy-codex.md",
-      "checkedAt": "2026-08-31",
-      "productVersion": "0.151.0-alpha.7.2",
+      "checkedAt": "2026-10-09",
+      "productVersion": "0.162.0",
       "value": {
-        "model": "gpt-5.6-sol",
-        "reasoning": "max"
+        "model": "gpt-6.1-sol",
+        "reasoning": "xhigh"
       },
-      "notes": "Documented shared CLI/Desktop primary policy."
+      "notes": "Shared CLI/Desktop primary policy. On 2026-10-09 the Codex 0.162.0 model catalog listed gpt-6.1-sol with low, medium, high, xhigh, max, and ultra reasoning, and the ChatGPT desktop app wrote gpt-6.1-sol with xhigh into config.toml on launch."
     },
     {
       "feature": "model.alternate",
