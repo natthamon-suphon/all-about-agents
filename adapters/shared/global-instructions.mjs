@@ -32,17 +32,6 @@ function renderRules(rules) {
   return lines;
 }
 
-const CLAUDE_HOUSE_RULES = `
-
-## egroup house rules (coding-guidelines)
-
-The rules above stay authoritative for general behavior. The import below is the
-more specific second layer: egroup stack facts, security and endpoint exposure,
-branching model, and the house rules that the installed skills depend on. Stack
-digests arrive separately through the guideline-dispatch hook.
-
-@~/Workspaces/coding-guidelines/Rules/RULES.md`;
-
 // Registration replaces only the lines from a begin-prefixed line to an
 // end-prefixed line, so operator text around them survives every update.
 // These structural comments are added after the body passes its no-HTML check.
@@ -60,9 +49,9 @@ export function renderSharedGlobalInstructions(core) {
   return normalizeBody(globalInstructionContent(ensureCore(core)));
 }
 
-/** Render the shared canonical body plus the Claude-only house rules import. */
+/** Render the shared canonical body as the marked block Claude registration deploys. */
 export function renderClaudeGlobalInstructions(core) {
-  return managedBlock(renderSharedGlobalInstructions(core).trimEnd() + CLAUDE_HOUSE_RULES);
+  return managedBlock(renderSharedGlobalInstructions(core));
 }
 
 /**

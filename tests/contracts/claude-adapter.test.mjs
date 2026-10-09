@@ -38,16 +38,14 @@ test("shared global renderers use the loaded canonical body and normalize only l
   assert.equal((codex.match(/# Global Operating Rules/g) || []).length, 1);
 });
 
-test("egroup house rules reach Claude Code only while RTK house rules reach every surface", () => {
+test("RTK house rules reach every surface and no surface carries an operator-specific appendix", () => {
   const claude = renderClaudeGlobalInstructions(core);
   const codex = codexBody();
   const antigravity = renderAntigravityGlobalInstructions(core);
-  assert.match(claude, /^## egroup house rules \(coding-guidelines\)$/mu);
-  assert.match(claude, /^@~\/Workspaces\/coding-guidelines\/Rules\/RULES\.md$/mu);
-  for (const [surface, rendered] of [["codex", codex], ["antigravity", antigravity]]) {
-    assert.doesNotMatch(rendered, /egroup house rules|coding-guidelines\/Rules\/RULES\.md/u, `${surface} must not receive the Claude-only appendix`);
+  for (const [surface, rendered] of [["claude", claude], ["codex", codex], ["antigravity", antigravity]]) {
+    assert.match(rendered, /^## RTK house rules \(rust-token-killer\)$/mu, `${surface} must carry the RTK house rules`);
+    assert.doesNotMatch(rendered, /egroup house rules|coding-guidelines|^@~\//mu, `${surface} must not carry an import that exists on one machine only`);
   }
-  for (const rendered of [claude, codex, antigravity]) assert.match(rendered, /^## RTK house rules \(rust-token-killer\)$/mu);
   assert.ok(claude.slice(claude.indexOf("\n") + 1).startsWith(renderSharedGlobalInstructions(core).trimEnd()), "the shared body opens the marked block");
 });
 
@@ -111,7 +109,8 @@ test("portable Claude render contains every native component and all canonical s
     assert.ok(files.has(`skills/${skill}/SKILL.md`), `missing canonical skill ${skill}`);
     for (const companion of core.skills.find((record) => record.id === skill).companions) assert.ok(files.has(`skills/${skill}/${companion.relativePath}`), `missing companion ${skill}/${companion.relativePath}`);
   }
-  assert.ok(files.has("CLAUDE.md"));
+  assert.ok(files.has("config/CLAUDE.md"));
+  assert.equal(files.has("CLAUDE.md"), false, "a plugin-root CLAUDE.md is never loaded and draws a strict-validator warning");
   assert.equal(files.has(".claude/CLAUDE.md"), false);
   assert.equal(files.has("AGENTS.md"), false);
 });
@@ -119,11 +118,11 @@ test("portable Claude render contains every native component and all canonical s
 test("Claude render emits the canonical global file and one presentation contract per visible prompt", () => {
   const result = resultFor();
   const files = fileMap(result);
-  assert.equal(files.get("CLAUDE.md"), renderClaudeGlobalInstructions(core));
-  const block = files.get("CLAUDE.md").match(/^<!-- all-about-agents:begin [^\n]*-->\n([\s\S]*)\n<!-- all-about-agents:end -->\n$/u);
+  assert.equal(files.get("config/CLAUDE.md"), renderClaudeGlobalInstructions(core));
+  const block = files.get("config/CLAUDE.md").match(/^<!-- all-about-agents:begin [^\n]*-->\n([\s\S]*)\n<!-- all-about-agents:end -->\n$/u);
   assert.ok(block, "CLAUDE.md is one marked block, so registration can keep the operator's text around it");
-  assert.equal((files.get("CLAUDE.md").match(/<!-- all-about-agents:(?:begin|end)\b/gu) ?? []).length, 2);
-  assert.ok(block[1].startsWith(core.globalInstructions.content), "canonical global body must be first inside the block");
+  assert.equal((files.get("config/CLAUDE.md").match(/<!-- all-about-agents:(?:begin|end)\b/gu) ?? []).length, 2);
+  assert.ok(block[1].startsWith(core.globalInstructions.content.trimEnd()), "canonical global body must be first inside the block");
   const presentationRule = files.get("rules/presentation.md");
   assert.match(presentationRule, /brainstorming 🧠/u);
   assert.match(presentationRule, /architect 🏛️/u);
@@ -488,7 +487,7 @@ test("Claude ownership manifest documents roots, mappings, and native validation
   const manifest = JSON.parse(await readFile(resolve(process.cwd(), "installers/manifests/claude.json"), "utf8"));
   assert.equal(manifest.surface, "claude");
   assert.equal(manifest.configRoot.environment, "CLAUDE_CONFIG_DIR");
-  assert.equal(manifest.components.globalInstructions, "CLAUDE.md");
+  assert.equal(manifest.components.globalInstructions, "config/CLAUDE.md");
   assert.deepEqual(manifest.configRoot.sharedBy, ["claude-code-cli", "claude-desktop-local-code"]);
   assert.deepEqual(manifest.semanticCapabilities["web-primary-sources"], ["WebSearch", "WebFetch"]);
   assert.deepEqual([...manifest.readOnlyRoles.roles].sort(), ["architect", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"]);
@@ -496,7 +495,7 @@ test("Claude ownership manifest documents roots, mappings, and native validation
   assert.deepEqual(manifest.pluginRegistration.marketplaceCommand, ["claude", "plugin", "marketplace", "add", "PACKAGE_ROOT", "--scope", "user"]);
   assert.deepEqual(manifest.pluginRegistration.command, ["claude", "plugin", "install", "all-about-agents@all-about-agents", "--scope", "user"]);
   assert.ok(manifest.ownedPaths.includes(".claude-plugin/marketplace.json"));
-  assert.ok(manifest.ownedPaths.includes("CLAUDE.md"));
+  assert.ok(manifest.ownedPaths.includes("config/CLAUDE.md"));
   assert.deepEqual(manifest.preflight, CLAUDE_PREREQUISITES);
   assert.deepEqual(manifest.profiles.portable.settings.permissions, {
     defaultMode: "default",

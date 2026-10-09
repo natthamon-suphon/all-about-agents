@@ -385,6 +385,6 @@ test("apply refuses before mutation when the managed state exists but cannot be 
     assert.match(result.stdout, /managed state merge rejected before mutation/u);
     assert.equal(await readFile(statePath, "utf8"), legacyState, "the legacy state must stay untouched");
     assert.equal(await readFile(stale, "utf8"), "stale\n", "no owned file may be written or pruned");
-    await assert.rejects(access(resolve(root, "claude", "CLAUDE.md")), "no new file may be created");
+    await assert.rejects(access(resolve(root, "claude", "config", "CLAUDE.md")), "no new file may be created");
   });
 });

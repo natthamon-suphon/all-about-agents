@@ -69,7 +69,8 @@ async function fixture(profile = "template", { layout = "own" } = {}) {
   await writeFile(join(packageRoot, ".agents", "plugins", "marketplace.json"), "{}\n");
   await writeFile(join(packageRoot, ".agents", "plugins", "all-about-agents", "plugin.json"), "{}\n");
   await writeFile(join(packageRoot, "settings.json"), '{"permissions":{"defaultMode":"bypassPermissions","deny":["Bash(rm -rf /)"]},"statusLine":{"type":"command","command":"stale-package-root-command"}}\n');
-  await writeFile(join(packageRoot, "CLAUDE.md"), MANAGED_INSTRUCTIONS);
+  await mkdir(join(packageRoot, "config"), { recursive: true });
+  await writeFile(join(packageRoot, "config", "CLAUDE.md"), MANAGED_INSTRUCTIONS);
   await writeFile(join(packageRoot, "all-about-agents", "statusline.json"), '{"schemaVersion":1,"displayName":"Test"}\n');
   await writeFile(join(packageRoot, "statusline", "statusline.mjs"), "// renderer\n");
   await writeFile(join(packageRoot, "statusline", "track-tool.mjs"), "// tracker\n");
@@ -303,7 +304,7 @@ test("planner deploys the Claude and Codex runtime config needed by the installe
   const input = await fixture();
   const claudeCopies = base(input, "claude").actions.filter((action) => action.kind === "file-copy");
   assert.deepEqual(claudeCopies.map(({ sourcePath, targetPath, mode, transform }) => [relative(input.packageRoot, sourcePath), relative(input.productRoot, targetPath), mode, transform ?? null]), [
-    ["CLAUDE.md", "CLAUDE.md", null, null],
+    [join("config", "CLAUDE.md"), "CLAUDE.md", null, null],
     [join("all-about-agents", "statusline.json"), join("all-about-agents", "statusline.json"), null, null],
     [join("statusline", "statusline.mjs"), join("statusline", "statusline.mjs"), 0o755, null],
     [join("statusline", "track-tool.mjs"), join("statusline", "track-tool.mjs"), 0o755, null],

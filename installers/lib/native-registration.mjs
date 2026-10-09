@@ -94,7 +94,7 @@ const ANTIGRAVITY_RULES_FILE = "config/rules/all-about-agents.md";
 
 function requiredRegistrationSourceFiles(surface, profile) {
   const markers = requiredPackageFiles(surface);
-  if (surface === "claude") return [...markers, "CLAUDE.md", "settings.json", "all-about-agents/statusline.json", "statusline/statusline.mjs", "statusline/track-tool.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", `${CLAUDE_RULES_FOLDER}/presentation.md`];
+  if (surface === "claude") return [...markers, "config/CLAUDE.md", "settings.json", "all-about-agents/statusline.json", "statusline/statusline.mjs", "statusline/track-tool.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", `${CLAUDE_RULES_FOLDER}/presentation.md`];
   if (surface === "antigravity") return [...markers, "GEMINI.md", ANTIGRAVITY_RULES_FILE, ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.md`)];
   if (surface === "codex") return [...markers, "AGENTS.md", "config.toml", ...(profile === "template" ? ["terra-max.config.toml"] : []), ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.toml`)];
   return markers;
@@ -336,7 +336,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
   });
 
   if (surface === "claude") {
-    actions.push(deployFile("claude-instructions-deploy", "CLAUDE.md", "CLAUDE.md", { guard: "managed-block" }));
+    actions.push(deployFile("claude-instructions-deploy", "config/CLAUDE.md", "CLAUDE.md", { guard: "managed-block" }));
     actions.push({ id: "claude-settings-deploy", kind: "settings-overlay", targetPath: join(product, "settings.json"), overlayPath: join(pkg, "settings.json"), expectedOverlayHash: managedPackage.ownership.get(`${managedPackage.ownershipPrefix}settings.json`), allowedRoot: product, transform: "claude-statusline-product-root", mutates: true, required: true, expectedProbe: "settings-merge", automaticWrite: true });
     actions.push(deployFile("claude-statusline-config-deploy", "all-about-agents/statusline.json", "all-about-agents/statusline.json"));
     actions.push(deployFile("claude-statusline-renderer-deploy", "statusline/statusline.mjs", "statusline/statusline.mjs", { mode: 0o755 }));

@@ -12,7 +12,7 @@ import { main } from "../../scripts/aaa.mjs";
 
 const REPOSITORY_ROOT = resolve(process.cwd());
 const CLAUDE_FIXTURE = await readFile(resolve(REPOSITORY_ROOT, "tests/fixtures/native-statusline/claude.json"), "utf8");
-const CLAUDE_MARKERS = ["CLAUDE.md", ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "statusline/statusline.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", "all-about-agents/statusline.json"];
+const CLAUDE_MARKERS = ["config/CLAUDE.md", ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "statusline/statusline.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", "all-about-agents/statusline.json"];
 const CODEX_MARKERS = [".codex-plugin/plugin.json", ".agents/plugins/marketplace.json", "hooks/hooks.json", "hooks/bootstrap.mjs"];
 const CODEX_HOOK_FILES = ["hooks/hooks.json", "hooks/bootstrap.mjs", "hooks/activity-audit.mjs", "hooks/pre-compact.mjs", "hooks/audit-log.mjs"];
 

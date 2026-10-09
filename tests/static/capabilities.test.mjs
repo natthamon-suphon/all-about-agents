@@ -8,7 +8,7 @@ import { makeTempRoot, withTempRoot } from "../helpers/temp-root.mjs";
 const surfaces = ["antigravity", "claude", "codex"];
 const manifestGlobalNames = new Map([
   ["antigravity", "GEMINI.md"],
-  ["claude", "CLAUDE.md"],
+  ["claude", "config/CLAUDE.md"],
   ["codex", "AGENTS.md"]
 ]);
 const repositoryRoot = resolve(process.cwd());

@@ -12,7 +12,7 @@
       "checkedAt": "2026-08-31",
       "productVersion": "2.1.251",
       "value": {
-        "package": "CLAUDE.md",
+        "package": "config/CLAUDE.md",
         "destination": "<CLAUDE_CONFIG_DIR>/CLAUDE.md"
       },
       "notes": "The shared global instruction body is deployed separately from the rule files under <CLAUDE_CONFIG_DIR>/rules/all-about-agents/ and from project instructions."

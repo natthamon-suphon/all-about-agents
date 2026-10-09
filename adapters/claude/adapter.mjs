@@ -439,7 +439,7 @@ function mappingsDocument() {
     "Read-only agents use Claude's `disallowedTools` for `Agent`, `Bash`, `Edit`, and `Write`.",
     "Read-only capability diagnostics identify any semantic action suppressed by that policy; record it as unavailable or not run rather than inferring a native substitute.",
     "The implementer's native Write/Edit controls are workspace-wide; its declared task paths remain an outer approval boundary.",
-    "The plugin never loads a root `CLAUDE.md`; rules are emitted as independent files under `rules/`, and registration copies them to `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, a folder this package owns."
+    "The plugin root carries no `CLAUDE.md`: the global file is rendered at `config/CLAUDE.md` for registration only, and rules are emitted as independent files under `rules/`, and registration copies them to `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, a folder this package owns."
   );
   return ensureText(lines.join("\n"));
 }
@@ -456,7 +456,7 @@ function capabilityGuidance(semanticProfile) {
     "This package is the Claude adapter's documented surface map.",
     "",
     "- `CLAUDE_CONFIG_DIR` selects the settings root shared by Claude Code CLI and Claude Desktop local Code; the fallback is the user's `.claude` directory.",
-    "- Skills are packaged under `skills/<skill>/SKILL.md`, roles under `agents/<role>.md`, and rules as independent files under `rules/`; registration copies them to `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`. `CLAUDE.md` is deployed to `<CLAUDE_CONFIG_DIR>/CLAUDE.md`; the plugin never loads a root `CLAUDE.md`.",
+    "- Skills are packaged under `skills/<skill>/SKILL.md`, roles under `agents/<role>.md`, and rules as independent files under `rules/`; registration copies them to `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`. `config/CLAUDE.md` is deployed to `<CLAUDE_CONFIG_DIR>/CLAUDE.md`; the plugin root carries no `CLAUDE.md`, which Claude Code would never load and `claude plugin validate --strict` warns about.",
     `- \`docs/semantic-mappings.md\` at the package root maps each semantic capability to Claude Code tools; \`role-dispatch\` maps to ${CLAUDE_SEMANTIC_MAPPINGS["role-dispatch"].map(code).join(", ")}.`,
     `- Read-only roles use \`disallowedTools\` for ${READ_ONLY_NATIVE_TOOLS.map(code).join(", ")}. The implementer's native \`Write\`/\`Edit\` controls are workspace-wide; its declared task paths remain an outer approval boundary.`,
     `- \`hooks/hooks.json\` runs \`node\` in exec form from \`\${CLAUDE_PLUGIN_ROOT}\`: ${claudeBootstrapTemplate.event} (${code(claudeBootstrapTemplate.nativeMatcher)}) adds this skill as session context, ${claudeActivityTemplate.event} writes the optional activity audit and statusline tracker, and ${claudeCheckpointTemplate.event} writes a checkpoint. No PreToolUse hook is rendered.`,
@@ -508,7 +508,7 @@ export function renderClaude(input = {}) {
   const plugin = pluginManifest();
   addFile(files, ".claude-plugin/plugin.json", renderJson(plugin));
   addFile(files, ".claude-plugin/marketplace.json", renderJson(marketplaceManifest(plugin)));
-  addFile(files, "CLAUDE.md", renderClaudeGlobalInstructions(core));
+  addFile(files, "config/CLAUDE.md", renderClaudeGlobalInstructions(core));
   addFile(files, "config/settings.json", renderJson(settingsFor(semanticProfile, { statuslineCommand })));
   addFile(files, "config/statusline.json", renderJson({ schemaVersion: 1, displayName: statuslineName }));
   addFile(files, "docs/semantic-mappings.md", mappingsDocument());
@@ -589,9 +589,9 @@ export function renderClaude(input = {}) {
       },
       {
         kind: "instructions",
-        relativePath: "CLAUDE.md",
+        relativePath: "config/CLAUDE.md",
         rootEnv: "CLAUDE_CONFIG_DIR",
-        destination: "CLAUDE.md",
+        destination: "config/CLAUDE.md",
         consumers: ["claude-code-cli", "claude-desktop-local-code"]
       },
       {

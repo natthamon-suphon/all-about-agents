@@ -34,7 +34,7 @@
     ]
   },
   "components": {
-    "globalInstructions": "CLAUDE.md",
+    "globalInstructions": "config/CLAUDE.md",
     "skills": "skills/{skill}/SKILL.md",
     "agents": "agents/{role}.md",
     "rules": "rules/{rule}.md",
@@ -175,10 +175,10 @@
     ".claude-plugin/**",
     ".claude-plugin/marketplace.json",
     ".claude-plugin/plugin.json",
-    "CLAUDE.md",
     "agents/{role}.md",
     "all-about-agents/statusline.json",
     "config/**",
+    "config/CLAUDE.md",
     "config/settings.json",
     "config/statusline.json",
     "docs/semantic-mappings.md",
@@ -233,7 +233,7 @@
       "statusline/track-tool.mjs"
     ]
   },
-  "rootInstructionContext": "CLAUDE.md is emitted as the global instruction source and deployed to <CLAUDE_CONFIG_DIR>/CLAUDE.md; the rules/ files are copied to <CLAUDE_CONFIG_DIR>/rules/all-about-agents/, a folder this package owns",
+  "rootInstructionContext": "config/CLAUDE.md is emitted as the global instruction source and deployed to <CLAUDE_CONFIG_DIR>/CLAUDE.md; the rules/ files are copied to <CLAUDE_CONFIG_DIR>/rules/all-about-agents/, a folder this package owns",
   "capabilityEvidence": {
     "productContracts": "docs/evaluations/research-claude-code.md",
     "modelPolicy": "docs/evaluations/research-model-policy-claude.md"

@@ -7,6 +7,20 @@ from there, and the Antigravity manifest names it in its description.
 
 ## [Unreleased]
 
+### Changed
+
+- The Claude package renders its global instruction file at `config/CLAUDE.md`
+  instead of the package root. Registration still deploys it to
+  `<CLAUDE_CONFIG_DIR>/CLAUDE.md`. Claude Code 2.1.295 warns that a plugin-root
+  `CLAUDE.md` is never loaded as project context, which made
+  `claude plugin validate --strict` fail.
+
+### Removed
+
+- The Claude-only `## egroup house rules (coding-guidelines)` appendix and its
+  `@~/Workspaces/coding-guidelines/Rules/RULES.md` import. Keep an import that
+  exists on one machine only in your own text outside the marked block.
+
 ## [2.2.0] - 2026-09-28
 
 ### Added

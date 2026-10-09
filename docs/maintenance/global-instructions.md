@@ -33,7 +33,6 @@ source:
 | Section | Surfaces | Defined in |
 | --- | --- | --- |
 | `## RTK house rules (rust-token-killer)` | Antigravity, Claude Code, and Codex | `core/instructions/global-operating-rules.md` |
-| `## egroup house rules (coding-guidelines)` | Claude Code only | `adapters/shared/global-instructions.mjs` |
 | `# All About Agents for Codex` | Codex only | `adapters/shared/global-instructions.mjs` |
 | `# All About Agents for Antigravity` | Antigravity only | `adapters/shared/global-instructions.mjs` |
 
@@ -58,9 +57,10 @@ contract from the `SessionStart` bootstrap hook. Antigravity has no such event
 Windows fails every plugin command hook, so for both the always-loaded
 instruction file is the carrier.
 
-The egroup appendix uses Claude's `@` import syntax and one operator-specific
-path. Other surfaces do not resolve `@` imports, and the path is absent on a
-machine without that checkout, so keep operator content out of the shared body.
+No surface renders an operator-specific appendix. Claude resolves `@` imports,
+but a path that exists on one machine only does not belong in the shared
+source. Keep such an import in your own text above or below the marked block,
+as `rtk init -g` does with `@RTK.md`.
 
 ## Native global destinations
 
