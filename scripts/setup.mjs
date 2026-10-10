@@ -30,6 +30,9 @@ const STATE_DIRECTORY = ".all-about-agents";
 const SURFACE_MARKERS = Object.freeze([STATE_DIRECTORY, ".claude-plugin", ".codex-plugin"]);
 // macOS Finder writes this file into any folder it shows.
 const FINDER_METADATA = ".DS_Store";
+// `codex plugin list` printed 1,044,892 bytes on Codex 0.162.0, within 4 KB of
+// the runner's 1 MiB default, so the listing gets its own budget.
+const CODEX_PLUGIN_LIST_OUTPUT_BYTES = 16 * 1024 * 1024;
 
 export class SetupError extends Error {
   constructor(code, message) {
@@ -262,7 +265,7 @@ export function planSetup({ mode, surfaces, profile, packageRoot, statuslineName
     steps.push(command(`register-${surface}`, `Register the ${surface} package with its product`, process.execPath, registerArgs("--apply"), { cwd: REPOSITORY_ROOT, mutates: true }));
   }
   for (const surface of selected) {
-    steps.push(command(`verify-${surface}`, `List the plugins ${surface} reports`, SURFACE_EXECUTABLES[surface], ["plugin", "list"], { tolerate: true }));
+    steps.push(command(`verify-${surface}`, `List the plugins ${surface} reports`, SURFACE_EXECUTABLES[surface], ["plugin", "list"], { tolerate: true, ...(surface === "codex" ? { maxOutputBytes: CODEX_PLUGIN_LIST_OUTPUT_BYTES } : {}) }));
   }
 
   return { schemaVersion: 1, mode, profile, packageRoot, surfaces: [...selected], steps };
@@ -298,7 +301,7 @@ async function reportSyncStatus(step, run) {
 }
 
 async function verifyPluginList(step, run) {
-  const result = await run({ executable: step.executable, args: step.args, cwd: step.cwd });
+  const result = await run({ executable: step.executable, args: step.args, cwd: step.cwd, ...(step.maxOutputBytes === undefined ? {} : { maxOutputBytes: step.maxOutputBytes }) });
   if (result.unavailable) return { status: "not-run-unavailable", reason: `${step.executable} is not on PATH` };
   if (result.exitCode !== 0) return { status: "skipped", reason: evidenceOf(result) };
   const listed = `${result.stdout}`.includes("all-about-agents");

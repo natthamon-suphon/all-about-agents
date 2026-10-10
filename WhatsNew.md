@@ -30,7 +30,9 @@ from there, and the Antigravity manifest names it in its description.
 - `register --surface codex` no longer fails at `codex-plugin-list` with
   `native-process-output-too-large`. `codex plugin list --available --json`
   lists the remote catalog (2.5 MB on Codex 0.162.0), so that one action now
-  runs with a 16 MiB output budget.
+  runs with a 16 MiB output budget. Observed end to end on macOS on
+  2026-10-09. The `verify-codex` step of `npm run setup` uses the same
+  budget, because plain `codex plugin list` already prints 1 MB there.
 
 ## [2.2.0] - 2026-09-28
 

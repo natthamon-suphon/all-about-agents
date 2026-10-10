@@ -802,3 +802,16 @@ test("the script runs from a linked checkout under --preserve-symlinks-main", as
     }
   });
 });
+
+test("verify-codex asks the runner for an output budget that fits the plugin listing", async () => {
+  await withTempRoot(async (root) => {
+    const recorded = recorder();
+    const result = await runMain(["--mode", "update", "--dry-run", "--package-root", resolve(root, "pkg"), "--format", "json"], { runProcess: recorded.run });
+    assert.equal(result.code, 0, result.stderr);
+    const listings = recorded.calls.filter((call) => call.args.length === 2 && call.args[0] === "plugin" && call.args[1] === "list");
+    assert.deepEqual(listings.map((call) => call.executable).sort(), ["agy", "claude", "codex"]);
+    // codex plugin list printed 1,044,892 bytes on Codex 0.162.0, within 4 KB of the runner's 1 MiB default.
+    assert.ok(listings.find((call) => call.executable === "codex").maxOutputBytes >= 8 * 1024 * 1024, "the Codex listing needs more than the default capture");
+    for (const call of listings) if (call.executable !== "codex") assert.equal(call.maxOutputBytes, undefined, `${call.executable} keeps the runner default`);
+  });
+});
