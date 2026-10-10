@@ -343,7 +343,7 @@
     },
     {
       "relativePath": ".codex-plugin/plugin.json",
-      "sha256": "16341b37221c6f5b28015db44f427f112b279335e5a32f75dbc64070539383f2",
+      "sha256": "91550051a608447c343594a40cc0f7a90ec117a2fbbbb674748d9cde9428da21",
       "mode": null
     },
     {
@@ -1052,7 +1052,7 @@
     },
     {
       "relativePath": ".codex-plugin/plugin.json",
-      "sha256": "16341b37221c6f5b28015db44f427f112b279335e5a32f75dbc64070539383f2"
+      "sha256": "91550051a608447c343594a40cc0f7a90ec117a2fbbbb674748d9cde9428da21"
     },
     {
       "relativePath": ".codex/agents/architect.toml",

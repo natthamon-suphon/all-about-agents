@@ -7,6 +7,8 @@ from there, and the Antigravity manifest names it in its description.
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-10
+
 ### Changed
 
 - The Codex template profile selects `gpt-6.1-sol` with `xhigh` reasoning. The
