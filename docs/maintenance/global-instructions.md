@@ -45,10 +45,12 @@ content as files instead:
 `.md` file under its rules folder, subfolders included
 ([memory docs](https://code.claude.com/docs/en/memory.md), checked 2026-09-27).
 
-`renderSharedGlobalInstructions` returns the shared body alone. The Codex and
-Antigravity renderers build on that function, never on the Claude renderer, so
-the Claude-only appendix cannot reach `AGENTS.md` or `GEMINI.md`. A contract
-test in `tests/contracts/claude-adapter.test.mjs` holds that boundary.
+`renderSharedGlobalInstructions` returns the shared body alone. The Claude
+renderer wraps that body in the marked block and adds nothing. The Codex and
+Antigravity renderers build on the same function and add only their own
+sections below it. A contract test in
+`tests/contracts/claude-adapter.test.mjs` holds that every surface carries the
+RTK house rules and that no surface carries an operator-specific import.
 
 The Codex and Antigravity appendices carry one thing the Claude file does not:
 the body of the `using-all-about-agents` skill. Claude receives that routing

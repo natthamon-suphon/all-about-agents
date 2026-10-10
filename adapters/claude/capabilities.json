@@ -9,13 +9,13 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-claude-code.md",
-      "checkedAt": "2026-08-31",
-      "productVersion": "2.1.251",
+      "checkedAt": "2026-10-09",
+      "productVersion": "2.1.295",
       "value": {
         "package": "config/CLAUDE.md",
         "destination": "<CLAUDE_CONFIG_DIR>/CLAUDE.md"
       },
-      "notes": "The shared global instruction body is deployed separately from the rule files under <CLAUDE_CONFIG_DIR>/rules/all-about-agents/ and from project instructions."
+      "notes": "The shared global instruction body is deployed separately from the rule files under <CLAUDE_CONFIG_DIR>/rules/all-about-agents/ and from project instructions. The package file sits under config/ because Claude Code 2.1.295 reports a plugin-root CLAUDE.md as never loaded, which fails `claude plugin validate --strict`; observed on macOS on 2026-10-09, where the config/ layout passed."
     },
     {
       "feature": "model.primary",

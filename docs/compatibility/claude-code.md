@@ -28,6 +28,7 @@ from another state.
 | Plugin registration | Disposable marketplace add, plugin install, and enabled-plugin discovery passed | Run the native registration steps for a new package. |
 | Statusline and display name | Native `statusLine` settings and platform launchers render; both disposable profiles produced the expected text | An installed live session and persistence are not claimed. |
 | Strict validation | `claude plugin validate "<PACKAGE_ROOT>" --strict` passed in the disposable check | A validator proves package shape, not model or hook behavior. |
+| Strict validation on 2.1.295 | On 2026-10-09 on macOS, `claude plugin validate "<PACKAGE_ROOT>" --strict` failed on the 2.2.0 layout (a plugin-root `CLAUDE.md` is never loaded as project context) and passed once the package rendered `config/CLAUDE.md`; marketplace add, plugin install, and `plugin list` discovery passed through `register --apply`, and a fresh headless session quoted the deployed global file | The same validator and product; model and hook behavior are still separate claims. |
 | Product session | `NOT_RUN_UNAVAILABLE` in T07 | The T07 check ran no authenticated session. The manual `npm run test:model` suite runs headless `claude -p` sessions, but it scores only the route the model states. |
 
 Plugin registration is manual, not automatic. The generated statusline accepts

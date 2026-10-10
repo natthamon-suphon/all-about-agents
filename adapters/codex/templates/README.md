@@ -25,7 +25,7 @@ The published docs do not show one combined registration example, so native
 client acceptance remains a later manual check.
 
 The `portable` profile's `config.toml` overlay sets no model or reasoning
-key. The `template` profile's overlay uses Sol with Max reasoning. Only the
+key. The `template` profile's overlay uses Sol with xhigh reasoning. Only the
 `template` profile renders the explicit `terra-max.config.toml` overlay. It
 contains the same role registrations plus only the documented Terra model and
 Max reasoning keys for its global policy; it is selected manually with the CLI

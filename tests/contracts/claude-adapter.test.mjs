@@ -38,13 +38,21 @@ test("shared global renderers use the loaded canonical body and normalize only l
   assert.equal((codex.match(/# Global Operating Rules/g) || []).length, 1);
 });
 
+// Claude resolves `@path` imports in CLAUDE.md and rule files, so a path that
+// exists on one machine only must never reach a rendered global file.
+const OPERATOR_IMPORT = /(^|\s)@(?:~|\.{0,2}\/|[A-Za-z]:[\\/])/u;
+
 test("RTK house rules reach every surface and no surface carries an operator-specific appendix", () => {
   const claude = renderClaudeGlobalInstructions(core);
   const codex = codexBody();
   const antigravity = renderAntigravityGlobalInstructions(core);
   for (const [surface, rendered] of [["claude", claude], ["codex", codex], ["antigravity", antigravity]]) {
     assert.match(rendered, /^## RTK house rules \(rust-token-killer\)$/mu, `${surface} must carry the RTK house rules`);
-    assert.doesNotMatch(rendered, /egroup house rules|coding-guidelines|^@~\//mu, `${surface} must not carry an import that exists on one machine only`);
+    assert.doesNotMatch(rendered, /egroup house rules|coding-guidelines/u, `${surface} must not carry the removed appendix`);
+    assert.doesNotMatch(rendered, OPERATOR_IMPORT, `${surface} must not carry an import that exists on one machine only`);
+  }
+  for (const [path, content] of fileMap(resultFor())) {
+    if (/^rules\/.*\.md$/u.test(path)) assert.doesNotMatch(content, OPERATOR_IMPORT, `${path} must not carry an import that exists on one machine only`);
   }
   assert.ok(claude.slice(claude.indexOf("\n") + 1).startsWith(renderSharedGlobalInstructions(core).trimEnd()), "the shared body opens the marked block");
 });

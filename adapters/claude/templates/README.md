@@ -5,9 +5,10 @@ When canonical sources are unavailable, the fixture is intentionally incomplete
 and marked for deferral by hard diagnostics.
 Its output uses the documented plugin component directories (`skills/`,
 `agents/`, and `hooks/`) plus installer-owned `rules/` and
-`config/` overlays. It also emits `CLAUDE.md` from the canonical global
-instruction source. Registration deploys that file to the selected
-`CLAUDE_CONFIG_DIR` and copies the `rules/` files to
+`config/` overlays. It also emits `config/CLAUDE.md` from the canonical global
+instruction source; the plugin root carries no `CLAUDE.md`, which Claude Code
+would never load and `claude plugin validate --strict` warns about.
+Registration deploys that file to `<CLAUDE_CONFIG_DIR>/CLAUDE.md` and copies the `rules/` files to
 `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, a folder the package owns, so
 the user's own rules beside it are never written. The `portable` and
 `template` profiles differ in the settings overlay, the model and
@@ -29,7 +30,8 @@ skill bodies. Read-only agents declare Claude-native `disallowedTools` for
 
 ## Global presentation
 
-`CLAUDE.md` is the rendered global layer. The rules copied to
+`config/CLAUDE.md` is the rendered global layer, deployed to
+`<CLAUDE_CONFIG_DIR>/CLAUDE.md`. The rules copied to
 `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/` load with it. Project `CLAUDE.md`
 is the more specific second layer. Visible names keep their native IDs and
 show the registered emoji after the name, one short reason, and a 2-to-7 item

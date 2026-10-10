@@ -28,6 +28,7 @@ the separate `trusted` step when Codex asks. A fresh session is needed for
 | Hooks | Hook files were present in the discovered package | Hooks are not automatic. `/hooks` trust and hook execution were not run. |
 | Statusline display name | Codex has no native statusline contract in this package | `--statusline-name` is refused with `--surface codex` (exit code 2). Do not infer statusline setup from another product. |
 | Native session | `NOT_RUN_UNAVAILABLE` | No authenticated model or Desktop session was run. |
+| Registration on 0.162.0 | On 2026-10-09 on macOS, `register --apply` completed end to end once `codex-plugin-list` ran with a 16 MiB output budget: `plugin list --available --json` printed 2.5 MB because it lists the remote catalog; hook hashes were recorded under `[hooks.state]`; a `codex exec` session reported `gpt-6.1-sol` with `xhigh` | Hook execution and Desktop behavior are still separate claims. |
 
 ## Models, recovery, and permissions
 
@@ -48,6 +49,11 @@ The `portable` profile uses `sandbox_mode=workspace-write` and
 - `model_reasoning_effort=xhigh`;
 - `sandbox_mode=danger-full-access`;
 - `approval_policy=never`.
+
+The template renders `xhigh` although the catalog advertises `max` and `ultra`
+for `gpt-6.1-sol`: the pair matches what the ChatGPT desktop app writes into
+`config.toml`, so the app and registration do not fight over it. Raise it by
+hand when a session needs more depth.
 
 The explicit `terra-max` profile selects `gpt-5.6-terra` with max reasoning.
 This is an operator-selected recovery profile. Automatic model fallback is

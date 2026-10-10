@@ -129,7 +129,7 @@ test("portable renders safe permissions without pinning personal model choices",
   assert.equal(claudeSettings.statusLine.type, "command");
   assert.equal(typeof claudeSettings.statusLine.command, "string");
   assert.doesNotMatch(serializedFiles(outputs.claude), /claude-(?:opus|sonnet|fable)-5|"opus\[1m\]"|CLAUDE_CODE_EFFORT_LEVEL/u);
-  assert.doesNotMatch(serializedFiles(outputs.codex), /gpt-5\.6-(?:sol|terra)|model_reasoning_effort/u);
+  assert.doesNotMatch(serializedFiles(outputs.codex), /gpt-(?:5\.6|6\.1)-(?:sol|terra)|model_reasoning_effort/u);
   assert.equal(files(outputs.codex).has("terra-max.config.toml"), false);
 });
 

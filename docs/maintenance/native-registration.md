@@ -214,7 +214,8 @@ statusline/statusline.ps1
 statusline/statusline.sh
 ```
 
-`CLAUDE.md` has no guard: the rendered file replaces the existing one.
+`CLAUDE.md` is replaced only inside its marked block, as described above; the
+other files in the list are overwritten whole.
 
 `settings.json` is not one of them. It is a shared product file that the user
 and other tools also write, so the plan merges into it instead of replacing it.

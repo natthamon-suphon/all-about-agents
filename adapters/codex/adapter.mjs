@@ -426,7 +426,7 @@ function renderAgentsDocument(core) {
 function capabilityGuidance(profile) {
   const modelGuidance = profile.modelPolicies[CODEX_SURFACE] === "surface-default"
     ? "- The portable profile leaves model and reasoning selection unchanged."
-    : "- The template primary overlay uses Sol/max; `terra-max.config.toml` provides the explicit Terra/max CLI alternative.";
+    : "- The template primary overlay uses Sol/xhigh; `terra-max.config.toml` provides the explicit Terra/max CLI alternative.";
   return ensureText([
     "# Codex adapter capability guidance",
     "",
