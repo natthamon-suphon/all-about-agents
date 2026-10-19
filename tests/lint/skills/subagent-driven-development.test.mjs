@@ -503,7 +503,7 @@ test("the sdd helpers check sdd/ for a symlink again after mkdir and before the 
     const ensured = helper("require(process.argv[1]).ensureSddDir(process.argv[2])");
     assert.equal(ensured.status, 2, ensured.stderr);
     assert.match(ensured.stderr, /symlink/u);
-    const written = helper("require(process.argv[1]).writeOutFile(require('node:path').join(process.argv[2], 'x.diff'), 'x')");
+    const written = helper("const fs = require('node:fs'); fs.writeFileSync = () => { throw new Error('unexpected write through linked parent'); }; require(process.argv[1]).writeOutFile(require('node:path').join(process.argv[2], 'x.diff'), 'x')");
     assert.equal(written.status, 2, written.stderr);
     assert.match(written.stderr, /symlink/u);
     assert.deepEqual(await readdir(outside), []);

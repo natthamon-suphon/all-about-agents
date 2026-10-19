@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { resolveNativeCommand } from "./native-command.mjs";
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_OUTPUT_BYTES = 1024 * 1024;
@@ -146,7 +147,8 @@ export async function runProcess({
 
     let child;
     try {
-      child = spawn(executable, args, {
+      const native = resolveNativeCommand(executable, { env: processEnvironment ?? process.env });
+      child = spawn(native.executable, [...native.argsPrefix, ...args], {
         cwd,
         env: processEnvironment,
         shell: false,

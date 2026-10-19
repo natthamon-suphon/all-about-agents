@@ -168,7 +168,9 @@ agy plugin list
 `agy plugin install` takes a plain directory. Unlike Codex it does not clone the
 source, so `<PACKAGE_ROOT>` needs no Git repository.
 
-Two files are deployed. `GEMINI.md` is one marked block: registration writes
+Two files are deployed. The package stages `config/GEMINI.md` for the global
+`~/.gemini/GEMINI.md`; a plugin-root copy triggers a native strict warning.
+`GEMINI.md` is one marked block: registration writes
 the file when it is missing and otherwise replaces only the block from the
 `<!-- all-about-agents:begin` line to the `<!-- all-about-agents:end -->` line,
 so the always-on sections you keep above or below it stay. A file with no
@@ -178,10 +180,10 @@ presentation catalog go to `~/.gemini/config/rules/all-about-agents.md`, an
 always-on global rule file this package owns whole; other files in that
 folder are never touched.
 
-No hooks and no status line are registered. No session-start event can be
-named for this surface with current evidence, so the routing contract is
-inlined into `GEMINI.md` instead of injected. Codex inlines it into `AGENTS.md`
-as well, because Codex on Windows fails every plugin command hook. See
+No hooks and no status line are registered. Google now documents `SessionStart`;
+this package keeps the inlined routing contract in `GEMINI.md` as its single
+carrier. Codex inlines it into `AGENTS.md` as well. Hook failure was observed
+on Windows Codex 0.152.1; newer versions need their own native check. See
 [the product contract evidence](../evaluations/research-antigravity.md).
 
 `agy plugin list` output is `registered` evidence. There is no separate trust

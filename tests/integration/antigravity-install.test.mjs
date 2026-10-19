@@ -42,7 +42,8 @@ test("Antigravity install materializes the layout agy reads and is idempotent", 
 
     const core = await loadCore(process.cwd());
     await access(resolve(destination, "plugin.json"));
-    await access(resolve(destination, "GEMINI.md"));
+    await access(resolve(destination, "config", "GEMINI.md"));
+    await assert.rejects(access(resolve(destination, "GEMINI.md")), { code: "ENOENT" });
     await access(resolve(destination, "config", "rules", "all-about-agents.md"));
     for (const skill of core.skills) await access(resolve(destination, "skills", skill.id, "SKILL.md"));
     for (const role of core.roles) await access(resolve(destination, "agents", `${role.id}.md`));
@@ -153,7 +154,7 @@ test("a shared all-surface root rendered before this surface existed gains it cl
 
     const after = await readManagedState(destination);
     assert.deepEqual(after.surfaces, ["antigravity", "claude", "codex"]);
-    await access(resolve(destination, "antigravity", "GEMINI.md"));
+    await access(resolve(destination, "antigravity", "config", "GEMINI.md"));
     await access(resolve(destination, "antigravity", "plugin.json"));
 
     for (const [relativePath, sha256] of before) {

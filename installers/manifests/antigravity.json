@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "surface": "antigravity",
   "product": "Antigravity CLI (agy), Antigravity Desktop, and Antigravity IDE",
-  "productVersion": "1.2.12",
+  "productVersion": "1.4.2",
   "package": "all-about-agents",
   "pluginManifest": "plugin.json",
   "pluginRegistration": {
@@ -32,8 +32,8 @@
   },
   "components": {
     "pluginManifest": "plugin.json",
-    "instructions": "GEMINI.md",
-    "globalInstructions": "GEMINI.md",
+    "instructions": "config/GEMINI.md",
+    "globalInstructions": "config/GEMINI.md",
     "skills": "skills/{skill}/SKILL.md",
     "agents": "agents/{role}.md",
     "manualDesktop": "docs/manual-desktop.md",
@@ -53,9 +53,10 @@
       "effort": null
     },
     "template": {
-      "model": "gemini-3.1-pro-high",
-      "effort": "high",
-      "selection": "manual"
+      "model": null,
+      "effort": "xhigh-or-highest-supported",
+      "selection": "managed-cli-dynamic",
+      "family": "Gemini premium Argon/Pro"
     }
   },
   "semanticCapabilities": {
@@ -109,9 +110,9 @@
     ]
   },
   "ownedPaths": [
-    "GEMINI.md",
     "README.md",
     "agents/{role}.md",
+    "config/GEMINI.md",
     "config/rules/all-about-agents.md",
     "docs/manual-desktop.md",
     "plugin.json",
@@ -123,10 +124,10 @@
     "progressContract": "core/presentation/progress-contract.json",
     "renderedIn": "config/rules/all-about-agents.md and native skill/role prompts"
   },
-  "rootInstructionContext": "GEMINI.md is emitted as one marked block: the canonical global body, then the inlined using-all-about-agents routing contract; the canonical rules and the presentation catalog ship in config/rules/all-about-agents.md; a workspace GEMINI.md remains the more specific layer",
+  "rootInstructionContext": "config/GEMINI.md stages one marked block for the native global GEMINI.md; plugin roots carry no GEMINI.md because native strict validation warns it is never loaded. The canonical rules and presentation catalog ship in config/rules/all-about-agents.md; a workspace GEMINI.md remains the more specific layer",
   "hooks": {
     "rendered": false,
-    "reason": "Antigravity documents PreToolUse, PostToolUse, PreInvocation, PostInvocation, and Stop. There is no SessionStart event, so the routing contract is inlined into GEMINI.md instead of injected by a hook."
+    "reason": "Current Google documentation includes SessionStart. This package keeps its routing contract inlined in GEMINI.md and renders no duplicate bootstrap hook. PreCompact support is not established."
   },
   "statusline": {
     "rendered": false,

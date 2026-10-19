@@ -345,8 +345,7 @@ test("all generated package snapshots retain complete deterministic ownership ma
       }
       assert.ok(paths.some((path) => path.includes("skills/")), `${surface.id}/${profile} lost generated skills/ vocabulary`);
       const hasHooks = paths.some((path) => path === "hooks.json" || path.endsWith("/hooks.json") || path.includes("hooks/"));
-      // Antigravity documents no SessionStart event, so it renders no hooks at
-      // all and inlines the routing contract into GEMINI.md instead. Every
+      // Antigravity keeps one inlined routing carrier instead of hooks. Every
       // other surface must keep its hook vocabulary.
       if (surface.id === "antigravity") assert.equal(hasHooks, false, `${surface.id}/${profile} must not render hooks`);
       else assert.ok(hasHooks, `${surface.id}/${profile} lost generated hook vocabulary`);

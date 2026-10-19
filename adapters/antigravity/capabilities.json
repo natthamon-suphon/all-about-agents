@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
   "surface": "antigravity",
-  "checkedAt": "2026-09-19",
-  "productVersion": "1.2.7",
+  "checkedAt": "2026-10-19",
+  "productVersion": "1.4.2",
   "capabilities": [
     {
       "feature": "instructions.global",
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-antigravity.md",
-      "checkedAt": "2026-09-28",
-      "productVersion": "1.2.12",
+      "checkedAt": "2026-10-19",
+      "productVersion": "1.4.2",
       "value": {
-        "package": "GEMINI.md",
+        "package": "config/GEMINI.md",
         "destination": "~/.gemini/GEMINI.md",
         "guard": "managed-block",
         "consumers": [
@@ -20,7 +20,7 @@
           "antigravity-desktop"
         ]
       },
-      "notes": "A headless agy session quoted the last line of the live file, so the product loads all of it. The destination is shared with operator-owned sections, so registration replaces only the block from the all-about-agents begin line to the end line and keeps the text around it; a file with no intact block is manual-required. The canonical rules live in the global rule file so this file stays well under agy's 24,000-byte per-file limit."
+      "notes": "On Windows agy 1.4.2, strict validation warns that a plugin-root GEMINI.md is never loaded; staging in config/GEMINI.md passed for both profiles. Registration still replaces only the marked block in the native global GEMINI.md and preserves operator-owned sections. Historical agy 1.2.12 headless evidence established global-file loading, not runtime verification of this new package. The canonical rules remain in their separate global rule file."
     },
     {
       "feature": "rules.global",
@@ -58,14 +58,14 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-antigravity.md",
-      "checkedAt": "2026-09-19",
+      "checkedAt": "2026-10-19",
       "productVersion": "1.2.7",
       "value": {
         "plugin": "agents/<role>.md",
         "format": "Markdown with YAML frontmatter",
         "listCommand": "agy agents"
       },
-      "notes": "agy plugin validate reported '7 processed' and agy agents listed all seven role names from outside any workspace that carries its own copy."
+      "notes": "Native validation/discovery was observed historically; current App/CLI docs support model inheritance and commandExecutionPolicy. Template declares inherit/eager; effective autonomy and standalone IDE behavior still require native verification."
     },
     {
       "feature": "install.plugin",
@@ -123,10 +123,15 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-antigravity.md",
-      "checkedAt": "2026-09-19",
-      "productVersion": "1.2.7",
-      "value": "gemini-3.1-pro-high",
-      "notes": "agy models listed the slug. Selection is manual through --model or /model."
+      "checkedAt": "2026-10-19",
+      "productVersion": "1.4.2",
+      "value": {
+        "family": "Gemini premium Argon/Pro",
+        "selection": "managed-cli-dynamic",
+        "preferredEffort": "xhigh",
+        "effortFallback": "highest-supported"
+      },
+      "notes": "Managed launch discovers agy models before each CLI session. Windows catalog on 2026-10-19 selected gemini-4-argon-high/high. Syntax accepts xhigh/max but only available model variants establish effort support. App/standalone IDE automatic selection is unconfirmed."
     },
     {
       "feature": "effort.cli",
@@ -140,35 +145,35 @@
     },
     {
       "feature": "hooks.lifecycle",
-      "support": "unknown",
-      "stability": "unknown",
+      "support": "supported",
+      "stability": "stable",
       "source": "docs/evaluations/research-antigravity.md",
-      "checkedAt": "2026-08-31",
-      "productVersion": "1.1.22",
+      "checkedAt": "2026-10-19",
+      "productVersion": "documented 2026-10-19",
       "value": {
         "events": [
+          "SessionStart",
           "PreToolUse",
           "PostToolUse",
           "PreInvocation",
           "PostInvocation",
           "Stop"
         ],
-        "sessionStart": false,
-        "inheritedFrom": "the removed agy adapter capability record; docs/evaluations/research-antigravity.md holds the exact git command"
+        "sessionStart": true
       },
-      "notes": "INFERRED, not re-verified. The event list and the absence of SessionStart come from the removed agy adapter's 2026-08-31 record for agy 1.1.22. agy 1.2.7 publishes no hook documentation through its CLI, so the list could not be re-checked. Because no event can be named with current evidence, this adapter renders no hook files and the routing contract is inlined into GEMINI.md instead."
+      "notes": "Current Google hooks contract documents SessionStart for App, CLI and IDE. PreCompact is not established. Inlined routing remains the only bootstrap carrier; no duplicate hook is rendered. Native execution is not verified by documentation."
     },
     {
       "feature": "statusline.native",
-      "support": "unknown",
-      "stability": "unknown",
+      "support": "supported",
+      "stability": "stable",
       "source": "docs/evaluations/research-antigravity.md",
-      "checkedAt": "2026-09-19",
-      "productVersion": "1.2.7",
+      "checkedAt": "2026-10-19",
+      "productVersion": "documented 2026-10-19",
       "value": {
-        "settingsPath": "~/.gemini/antigravity-cli/settings.json"
+        "cliCommand": "/statusline"
       },
-      "notes": "A statusLine key exists in the settings file, but the removed adapters pointed it at a plugin path the product never creates and the dead entry had to be removed by hand on 2026-09-19. No status line is rendered until a working command is observed."
+      "notes": "Current CLI documents /statusline. No custom statusline is rendered, and App/IDE UI support is not inferred."
     },
     {
       "feature": "desktop.discovery",

@@ -27,6 +27,7 @@ const compareCodePoints = (left, right) => left === right ? 0 : left < right ? -
 const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
 const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.json", import.meta.url), "utf8");
 const AUDIT_LOG_SOURCE = readFileSync(new URL("../../installers/lib/audit-log.mjs", import.meta.url), "utf8");
+const STATE_PATH_SOURCE = readFileSync(new URL("../../core/hooks/state-path.mjs", import.meta.url), "utf8");
 const STATUSLINE_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.mjs", import.meta.url), "utf8");
 const STATUSLINE_TRACK_TOOL_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/track-tool.mjs", import.meta.url), "utf8");
 const STATUSLINE_WINDOWS_SOURCE_TEXT = readFileSync(new URL("./templates/statusline/statusline.ps1", import.meta.url), "utf8");
@@ -81,8 +82,8 @@ export const CLAUDE_MODEL_POLICY = Object.freeze({
   portable: Object.freeze({}),
   template: Object.freeze({
     model: "opus[1m]",
-    fallbackModel: Object.freeze(["claude-sonnet-5"]),
-    advisorModel: "claude-fable-5-1",
+    fallbackModel: Object.freeze(["sonnet"]),
+    advisorModel: "fable",
     env: Object.freeze({ CLAUDE_CODE_EFFORT_LEVEL: "xhigh" })
   })
 });
@@ -111,14 +112,15 @@ const HOOK_SOURCES = Object.freeze({
   "activity-audit.mjs": `#!/usr/bin/env node
 import { appendAuditEvent } from "./audit-log.mjs";
 import { readBoundedStdin } from "./bootstrap.mjs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { resolveHookDataRoot } from "./state-path.mjs";
 
 const rawInput = await readBoundedStdin();
 if (rawInput === null) process.exit(0);
 try {
   const payload = JSON.parse(rawInput || "{}");
-  await appendAuditEvent(join(dirname(fileURLToPath(import.meta.url)), "audit"), {
+  const root = resolveHookDataRoot("claude", { segments: ["audit"] });
+  if (!root) { process.stderr.write("all-about-agents: native plugin data unavailable\\n"); process.exit(0); }
+  await appendAuditEvent(root, {
     surface: "claude",
     actionId: payload.actionId ?? payload.tool_name,
     outcome: payload.outcome ?? "success",
@@ -129,8 +131,8 @@ try {
   "pre-compact.mjs": `#!/usr/bin/env node
 import { appendFile, mkdir } from "node:fs/promises";
 import { readBoundedStdin } from "./bootstrap.mjs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+import { resolveHookDataRoot } from "./state-path.mjs";
 
 const safe = (value, fallback) => typeof value === "string" && value.trim() ? value.trim().replace(/[^A-Za-z0-9._-]/gu, "-").slice(0, 64) || fallback : fallback;
 const rawInput = await readBoundedStdin();
@@ -142,9 +144,10 @@ try {
     sessionId: safe(payload.session_id, "unknown"),
     trigger: safe(payload.trigger, "unknown")
   };
-  const root = join(dirname(fileURLToPath(import.meta.url)), "checkpoints");
-  await mkdir(root, { recursive: true });
-  await appendFile(join(root, "checkpoint.jsonl"), JSON.stringify(checkpoint) + "\\n", { encoding: "utf8", flag: "a" });
+  const target = resolveHookDataRoot("claude", { segments: ["checkpoints", "checkpoint.jsonl"] });
+  if (!target) { process.stderr.write("all-about-agents: native plugin data unavailable\\n"); process.exit(0); }
+  await mkdir(dirname(target), { recursive: true });
+  await appendFile(target, JSON.stringify(checkpoint) + "\\n", { encoding: "utf8", flag: "a" });
 } catch { /* durable checkpoint is fail-open */ }
 `
 });
@@ -282,7 +285,7 @@ function renderRule(rule) {
   return ensureText(lines.join("\n"));
 }
 
-function renderAgent(name, role, presentation) {
+function renderAgent(name, role, presentation, profile) {
   const description = role.description || role.purpose;
   const semanticNames = [
     ...(Array.isArray(role.capabilities) ? role.capabilities : []),
@@ -296,14 +299,16 @@ function renderAgent(name, role, presentation) {
     Array.isArray(role.invariants) && role.invariants.length > 0 ? `Invariants: ${role.invariants.join("; ")}` : "",
     Array.isArray(role.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
-  const capabilityDiagnostics = nativeCapabilityDiagnostics({ surface: CLAUDE_SURFACE, role, mappings: CLAUDE_SEMANTIC_MAPPINGS, blockedNativeTools: READ_ONLY_NATIVE_TOOLS });
+  const fullAccess = profile.authority === "full";
+  const capabilityDiagnostics = nativeCapabilityDiagnostics({ surface: CLAUDE_SURFACE, role, mappings: CLAUDE_SEMANTIC_MAPPINGS, blockedNativeTools: fullAccess ? [] : READ_ONLY_NATIVE_TOOLS });
   const body = `${role.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.\n`}${capabilityDiagnostics.length > 0 ? `\n\nNative capability diagnostic: ${capabilityDiagnostics.map((entry) => entry.message).join(" ")}` : ""}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
   const readOnly = isRoleReadOnly(role);
   const allowedTools = readOnly ? tools.filter((tool) => !READ_ONLY_NATIVE_TOOLS.includes(tool)) : tools;
   const restriction = readOnly
     ? `disallowedTools:\n${READ_ONLY_NATIVE_TOOLS.map((tool) => `  - ${tool}`).join("\n")}\n`
     : "";
-  return ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\nmodel: inherit\ntools:\n${allowedTools.map((tool) => `  - ${tool}`).join("\n")}\n${restriction}---\n\n${body}`);
+  const toolPolicy = fullAccess ? "" : `tools:\n${allowedTools.map((tool) => `  - ${tool}`).join("\n")}\n${restriction}`;
+  return ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\nmodel: inherit\n${toolPolicy}---\n\n${body}`);
 }
 
 function hookConfig() {
@@ -458,7 +463,9 @@ function capabilityGuidance(semanticProfile) {
     "- `CLAUDE_CONFIG_DIR` selects the settings root shared by Claude Code CLI and Claude Desktop local Code; the fallback is the user's `.claude` directory.",
     "- Skills are packaged under `skills/<skill>/SKILL.md`, roles under `agents/<role>.md`, and rules as independent files under `rules/`; registration copies them to `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`. `config/CLAUDE.md` is deployed to `<CLAUDE_CONFIG_DIR>/CLAUDE.md`; the plugin root carries no `CLAUDE.md`, which Claude Code would never load and `claude plugin validate --strict` warns about.",
     `- \`docs/semantic-mappings.md\` at the package root maps each semantic capability to Claude Code tools; \`role-dispatch\` maps to ${CLAUDE_SEMANTIC_MAPPINGS["role-dispatch"].map(code).join(", ")}.`,
-    `- Read-only roles use \`disallowedTools\` for ${READ_ONLY_NATIVE_TOOLS.map(code).join(", ")}. The implementer's native \`Write\`/\`Edit\` controls are workspace-wide; its declared task paths remain an outer approval boundary.`,
+    semanticProfile.authority === "full"
+      ? "- Template agents inherit the parent's tools, model and full-access permission policy. Read-only task assignments remain instructions, not native isolation."
+      : `- Portable read-only roles use \`disallowedTools\` for ${READ_ONLY_NATIVE_TOOLS.map(code).join(", ")}. The implementer's native \`Write\`/\`Edit\` controls are workspace-wide; its declared task paths remain an outer approval boundary.`,
     `- \`hooks/hooks.json\` runs \`node\` in exec form from \`\${CLAUDE_PLUGIN_ROOT}\`: ${claudeBootstrapTemplate.event} (${code(claudeBootstrapTemplate.nativeMatcher)}) adds this skill as session context, ${claudeActivityTemplate.event} writes the optional activity audit and statusline tracker, and ${claudeCheckpointTemplate.event} writes a checkpoint. No PreToolUse hook is rendered.`,
     `- \`settings.json\` sets \`permissions.defaultMode\` to ${code(semanticProfile.authority === "full" ? "bypassPermissions" : "default")} and keeps the emergency Bash deny rules. The statusline renders under \`statusline/\` and is wired through \`statusLine\`.`,
     modelGuidance,
@@ -518,6 +525,7 @@ export function renderClaude(input = {}) {
   addFile(files, "hooks/activity-audit.json", renderJson(claudeActivityTemplate));
   addFile(files, "hooks/checkpoint.json", renderJson(claudeCheckpointTemplate));
   addFile(files, "hooks/audit-log.mjs", AUDIT_LOG_SOURCE, 0o755);
+  addFile(files, "hooks/state-path.mjs", STATE_PATH_SOURCE);
   for (const [fileName, source] of Object.entries(HOOK_SOURCES)) addFile(files, `hooks/${fileName}`, source, 0o755);
   addFile(files, "statusline/statusline.mjs", STATUSLINE_SOURCE_TEXT, 0o755);
   addFile(files, "statusline/track-tool.mjs", STATUSLINE_TRACK_TOOL_SOURCE_TEXT, 0o755);
@@ -536,7 +544,7 @@ export function renderClaude(input = {}) {
   for (const rule of [...core.rules].sort((left, right) => String(left.id).localeCompare(String(right.id)))) addFile(files, `rules/${rule.id}.md`, renderRule(rule));
 
   const roleNames = [...roleRecords.keys()].sort();
-  for (const roleName of roleNames) addFile(files, `agents/${roleName}.md`, renderAgent(roleName, roleRecords.get(roleName), core.presentation));
+  for (const roleName of roleNames) addFile(files, `agents/${roleName}.md`, renderAgent(roleName, roleRecords.get(roleName), core.presentation, semanticProfile));
 
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   const nativeStatusline = createNativeIntegrationRecord({
@@ -635,7 +643,7 @@ export function renderClaude(input = {}) {
       }
     ],
     diagnostics: [
-      ...core.roles.flatMap((role) => nativeCapabilityDiagnostics({ surface: CLAUDE_SURFACE, role, mappings: CLAUDE_SEMANTIC_MAPPINGS, blockedNativeTools: READ_ONLY_NATIVE_TOOLS })),
+      ...core.roles.flatMap((role) => nativeCapabilityDiagnostics({ surface: CLAUDE_SURFACE, role, mappings: CLAUDE_SEMANTIC_MAPPINGS, blockedNativeTools: semanticProfile.authority === "full" ? [] : READ_ONLY_NATIVE_TOOLS })),
       ...nativeScopeDiagnostics(core.roles),
       ...missingSkills.map((skill) => ({
         code: "missing-skill-source",

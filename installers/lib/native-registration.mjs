@@ -6,7 +6,7 @@ import { basename, dirname, isAbsolute, relative, resolve, join } from "node:pat
 import { renderClaudeStatuslineCommand, resolveClaudeConfigDir } from "../../adapters/claude/adapter.mjs";
 import { resolveCodexHome } from "../../adapters/codex/adapter.mjs";
 import { resolveGeminiHome } from "../../adapters/antigravity/adapter.mjs";
-import { assertSafeDestinationRoot } from "./roots.mjs";
+import { assertSafeDestinationRoot, assertSafeDestinationRoots } from "./roots.mjs";
 import { mergeSettingsOverlay } from "./settings-overlay.mjs";
 import { atomicReplaceFile } from "./atomic-write.mjs";
 import { hashBytes } from "./hash.mjs";
@@ -95,26 +95,19 @@ const ANTIGRAVITY_RULES_FILE = "config/rules/all-about-agents.md";
 function requiredRegistrationSourceFiles(surface, profile) {
   const markers = requiredPackageFiles(surface);
   if (surface === "claude") return [...markers, "config/CLAUDE.md", "settings.json", "all-about-agents/statusline.json", "statusline/statusline.mjs", "statusline/track-tool.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", `${CLAUDE_RULES_FOLDER}/presentation.md`];
-  if (surface === "antigravity") return [...markers, "GEMINI.md", ANTIGRAVITY_RULES_FILE, ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.md`)];
+  if (surface === "antigravity") return [...markers, "config/GEMINI.md", ANTIGRAVITY_RULES_FILE, ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.md`)];
   if (surface === "codex") return [...markers, "AGENTS.md", "config.toml", ...(profile === "template" ? ["terra-max.config.toml"] : []), ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.toml`)];
   return markers;
 }
 
-function checkPackageFile(packageRoot, relativePath) {
+function checkPackageFile(packageRoot, relativePath, checkedParents = null) {
   const target = resolve(packageRoot, ...relativePath.split("/"));
   const suffix = relative(packageRoot, target);
   if (isAbsolute(suffix) || suffix.split(/[\\/]/u)[0] === "..") throw pathError("package-escape", "package file escapes the package root");
-  let current = packageRoot;
-  const segments = relativePath.split("/");
-  for (const segment of segments.slice(0, -1)) {
-    current = join(current, segment);
-    assertSafeDestinationRoot(current, { allowedProductRoots: [packageRoot] });
-    let parentMetadata;
-    try { parentMetadata = lstatSync(current); } catch (error) {
-      if (error?.code === "ENOENT") throw pathError("package-file-missing", `package is missing ${relativePath}`);
-      throw pathError("package-file-unreadable", `unable to inspect package marker ${relativePath}`);
-    }
-    if (parentMetadata.isSymbolicLink() || !parentMetadata.isDirectory()) throw pathError("unsafe-package-file", `package ${relativePath} has an unsafe marker ancestor`);
+  const parent = dirname(target);
+  if (!checkedParents?.has(parent)) {
+    assertSafeDestinationRoot(parent, { allowedProductRoots: [packageRoot] });
+    checkedParents?.add(parent);
   }
   let metadata;
   try { metadata = lstatSync(target); } catch (error) {
@@ -161,15 +154,19 @@ function validateManagedPackage(packageRoot, surface, profile) {
   for (const relativePath of requiredRegistrationSourceFiles(surface, profile)) {
     if (!ownership.has(`${ownershipPrefix}${relativePath}`)) throw pathError("package-source-unowned", `required registration source is not owned: ${relativePath}`);
   }
+  // Share parent checks only within this synchronous scan, then recheck them.
+  // Every action starts a fresh scan; file types and hashes are always checked.
+  const checkedParents = new Set();
   for (const entry of scopedOwnership) {
     let content;
     try {
-      content = readFileSync(checkPackageFile(stateRoot, entry.relativePath));
+      content = readFileSync(checkPackageFile(stateRoot, entry.relativePath, checkedParents));
     } catch {
       throw pathError("package-owned-file-invalid", `managed package file is missing, unsafe, or unreadable: ${entry.relativePath}`);
     }
     if (hashBytes(content) !== entry.sha256) throw pathError("package-owned-hash-mismatch", `managed package file does not match its recorded hash: ${entry.relativePath}`);
   }
+  assertSafeDestinationRoots([...checkedParents], { allowedProductRoots: [stateRoot], required: true });
   return { state, ownershipPrefix, ownership };
 }
 
@@ -379,11 +376,11 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push({ id: "codex-plugin-source-check", kind: "git-source-check", executable: "git", prefixArgs: ["-c", "core.fsmonitor=false", "rev-parse", "--show-prefix"], statusArgs: ["-c", "core.fsmonitor=false", "--no-optional-locks", "status", "--porcelain", "--untracked-files=all", "--", "."], cwd: pkg, environmentKeys: [], mutates: false, required: true, expectedProbe: "own-repository-clean-working-tree" });
     actions.push(manualAction("codex-hooks-trust", "Open `/hooks` in Codex and review/trust the registered hook only if the product presents that step."));
   } else if (surface === "antigravity") {
-    actions.push(deployFile("antigravity-instructions-deploy", "GEMINI.md", "GEMINI.md", { guard: "managed-block" }, instruction));
+    actions.push(deployFile("antigravity-instructions-deploy", "config/GEMINI.md", "GEMINI.md", { guard: "managed-block" }, instruction));
     actions.push(deployFile("antigravity-rules-deploy", ANTIGRAVITY_RULES_FILE, ANTIGRAVITY_RULES_FILE, {}, instruction));
     actions.push(processAction("antigravity-plugin-validate", "agy", ["plugin", "validate", pkg], pkg, null, "none", false));
     actions.push(processAction("antigravity-plugin-install", "agy", ["plugin", "install", pkg], pkg, null, "none"));
-    actions.push(processAction("antigravity-plugin-list", "agy", ["plugin", "list"], pkg, null, "json", false));
+    actions.push(processAction("antigravity-plugin-list", "agy", ["plugin", "list", "--json"], pkg, null, "json", false));
     actions.push(manualAction("antigravity-desktop-slot", "Without agy, copy plugin.json, skills/, and agents/ into ~/.gemini/config/plugins/all-about-agents/ for Antigravity Desktop and IDE; agy plugin install fills the same folder. See docs/manual-desktop.md."));
   }
 
@@ -489,16 +486,29 @@ function revalidatePlan(plan, { validateState = true } = {}) {
   const productRoot = safeRoot(plan.productRoot, "productRoot", { required: true });
   const instructionRoot = safeRoot(plan.instructionRoot, "instructionRoot", { required: true });
   assertRootPair(plan.surface, productRoot, instructionRoot);
+  const sourceParents = new Set();
+  const targetParents = new Map();
   for (const action of plan.actions) {
     if (action.kind !== "file-copy") continue;
-    const sourcePath = checkPackageFile(packageRoot, action.sourceRelativePath);
+    const sourcePath = checkPackageFile(packageRoot, action.sourceRelativePath, sourceParents);
     if (sourcePath !== action.sourcePath) throw pathError("source-mismatch", "native config source changed after planning");
     const selectedRoot = action.allowedRoot;
     if (selectedRoot !== productRoot && selectedRoot !== instructionRoot) throw pathError("root-confusion", "native config action uses an unplanned native root");
     const targetPath = resolve(selectedRoot, ...action.destinationRelativePath.split("/"));
     if (targetPath !== action.targetPath) throw pathError("destination-mismatch", "native config destination changed after planning");
-    assertSafeDestinationRoot(dirname(targetPath), { allowedProductRoots: [selectedRoot] });
+    const parent = dirname(targetPath);
+    if (!targetParents.has(parent)) {
+      assertSafeDestinationRoot(parent, { allowedProductRoots: [selectedRoot] });
+      targetParents.set(parent, selectedRoot);
+    }
   }
+  assertSafeDestinationRoots([...sourceParents], { allowedProductRoots: [packageRoot], required: true });
+  const targetsByRoot = new Map();
+  for (const [parent, root] of targetParents) {
+    if (!targetsByRoot.has(root)) targetsByRoot.set(root, []);
+    targetsByRoot.get(root).push(parent);
+  }
+  for (const [root, parents] of targetsByRoot) assertSafeDestinationRoots(parents, { allowedProductRoots: [root] });
 }
 
 function fsOperation(fileSystem, name, fallback) {

@@ -65,8 +65,8 @@ permissions. The `template` profile uses:
 
 - model `opus[1m]`, the alias for the latest Opus with a 1M-token context window;
 - `CLAUDE_CODE_EFFORT_LEVEL=xhigh`;
-- server-failure fallback `claude-sonnet-5` at the same effort level;
-- advisor `claude-fable-5-1` when the account and product permit it;
+- server-failure fallback rolling alias `sonnet` at the same effort level;
+- advisor rolling alias `fable` when the account and product permit it;
 - permission mode `bypassPermissions`.
 
 Fable access depends on account, organization, plan, provider, consent, and
@@ -91,7 +91,7 @@ operator experience rather than a model or permission policy:
 | --- | --- | --- |
 | `viewMode` | `focus` | Starts each session in the focus transcript view. |
 | `autoMemoryEnabled` | `true` | Lets the session read and write its auto-memory store. |
-| `autoDreamEnabled` | `true` | Enables background memory consolidation. |
+| `autoDreamEnabled` | `true` | Retained legacy preference; current public reference did not document this key. |
 
 `autoMemoryDirectory` is deliberately not rendered. Leaving it unset keeps the
 per-project default `~/.claude/projects/<sanitized-cwd>/memory/`, so projects do
@@ -210,3 +210,14 @@ Use [native registration](../maintenance/native-registration.md),
 [cross-tool quality guide](../maintenance/cross-tool-quality.md). Use the
 [Windows](../setup/windows.md) or [macOS](../setup/macos.md) guide for the
 next check. See [known limitations](../limitations/known-limitations.md).
+
+## Current hardening boundary (2026-10-19)
+
+Template agents inherit the parent tool/model/permission policy. Portable roles
+retain their declared read-only tool restrictions. A read-only assignment is
+separate from host enforcement. Preserve emergency denies and unowned hooks.
+
+Audit/checkpoint data now uses `CLAUDE_PLUGIN_DATA`, outside the versioned
+plugin package. Legacy files remain recoverable through a reviewed import.
+See [automatic model policy and history](../maintenance/model-policy.md).
+This change has not established live plugin reload or hook execution.

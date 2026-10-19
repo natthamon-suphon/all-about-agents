@@ -88,7 +88,7 @@ function rotationName(index) {
 async function removeFileIfPresent(path) {
   try {
     const info = await lstat(path);
-    if (!info.isFile()) throw new Error("audit target is not a regular file");
+    if (!info.isFile() || info.nlink !== 1) throw new Error("audit target is not a regular file");
     await unlink(path);
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
@@ -98,7 +98,7 @@ async function removeFileIfPresent(path) {
 async function fileSize(path) {
   try {
     const info = await lstat(path);
-    if (!info.isFile()) throw new Error("audit target is not a regular file");
+    if (!info.isFile() || info.nlink !== 1) throw new Error("audit target is not a regular file");
     return info.size;
   } catch (error) {
     if (error?.code === "ENOENT") return 0;
@@ -113,7 +113,7 @@ async function rotate(root, maxFiles) {
     const source = join(root, index === 1 ? AUDIT_FILE : rotationName(index - 1));
     try {
       const info = await lstat(source);
-      if (!info.isFile()) throw new Error("audit source is not a regular file");
+      if (!info.isFile() || info.nlink !== 1) throw new Error("audit source is not a regular file");
       await rename(source, destination);
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
@@ -135,7 +135,7 @@ async function enforceByteCap(root, maxBytes, maxFiles) {
     const path = join(root, name);
     try {
       const info = await lstat(path);
-      if (!info.isFile()) throw new Error("audit target is not a regular file");
+      if (!info.isFile() || info.nlink !== 1) throw new Error("audit target is not a regular file");
       if (info.size > maxBytes) await unlink(path);
     } catch (error) {
       if (error?.code !== "ENOENT") throw error;
@@ -156,9 +156,7 @@ async function appendAuditEventInternal(root, event, limits) {
   const knownState = activeStates.get(root);
   const stateMatches = knownState && knownState.maxBytes === bounded.maxBytes && knownState.maxFiles === bounded.maxFiles;
   if (!stateMatches) await enforceByteCap(root, bounded.maxBytes, bounded.maxFiles);
-  const currentSize = stateMatches
-    ? knownState.size
-    : await fileSize(active);
+  const currentSize = await fileSize(active);
   let rotated = false;
   if (currentSize > 0 && currentSize + bytes > bounded.maxBytes) {
     if (bounded.maxFiles === 1) {

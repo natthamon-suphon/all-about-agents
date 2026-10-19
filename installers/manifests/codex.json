@@ -162,5 +162,10 @@
   "capabilityEvidence": {
     "productContracts": "docs/evaluations/research-codex.md",
     "modelPolicy": "docs/evaluations/research-model-policy-codex.md"
+  },
+  "runtimeData": {
+    "environment": "PLUGIN_DATA",
+    "ownedByPackage": false,
+    "legacyImport": "scripts/migrate-hook-state.mjs"
   }
 }

@@ -54,8 +54,9 @@ function writeOutFile(outFile, content) {
   const stat = fs.lstatSync(outFile, { throwIfNoEntry: false });
   if (stat && (!stat.isFile() || stat.nlink !== 1)) fail(`refusing ${outFile}: not a regular file with one link`);
   const folder = path.dirname(outFile);
+  let problem = sddProblem(folder);
+  if (problem) fail(problem);
   const tempFile = path.join(folder, `.tmp-${crypto.randomBytes(8).toString('hex')}`);
-  let problem = null;
   try {
     fs.writeFileSync(tempFile, content, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
     problem = sddProblem(folder);

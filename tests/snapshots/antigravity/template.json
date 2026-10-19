@@ -2,48 +2,48 @@
   "fileCount": 79,
   "files": [
     {
-      "relativePath": "GEMINI.md",
-      "sha256": "24f2a81f96c5333485a4fc3501ace63ad8e1c7f7f2c08d4cbb5278507d2d552e",
-      "mode": null
-    },
-    {
       "relativePath": "README.md",
-      "sha256": "2436ac86994a082a119798274e2904cb74dfbb833a06bd8786dca50446f62786",
+      "sha256": "9f69be9993575bcfabc1a0d1c2386ecd14ab92aba2cdcf061f4a1a5df632f90c",
       "mode": null
     },
     {
       "relativePath": "agents/architect.md",
-      "sha256": "ab4b1f46004cbe3dff85b81fdda9e25dbef23babe3a8ac535a97c408dcb333f7",
+      "sha256": "439b4ac2a87694ab03f3e86011d09f2b7d741ad4a50e87f89693299fc4a36090",
       "mode": null
     },
     {
       "relativePath": "agents/implementer.md",
-      "sha256": "3106cc765c95ca922721f7ea5f67f84c6d179652979fc5ddfdc7fd88bbfd3a8c",
+      "sha256": "aba8bf92dc47794c6cae0e23a569ba1814fe4fdeb2ff93b1047be58cbb970e16",
       "mode": null
     },
     {
       "relativePath": "agents/investigator.md",
-      "sha256": "b96b5cff96b6319cd40c22a9490f50d02a8b5c9b28afa8347a1a7f39fa4b85af",
+      "sha256": "98983c226e88092e0a93bcb0d313b71fb8ec5b78203bdc12919324a4d0a30559",
       "mode": null
     },
     {
       "relativePath": "agents/researcher.md",
-      "sha256": "9039a7359570424d9bd3d0cb942e935590eef5bce45e55324588377ba4f03612",
+      "sha256": "503aacd0b00b7af26a8a58b9f59304be77f4fbfb5f6305249ffbf8675d1ac217",
       "mode": null
     },
     {
       "relativePath": "agents/reviewer.md",
-      "sha256": "4a0ecea6a9aaac714bd9a958f6e2a7e9b4442d91f395d81b3208087d9f15e727",
+      "sha256": "f56e531e659e96ee68910bc352a13087257f7daffff4fec13b24d83bc5c07a9d",
       "mode": null
     },
     {
       "relativePath": "agents/security-reviewer.md",
-      "sha256": "8da378430ad20c6b6dd602ec323247d0ac85e9515534823dbd8bd26c68091679",
+      "sha256": "0b1cb0fdc441bb4ea5a9cc607683e0f775ebc3cfcf427fdf743fea52a4df1a4c",
       "mode": null
     },
     {
       "relativePath": "agents/verifier.md",
-      "sha256": "10399485ad8fdf0b15097109663d063a5e65b8777f9f3e7c2b62c340285f3369",
+      "sha256": "ee7faddf6060c00b93534f1547427543543994df37aaae51d2b793be107066d2",
+      "mode": null
+    },
+    {
+      "relativePath": "config/GEMINI.md",
+      "sha256": "a60f5f6f08182199e0bea227751aa36df0913b9eb9750c7544e42727c7f66649",
       "mode": null
     },
     {
@@ -53,7 +53,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "18536cb79020ccbbf5ca95d7b49ea8a44b96c11eb4847e60e246360eb54ffca1",
+      "sha256": "84716f284759380133137c59f2c28aecba73683547617c0976ea83fe3fecc441",
       "mode": null
     },
     {
@@ -238,7 +238,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace.cjs",
-      "sha256": "526aec516680ea96246da29c9445bb175ec3e749850f28d538b84eaf14aca691",
+      "sha256": "e9689f3dca3c85cb33b4215f90f041ad2ae175c641199a9cb28c0d120366df76",
       "mode": 493
     },
     {
@@ -323,7 +323,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "6365e930942b181fd7a57b3dfbbf1c795a35c26cde018caf48af81ea8996dc5b",
+      "sha256": "cd5e15adf769089a1f482b50967c3e1a67d5693ae56339c5ad5c75ad36540fb6",
       "mode": null
     },
     {
@@ -399,40 +399,40 @@
   ],
   "ownership": [
     {
-      "relativePath": "GEMINI.md",
-      "sha256": "24f2a81f96c5333485a4fc3501ace63ad8e1c7f7f2c08d4cbb5278507d2d552e"
-    },
-    {
       "relativePath": "README.md",
-      "sha256": "2436ac86994a082a119798274e2904cb74dfbb833a06bd8786dca50446f62786"
+      "sha256": "9f69be9993575bcfabc1a0d1c2386ecd14ab92aba2cdcf061f4a1a5df632f90c"
     },
     {
       "relativePath": "agents/architect.md",
-      "sha256": "ab4b1f46004cbe3dff85b81fdda9e25dbef23babe3a8ac535a97c408dcb333f7"
+      "sha256": "439b4ac2a87694ab03f3e86011d09f2b7d741ad4a50e87f89693299fc4a36090"
     },
     {
       "relativePath": "agents/implementer.md",
-      "sha256": "3106cc765c95ca922721f7ea5f67f84c6d179652979fc5ddfdc7fd88bbfd3a8c"
+      "sha256": "aba8bf92dc47794c6cae0e23a569ba1814fe4fdeb2ff93b1047be58cbb970e16"
     },
     {
       "relativePath": "agents/investigator.md",
-      "sha256": "b96b5cff96b6319cd40c22a9490f50d02a8b5c9b28afa8347a1a7f39fa4b85af"
+      "sha256": "98983c226e88092e0a93bcb0d313b71fb8ec5b78203bdc12919324a4d0a30559"
     },
     {
       "relativePath": "agents/researcher.md",
-      "sha256": "9039a7359570424d9bd3d0cb942e935590eef5bce45e55324588377ba4f03612"
+      "sha256": "503aacd0b00b7af26a8a58b9f59304be77f4fbfb5f6305249ffbf8675d1ac217"
     },
     {
       "relativePath": "agents/reviewer.md",
-      "sha256": "4a0ecea6a9aaac714bd9a958f6e2a7e9b4442d91f395d81b3208087d9f15e727"
+      "sha256": "f56e531e659e96ee68910bc352a13087257f7daffff4fec13b24d83bc5c07a9d"
     },
     {
       "relativePath": "agents/security-reviewer.md",
-      "sha256": "8da378430ad20c6b6dd602ec323247d0ac85e9515534823dbd8bd26c68091679"
+      "sha256": "0b1cb0fdc441bb4ea5a9cc607683e0f775ebc3cfcf427fdf743fea52a4df1a4c"
     },
     {
       "relativePath": "agents/verifier.md",
-      "sha256": "10399485ad8fdf0b15097109663d063a5e65b8777f9f3e7c2b62c340285f3369"
+      "sha256": "ee7faddf6060c00b93534f1547427543543994df37aaae51d2b793be107066d2"
+    },
+    {
+      "relativePath": "config/GEMINI.md",
+      "sha256": "a60f5f6f08182199e0bea227751aa36df0913b9eb9750c7544e42727c7f66649"
     },
     {
       "relativePath": "config/rules/all-about-agents.md",
@@ -440,7 +440,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "18536cb79020ccbbf5ca95d7b49ea8a44b96c11eb4847e60e246360eb54ffca1"
+      "sha256": "84716f284759380133137c59f2c28aecba73683547617c0976ea83fe3fecc441"
     },
     {
       "relativePath": "plugin.json",
@@ -588,7 +588,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace.cjs",
-      "sha256": "526aec516680ea96246da29c9445bb175ec3e749850f28d538b84eaf14aca691"
+      "sha256": "e9689f3dca3c85cb33b4215f90f041ad2ae175c641199a9cb28c0d120366df76"
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/task-brief",
@@ -656,7 +656,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "6365e930942b181fd7a57b3dfbbf1c795a35c26cde018caf48af81ea8996dc5b"
+      "sha256": "cd5e15adf769089a1f482b50967c3e1a67d5693ae56339c5ad5c75ad36540fb6"
     },
     {
       "relativePath": "skills/using-all-about-agents/references/codex-tools.md",
@@ -785,8 +785,8 @@
     },
     {
       "kind": "instructions",
-      "relativePath": "GEMINI.md",
-      "destination": "GEMINI.md",
+      "relativePath": "config/GEMINI.md",
+      "destination": "config/GEMINI.md",
       "guard": "managed-block",
       "consumers": [
         "antigravity-cli",
@@ -832,7 +832,7 @@
       "kind": "manual-step",
       "surface": "antigravity-cli",
       "id": "approved-gemini-pro-model",
-      "instruction": "Select gemini-3.1-pro-high with agy --model or the /model command; no documented on-disk key persists it."
+      "instruction": "From the repository, use node scripts/model-policy.mjs --surface antigravity --launch for automatic CLI selection; it discovers eligible premium models and actual effort each time. Native /model and /effort persist manual defaults; GUI automatic selection is unconfirmed."
     },
     {
       "kind": "resolved-config-root",

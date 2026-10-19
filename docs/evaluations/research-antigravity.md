@@ -1,3 +1,44 @@
+# Current Antigravity contract update - 2026-10-19
+
+This section supersedes the older hook/model assumptions retained below as
+historical evidence. Current Windows CLI version: `agy 1.4.2`.
+
+- [Official hooks](https://antigravity.google/docs/hooks/) documents
+  `SessionStart`, `PreToolUse`, `PostToolUse`, `PreInvocation`, `PostInvocation`
+  and `Stop` for App/CLI/IDE. `PreCompact` is not established. Keep one inlined
+  bootstrap carrier instead of adding duplicate injection.
+- `agy models` listed Gemini 4 Argon low/medium/high variants. `models --json`
+  and `models --output-format json` were rejected by this installed binary.
+  Observed TSV parsing is version-sensitive and must fail when format changes.
+- Read-only `agy -p "/model" --output-format json` and `/effort` returned
+  command metadata, zero turns and zero tokens. `/model` is current selection,
+  not a structured catalog. `/effort` advertised low/medium/high on this account.
+- [Effort documentation](https://antigravity.google/docs/cli/commands/effort)
+  lists xhigh/max only for models that offer those variants. `/model` and
+  `/effort` persist explicit defaults; launch flags do not.
+- [Model eligibility](https://antigravity.google/docs/models/) excludes Gemini
+  4 Argon from standalone IDE. No supported universal automatic GUI selection
+  key/API was verified in models, settings, hooks or IDE launcher help.
+- [Custom subagents](https://antigravity.google/docs/subagents/) applies to
+  App/CLI. `model: inherit` and `commandExecutionPolicy: eager` are documented
+  declarations; omission otherwise defaults the command policy to sandbox.
+  Parent file/sandbox boundaries inherit; effective eager behavior and IDE
+  support remain native verification gaps.
+- `agy plugin list` produces human output unless `--json` is supplied. The
+  registration planner now requests JSON and keeps strict parsing.
+- `agy plugin validate <path> --strict --json` on 1.4.2 rejected both profile
+  packages with one warning: `never loaded: plugins load rules only from
+  rules/. Move it to rules/GEMINI.md`. Moving only the staging file to
+  `config/GEMINI.md` made both return exit 0 with no findings. The adapter and
+  registration now use that staging path while keeping the native global
+  destination `~/.gemini/GEMINI.md`; no second rule carrier is introduced.
+
+Native model turns, App/IDE loading and macOS execution were not performed in
+this update. See [model policy](../maintenance/model-policy.md) for managed
+launch scope and explicit unavailable results.
+
+---
+
 # Antigravity product contract evidence - 2026-09-19
 
 Retrieved: 2026-09-19

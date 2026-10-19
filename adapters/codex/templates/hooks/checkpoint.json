@@ -10,7 +10,7 @@
   "nativeMatcher": ".*",
   "commandContract": "package-root",
   "command": "node \"$PLUGIN_ROOT/hooks/pre-compact.mjs\"",
-  "commandWindows": "node \"%PLUGIN_ROOT%/hooks/pre-compact.mjs\"",
+  "commandWindows": "node \"$env:PLUGIN_ROOT/hooks/pre-compact.mjs\"",
   "failureMode": "fail-open",
   "input": {
     "format": "json-object",

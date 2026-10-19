@@ -218,3 +218,16 @@ Use the exact status vocabulary from the [evaluation method](../evaluations/meth
 Keep `rendered`, `validated`, `registered`, `trusted`, `active`, and `runtime
 verified` as separate fields. A missing check stays `NOT_RUN` or
 `NOT_RUN_UNAVAILABLE`; it is never upgraded from a green static test.
+
+## Current model, permissions and hook-state probes
+
+Use [model policy](model-policy.md) for dry-run discovery, a managed CLI launch
+and reviewed legacy history import. Record models and effort per product and
+OS. Test template agent inheritance using a harmless disposable file; do not
+assume a role instruction creates a sandbox. Retain emergency denies.
+
+Verify that hooks write under `CLAUDE_PLUGIN_DATA` or `PLUGIN_DATA`, preserve
+history across package replacement, and skip missing or unsafe roots. The
+repository tests cover these wrappers; native hook trust/execution remains a
+separate check. App/IDE automatic model control remains unconfirmed, and
+Windows path simulation is not an actual macOS product result.

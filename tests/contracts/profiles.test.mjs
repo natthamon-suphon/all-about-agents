@@ -137,8 +137,8 @@ test("template renders approved native model contracts and Fable only where supp
   const outputs = Object.fromEntries(Object.entries(renderers).map(([surface, render]) => [surface, render(profiles.template)]));
   const claude = JSON.parse(files(outputs.claude).get("config/settings.json"));
   assert.equal(claude.model, "opus[1m]");
-  assert.deepEqual(claude.fallbackModel, ["claude-sonnet-5"]);
-  assert.equal(claude.advisorModel, "claude-fable-5-1");
+  assert.deepEqual(claude.fallbackModel, ["sonnet"]);
+  assert.equal(claude.advisorModel, "fable");
   assert.equal(claude.env.CLAUDE_CODE_EFFORT_LEVEL, "xhigh");
   assert.match(files(outputs.codex).get("config.toml"), /model = "gpt-6\.1-sol"[\s\S]*model_reasoning_effort = "xhigh"/u);
   assert.match(files(outputs.codex).get("terra-max.config.toml"), /model = "gpt-5\.6-terra"[\s\S]*model_reasoning_effort = "max"/u);

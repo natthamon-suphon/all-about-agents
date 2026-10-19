@@ -32,22 +32,22 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-model-policy-claude.md",
-      "checkedAt": "2026-08-31",
+      "checkedAt": "2026-10-19",
       "productVersion": "2.1.251",
       "value": [
-        "claude-sonnet-5"
+        "sonnet"
       ],
-      "notes": "Documented fallback chain for qualifying server failures; provider and access limits still apply."
+      "notes": "Rolling Sonnet alias for qualifying server failures; provider/client/account restrictions still apply."
     },
     {
       "feature": "model.advisor",
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-model-policy-claude.md",
-      "checkedAt": "2026-09-02",
+      "checkedAt": "2026-10-19",
       "productVersion": "2.1.258",
-      "value": "claude-fable-5-1",
-      "notes": "Documented Fable 5.1 advisor; it requires Claude Code v2.1.255 or later, and account, organization, plan, provider, consent, and product-version access limits may apply."
+      "value": "fable",
+      "notes": "Rolling Fable advisor alias; account, provider, client version, consent and usage-credit access limits still apply."
     },
     {
       "feature": "effort.xhigh",
@@ -67,7 +67,7 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-claude-code.md",
-      "checkedAt": "2026-08-31",
+      "checkedAt": "2026-10-19",
       "productVersion": "2.1.251",
       "value": {
         "global": "~/.claude/agents/",
@@ -75,7 +75,7 @@
         "plugin": "agents/",
         "format": "Markdown YAML frontmatter"
       },
-      "notes": "Documented user, project, and plugin custom-agent discovery."
+      "notes": "Documented native discovery. Template agents omit local tool restrictions and inherit parent tools/model/permissions; portable retains its read-only tool policy. Task scope is separate from native access; runtime inheritance was not exercised."
     },
     {
       "feature": "hooks.lifecycle",

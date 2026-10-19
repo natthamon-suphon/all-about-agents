@@ -1,5 +1,5 @@
 {
-  "fileCount": 102,
+  "fileCount": 103,
   "paths": [
     ".claude-plugin/marketplace.json",
     ".claude-plugin/plugin.json",
@@ -22,6 +22,7 @@
     "hooks/checkpoint.json",
     "hooks/hooks.json",
     "hooks/pre-compact.mjs",
+    "hooks/state-path.mjs",
     "rules/authority-and-scope.md",
     "rules/cross-platform-execution.md",
     "rules/destructive-actions.md",
@@ -105,14 +106,14 @@
     "statusline/track-tool.mjs"
   ],
   "settings": {
-    "advisorModel": "claude-fable-5-1",
+    "advisorModel": "fable",
     "autoDreamEnabled": true,
     "autoMemoryEnabled": true,
     "env": {
       "CLAUDE_CODE_EFFORT_LEVEL": "xhigh"
     },
     "fallbackModel": [
-      "claude-sonnet-5"
+      "sonnet"
     ],
     "model": "opus[1m]",
     "permissions": {
@@ -134,32 +135,33 @@
   "content": {
     ".claude-plugin/marketplace.json": "{\n  \"description\": \"Generated local development marketplace for the All About Agents package.\",\n  \"name\": \"all-about-agents\",\n  \"owner\": {\n    \"name\": \"All About Agents\"\n  },\n  \"plugins\": [\n    {\n      \"author\": {\n        \"name\": \"All About Agents\"\n      },\n      \"description\": \"Portable all-about-agents skills, agents, hooks, and rules for Claude Code.\",\n      \"name\": \"all-about-agents\",\n      \"source\": \"./\",\n      \"version\": \"2.3.0\"\n    }\n  ]\n}\n",
     ".claude-plugin/plugin.json": "{\n  \"author\": {\n    \"name\": \"All About Agents\"\n  },\n  \"description\": \"Portable all-about-agents skills, agents, hooks, and rules for Claude Code.\",\n  \"name\": \"all-about-agents\",\n  \"version\": \"2.3.0\"\n}\n",
-    "agents/investigator.md": "---\nname: investigator\ndescription: \"Performs read-only forensic investigation and ranks falsifiable root-cause hypotheses.\"\nmodel: inherit\ntools:\n  - Glob\n  - Grep\n  - Read\ndisallowedTools:\n  - Agent\n  - Bash\n  - Edit\n  - Write\n---\n\n# Investigator\n\n## Mission\n\nExplain an internal failure before anyone changes code. Read the complete error, stack, input, and environment evidence; reproduce the behavior when possible; then trace the bad value backward to its origin.\n\n## Boundaries\n\nThis is a forensic role, not an implementation role. Do not edit files, apply a workaround, or turn an untested suspicion into a fix. Do not substitute external research for local reproduction when the failure is inside the repository.\n\n## Working method\n\nRecord observations first, compare a failing path with a known-working path, and rank three or fewer falsifiable hypotheses. For each hypothesis state the prediction, the check that would distinguish it, and the exact source location involved.\n\n## Evidence contract\n\nReport the reproduction command or explain why reproduction was unavailable, include the full evidence chain, label inference explicitly, and end with a handoff that an implementer can test without guessing. Route architecture questions to the architect and fresh black-box checking to the verifier.\n\n\nNative capability diagnostic: Role investigator capability evaluation is unavailable on claude: native mapping Bash is suppressed by the read-only policy. Safe read-only mapping retained: Read. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.\n",
-    "config/settings.json": "{\n  \"advisorModel\": \"claude-fable-5-1\",\n  \"autoDreamEnabled\": true,\n  \"autoMemoryEnabled\": true,\n  \"env\": {\n    \"CLAUDE_CODE_EFFORT_LEVEL\": \"xhigh\"\n  },\n  \"fallbackModel\": [\n    \"claude-sonnet-5\"\n  ],\n  \"model\": \"opus[1m]\",\n  \"permissions\": {\n    \"defaultMode\": \"bypassPermissions\",\n    \"deny\": [\n      \"Bash(rm -rf /)\",\n      \"Bash(rm -rf ~)\",\n      \"Bash(git push --force*)\",\n      \"Bash(git reset --hard*)\"\n    ]\n  },\n  \"statusLine\": {\n    \"command\": \"powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwAKACYAIAAnAEMAOgAvAGQAaQBzAHAAbwBzAGEAYgBsAGUALwBjAGwAYQB1AGQAZQAtAGMAbwBuAGYAaQBnAC8AcwB0AGEAdAB1AHMAbABpAG4AZQAvAHMAdABhAHQAdQBzAGwAaQBuAGUALgBwAHMAMQAnAAoAZQB4AGkAdAAgACQATABBAFMAVABFAFgASQBUAEMATwBEAEUACgA=\",\n    \"padding\": 0,\n    \"type\": \"command\"\n  },\n  \"viewMode\": \"focus\"\n}\n",
+    "agents/investigator.md": "---\nname: investigator\ndescription: \"Performs read-only forensic investigation and ranks falsifiable root-cause hypotheses.\"\nmodel: inherit\n---\n\n# Investigator\n\n## Mission\n\nExplain an internal failure before anyone changes code. Read the complete error, stack, input, and environment evidence; reproduce the behavior when possible; then trace the bad value backward to its origin.\n\n## Boundaries\n\nThis is a forensic role, not an implementation role. Do not edit files, apply a workaround, or turn an untested suspicion into a fix. Do not substitute external research for local reproduction when the failure is inside the repository.\n\n## Working method\n\nRecord observations first, compare a failing path with a known-working path, and rank three or fewer falsifiable hypotheses. For each hypothesis state the prediction, the check that would distinguish it, and the exact source location involved.\n\n## Evidence contract\n\nReport the reproduction command or explain why reproduction was unavailable, include the full evidence chain, label inference explicitly, and end with a handoff that an implementer can test without guessing. Route architecture questions to the architect and fresh black-box checking to the verifier.\n",
+    "config/settings.json": "{\n  \"advisorModel\": \"fable\",\n  \"autoDreamEnabled\": true,\n  \"autoMemoryEnabled\": true,\n  \"env\": {\n    \"CLAUDE_CODE_EFFORT_LEVEL\": \"xhigh\"\n  },\n  \"fallbackModel\": [\n    \"sonnet\"\n  ],\n  \"model\": \"opus[1m]\",\n  \"permissions\": {\n    \"defaultMode\": \"bypassPermissions\",\n    \"deny\": [\n      \"Bash(rm -rf /)\",\n      \"Bash(rm -rf ~)\",\n      \"Bash(git push --force*)\",\n      \"Bash(git reset --hard*)\"\n    ]\n  },\n  \"statusLine\": {\n    \"command\": \"powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwAKACYAIAAnAEMAOgAvAGQAaQBzAHAAbwBzAGEAYgBsAGUALwBjAGwAYQB1AGQAZQAtAGMAbwBuAGYAaQBnAC8AcwB0AGEAdAB1AHMAbABpAG4AZQAvAHMAdABhAHQAdQBzAGwAaQBuAGUALgBwAHMAMQAnAAoAZQB4AGkAdAAgACQATABBAFMAVABFAFgASQBUAEMATwBEAEUACgA=\",\n    \"padding\": 0,\n    \"type\": \"command\"\n  },\n  \"viewMode\": \"focus\"\n}\n",
     "hooks/hooks.json": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/activity-audit.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          },\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/statusline/track-tool.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreCompact\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--skill-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md\",\n              \"--config-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \"startup|clear|compact\"\n      }\n    ]\n  }\n}\n"
   },
   "ownershipHashes": {
     ".claude-plugin/marketplace.json": "a4065f238f4f815c5ce5ce7f44fc3010856636905013ebecf965c3171becf488",
     ".claude-plugin/plugin.json": "0bb336af8268606ee97a66a867089cdd4c4f16db496aebc765e632a6de0a568c",
-    "agents/architect.md": "af5e2370ff8f2708c1171e7e81f0643432e44e06f8a6232f4600af98c3a39b59",
-    "agents/implementer.md": "55a9d95270c42bfc6e852d35f09fe22da97fa60ee38ff653ffebe2e60e955799",
-    "agents/investigator.md": "3523e06a3f89df8993fa61389fdb514c061e64bdb3c7b9f7619baa8f23e8b0f3",
-    "agents/researcher.md": "90be21188aaa10d2bb9b3eaf41a3f0313eae06788365f7aff02fffdaa19cd2ca",
-    "agents/reviewer.md": "a61c2ae366f83f744378a922db35bfe89a7b07622bd084bf0d6ca7251c9ebb5f",
-    "agents/security-reviewer.md": "70d1902ae2e198ce92e85de58041b809bf0c07b98adcdd157c754a39c6e0a7a9",
-    "agents/verifier.md": "6d0177aa46cee131cdaa850f273ce323d142fa649762105506678546d5060ecf",
-    "config/CLAUDE.md": "d94145bbbf2bcb9341c5feb78d64cd06b8f44bdcdcceeb3d91f7508e33d22e7d",
-    "config/settings.json": "021d34c6c1f3672f0645b1be7bf160fa59a84f1d68b8a529acd2e13ce148541f",
+    "agents/architect.md": "d4097e6dc82cb6f95e5d6100d8e78d0c6136e09f8a95d1ee61625447c82aa6b3",
+    "agents/implementer.md": "9ae8b6d8d536275213b6b9c3364f32bd022b44e8363f25bde6ffe47a62702329",
+    "agents/investigator.md": "316d9a650a6d102a61268158ecdaf733091c545e449210c217655f4a3fc2186a",
+    "agents/researcher.md": "3a3106ef50270d4cc131820757f94835a010541db779fc060a6aecbf47ff92a3",
+    "agents/reviewer.md": "135550965bc6c2e02bdc748bf5f24b9ec36032e1d7eb3d9b1489a152b6e1f1a6",
+    "agents/security-reviewer.md": "199d8bb7d79f1c89f43aa141b1aba82641bc6d6e6543a2511da84b5e8a008ac4",
+    "agents/verifier.md": "a2427865a83f32f225ef174b6721bff66a0f44e4c7771c8b60c3dfb112025f21",
+    "config/CLAUDE.md": "bd9e66f3f1a5fdb9d4c501926736080a109d3cb08898dc235d7bcd73581119ca",
+    "config/settings.json": "1f0e5493ea27db85b0e2274015ec1d9fd3f212862f5a3eef05ddd3dfedcea8fa",
     "config/statusline.json": "93d4c71fbddf648936df1a555d1919fe9bff5a1e1d278b0dd0acf4fabf6d61ea",
     "docs/semantic-mappings.md": "0761e389ac94866b823e33dae535a05cc883892cb60c504f6d3a3f8a324baee7",
     "hooks/activity-audit.json": "1f8177e9d48b3e46067736fb4d734a056bb9c0663e7434c14fefca02d341345a",
-    "hooks/activity-audit.mjs": "fc98bf1e7a2566bc1a049f774c285e7340eeae5e97b98d0feb6d16655ad7ce7d",
-    "hooks/audit-log.mjs": "bd13821e2ac58646630718575e32c7ea26db0304ae90d3304ddfaa9b6b899a04",
+    "hooks/activity-audit.mjs": "b1d13488ddc96e058e3f19b7c9719a6b4426922f4136aa5d3651b6769f6fb6ee",
+    "hooks/audit-log.mjs": "e782ec1bb19eea8d96ec71aa9d970af7b1cc0014d0d727f87517fd474ddabc3f",
     "hooks/bootstrap.json": "4b4e1c2570dd70a0a92509f471151c501197196371e11945f7adb5c779931a03",
     "hooks/bootstrap.mjs": "e10ae9854922d913d81c8f80f02299ec251514681d3c8904536ccf9b97b354d7",
     "hooks/checkpoint.json": "2a4d5e4637535367c90026c3fd87ef76a2987f10b236091cf4ae359c8839e228",
     "hooks/hooks.json": "2ab8f17009b92a94c51ea8bb32afd294ee6cf28f1b1d6179c629c5f32ccb4e39",
-    "hooks/pre-compact.mjs": "38c9fd701b8e4e9e372cd300c811d5fb130d9d193f8c8d032e00a8cc2666f7a0",
+    "hooks/pre-compact.mjs": "d35db9eedafe5e3ae42f10a183ba19f7ce45fc021641c508d0b9fc261fcdf0d0",
+    "hooks/state-path.mjs": "f314104a2f9b738467c62544492b0ef0ec4448f3457dff2954262286b12af9d5",
     "rules/authority-and-scope.md": "e954e78589912467fcc0f1e273cd7f7028efb014152ec22e9cdd6e99c821764f",
     "rules/cross-platform-execution.md": "b0db23bbbee452ae698d68171bde816bbdc360464d7e8d3105b46eaefa1d8c62",
     "rules/destructive-actions.md": "69f0320c6279e4f2a5b3dc96381c08d80c5d3dc84a5aa34ae2e6e790b4b452f9",
@@ -205,7 +207,7 @@
     "skills/subagent-driven-development/scripts/review-package": "edb161c05a61ecbe3b2d77c0bf367d020e127192fb9a1909d69fa3e6e88a1d92",
     "skills/subagent-driven-development/scripts/review-package.cjs": "df23fbdaae578aec8b019b4471d6d7e15d47127f84ff151e35daf5213b91c25d",
     "skills/subagent-driven-development/scripts/sdd-workspace": "915bf05ec05a7efec36dc9ff4357f849b1e762e162ca87a77741304483b2d537",
-    "skills/subagent-driven-development/scripts/sdd-workspace.cjs": "526aec516680ea96246da29c9445bb175ec3e749850f28d538b84eaf14aca691",
+    "skills/subagent-driven-development/scripts/sdd-workspace.cjs": "e9689f3dca3c85cb33b4215f90f041ad2ae175c641199a9cb28c0d120366df76",
     "skills/subagent-driven-development/scripts/task-brief": "ce47eae33076d9b30bfa49cd97b58634fbd61ca11bd57cd5dd582d4ec81d1437",
     "skills/subagent-driven-development/scripts/task-brief.cjs": "69b35765603f9acc9dacd36b34b6139e1f688ee07fc2eebe303f719181c86906",
     "skills/subagent-driven-development/task-reviewer-prompt.md": "645a21da00d35a07528ad8f0ec322f5e4c1fb350ca876b19332eb3e852172cb8",
@@ -222,7 +224,7 @@
     "skills/threat-modeling-and-security/SKILL.md": "b20c061ab8b9551b76d41db156ca656cec2eb3e8da09402f38e2f7969871010d",
     "skills/threat-modeling-and-security/stride-checklist.md": "3ec34122e05503ba2999856cc5fc69187252fa01c5c8294fed59b539125cfed0",
     "skills/using-all-about-agents/SKILL.md": "84a3b911e9cd0f0f92fa3001587a45d7021723b27e929b1db2eb0ae40db273b0",
-    "skills/using-all-about-agents/references/adapter-capability-guidance.md": "c259e69601711dea79f41577fd0f998425bdd6e505dffb4cb7c2f3091aba6df6",
+    "skills/using-all-about-agents/references/adapter-capability-guidance.md": "f20d30a821bdee22947233453e1a443395f30dc9200214bfebcbcc5f3e6da8da",
     "skills/using-all-about-agents/references/codex-tools.md": "57db4cbae136b9308861ac1a3ddccce6dc710fc6cb8ce961351763ca4d117b24",
     "skills/using-git-worktrees/SKILL.md": "0f7f7cbc0f09499beb4f3d406cab2342c4ea9dcfe5f5d89475fcfb6526b0c4f0",
     "skills/verification-before-completion/SKILL.md": "940b9d770832479c25a058870990e015a05fd355d5a136cc1d6753dcc3598d84",

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { existsSync } from "node:fs";
 import { chmod, cp, mkdir, readdir, readFile, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { basename, dirname, join, resolve, relative } from "node:path";
 import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -84,7 +86,7 @@ async function fixture(profile = "template", { layout = "own" } = {}) {
     await writeFile(join(packageRoot, "agents", `${role}.md`), `# ${role}\n`);
   }
   await writeFile(join(packageRoot, "plugin.json"), "{}\n");
-  await writeFile(join(packageRoot, "GEMINI.md"), MANAGED_INSTRUCTIONS);
+  await writeFile(join(packageRoot, "config", "GEMINI.md"), MANAGED_INSTRUCTIONS);
   await mkdir(join(packageRoot, "config", "rules"), { recursive: true });
   await writeFile(join(packageRoot, "config", "rules", "all-about-agents.md"), GLOBAL_RULES);
   const prefix = layout === "parent" ? "claude/" : "";
@@ -188,6 +190,27 @@ test("the Antigravity plan points Desktop and IDE at the global plugin slot and 
   assert.ok(slot.message.includes("~/.gemini/config/plugins/all-about-agents/"), slot.message);
   assert.match(slot.message, /Without agy/u);
   assert.match(slot.message, /agy plugin install fills the same folder/u);
+});
+
+test("Antigravity registration requests JSON from the native listing and rejects malformed JSON", async () => {
+  for (const malformed of [false, true]) {
+    const input = await fixture();
+    const calls = [];
+    const runProcess = async (request) => {
+      calls.push(request);
+      const listing = request.executable === "agy" && request.args[1] === "list";
+      return { exitCode: 0, stderr: "", stdout: listing
+        ? malformed || !request.args.includes("--json") ? "Installed plugins:\nall-about-agents" : "[]"
+        : "" };
+    };
+    const plan = base(input, "antigravity");
+    await runNativeRegistration(plan, { mode: "dry-run", runProcess });
+    assert.equal(calls.length, 0, "dry-run never executes a native action");
+    const report = await runNativeRegistration(plan, { mode: "apply", runProcess });
+    assert.equal(report.status, malformed ? "partial" : "complete");
+    assert.deepEqual(calls.find((request) => request.args[1] === "list").args, ["plugin", "list", "--json"]);
+    if (malformed) assert.match(JSON.stringify(report), /malformed-native-json/u);
+  }
 });
 
 test("Antigravity registration owns only config/rules/all-about-agents.md among the global rule files", async () => {
@@ -479,6 +502,53 @@ test("apply revalidates roots and marker ancestors after planning", async (t) =>
   assert.equal(calls, 0);
   assert.equal(report.status, "failed");
   assert.match(report.error.code, /unsafe|symlink|package/u);
+});
+
+test("apply rejects a source parent replaced during its owned-byte scan before any destination write", async (t) => {
+  const input = await fixture();
+  const plan = base(input, "claude");
+  const sourceDirectory = join(input.packageRoot, "skills", "kept-skill");
+  const triggerSource = join(sourceDirectory, "SKILL.md");
+  const outside = join(input.root, "outside-skill");
+  await cp(sourceDirectory, outside, { recursive: true });
+  const linkType = process.platform === "win32" ? "junction" : "dir";
+  try {
+    await symlink(outside, join(input.root, "link-check"), linkType);
+  } catch (error) {
+    skipIfLinkUnavailable(t, error);
+    return;
+  }
+  const originalReadFileSync = fs.readFileSync;
+  let swapped = false;
+  let nativeCalls = 0;
+  let report;
+  fs.readFileSync = function (path, ...args) {
+    const bytes = originalReadFileSync.call(this, path, ...args);
+    if (!swapped && typeof path === "string" && resolve(path) === triggerSource) {
+      swapped = true;
+      fs.renameSync(sourceDirectory, join(input.root, "skill-original"));
+      fs.symlinkSync(outside, sourceDirectory, linkType);
+    }
+    return bytes;
+  };
+  syncBuiltinESMExports();
+  try {
+    report = await runNativeRegistration(plan, {
+      mode: "apply",
+      runProcess: async () => {
+        nativeCalls += 1;
+        return { exitCode: 0, stdout: "[]", stderr: "" };
+      }
+    });
+  } finally {
+    fs.readFileSync = originalReadFileSync;
+    syncBuiltinESMExports();
+  }
+  assert.equal(swapped, true);
+  assert.equal(report.status, "failed");
+  assert.equal(report.error.code, "unsafe-root");
+  assert.equal(nativeCalls, 0);
+  assert.deepEqual(await readdir(input.productRoot), []);
 });
 
 test("apply rejects a later copy source changed after the initial package scan", async () => {

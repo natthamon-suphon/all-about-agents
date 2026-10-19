@@ -1,281 +1,175 @@
 # Companion tooling
 
-This page lists tools an operator installs **alongside** this repository on a
-workstation. None of them is a repository dependency.
+Companions stay external to this repository. All About Agents owns workflow
+routing and verification. Companion instructions add task-specific guidance.
+Explicit user requirements and correctness take priority over style preferences.
+Keep each companion's registration, hooks, state and runtime evidence separate.
 
-The repository itself stays zero-dependency: `package.json` declares no
-`dependencies` and no `devDependencies`, and a static check enforces that. The
-only requirement to render, validate, or install a package is Node.js 22.12.0
-or newer. See the [repository overview](../../README.md).
+The repository remains zero-dependency and needs Node.js 22.12 or newer.
+Optional companions can have other runtime requirements. An absent companion
+is `NOT_RUN_UNAVAILABLE` for its native check, not a repository test failure.
 
-Everything below is optional. Install a tool only when you want the capability
-it provides, and record the version you installed. A tool that is absent is
-`NOT_RUN_UNAVAILABLE` for any check that needs it, not a failure.
+## Responsibilities and routing
 
-## What each tool is for
-
-| Tool | Kind | Provides |
+| Tool | Role | Boundary |
 | --- | --- | --- |
-| `uvx` | Python runner | Runs Python entry points for skills that ship `.py` scripts, without a project virtual environment. |
-| `ui-ux-pro-max-cli` | npm CLI | Installs the UI/UX Pro Max skill into supported AI coding assistants. |
-| Ponytail | agent plugin | A "lazy senior developer" ruleset that pushes an agent to write less code. |
-| Caveman | skill set plus an operator-written hook | Compresses agent prose without dropping technical detail. Ships no hook of its own. |
-| Context7 | MCP server | Fetches current library documentation into a session instead of relying on model memory. |
-| RTK | CLI proxy | Trims shell output before it reaches the session context, and reports the measured saving. |
+| `ui-ux-pro-max` | UX, accessibility, tokens, layout and stack guidance | Use for actual interface work; use the real stack and design brief. |
+| `frontend-design` | Visual direction, typography and interface craft | Share the same brief/tokens with UI/UX Pro Max; avoid competing design systems. |
+| Ponytail | Simpler implementation and complexity review | Preserve requirements, security, accessibility and proof. |
+| Caveman | Concise chat output | Preserve code, exact errors, paths and technical facts; persisted documents use normal prose. |
+| Context7 | Current library/API documentation | Resolve the library, then query the relevant version and topic; it is not a model selector. |
+| RTK | Smaller shell output | Keep check results and exit codes; recover full output when needed. |
+| `andrej-karpathy-skills` | Coding discipline | Its canonical skill is `karpathy-guidelines`: state assumptions, make surgical changes and define success checks. |
 
-## `uvx`
+Route the task first. For UI work, establish one brief and token set before
+combining UX guidance and visual craft. For code, apply Ponytail and Karpathy
+constraints to the same implementation. Context7 supplies external facts.
+Caveman and RTK change presentation, not authority, scope or acceptance checks.
+Do not activate UI-building skills merely to audit configuration.
 
-`uvx` is the tool runner that ships with `uv`. Install `uv` from the
-[official installation guide](https://docs.astral.sh/uv/getting-started/installation/),
-then confirm the runner:
+## Installed evidence and collisions
+
+Checked on Windows, 2026-10-19:
+
+- UI/UX Pro Max CLI resolved as `uipro` 2.15.0. The local skill uses Python
+  standard-library scripts; select an actual Python executable. On this host
+  `python` worked while `python3` resolved to a WindowsApps alias. Do not assume
+  that alias is an installed interpreter. On macOS, verify the selected Python.
+- Both upstream Ponytail 4.9.0 and curated `engineering-suite-ponytail` 2.0.0
+  existed in plugin caches. Cache presence does not prove both are active.
+  Their skill names overlap. Use qualified names when the host supports them,
+  record the selected distribution, and keep bundled workflow dependencies
+  inside that distribution.
+- The operator-owned `caveman` Codex plugin 1.0.0 contains `SessionStart`
+  hooks and depends on external local activator/skill files. It is a legacy
+  local wrapper, not proof that upstream has the same layout or behavior.
+- No `frontend-design` or `karpathy-guidelines` skill was found in the targeted
+  personal-skills and Codex plugin-cache listings. Other install locations were
+  not exhaustively scanned. Their upstream contracts were reviewed; local
+  discovery and runtime remain `NOT_RUN_UNAVAILABLE` until installed.
+
+`normal mode` can disable both Caveman and Ponytail. Use `stop caveman` or
+`stop ponytail` when changing only one. `caveman-review` compresses review
+output; `ponytail-review` finds complexity. Neither replaces correctness or
+security review. Several distributions may register similarly named commands;
+inspect native discovery instead of deleting a cache by name.
+
+## UI/UX Pro Max and frontend-design
+
+Use the [UI/UX Pro Max upstream guide](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
+and the [Anthropic frontend-design skill](https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md).
+The `ui-ux-pro-max-cli` npm package provides `uipro`. An older `uipro-cli`
+package can provide the same binary name, so inspect resolution before install.
+That possible collision was not observed on this host.
 
 ```text
-uvx --version
-```
-
-Windows note: a winget or Python-scripts install can put more than one `uvx.exe`
-on `PATH`. Run `where.exe uvx` and keep the one you intend to use first.
-
-## `ui-ux-pro-max-cli`
-
-```text
-npm install -g ui-ux-pro-max-cli
+uipro --version
 uipro --help
+python --version
 ```
 
-The package installs the `uipro` binary. An older `uipro-cli` package provides
-the same binary name; install only one of the two so the resolved `uipro` is
-unambiguous.
+`uvx` is optional for skills that need a Python entry point. Verify it with
+`uvx --version`; follow the [uv guide](https://docs.astral.sh/uv/getting-started/installation/)
+when installing it. This does not change the repository's Node requirement.
 
 ## Ponytail
 
-Ponytail is an MIT-licensed plugin published at
-[`DietrichGebert/ponytail`](https://github.com/DietrichGebert/ponytail). It
-registers through the same plugin surfaces this repository uses, so it can be
-installed next to `all-about-agents` on each tool.
+Read the selected distribution's instructions and
+[upstream](https://github.com/DietrichGebert/ponytail). Ponytail is a separate
+plugin, not a dependency of All About Agents. A marketplace cache is not an
+active plugin.
 
-Claude Code:
-
-```text
-/plugin marketplace add DietrichGebert/ponytail
-/plugin install ponytail@ponytail
-```
-
-Codex CLI:
-
-```text
-codex plugin marketplace add DietrichGebert/ponytail
-codex plugin add ponytail@ponytail
-```
-
-Its lifecycle hooks need Node.js on `PATH`. Ponytail and `all-about-agents`
-are separate plugins in each product's plugin root; they do not overwrite each
-other.
-
-Ponytail reads its default level from `PONYTAIL_DEFAULT_MODE`, then from a
-config file, then falls back to `full`. The config path is platform-specific:
-`$XDG_CONFIG_HOME/ponytail/config.json` when that variable is set,
-`~/.config/ponytail/config.json` on macOS and Linux, and
-`%APPDATA%\ponytail\config.json` on Windows. Do not assume `~/.config` on
-Windows.
-
-To confirm the plugin is active in a session, read the flag file its
-`SessionStart` hook writes:
-
-```text
-cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.ponytail-active"
-```
-
-`CLAUDE_CONFIG_DIR` defaults to `~/.claude`. The file holds the active level.
-An absent file means the hook did not run.
-
-Ponytail changes how an agent decides what to write. It is guidance, not a
-guardrail, and it does not replace the emergency deny rules in this repository's
-profiles.
+Upstream 4.9.0 uses Node lifecycle hooks. Its configuration precedence is
+explicit environment, XDG configuration, platform fallback, then `full`.
+Windows fallback is `%APPDATA%/ponytail/config.json`; macOS fallback is
+`~/.config/ponytail/config.json`. Do not assume the macOS path on Windows.
+Claude's `.ponytail-active` file belongs to the Claude config root; Codex uses
+its native `PLUGIN_DATA` directory. Neither flag proves another host ran it.
 
 ## Caveman
 
-Caveman is a set of skills that compress agent prose while keeping code, error
-strings, and technical terms exact. It is published at
-[`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman).
+[Caveman installation](https://github.com/JuliusBrussee/caveman/blob/main/INSTALL.md)
+supports both skills-only and native hook/plugin distributions. A plain skill
+folder does not itself activate a session-start hook. Inspect the installed
+package and host version before adding a fallback. Upstream documents different
+integration support for Codex, `agy`, Antigravity App and standalone IDE.
 
-Unlike Ponytail, the copy installed as plain skills ships **no lifecycle hook**,
-so nothing activates it at session start. The skills load on demand only. To
-start every session in caveman mode you add a `SessionStart` hook yourself.
+Use **one activation carrier per product**. If a static instruction block
+already loads the same mode, do not also inject it through a hook. Preserve
+operator-owned sections outside All About Agents' managed block. A legacy
+local wrapper that reads another product's skill path is not portable merely
+because its manifest validates.
 
-### Install the skills
+Keep your own `GEMINI.md` sections outside the `all-about-agents:begin` and
+`all-about-agents:end` markers. Registration replaces only that marked block.
+If the block is absent or malformed, it reports `manual-required`, leaves the
+file unchanged, and returns exit code 1. Do not shorten or reword the managed
+body to make another activation copy fit; keep one carrier instead.
 
-The skills live in the personal skills directory, one folder per skill:
-
-```text
-~/.claude/skills/caveman
-~/.claude/skills/caveman-commit
-~/.claude/skills/caveman-help
-...
-```
-
-How a given machine acquired them is not recorded here. Copy the `caveman*`
-folders from a machine that already has them, or install from upstream and read
-what that package ships before adding a hook of your own. If upstream already
-ships a working `SessionStart` hook, use it and skip the rest of this section.
-
-### Activation hook
-
-The activator, the level config, and the Codex plugin live together in one
-operator-owned folder:
-
-```text
-~/.caveman/caveman-activate.js      resolves the level, emits the skill text
-~/.caveman/codex-plugin/            the Codex plugin that carries the hook
-~/.config/caveman/config.json       {"defaultMode": "full"}
-```
-
-Copy that folder to the new machine, then wire each product. A longer copy of
-the same procedure is kept next to the files in `~/.caveman/README.md`.
-
-Claude Code reads a `SessionStart` hook straight from user settings. Merge this
-into `~/.claude/settings.json`; do not replace the file, which also holds your
-plugins and other hooks:
-
-```json
-{
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "startup|resume|clear|compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node",
-            "args": ["<HOME>/.caveman/caveman-activate.js", "--surface", "claude"],
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-The `args` exec form spawns the executable directly with no shell, so a Windows
-path with spaces or `$` never reaches a shell parser.
-
-Codex needs a plugin. Two facts observed on Codex `v0.152.1`, both of which
-cost a debugging cycle:
-
-- A `SessionStart` hook written to `$CODEX_HOME/hooks.json` is **parsed but not
-  executed**. Invalid JSON there produces `warning: failed to parse hooks
-  config`, which proves the file is read, yet the handler never runs. Hooks
-  delivered by an installed plugin do run in the same session. The cause is not
-  established; prefer the plugin path.
-- `codex plugin add` clones the plugin source with `git`, so a local plugin
-  directory must be a git repository with at least one commit, or the install
-  fails with `does not appear to be a git repository`.
-
-```text
-cd ~/.caveman/codex-plugin
-git init && git add -A && git commit -m "Caveman Codex plugin source"
-codex plugin marketplace add ~/.caveman/codex-plugin
-codex plugin add caveman@caveman
-```
-
-Antigravity has no hook to use. The event list on record is `PreToolUse`,
-`PostToolUse`, `PreInvocation`, `PostInvocation`, and `Stop`, with no
-`SessionStart`. That list is inherited from `agy 1.1.22` and not re-verified on
-`1.2.7` or `1.2.12`; see
-[the Antigravity research note](../evaluations/research-antigravity.md#lifecycle-events---inherited-not-re-verified).
-Hooks written into `~/.gemini/settings.json` or
-`~/.gemini/antigravity-cli/settings.json` did not fire in testing.
-
-Put the text in the always-loaded instruction file instead. Back it up first,
-then append a delimited section so it can be removed in one cut:
-
-```text
-## Caveman mode (always on)
-
-CAVEMAN MODE ACTIVE - level: full
-
-<body of ~/.claude/skills/caveman/SKILL.md, YAML frontmatter stripped>
-```
-
-That file is also where this repository deploys the Antigravity global
-instructions, as one block from a `<!-- all-about-agents:begin` line to a
-`<!-- all-about-agents:end -->` line. `register --apply` replaces only that
-block, so a caveman section above or below it is kept. A file with no intact
-block is left unchanged, reported `manual-required`, and the run ends with
-exit code 1; move your own sections outside the markers once. Keep the whole
-file under 24,000 bytes, agy's limit for one rule file. So the caveman section survives a
-registration either way. Keep the marker heading so a later edit or removal
-stays one operation.
-
-Trade-off: the level here is **static**. Claude Code and Codex follow
-`~/.config/caveman/config.json` live; this copy is edited by hand. Setting
-`{"defaultMode": "off"}` does not reach Antigravity.
-
-### Verify
-
-Ask the product itself, in a fresh session:
-
-```text
-claude -p "Is caveman mode active? Name the level."
-codex exec "One short line: is caveman mode active and at what level?"
-agy -p "One short line: is caveman mode active and at what level?"
-```
-
-A hook that is written but never fires is the common failure, and only a live
-answer separates *installed* from *runtime verified*.
-
-Caveman changes how an agent writes, not what it is allowed to do. It is
-guidance, not a guardrail.
+Older Windows Codex builds had command-hook limitations. Keep the exact version
+with that evidence; do not generalize the limitation to every current build.
+A rendered hook, registered hook, trusted hook and observed execution are
+separate states. Do not infer App/IDE activation from CLI support.
 
 ## Context7
 
-Context7 is an MCP server from Upstash that serves current library
-documentation. Register it with Claude Code:
+[Context7 upstream](https://github.com/upstash/context7) offers remote/local MCP
+and CLI-plus-skills integrations. Install only the mode wanted on the host.
+The current `ctx7` CLI requires Node.js 22.13 or newer; that does not raise this
+repository's minimum and is not a requirement for a remote MCP endpoint.
+
+A supported Claude local MCP example is:
 
 ```text
 claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp@latest
 claude mcp list
 ```
 
-It needs Node.js 18 or newer. Some deployments require an API key; pass it with
-`--api-key` only from your own shell, and never commit it to this repository.
-See the [package page](https://www.npmjs.com/package/@upstash/context7-mcp).
+Read the current package guide before installation. Keep authentication in the
+native secret store or local environment. Never commit credentials or embed
+an API key in a shared command/report. Discovery is not an actual documentation
+query; record native connectivity separately.
 
 ## RTK
 
-RTK, also called `rust-token-killer`, is a local CLI proxy. It filters and
-summarizes shell output before that output reaches the session context. Install
-it from the project's own instructions, then confirm the binary:
+[RTK upstream](https://github.com/rtk-ai/rtk#supported-ai-tools) is an optional
+local CLI proxy. Check the exact binary and version:
 
 ```text
 rtk --version
 rtk gain
+rtk hook --help
 ```
 
-A failing `rtk gain` usually means a different tool named `rtk` resolves first
-on the path. Check the resolved binary with `where.exe rtk` on Windows or
-`which rtk` on macOS. The `rtk rg` subcommand shells out to ripgrep, so install
-ripgrep as well when you want it.
+RTK 0.50.0 includes a Codex `PreToolUse` hook processor and `rtk init --codex`.
+A processor's presence does not prove registration, trust or runtime rewriting.
+Where a working host hook rewrites a command, write the plain command. Where
+none is active, prefix supported commands manually. Avoid double wrapping.
+The current product-owned `RTK.md` guidance and actual hook evidence decide
+which path applies. RTK's meta commands run as `rtk` itself.
 
-On `rtk 0.47.0`, `rtk gain --history` printed the same summary as plain
-`rtk gain` and no per-command history, so do not rely on that flag as evidence
-that a specific command was proxied. The running total in `rtk gain` moving
-across two calls is the cheaper proof that the hook is wrapping commands.
+On RTK 0.50.0, `rtk proxy <command>` provides unfiltered output. Newer upstream
+versions may use `bypass` instead; inspect local help before changing a command.
+Do not treat a successful `rtk gain` as proof of any one command's rewriting.
+A failing `gain` can mean another binary called `rtk` resolves first.
+`rtk rg` also requires ripgrep. Use `where.exe rtk` on Windows or `command -v rtk`
+on macOS to inspect resolution. Do not rewrite an RTK-owned instruction file
+from this repository.
 
-Hosts pick RTK up through a hook, which rewrites a plain shell command into an
-`rtk` call. Claude Code uses a `PreToolUse` hook that runs `rtk hook claude`,
-and Gemini CLI uses `rtk hook gemini`. Codex has no RTK hook today, so put
-`rtk` in front of the command yourself there.
+## Karpathy guidelines
 
-RTK changes how much command output reaches the model. It is a context-cost
-tool, not a guardrail. It does not replace any check in this repository, and a
-machine without it is `NOT_RUN_UNAVAILABLE`.
+The [current package](https://github.com/multica-ai/andrej-karpathy-skills)
+provides [karpathy-guidelines](https://github.com/multica-ai/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines/SKILL.md).
+The reviewed Claude manifest is skills-only. Do not invent hooks, agent roles,
+or cross-product registration support from that manifest. Apply its assumptions,
+surgical edits and observable success criteria alongside repository rules;
+it does not need another global bootstrap loop.
 
-## Recording what you installed
+## Verification on Windows and macOS
 
-Companion tooling is part of the machine, not part of the package. When you
-report native evidence, list the tool, its version, and how it was resolved, and
-keep it separate from the `rendered -> validated -> registered -> trusted ->
-active -> runtime verified` states of this repository's own package. See
-[native verification](../maintenance/native-verification.md).
+Confirm discovery and versions in each product. Then test one relevant trigger
+and one non-trigger in an authenticated disposable session. Record mode,
+permission scope, hook execution and update survival separately. Use
+[model policy](../maintenance/model-policy.md) for managed model selection and
+[native verification](../maintenance/native-verification.md) for lifecycle proof.
+No macOS native companion run was performed during the 2026-10-19 Windows audit.

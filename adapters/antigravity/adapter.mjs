@@ -16,11 +16,8 @@ const ANTIGRAVITY_SURFACE = "antigravity";
 const ANTIGRAVITY_TARGET_RUNTIMES = Object.freeze(["cli", "desktop"]);
 const PLUGIN_NAME = "all-about-agents";
 
-// No hook is rendered for this surface. The recorded lifecycle events carry no
-// session-start event, but that list is inherited from the 2026-08-31 record of
-// agy 1.1.22 and was not re-verified on 1.2.7, which publishes no hook
-// documentation. Since no event can be named, none is declared.
-// See docs/evaluations/research-antigravity.md and the plan's decision A4.
+// Routing is already inlined in GEMINI.md. A second SessionStart carrier would
+// duplicate it; native hook availability does not require rendering another one.
 const ANTIGRAVITY_SEMANTIC_MAPPINGS = Object.freeze({
   "repository-read": Object.freeze(["GEMINI.md"]),
   "repository-write": Object.freeze(["GEMINI.md"]),
@@ -110,7 +107,7 @@ function renderSkill(name, record) {
   };
 }
 
-function renderRole(name, role) {
+function renderRole(name, role, profile) {
   const description = role.description || role.purpose;
   const capabilities = [
     ...(Array.isArray(role.capabilities) ? role.capabilities : []),
@@ -124,7 +121,8 @@ function renderRole(name, role) {
     Array.isArray(role.dispatchCriteria) && role.dispatchCriteria.length > 0 ? `Dispatch criteria: ${role.dispatchCriteria.join("; ")}` : ""
   ].filter(Boolean).join("\n\n");
   const instructions = `${role.prompt || roleContext || `Operate as the ${name} role. Preserve scope, verify evidence, and report uncertainty.`}${hasNarrowerNativeScope(role) ? "\n\nNative controls are workspace-wide; the declared task paths remain an outer approval boundary." : ""}`;
-  return ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n---\n\n${instructions}\n`);
+  const policy = profile.authority === "full" ? "model: inherit\ncommandExecutionPolicy: eager\n" : "";
+  return ensureText(`---\nname: ${name}\ndescription: ${quoteFrontmatter(description)}\n${policy}---\n\n${instructions}\n`);
 }
 
 /**
@@ -143,17 +141,18 @@ function pluginManifest() {
 function capabilityGuidance(semanticProfile) {
   const modelGuidance = semanticProfile.modelPolicies[ANTIGRAVITY_SURFACE] === "surface-default"
     ? "- The portable profile leaves the model and reasoning effort unchanged."
-    : "- The template profile records `gemini-3.1-pro-high` as the approved model; selection stays a manual `--model` or `/model` action because no documented on-disk key is published.";
+    : "- From the repository, the template uses the newest eligible Gemini premium release through `node scripts/model-policy.mjs --surface antigravity --launch`. The managed launcher checks `agy models` before each session; native `/model` and `/effort` commands persist explicit choices. App and standalone IDE automatic selection remain unverified.";
   return ensureText([
     "# Antigravity adapter capability guidance",
     "",
     "This package is the Antigravity adapter's documented surface map.",
     "",
     `- The configuration root is the user's \`.gemini\` directory. Antigravity documents no environment variable for it; this installer reads its own repository-scoped override, \`${ANTIGRAVITY_ROOT_ENV}\`.`,
-    "- `GEMINI.md` carries the canonical global body and the inlined routing contract as one marked block; `config/rules/all-about-agents.md` carries the canonical rules and the presentation catalog as an always-on global rule.",
+    "- `config/GEMINI.md` stages the canonical global body and inlined routing contract for deployment to `~/.gemini/GEMINI.md`; `config/rules/all-about-agents.md` carries the canonical rules and presentation catalog as an always-on global rule. Plugin roots carry no `GEMINI.md`, which native strict validation warns is never loaded.",
     "- Skills are packaged under `skills/<skill>/SKILL.md` and roles under `agents/<role>.md`; `agy plugin validate` reports both counts.",
-    "- There is no session-start event. The routing contract is inlined into `GEMINI.md` rather than injected, and this adapter renders no hook files.",
-    "- This adapter renders no status line. The removed adapters built one from a plugin path the product never creates.",
+    "- Template roles declare `model: inherit` and `commandExecutionPolicy: eager`. App/CLI document these fields and inherit parent file/sandbox boundaries; effective command autonomy and standalone IDE behavior still need native verification.",
+    "- Google documents `SessionStart` for App, CLI and IDE. The routing contract is already inlined into `GEMINI.md`; this adapter renders no duplicate bootstrap hook.",
+    "- The CLI documents `/statusline`; this adapter renders no custom status line. App and IDE UI support requires separate evidence.",
     modelGuidance,
     "- Antigravity Desktop and Antigravity IDE read the global plugin slot `~/.gemini/config/plugins/all-about-agents/`, which `agy plugin install` fills; without `agy`, copy this package there by hand, see `docs/manual-desktop.md`.",
     "",
@@ -165,7 +164,7 @@ function capabilityGuidance(semanticProfile) {
 function desktopInstructions(semanticProfile) {
   const modelLines = semanticProfile.modelPolicies[ANTIGRAVITY_SURFACE] === "surface-default"
     ? ["The portable profile keeps the current Antigravity model and effort controls unchanged."]
-    : ["The template profile records `gemini-3.1-pro-high`. Select it in the app's model controls; no documented Desktop or IDE profile selector is assumed by this adapter."];
+    : ["Select the newest eligible premium model and xhigh, or the highest supported effort, in each app's model controls. No documented automatic App or standalone IDE selector is established. Gemini 4 Argon is currently excluded from the standalone IDE; the CLI catalog is not proof of IDE availability."];
   return ensureText([
     "# Antigravity Desktop and IDE manual setup",
     "",
@@ -181,7 +180,7 @@ function desktopInstructions(semanticProfile) {
     "~/.gemini/config/plugins/all-about-agents/",
     "```",
     "",
-    "Replace an older copy there; do not merge into it. `GEMINI.md` and",
+    "Replace an older copy there; do not merge into it. `config/GEMINI.md` and",
     "`config/rules/all-about-agents.md` are not part of the plugin: registration",
     "deploys them to `~/.gemini/GEMINI.md` and",
     "`~/.gemini/config/rules/all-about-agents.md`.",
@@ -192,6 +191,8 @@ function desktopInstructions(semanticProfile) {
     "as its example; it does not say how two copies of one plugin combine.",
     "",
     ...modelLines,
+    "",
+    "For CLI full access, the documented user settings are `toolPermission: always-proceed`, `allowNonWorkspaceAccess: true`, and `enableTerminalSandbox: false`. Review them in `/settings`; preserve existing `permissions.deny` entries. This package does not overwrite the operator's settings file. App macOS Turbo, App Windows Always Proceed, and IDE sandbox controls are separate native UI settings; do not copy CLI JSON keys into them without their schema.",
     "",
     "Source: Google's Antigravity plugin documentation and the IDE's built-in",
     "`agy-customizations` guide, both checked on 2026-09-27. Neither app has a",
@@ -221,7 +222,8 @@ function packageReadme(semanticProfile) {
     "",
     "## Global instructions",
     "",
-    "`GEMINI.md` belongs at the root of the user's `.gemini` directory. It is",
+    "`config/GEMINI.md` is staged for the root of the user's `.gemini` directory",
+    "as `GEMINI.md`; it is not a plugin rule. It is",
     "one block from a `<!-- all-about-agents:begin` line to a",
     "`<!-- all-about-agents:end -->` line. Registration replaces only that block,",
     "so your own sections above or below it stay. A file with no intact block is",
@@ -329,7 +331,7 @@ export function renderAntigravity(input = {}) {
 
   const files = [];
   addFile(files, "plugin.json", renderJson(pluginManifest()));
-  addFile(files, "GEMINI.md", renderAntigravityGlobalInstructions(core));
+  addFile(files, "config/GEMINI.md", renderAntigravityGlobalInstructions(core));
   addFile(files, "config/rules/all-about-agents.md", renderAntigravityGlobalRules(core, { canonicalRules: core.rules }));
   addFile(files, "README.md", packageReadme(semanticProfile));
   addFile(files, "docs/manual-desktop.md", desktopInstructions(semanticProfile));
@@ -346,7 +348,7 @@ export function renderAntigravity(input = {}) {
 
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
   const roleNames = [...roleRecords.keys()].sort(compareCodePoints);
-  for (const roleName of roleNames) addFile(files, `agents/${roleName}.md`, renderRole(roleName, roleRecords.get(roleName)));
+  for (const roleName of roleNames) addFile(files, `agents/${roleName}.md`, renderRole(roleName, roleRecords.get(roleName), semanticProfile));
 
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   const configRoot = resolveGeminiHome(input);
@@ -368,8 +370,8 @@ export function renderAntigravity(input = {}) {
         // GEMINI.md is shared with everything else the operator keeps in the
         // Gemini home, so registration replaces only its marked block.
         kind: "instructions",
-        relativePath: "GEMINI.md",
-        destination: "GEMINI.md",
+        relativePath: "config/GEMINI.md",
+        destination: "config/GEMINI.md",
         guard: "managed-block",
         consumers: ["antigravity-cli", "antigravity-desktop"]
       },
@@ -403,7 +405,7 @@ export function renderAntigravity(input = {}) {
         kind: "manual-step",
         surface: "antigravity-cli",
         id: "approved-gemini-pro-model",
-        instruction: "Select gemini-3.1-pro-high with agy --model or the /model command; no documented on-disk key persists it."
+        instruction: "From the repository, use node scripts/model-policy.mjs --surface antigravity --launch for automatic CLI selection; it discovers eligible premium models and actual effort each time. Native /model and /effort persist manual defaults; GUI automatic selection is unconfirmed."
       }]),
       {
         kind: "resolved-config-root",

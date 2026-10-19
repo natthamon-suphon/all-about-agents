@@ -7,6 +7,33 @@ from there, and the Antigravity manifest names it in its description.
 
 ## [Unreleased]
 
+### Fixed
+
+- Antigravity registration requests JSON before parsing plugin discovery.
+- Antigravity stages global instructions in `config/GEMINI.md`, avoiding the
+  native strict warning for an unloaded plugin-root file while retaining
+  marked-block deployment to the global `GEMINI.md`.
+- Full-access template roles inherit parent permissions; Antigravity declares
+  its documented eager command policy instead of relying on an omitted default.
+- Claude/Codex audit and checkpoint history uses native plugin data directories.
+  Path guards reject symlinks and hardlinks; legacy imports are bounded,
+  repeatable, dry-run by default and preserve source files.
+- Windows native execution resolves supported npm CLI entry points without
+  evaluating command-shell wrappers.
+- Registration groups parent checks within synchronous scans and rechecks
+  parents before returning. Each action starts fresh; file and hash checks stay.
+- SDD output helpers reject a linked parent before creating a temporary file,
+  retaining their second parent check before rename on Windows and macOS.
+
+### Added
+
+- Managed CLI model selection discovers eligible premium releases before each
+  launch, prefers xhigh, and reports the highest available effort otherwise.
+  Catalog failures stop launch; unsupported GUI automation is explicit.
+- Current companion guidance covers all seven requested integrations, distinct
+  activation ownership and RTK 0.50.0 Codex hook support. The clean-profile CI
+  list includes Antigravity on both Windows and macOS.
+
 ## [2.3.0] - 2026-10-10
 
 ### Changed

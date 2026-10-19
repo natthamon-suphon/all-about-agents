@@ -72,9 +72,9 @@
       "settings": {
         "model": "opus[1m]",
         "fallbackModel": [
-          "claude-sonnet-5"
+          "sonnet"
         ],
-        "advisorModel": "claude-fable-5-1",
+        "advisorModel": "fable",
         "env": {
           "CLAUDE_CODE_EFFORT_LEVEL": "xhigh"
         },
@@ -169,6 +169,9 @@
       "Bash",
       "Edit",
       "Write"
+    ],
+    "appliesTo": [
+      "portable"
     ]
   },
   "ownedPaths": [
@@ -237,5 +240,10 @@
   "capabilityEvidence": {
     "productContracts": "docs/evaluations/research-claude-code.md",
     "modelPolicy": "docs/evaluations/research-model-policy-claude.md"
+  },
+  "runtimeData": {
+    "environment": "CLAUDE_PLUGIN_DATA",
+    "ownedByPackage": false,
+    "legacyImport": "scripts/migrate-hook-state.mjs"
   }
 }

@@ -1,8 +1,9 @@
 # All About Agents
 
 All About Agents is a portable, repository-only agent-system source. The
-repository renders surface-specific packages; it does not launch a native
-product, register an account, or claim that a product session has passed.
+repository renders surface-specific packages. Validation and rendering do not
+launch native sessions. An optional managed CLI launcher selects models before
+an explicit launch; it does not register an account or prove runtime behavior.
 
 ## Canonical repository layout
 
@@ -71,6 +72,7 @@ Use these guides to keep the same source and quality on every machine:
 - [Cross-tool quality](docs/maintenance/cross-tool-quality.md)
 - [Native registration](docs/maintenance/native-registration.md)
 - [Native verification](docs/maintenance/native-verification.md)
+- [Automatic model policy and hook history](docs/maintenance/model-policy.md)
 - [Prompt for another session](docs/maintenance/session-prompt.md)
 - [claude.ai skill pack](docs/setup/claude-ai.md)
 
@@ -84,6 +86,13 @@ reverses that plan's decision D6; and the
 
 A pull updates only the repository. It does not install files into a coding
 tool. Installation always needs a separate, exact action.
+
+Preview automatic model selection with
+`node scripts/model-policy.mjs --surface codex` (or `claude` / `antigravity`).
+Add `--launch` to start a managed CLI session. The default `template` profile
+uses full access and `xhigh`, or the highest supported effort. `portable`
+preserves native choices. Direct App/IDE launches do not run this resolver;
+see [model policy](docs/maintenance/model-policy.md) for the exact boundary.
 
 The global layer gives shared safety and quality behavior. Project files are
 the more specific second layer. The nine core rules belong to the global layer:

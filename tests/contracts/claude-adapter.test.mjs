@@ -76,8 +76,8 @@ function fileMap(result) {
 test("Claude model policy uses exact documented template fields", () => {
   assert.deepEqual(CLAUDE_MODEL_POLICY.template, {
     model: "opus[1m]",
-    fallbackModel: ["claude-sonnet-5"],
-    advisorModel: "claude-fable-5-1",
+    fallbackModel: ["sonnet"],
+    advisorModel: "fable",
     env: { CLAUDE_CODE_EFFORT_LEVEL: "xhigh" }
   });
 });
@@ -160,8 +160,8 @@ test("template Claude render emits full-access settings without unsupported effo
   const files = fileMap(resultFor("template"));
   const settings = JSON.parse(files.get("config/settings.json"));
   assert.equal(settings.model, "opus[1m]");
-  assert.deepEqual(settings.fallbackModel, ["claude-sonnet-5"]);
-  assert.equal(settings.advisorModel, "claude-fable-5-1");
+  assert.deepEqual(settings.fallbackModel, ["sonnet"]);
+  assert.equal(settings.advisorModel, "fable");
   assert.equal(settings.env.CLAUDE_CODE_EFFORT_LEVEL, "xhigh");
   assert.equal(Object.hasOwn(settings, "effortLevel"), false);
   assert.equal(settings.permissions.defaultMode, "bypassPermissions");
@@ -446,7 +446,8 @@ test("Claude bootstrap skill links to a resolvable factual capability guide", ()
     assert.match(guidance, /CLAUDE_CONFIG_DIR/u);
     assert.match(guidance, /docs\/semantic-mappings\.md/u);
     assert.match(guidance, /`role-dispatch`[^\n]*`Agent`/u);
-    assert.match(guidance, /disallowedTools/u);
+    if (profileId === "portable") assert.match(guidance, /disallowedTools/u);
+    else assert.match(guidance, /inherit the parent's tools/u);
     assert.match(guidance, /SessionStart[\s\S]*PostToolUse[\s\S]*PreCompact/u);
     assert.match(guidance, /report that condition and stop or ask for direction/u);
     assert.doesNotMatch(guidance, /Codex|CODEX_HOME|Antigravity|gemini|spawn_agent|mcp__/iu);
@@ -470,6 +471,18 @@ test("Claude read-only roles cannot receive Bash or write tools", () => {
     assert.match(tools, /^\s+- Read$/mu, `${role} tool list must be captured whole`);
     assert.doesNotMatch(tools, /^\s+- (?:Bash|Write|Edit|Agent)\s*$/mu, `${role} received a mutating native tool`);
   }
+});
+
+test("Claude template agents inherit the full parent tool and permission policy", () => {
+  const files = fileMap(resultFor("template"));
+  for (const role of core.roles) {
+    const frontmatter = files.get(`agents/${role.id}.md`).split("---\n")[1];
+    assert.match(frontmatter, /^model: inherit$/mu);
+    assert.doesNotMatch(frontmatter, /^(?:tools|disallowedTools|permissionMode):/mu, role.id);
+  }
+  const settings = JSON.parse(files.get("config/settings.json"));
+  assert.equal(settings.permissions.defaultMode, "bypassPermissions");
+  assert.deepEqual(settings.permissions.deny, JSON.parse(fileMap(resultFor("portable")).get("config/settings.json")).permissions.deny);
 });
 
 test("Claude adapter satisfies the shared renderSurface action contract", () => {

@@ -1,11 +1,127 @@
 import assert from "node:assert/strict";
-import { lstat, mkdir, symlink } from "node:fs/promises";
-import { join, posix, win32 } from "node:path";
+import fs from "node:fs";
+import { lstat, mkdir, mkdtemp, rename, rm, symlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join, posix, win32 } from "node:path";
 import test from "node:test";
 
 import { withTempRoot } from "../helpers/temp-root.mjs";
-import { assertSafeDestinationRoot, RootResolutionError, resolveDestinationRoot } from "../../installers/lib/roots.mjs";
+import { assertSafeDestinationRoot, assertSafeDestinationRoots, RootResolutionError, resolveDestinationRoot } from "../../installers/lib/roots.mjs";
 import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
+
+test("a synchronous root batch checks shared existing ancestors in two bounded scans", async () => {
+  await withTempRoot(async (root) => {
+    const paths = [join(root, "shared", "one"), join(root, "shared", "two"), join(root, "other", "three")];
+    for (const path of paths) await mkdir(path, { recursive: true });
+    const ancestors = new Set();
+    for (const path of paths) {
+      for (let current = path; ; current = dirname(current)) {
+        ancestors.add(current);
+        if (dirname(current) === current) break;
+      }
+    }
+    const original = fs.realpathSync.native;
+    let calls = 0;
+    fs.realpathSync.native = function (...args) { calls += 1; return original.apply(this, args); };
+    try {
+      assert.deepEqual(assertSafeDestinationRoots(paths, { allowedProductRoots: [root] }), paths);
+    } finally {
+      fs.realpathSync.native = original;
+    }
+    assert.ok(calls <= 2 * ancestors.size, `${calls} native resolutions exceed two scans of ${ancestors.size} unique ancestors`);
+  });
+});
+
+test("a root batch validates every containment boundary and required directory", async () => {
+  await withTempRoot(async (root) => {
+    const allowed = join(root, "package");
+    await mkdir(allowed);
+    const missing = join(allowed, "missing");
+    assert.deepEqual(assertSafeDestinationRoots([missing], { allowedProductRoots: [allowed] }), [missing]);
+    assert.throws(() => assertSafeDestinationRoots([allowed, join(root, "outside")], { allowedProductRoots: [allowed] }), (error) => error.code === "root-outside-allowed");
+    assert.throws(() => assertSafeDestinationRoots([missing], { allowedProductRoots: [allowed], required: true }), (error) => error.code === "invalid-root");
+    assert.throws(() => assertSafeDestinationRoots(["/"], { platform: "darwin", homeDir: "/Users/tester", allowedProductRoots: ["/private/tmp/fixture"] }), (error) => error.code === "broad-root");
+  });
+});
+
+test("root batches recheck a shared ancestor after it becomes a link between calls", async (t) => {
+  await withTempRoot(async (root) => {
+    const allowed = join(root, "package");
+    const shared = join(allowed, "shared");
+    const paths = [join(shared, "one"), join(shared, "two")];
+    const outside = join(root, "outside");
+    for (const path of [...paths, join(outside, "one"), join(outside, "two")]) await mkdir(path, { recursive: true });
+    const options = { allowedProductRoots: [allowed], required: true };
+    assert.deepEqual(assertSafeDestinationRoots(paths, options), paths);
+    await rename(shared, join(allowed, "original"));
+    try {
+      await symlink(outside, shared, process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
+    assert.throws(() => assertSafeDestinationRoots(paths, options), (error) => error.code === "unsafe-root");
+  });
+});
+
+test("a root batch rejects shared ancestor replacement during sibling validation", async (t) => {
+  for (const occurrence of [1, 2]) await withTempRoot(async (root) => {
+    const allowed = join(root, "package");
+    const shared = join(allowed, "shared");
+    const paths = [join(shared, "one"), join(shared, "two")];
+    const outside = join(root, "outside");
+    for (const path of [...paths, join(outside, "one"), join(outside, "two")]) await mkdir(path, { recursive: true });
+    const linkType = process.platform === "win32" ? "junction" : "dir";
+    try {
+      await symlink(outside, join(root, "link-check"), linkType);
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
+    const original = fs.realpathSync.native;
+    let swapped = false;
+    let leafReads = 0;
+    let failure;
+    fs.realpathSync.native = function (path, ...args) {
+      const result = original.call(this, path, ...args);
+      if (path === paths[0]) leafReads += 1;
+      if (!swapped && path === paths[0] && leafReads === occurrence) {
+        swapped = true;
+        fs.renameSync(shared, join(allowed, "original"));
+        fs.symlinkSync(outside, shared, linkType);
+      }
+      return result;
+    };
+    try {
+      assertSafeDestinationRoots(paths, { allowedProductRoots: [allowed], required: true });
+    } catch (error) {
+      failure = error;
+    } finally {
+      fs.realpathSync.native = original;
+    }
+    assert.equal(swapped, true);
+    assert.equal(failure?.code, "unsafe-root", `replacement after leaf read ${occurrence}`);
+  });
+});
+
+test("root batches preserve ordinary Windows short-name directory aliases", { skip: process.platform !== "win32" }, async (t) => {
+  const rawRoot = await mkdtemp(join(tmpdir(), "aaa-root-alias-"));
+  const canonicalRoot = fs.realpathSync.native(rawRoot);
+  try {
+    if (!/~\d/u.test(rawRoot) || rawRoot.toLowerCase() === canonicalRoot.toLowerCase()) {
+      t.skip("the native temporary path does not expose a short-name alias");
+      return;
+    }
+    const paths = [join(rawRoot, "one"), join(rawRoot, "two")];
+    for (const path of paths) await mkdir(path);
+    const options = { allowedProductRoots: [rawRoot], required: true };
+    for (const path of paths) assert.equal(assertSafeDestinationRoot(path, options), path);
+    assert.deepEqual(assertSafeDestinationRoots(paths, options), paths);
+  } finally {
+    assert.equal(dirname(canonicalRoot), fs.realpathSync.native(tmpdir()));
+    await rm(canonicalRoot, { recursive: true, force: true });
+  }
+});
 
 test("destination safety rejects filesystem, account-container, and home roots", () => {
   const cases = [

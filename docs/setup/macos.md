@@ -173,3 +173,11 @@ See the [repository overview](../../README.md), [surface manifests](../../instal
 approved install, follow [native registration](../maintenance/native-registration.md),
 [native verification](../maintenance/native-verification.md), and
 [cross-tool quality](../maintenance/cross-tool-quality.md).
+
+## Managed model selection and companion tools
+
+After normal setup, use [automatic model policy](../maintenance/model-policy.md)
+for a preview or a managed native CLI launch. Each managed launch discovers
+eligible models; direct GUI launches do not run this step. Use
+[companion tooling](companion-tooling.md) to avoid duplicate activation and to
+check the actual interpreter, CLI distribution and hook support on this OS.

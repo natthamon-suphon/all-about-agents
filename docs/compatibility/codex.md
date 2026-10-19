@@ -26,7 +26,7 @@ the separate `trusted` step when Codex asks. A fresh session is needed for
 | `AGENTS.md`, skills, roles, and profiles | Package rendered; the disposable CLI loaded the base config and Terra profile | Role execution and Desktop loading are not claimed. |
 | Plugin registration | Disposable marketplace add, plugin add, and `plugin list --available --json` discovery passed | Trust and runtime execution remain separate. |
 | Hooks | Hook files were present in the discovered package | Hooks are not automatic. `/hooks` trust and hook execution were not run. |
-| Statusline display name | Codex has no native statusline contract in this package | `--statusline-name` is refused with `--surface codex` (exit code 2). Do not infer statusline setup from another product. |
+| Statusline display name | Native CLI TUI supports `tui.status_line`; this package configures no custom statusline | `--statusline-name` is refused with `--surface codex` (exit code 2). Do not infer statusline setup from another product. |
 | Native session | `NOT_RUN_UNAVAILABLE` | No authenticated model or Desktop session was run. |
 | Registration on 0.162.0 | On 2026-10-09 on macOS, `register --apply` completed end to end once `codex-plugin-list` ran with a 16 MiB output budget: `plugin list --available --json` printed 2.5 MB because it lists the remote catalog; hook hashes were recorded under `[hooks.state]`; a `codex exec` session reported `gpt-6.1-sol` with `xhigh` | Hook execution and Desktop behavior are still separate claims. |
 
@@ -159,3 +159,18 @@ Use [native registration](../maintenance/native-registration.md),
 [native verification](../maintenance/native-verification.md), and the
 [cross-tool quality guide](../maintenance/cross-tool-quality.md). See
 [known limitations](../limitations/known-limitations.md).
+
+## Current hardening boundary (2026-10-19)
+
+Template agent files inherit parent full-access permissions without local
+sandbox overrides. Portable role declarations remain, but an assigned read-only
+role is not proof of host-enforced isolation on every client version.
+
+Managed CLI launches discover `model/list` and select a visible Sol release
+with supported effort before starting the session. This upgrade selection is
+separate from automatic failover and does not run when Desktop opens a thread.
+Audit/checkpoint data uses native `PLUGIN_DATA`; legacy import preserves source
+files. See [model policy and history](../maintenance/model-policy.md).
+
+Current Windows commandWindows paths use PowerShell environment syntax. Native
+trust, command execution and macOS runtime still need separate evidence.

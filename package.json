@@ -18,6 +18,8 @@
     "quality:full": "node scripts/quality-gate.mjs full",
     "quality:skill": "node scripts/quality-gate.mjs skill",
     "setup": "node scripts/setup.mjs",
+    "models": "node scripts/model-policy.mjs",
+    "migrate:hook-state": "node scripts/migrate-hook-state.mjs",
     "export:claude-ai": "node scripts/export-claude-ai.mjs",
     "test:model": "node tests/model/run-trigger-suite.mjs"
   },

@@ -114,13 +114,15 @@ without it is not run or unavailable, not a failure.
 Where a host installs an RTK hook, the hook rewrites a shell command into an
 `rtk` call by itself, so `git status` runs as `rtk git status`. Write the plain
 command and let the hook do the work. Where no hook is installed, put `rtk` in
-front of the command yourself for the same saving. RTK ships hook processors
-for Claude Code, Gemini CLI, Cursor, Copilot, Droid, and Vibe. Codex has none
-today.
+front of the command yourself for the same saving. RTK 0.50.0 includes a Codex
+PreToolUse hook processor. Check the installed version, native hook registration,
+and observed rewriting before deciding whether to add the prefix manually.
+Processor availability alone does not prove that a host runs the hook.
 
 Always run the meta commands as `rtk` itself, never through a hook: `rtk gain`
 for measured savings, `rtk discover` for missed chances, and `rtk proxy` to run
-one command unfiltered while debugging.
+one command unfiltered while debugging on RTK 0.50.0. Newer releases may rename
+the passthrough command; use the installed version's help.
 
 Check an install with `rtk --version` and `rtk gain`. A failing `rtk gain`
 usually means a different tool named `rtk` resolves first on the path. `rtk rg`

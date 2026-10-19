@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { access, link, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
@@ -139,6 +139,18 @@ test("appendAuditEvent fails open when its target cannot be written", async () =
   });
 });
 
+test("audit does not append through a hardlink to an unowned file", async () => {
+  await withTempRoot(async (root) => {
+    const audit = join(root, "audit");
+    await mkdir(audit);
+    const neighbor = join(root, "neighbor.log");
+    await writeFile(neighbor, "keep\n");
+    await link(neighbor, join(audit, "activity-audit.log"));
+    assert.equal((await appendAuditEvent(audit, validEvent, limits)).status, "skipped");
+    assert.equal(await readFile(neighbor, "utf8"), "keep\n");
+  });
+});
+
 test("appendAuditEvent enforces a lowered byte limit across retained files", async () => {
   await withTempRoot(async (root) => {
     const oversized = { ...validEvent, actionId: `aaa:${"initial".repeat(30)}` };
@@ -204,7 +216,7 @@ async function materialize(result, root) {
 }
 
 function disposableEnv(root) {
-  return { PATH: process.env.PATH, HOME: root, USERPROFILE: root, TMPDIR: root, TMP: root, TEMP: root, CLAUDE_CONFIG_DIR: root, CODEX_HOME: root };
+  return { PATH: process.env.PATH, HOME: root, USERPROFILE: root, TMPDIR: root, TMP: root, TEMP: root, CLAUDE_CONFIG_DIR: root, CODEX_HOME: root, CLAUDE_PLUGIN_DATA: join(root, "data"), PLUGIN_DATA: join(root, "data") };
 }
 
 function renderedHookPackages(core) {
@@ -218,14 +230,14 @@ test("rendered activity and checkpoint hooks record one line each for a valid na
   const core = await loadCore(process.cwd());
   for (const item of renderedHookPackages(core)) {
     await withTempRoot(async (root) => {
-      await materialize(item.result, root);
-      const runHook = (name, payload) => spawnSync(process.execPath, [join(root, "hooks", name)], { input: JSON.stringify(payload), encoding: "utf8", env: disposableEnv(root) });
+      await materialize(item.result, join(root, "package"));
+      const runHook = (name, payload) => spawnSync(process.execPath, [join(root, "package", "hooks", name)], { input: JSON.stringify(payload), encoding: "utf8", env: disposableEnv(root) });
       const audit = runHook("activity-audit.mjs", { hook_event_name: "PostToolUse", tool_name: "Read", tool_input: {}, tool_response: {}, session_id: "session-1", tool_use_id: "tool-1" });
       assert.equal(audit.status, 0, `${item.surface}: ${audit.stderr}`);
       const checkpoint = runHook("pre-compact.mjs", { hook_event_name: "PreCompact", session_id: "session-1", transcript_path: join(root, "transcript.jsonl"), trigger: "auto" });
       assert.equal(checkpoint.status, 0, `${item.surface}: ${checkpoint.stderr}`);
 
-      const auditLines = (await readFile(join(root, "hooks", "audit", "activity-audit.log"), "utf8")).trim().split("\n");
+      const auditLines = (await readFile(join(root, "data", "audit", "activity-audit.log"), "utf8")).trim().split("\n");
       assert.equal(auditLines.length, 1, item.surface);
       const auditEntry = JSON.parse(auditLines[0]);
       assert.deepEqual(Object.keys(auditEntry), JSON.parse(await readFile(resolve(process.cwd(), "core/hooks/activity-audit.json"), "utf8")).recordedFields);
@@ -233,7 +245,7 @@ test("rendered activity and checkpoint hooks record one line each for a valid na
       assert.equal(auditEntry.actionId, "read");
       assert.equal(auditEntry.sessionKeyHash, createHash("sha256").update("session-1").digest("hex"));
 
-      const checkpointLines = (await readFile(join(root, "hooks", "checkpoints", "checkpoint.jsonl"), "utf8")).trim().split("\n");
+      const checkpointLines = (await readFile(join(root, "data", "checkpoints", "checkpoint.jsonl"), "utf8")).trim().split("\n");
       assert.equal(checkpointLines.length, 1, item.surface);
       const checkpointEntry = JSON.parse(checkpointLines[0]);
       assert.deepEqual(Object.keys(checkpointEntry), JSON.parse(await readFile(resolve(process.cwd(), "core/hooks/checkpoint.json"), "utf8")).recordedFields);
@@ -248,16 +260,44 @@ test("rendered checkpoint hook bounds and sanitizes the native session and trigg
   const core = await loadCore(process.cwd());
   for (const item of renderedHookPackages(core)) {
     await withTempRoot(async (root) => {
-      await materialize(item.result, root);
-      const result = spawnSync(process.execPath, [join(root, "hooks", "pre-compact.mjs")], {
+      await materialize(item.result, join(root, "package"));
+      const result = spawnSync(process.execPath, [join(root, "package", "hooks", "pre-compact.mjs")], {
         input: JSON.stringify({ hook_event_name: "PreCompact", session_id: `../${"s".repeat(100)}\u001b[31m`, trigger: 7 }),
         encoding: "utf8",
         env: disposableEnv(root)
       });
       assert.equal(result.status, 0, `${item.surface}: ${result.stderr}`);
-      const entry = JSON.parse((await readFile(join(root, "hooks", "checkpoints", "checkpoint.jsonl"), "utf8")).trim());
+      const entry = JSON.parse((await readFile(join(root, "data", "checkpoints", "checkpoint.jsonl"), "utf8")).trim());
       assert.match(entry.sessionId, /^[A-Za-z0-9._-]{1,64}$/u);
       assert.equal(entry.trigger, "unknown");
+    });
+  }
+});
+
+test("rendered hook history survives package replacement and missing data never writes into packages", async () => {
+  const core = await loadCore(process.cwd());
+  for (const item of renderedHookPackages(core)) {
+    await withTempRoot(async (root) => {
+      for (const version of ["v1", "v2"]) {
+        const packageRoot = join(root, version);
+        await materialize(item.result, packageRoot);
+        const result = spawnSync(process.execPath, [join(packageRoot, "hooks", "activity-audit.mjs")], {
+          input: JSON.stringify({ tool_name: "Read", session_id: version }), encoding: "utf8", env: disposableEnv(root)
+        });
+        assert.equal(result.status, 0, result.stderr);
+        assert.equal(await access(join(packageRoot, "hooks", "audit")).then(() => true, () => false), false);
+      }
+      const lines = (await readFile(join(root, "data", "audit", "activity-audit.log"), "utf8")).trim().split("\n");
+      assert.equal(lines.length, 2);
+      const env = disposableEnv(root);
+      delete env.CLAUDE_PLUGIN_DATA;
+      delete env.PLUGIN_DATA;
+      const result = spawnSync(process.execPath, [join(root, "v2", "hooks", "activity-audit.mjs")], {
+        input: JSON.stringify({ tool_name: "Read", session_id: "missing" }), encoding: "utf8", env
+      });
+      assert.equal(result.status, 0);
+      assert.match(result.stderr, /native plugin data unavailable/u);
+      assert.equal((await readFile(join(root, "data", "audit", "activity-audit.log"), "utf8")).trim().split("\n").length, 2);
     });
   }
 });
@@ -266,10 +306,10 @@ test("Claude and Codex activity/checkpoint wrappers fail open on oversized stdin
   const core = await loadCore(process.cwd());
   for (const item of renderedHookPackages(core)) {
     await withTempRoot(async (root) => {
-      await materialize(item.result, root);
+      await materialize(item.result, join(root, "package"));
       const oversized = JSON.stringify({ actionId: "tool:review", outcome: "success", session_id: "bounded", padding: "x".repeat(70_000) });
       for (const name of ["activity-audit.mjs", "pre-compact.mjs"]) {
-        const result = spawnSync(process.execPath, [join(root, "hooks", name)], { input: oversized, encoding: "utf8", env: disposableEnv(root) });
+        const result = spawnSync(process.execPath, [join(root, "package", "hooks", name)], { input: oversized, encoding: "utf8", env: disposableEnv(root) });
         assert.equal(result.status, 0, `${item.surface}/${name}: ${result.stderr}`);
       }
       assert.equal(await access(join(root, "hooks", "audit")).then(() => true, () => false), false);

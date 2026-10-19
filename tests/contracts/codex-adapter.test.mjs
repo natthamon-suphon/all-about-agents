@@ -176,6 +176,19 @@ test("Codex skill and role prompts carry no rendered preamble and keep machine i
   }
 });
 
+test("Codex template agents inherit full parent permissions without local sandbox overrides", () => {
+  const files = fileMap(resultFor("template"));
+  for (const role of core.roles) {
+    const layer = adapter.parseCodexToml(files.get(`.codex/agents/${role.id}.toml`));
+    assert.equal(Object.hasOwn(layer, "sandbox_mode"), false, role.id);
+    assert.equal(Object.hasOwn(layer, "approval_policy"), false, role.id);
+    assert.ok(layer.developer_instructions.length > 0);
+  }
+  const config = adapter.parseCodexToml(files.get("config.toml"));
+  assert.equal(config.sandbox_mode, "danger-full-access");
+  assert.equal(config.approval_policy, "never");
+});
+
 test("Codex preserves supplied skill content and renders the final canonical skill", () => {
   const files = fileMap(resultFor());
   const supplied = files.get(".agents/skills/using-all-about-agents/SKILL.md");
@@ -384,7 +397,7 @@ test("Codex plugin hooks invoke the rendered runtime and require trust plus Node
   assert.equal(startup.matcher, "^(startup|clear|compact)$");
   assert.equal(startup.hooks[0].type, "command");
   assert.match(startup.hooks[0].command, /\$PLUGIN_ROOT\/hooks\/bootstrap\.mjs/u);
-  assert.match(startup.hooks[0].commandWindows, /%PLUGIN_ROOT%\/hooks\/bootstrap\.mjs/u);
+  assert.match(startup.hooks[0].commandWindows, /\$env:PLUGIN_ROOT\/hooks\/bootstrap\.mjs/u);
   assert.equal(files.get("hooks/bootstrap.mjs"), await readFile(resolve(process.cwd(), "core/hooks/bootstrap.mjs"), "utf8"));
   assert.equal(files.get("hooks/bootstrap.json"), await readFile(resolve(process.cwd(), "core/hooks/bootstrap.json"), "utf8"));
   const hookRegistration = result.registrations.find((entry) => entry.kind === "hook-contract");

@@ -175,3 +175,18 @@ See the [repository overview](../../README.md), [surface manifests](../../instal
 approved install, follow [native registration](../maintenance/native-registration.md),
 [native verification](../maintenance/native-verification.md), and
 [cross-tool quality](../maintenance/cross-tool-quality.md).
+
+## Managed model selection and companion tools
+
+For shared-guide examples that forward `--flags` through npm, use `npm.cmd`
+in PowerShell. On the reviewed host, `npm.ps1` removed the `--` separator and
+npm consumed those flags. For example, use
+`npm.cmd run models -- --surface codex`, or the shell-independent
+`node scripts/model-policy.mjs --surface codex`. Commands without forwarded
+flags, such as `npm run quality:full`, work unchanged.
+
+After normal setup, use [automatic model policy](../maintenance/model-policy.md)
+for a preview or a managed native CLI launch. Each managed launch discovers
+eligible models; direct GUI launches do not run this step. Use
+[companion tooling](companion-tooling.md) to avoid duplicate activation and to
+check the actual interpreter, CLI distribution and hook support on this OS.

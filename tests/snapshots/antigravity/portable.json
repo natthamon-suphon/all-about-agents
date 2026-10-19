@@ -2,13 +2,8 @@
   "fileCount": 79,
   "files": [
     {
-      "relativePath": "GEMINI.md",
-      "sha256": "24f2a81f96c5333485a4fc3501ace63ad8e1c7f7f2c08d4cbb5278507d2d552e",
-      "mode": null
-    },
-    {
       "relativePath": "README.md",
-      "sha256": "9acbb8b6de92df9dbea98d2055ec9ac0735651cd2709ab205080db3938e78e24",
+      "sha256": "85be5decff9beae2990e0c570ada850b66ce8fc9d5fac2aed22022da14b606f3",
       "mode": null
     },
     {
@@ -47,13 +42,18 @@
       "mode": null
     },
     {
+      "relativePath": "config/GEMINI.md",
+      "sha256": "a60f5f6f08182199e0bea227751aa36df0913b9eb9750c7544e42727c7f66649",
+      "mode": null
+    },
+    {
       "relativePath": "config/rules/all-about-agents.md",
       "sha256": "bf5ddc57dc1b42f72a7b629bc09dd92e349ee72dc44a8ba8cbf4223fe9926dcb",
       "mode": null
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "0e99772a61760bcd215b97629ae9e9b6f11e6d8aec91213481348bc1e613080b",
+      "sha256": "8232d0bd93447c24c2eee413052fd184a18e7b56288d3e2323ac6596cb2bb45c",
       "mode": null
     },
     {
@@ -238,7 +238,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace.cjs",
-      "sha256": "526aec516680ea96246da29c9445bb175ec3e749850f28d538b84eaf14aca691",
+      "sha256": "e9689f3dca3c85cb33b4215f90f041ad2ae175c641199a9cb28c0d120366df76",
       "mode": 493
     },
     {
@@ -323,7 +323,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "0c451cc7c4d42391593c0692b887d017780c16b080207aa20ba036fceadb0276",
+      "sha256": "168f27930770a468c2d49de85caa184eb2fcb46cfbc4d44698761a2486b60fcb",
       "mode": null
     },
     {
@@ -399,12 +399,8 @@
   ],
   "ownership": [
     {
-      "relativePath": "GEMINI.md",
-      "sha256": "24f2a81f96c5333485a4fc3501ace63ad8e1c7f7f2c08d4cbb5278507d2d552e"
-    },
-    {
       "relativePath": "README.md",
-      "sha256": "9acbb8b6de92df9dbea98d2055ec9ac0735651cd2709ab205080db3938e78e24"
+      "sha256": "85be5decff9beae2990e0c570ada850b66ce8fc9d5fac2aed22022da14b606f3"
     },
     {
       "relativePath": "agents/architect.md",
@@ -435,12 +431,16 @@
       "sha256": "10399485ad8fdf0b15097109663d063a5e65b8777f9f3e7c2b62c340285f3369"
     },
     {
+      "relativePath": "config/GEMINI.md",
+      "sha256": "a60f5f6f08182199e0bea227751aa36df0913b9eb9750c7544e42727c7f66649"
+    },
+    {
       "relativePath": "config/rules/all-about-agents.md",
       "sha256": "bf5ddc57dc1b42f72a7b629bc09dd92e349ee72dc44a8ba8cbf4223fe9926dcb"
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "0e99772a61760bcd215b97629ae9e9b6f11e6d8aec91213481348bc1e613080b"
+      "sha256": "8232d0bd93447c24c2eee413052fd184a18e7b56288d3e2323ac6596cb2bb45c"
     },
     {
       "relativePath": "plugin.json",
@@ -588,7 +588,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace.cjs",
-      "sha256": "526aec516680ea96246da29c9445bb175ec3e749850f28d538b84eaf14aca691"
+      "sha256": "e9689f3dca3c85cb33b4215f90f041ad2ae175c641199a9cb28c0d120366df76"
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/task-brief",
@@ -656,7 +656,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "0c451cc7c4d42391593c0692b887d017780c16b080207aa20ba036fceadb0276"
+      "sha256": "168f27930770a468c2d49de85caa184eb2fcb46cfbc4d44698761a2486b60fcb"
     },
     {
       "relativePath": "skills/using-all-about-agents/references/codex-tools.md",
@@ -785,8 +785,8 @@
     },
     {
       "kind": "instructions",
-      "relativePath": "GEMINI.md",
-      "destination": "GEMINI.md",
+      "relativePath": "config/GEMINI.md",
+      "destination": "config/GEMINI.md",
       "guard": "managed-block",
       "consumers": [
         "antigravity-cli",

@@ -62,10 +62,10 @@ transport outside the manual `npm run test:model` suite, hook trust, hook execut
   plugin command hook (`hook: SessionStart Failed` on 2026-09-28), so the
   routing contract is inlined into `AGENTS.md` instead of relying on the
   bootstrap hook. Where the hook does run, the contract reaches the session twice.
-- Antigravity renders no hooks at all, because no session-start event can be
-  named with current evidence. The recorded event list is inherited from the
-  2026-08-31 evaluation of `agy 1.1.22` and was not re-verified on 1.2.7. Its
-  routing contract lives in the marked block of `GEMINI.md`. A registration
+- Antigravity renders no hooks. Current Google documentation includes
+  `SessionStart` for App/CLI/IDE; `PreCompact` support is not established.
+  The package keeps one bootstrap carrier in the marked block of `GEMINI.md`.
+  A registration
   completes only when that block is in place, but that does not prove the
   product loads it. Ask the product; do not infer it
   from a green run.
@@ -81,16 +81,15 @@ transport outside the manual `npm run test:model` suite, hook trust, hook execut
   the plan copies managed files and then fails its native commands, so a
   package can look installed while the product knows nothing about it. Confirm
   with the product's own discovery command, never from installer output.
-- Inferred, not run on Windows: `register --apply` starts `agy`, `claude`,
-  `codex`, and `git` by bare name without a shell. Node.js cannot start a
-  `.cmd` or `.bat` file that way
+- Native execution uses structured arguments without a shell. Node.js cannot
+  start a `.cmd` or `.bat` file directly
   ([Node.js child process documentation](https://nodejs.org/api/child_process.html#spawning-bat-and-cmd-files-on-windows)),
-  so a product that is installed only as an npm `.cmd` shim is reported as
-  unavailable even though it runs in a terminal. The repository adds no shell
-  to work around this. Check each binary first, for example
-  `Get-Command codex | Format-List Name, CommandType, Source`: a `Source` that
-  ends in `.exe` can be started, and a `Source` that ends in `.cmd` or `.ps1` is
-  the unsupported shim case.
+  so the runner resolves supported official Codex and Claude npm shims to
+  their Node entry points. A Windows regression verifies literal arguments
+  and that shim shell text is not evaluated. Other command-shell wrappers
+  remain unsupported; use a native executable or an explicitly supported
+  official package. Check resolution with
+  `Get-Command codex | Format-List Name, CommandType, Source`.
 - Claude rules are copied to `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`.
   Registration never deletes a file there. A rule that a later package no
   longer renders stays, and Claude Code can still load it, until you remove it;

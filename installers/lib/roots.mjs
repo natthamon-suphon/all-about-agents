@@ -55,7 +55,7 @@ function sameFileIdentity(left, right) {
   return left.dev === right.dev && left.ino === right.ino;
 }
 
-function inspectExistingEntry(current, pathModule) {
+function inspectExistingEntry(current, pathModule, canonicalParents = null) {
   let metadata;
   try {
     metadata = lstatSync(current);
@@ -68,12 +68,19 @@ function inspectExistingEntry(current, pathModule) {
   // Tests may exercise foreign-platform path semantics on the host platform.
   // Do not apply host-native canonicalization to those synthetic paths.
   const nativePlatformMatches = (pathModule === win32 && process.platform === "win32") || (pathModule !== win32 && process.platform !== "win32");
-  if (!nativePlatformMatches) return true;
+  if (!nativePlatformMatches) {
+    canonicalParents?.set(current, current);
+    return true;
+  }
   // On Windows, a directory reparse point can redirect without being reported
   // as a symbolic link. Resolving every existing component and comparing it
   // with the lexical path rejects that class of redirection conservatively.
   try {
     const resolved = realpathSync.native(current);
+    const parent = canonicalParents?.get(pathModule.dirname(current));
+    if (parent !== undefined && canonicalPath(pathModule.dirname(resolved), pathModule) !== canonicalPath(parent, pathModule)) {
+      fail("unsafe-root", "destination root parent changed during validation");
+    }
     if (canonicalPath(resolved, pathModule) !== canonicalPath(current, pathModule)) {
       // Windows may expose an ordinary directory through an 8.3 short-name
       // alias. Permit that spelling only when the native file identity is
@@ -83,6 +90,7 @@ function inspectExistingEntry(current, pathModule) {
         fail("unsafe-root", "destination root may not cross a redirecting reparse point");
       }
     }
+    canonicalParents?.set(current, resolved);
   } catch (error) {
     if (error instanceof RootResolutionError) throw error;
     if (error?.code === "ENOENT" || error?.code === "ENOTDIR" || error?.code === "UNKNOWN") return false;
@@ -103,19 +111,23 @@ function candidatePath(value, homeDir, pathModule) {
   return absolute;
 }
 
-function inspectExistingAncestors(root, pathModule) {
+function inspectRootAncestors(root, pathModule, checked = null) {
   const parsed = pathModule.parse(root);
   const relativePath = pathModule.relative(parsed.root, root);
   let current = parsed.root;
   const segments = relativePath === "" ? [] : relativePath.split(pathModule.sep).filter(Boolean);
   for (const segment of segments) {
     current = pathModule.join(current, segment);
+    if (checked?.has(current)) continue;
     // Once a component is absent, every descendant is absent too. Keep the
     // unresolved suffix intact; the plan/apply layer will create it safely.
-    if (!inspectExistingEntry(current, pathModule)) return;
+    if (!inspectExistingEntry(current, pathModule, checked)) return false;
   }
+  return segments.length > 0 || inspectExistingEntry(root, pathModule, checked);
+}
 
-  inspectExistingEntry(root, pathModule);
+function inspectExistingAncestors(root, pathModule) {
+  if (inspectRootAncestors(root, pathModule)) inspectExistingEntry(root, pathModule);
 }
 
 function broadRoot(root, home, pathModule) {
@@ -138,8 +150,7 @@ function allowedRoots(values, home, pathModule) {
   return roots;
 }
 
-/** Validate an already-resolved root without creating or mutating it. */
-export function assertSafeDestinationRoot(root, { platform = process.platform, homeDir = homedir(), allowedProductRoots = [] } = {}) {
+function validatedRoot(root, { platform = process.platform, homeDir = homedir(), allowedProductRoots = [] } = {}) {
   const pathModule = moduleFor(platform);
   if (typeof root !== "string" || !pathModule.isAbsolute(root) || root.includes("\0")) fail("invalid-root", "destination root must be an absolute path");
   const normalized = pathModule.normalize(root);
@@ -147,6 +158,27 @@ export function assertSafeDestinationRoot(root, { platform = process.platform, h
   if (broadRoot(normalized, home, pathModule)) fail("broad-root", "destination root may not be a filesystem, account-container, or home root");
   const allowed = allowedRoots(allowedProductRoots, home, pathModule);
   if (!allowed.some((candidate) => isContained(candidate, normalized, pathModule))) fail("root-outside-allowed", "destination root must be contained by an allowed product or disposable root");
+  return { normalized, pathModule };
+}
+
+/** Validate one synchronous batch; no ancestor result survives the call. */
+export function assertSafeDestinationRoots(roots, options = {}) {
+  if (!Array.isArray(roots)) fail("invalid-root", "destination roots must be an array");
+  if (options.required !== undefined && typeof options.required !== "boolean") fail("invalid-root", "required must be a boolean");
+  const entries = roots.map((root) => validatedRoot(root, options));
+  const checked = new Map();
+  for (const { normalized, pathModule } of entries) {
+    if (!inspectRootAncestors(normalized, pathModule, checked) && options.required) fail("invalid-root", "required destination root is unavailable");
+  }
+  for (const ancestor of checked.keys()) {
+    if (!inspectExistingEntry(ancestor, entries[0].pathModule, checked) && options.required) fail("invalid-root", "required destination root is unavailable");
+  }
+  return entries.map(({ normalized }) => normalized);
+}
+
+/** Validate an already-resolved root without creating or mutating it. */
+export function assertSafeDestinationRoot(root, options = {}) {
+  const { normalized, pathModule } = validatedRoot(root, options);
   inspectExistingAncestors(normalized, pathModule);
   return normalized;
 }

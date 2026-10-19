@@ -7,7 +7,7 @@ import { makeTempRoot, withTempRoot } from "../helpers/temp-root.mjs";
 
 const surfaces = ["antigravity", "claude", "codex"];
 const manifestGlobalNames = new Map([
-  ["antigravity", "GEMINI.md"],
+  ["antigravity", "config/GEMINI.md"],
   ["claude", "config/CLAUDE.md"],
   ["codex", "AGENTS.md"]
 ]);
@@ -50,6 +50,8 @@ test("manifest ownership is complete, sorted, unique, and names the global outpu
     const global = manifest.components.globalInstructions;
     const packageName = typeof global === "string" ? global : global?.package;
     assert.equal(packageName, manifestGlobalNames.get(surface));
+    const capabilities = await loadCapability(surface);
+    assert.equal(capabilities.capabilities.find((entry) => entry.feature === "instructions.global").value.package, packageName, `${surface} global instruction capability must match its staged source`);
     assert.ok(manifest.ownedPaths.some((path) => path === packageName), `${surface} manifest must own ${packageName}`);
     assert.doesNotMatch(JSON.stringify(manifest), /\p{Extended_Pictographic}/u, `${surface} manifest machine data must not contain emoji`);
   }
@@ -127,7 +129,7 @@ test("Claude Fable advisor wording records current support with access limits", 
   const claude = await loadCapability("claude");
   const advisor = claude.capabilities.find((item) => item.feature === "model.advisor");
   assert.ok(advisor);
-  assert.equal(advisor.value, "claude-fable-5-1");
+  assert.equal(advisor.value, "fable");
   assert.notEqual(advisor.stability, "experimental");
   assert.match(advisor.notes, /account|plan|version/iu);
   assert.match(advisor.notes, /access|available|consent|credit/iu);

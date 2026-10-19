@@ -105,9 +105,9 @@ function routingContract(core) {
 
 /**
  * Render Antigravity's GEMINI.md block: the shared body and the inlined routing
- * contract, because Antigravity has no SessionStart event (decision A7 of
- * docs/plans/2026-09-19-restore-antigravity.md). agy truncates one rule file
- * at 24,000 bytes, so the canonical rules ship in a separate rule file.
+ * contract. This remains the single bootstrap carrier even where SessionStart
+ * is available. agy truncates one rule file at 24,000 bytes, so the canonical
+ * rules ship in a separate rule file.
  */
 export function renderAntigravityGlobalInstructions(core) {
   const loaded = ensureCore(core);

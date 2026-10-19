@@ -54,10 +54,14 @@ RTK house rules and that no surface carries an operator-specific import.
 
 The Codex and Antigravity appendices carry one thing the Claude file does not:
 the body of the `using-all-about-agents` skill. Claude receives that routing
-contract from the `SessionStart` bootstrap hook. Antigravity has no such event
-(`docs/plans/2026-09-19-restore-antigravity.md` decision A7), and Codex on
-Windows fails every plugin command hook, so for both the always-loaded
-instruction file is the carrier.
+contract from the `SessionStart` bootstrap hook. Antigravity keeps the global
+instruction file as its single carrier even though Google now documents
+`SessionStart`. Windows Codex 0.152.1 failed plugin command hooks; the inlined
+contract preserves routing there. Check newer versions separately.
+
+Antigravity stages its global file as `config/GEMINI.md` inside the package.
+Registration deploys it to `~/.gemini/GEMINI.md`. A plugin-root copy is never
+loaded as a rule and causes a strict validation warning on `agy 1.4.2`.
 
 No surface renders an operator-specific appendix. Claude resolves `@` imports,
 but a path that exists on one machine only does not belong in the shared

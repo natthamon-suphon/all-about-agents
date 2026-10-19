@@ -100,7 +100,7 @@ test("every surface renders every companion once beside its owning skill", async
 
 test("all package manifests declare the rendered global file and complete skill roots", async () => {
   const expectedGlobal = new Map([
-    ["antigravity", "GEMINI.md"],
+    ["antigravity", "config/GEMINI.md"],
     ["claude", "config/CLAUDE.md"],
     ["codex", "AGENTS.md"]
   ]);

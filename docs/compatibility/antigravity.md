@@ -50,7 +50,7 @@ package was loaded.
 | Global rule file | `config/rules/all-about-agents.md` is copied to `~/.gemini/config/rules/all-about-agents.md` with `trigger: always_on`; a headless session quoted a probe file there on `agy 1.2.12` | The package owns this one file name; other files in that folder are never touched. |
 | Plugin registration | `agy plugin install <dir>`, then `agy plugin list` and `agy agents` listed the package and all seven roles | The install is a copy; it does not follow later renders. |
 | Routing contract | Inlined into `GEMINI.md`; a headless session quoted its first heading | Whether the model follows the contract is a behavior question, not a discovery one. |
-| Hooks | None rendered | No session-start event can be named with current evidence; the recorded event list is inherited from the 1.1.22 evaluation. Do not infer hook support from another product. |
+| Hooks | None rendered | Current Google docs list `SessionStart` for App/CLI/IDE. Routing stays inlined; rendering no duplicate hook is a package choice, not lack of native hook support. |
 | Status line | None rendered | No statusline is rendered. The Claude-only `--statusline-name` option is refused with `--surface antigravity` (exit code 2); with `--surface all` it reaches Claude alone. The removed adapters pointed one at a path the product never creates. |
 | Permission deny rules | Recorded as a manual expectation only | This package never writes `antigravity-cli/settings.json`. |
 | Antigravity Desktop and IDE | Loading `NOT_RUN_UNAVAILABLE` | Both read the documented global slot `~/.gemini/config/plugins/all-about-agents/`, which `agy plugin install` fills; without `agy` the copy is manual. Neither app has a headless mode. |
@@ -59,7 +59,7 @@ package was loaded.
 
 ```text
 plugin.json                 name and description only, at the package root
-GEMINI.md                   marked block: canonical global body, inlined routing contract
+config/GEMINI.md            staged global marked block and inlined routing contract
 config/rules/all-about-agents.md  always-on rule: canonical rules, presentation
 README.md                   install summary
 agents/<role>.md            7 roles, Markdown with YAML frontmatter
@@ -85,7 +85,7 @@ rendered the package; `npm run setup` renders `template` by default. A mismatch
 fails with `package-profile-mismatch`.
 
 Registration first deploys `GEMINI.md` and the global rule file (see below),
-then runs `agy plugin validate`, `agy plugin install`, and `agy plugin list`.
+then runs `agy plugin validate`, `agy plugin install`, and `agy plugin list --json`.
 `agy` must resolve on `PATH`. When it does not, `register` still deploys both
 files first, then stops at the validate step with error
 `native-executable-unavailable` and exit code 1. The report status is `partial`
@@ -112,7 +112,7 @@ replaces only that block, so your own sections above or below it stay byte for
 byte. When the live file has no intact block, registration writes nothing,
 reports `manual-required`, and the run ends with exit code 1
 (`manual-step-required`). The reason names the one-time fix: keep your own
-lines above or below the markers and put the package `GEMINI.md` in place of
+lines above or below the markers and put the package `config/GEMINI.md` in place of
 the rest.
 
 The canonical rules and the presentation catalog are not in `GEMINI.md`. They
@@ -131,11 +131,16 @@ Observed on `agy 1.2.7`: agy kept only the first 24,020 characters of
 only signal is a `Global rule truncated` line in
 `~/.gemini/antigravity-cli/cli.log`. After you add your own sections, keep the
 file under 24,000 bytes and search that log for `truncated`.
-`<ROOT>/GEMINI.md` is the exact block registration deploys, so compare it with
+`<ROOT>/config/GEMINI.md` is the exact block registration deploys, so compare it with
 the block in `~/.gemini/GEMINI.md` directly. To preview the plan, set
 `AAA_ANTIGRAVITY_ROOT` to a disposable directory and run `register --dry-run`.
 Do not use `--apply` for a preview: the `agy` steps do not read that variable,
 so `agy plugin install` still writes the live Antigravity plugin folder.
+
+On `agy 1.4.2`, strict validation warns that a plugin-root `GEMINI.md` is never
+loaded. The package therefore stages it under `config/`; native registration
+still deploys it to the global `~/.gemini/GEMINI.md`. Both profiles passed
+strict validation after this move. No extra plugin rule or hook is added.
 
 ## Configuration root
 
@@ -148,18 +153,38 @@ For qualification and tests this repository defines its own override,
 operator's live home. For `register` it moves only the `GEMINI.md`
 destination: the `agy` steps run with the normal environment.
 
-## Models and effort
+## Models and full access
 
-`agy models` lists the available slugs; `agy --help` documents
-`--effort low|medium|high`.
+Use [automatic model policy](../maintenance/model-policy.md) for the managed
+CLI launcher. It discovers premium models before each managed session. Native
+`/model` and `/effort` persist explicit defaults; launch flags are session-only.
+No undocumented persistent model key is written.
 
-The `portable` profile changes neither. The `template` profile records
-`gemini-3.1-pro-high` as the approved model and emits it as a **manual** step:
-selection happens through `agy --model` or the `/model` command, because no
-documented on-disk key persists it.
+Automatic GUI model control is unsupported by this repository's launcher.
+If catalog discovery fails, launch stops without a stale model fallback.
+Select App/IDE models manually until a supported native control is verified.
 
-The package sets no model fallback. Automatic model fallback is unsupported and
-not claimed.
+On 2026-10-19, `agy 1.4.2` listed `gemini-4-argon-high`; its available variants
+established `high` as this account's maximum. CLI syntax supporting `xhigh` or
+`max` does not establish that a chosen model offers them. Use `xhigh` when
+available, otherwise the highest supported level, and report the actual value.
+
+Template roles declare `model: inherit` and `commandExecutionPolicy: eager`.
+App/CLI document these fields; native effective autonomy remains unverified.
+Parent file scopes and sandbox settings still apply. The documented CLI full
+access preferences are `toolPermission: "always-proceed"`,
+`allowNonWorkspaceAccess: true`, and `enableTerminalSandbox: false`.
+Review them through `/settings` and preserve existing emergency denies.
+This package does not overwrite `antigravity-cli/settings.json`.
+
+App/macOS Turbo, App/Windows Always Proceed, and standalone IDE sandbox controls
+are separate product settings. Do not apply CLI JSON fields to the GUI without
+its own schema. Standalone IDE custom-subagent behavior and automatic model
+selection are unconfirmed; Gemini 4 Argon is explicitly excluded from that IDE.
+See [Google models](https://antigravity.google/docs/models/),
+[effort](https://antigravity.google/docs/cli/commands/effort),
+[settings](https://antigravity.google/docs/settings/), and
+[subagent inheritance](https://antigravity.google/docs/subagents/).
 
 ## Antigravity Desktop and IDE
 

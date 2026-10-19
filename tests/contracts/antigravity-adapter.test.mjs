@@ -8,6 +8,7 @@ import { ANTIGRAVITY_ROOT_ENV, ANTIGRAVITY_SEMANTIC_MAPPINGS, renderAntigravity,
 import { resolveNativeInstructionRoot, resolveNativeProductRoot } from "../../installers/lib/native-registration.mjs";
 import { nativeIntegrationStatus } from "../../adapters/shared/native-state.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
+import { materializeRenderResult } from "../../installers/lib/render.mjs";
 
 const core = await loadCore(process.cwd());
 
@@ -50,11 +51,13 @@ test("the bootstrap surface list still excludes Antigravity", async () => {
   const source = await readFile(resolve(process.cwd(), "core/hooks/bootstrap.mjs"), "utf8");
   const declaration = /const SESSION_START_SURFACES = new Set\(\[([^\]]*)\]\)/u.exec(source);
   assert.ok(declaration, "bootstrap must keep an explicit session-start surface list");
-  assert.equal(declaration[1].includes("antigravity"), false, "Antigravity has no SessionStart event to hook");
+  assert.equal(declaration[1].includes("antigravity"), false, "inlined routing must not gain a duplicate bootstrap carrier");
 });
 
-test("GEMINI.md is one marked block that inlines the routing contract because no hook can inject it", () => {
-  const gemini = fileMap(render()).get("GEMINI.md");
+test("GEMINI.md is one marked block that inlines the routing contract without a duplicate hook", () => {
+  const files = fileMap(materializeRenderResult(render()));
+  assert.equal(files.has("GEMINI.md"), false, "native strict validation rejects a root plugin GEMINI.md");
+  const gemini = files.get("config/GEMINI.md");
   const bootstrap = core.skills.find((record) => (record.id ?? record.name) === "using-all-about-agents");
   assert.ok(bootstrap, "core must provide the bootstrap skill");
   const block = gemini.match(/^<!-- all-about-agents:begin [^\n]*-->\n([\s\S]*)\n<!-- all-about-agents:end -->\n$/u);
@@ -84,15 +87,15 @@ test("GEMINI.md leaves half of agy's 24,000-byte rule file limit for the operato
   for (const profileId of ["portable", "template"]) {
     const files = render(profileId).files;
     const bytes = (path) => files.find((file) => file.relativePath === path).content.byteLength;
-    assert.ok(bytes("GEMINI.md") <= 12000, `${profileId} GEMINI.md is ${bytes("GEMINI.md")} bytes`);
+    assert.ok(bytes("config/GEMINI.md") <= 12000, `${profileId} GEMINI.md is ${bytes("config/GEMINI.md")} bytes`);
     assert.ok(bytes("config/rules/all-about-agents.md") < 24000, `${profileId} global rule file is ${bytes("config/rules/all-about-agents.md")} bytes`);
   }
 });
 
 test("the global instruction deploy replaces only the marked block of GEMINI.md", () => {
   const [instructions] = registrationOfKind(render(), "instructions");
-  assert.equal(instructions.relativePath, "GEMINI.md");
-  assert.equal(instructions.destination, "GEMINI.md");
+  assert.equal(instructions.relativePath, "config/GEMINI.md");
+  assert.equal(instructions.destination, "config/GEMINI.md");
   assert.equal(instructions.guard, "managed-block", "a live GEMINI.md may hold sections this package does not own");
   const readme = fileMap(render()).get("README.md");
   assert.match(readme, /all-about-agents:begin/u);
@@ -145,13 +148,14 @@ test("emergency protection is recorded without writing the operator's permission
   }
 });
 
-test("the template profile records the approved model as a manual selection", () => {
+test("the template profile records managed model discovery rather than a stale version pin", () => {
   const portable = render("portable").registrations.filter((entry) => entry.kind === "manual-step");
   const template = render("template").registrations.filter((entry) => entry.kind === "manual-step");
   assert.equal(portable.some((entry) => entry.id === "approved-gemini-pro-model"), false);
   const model = template.find((entry) => entry.id === "approved-gemini-pro-model");
   assert.ok(model);
-  assert.match(model.instruction, /gemini-3\.1-pro-high/u);
+  assert.match(model.instruction, /node scripts\/model-policy\.mjs --surface antigravity --launch/u);
+  assert.match(model.instruction, /GUI automatic selection is unconfirmed/u);
 });
 
 test("the config root is the documented Gemini home on both platforms", () => {
@@ -226,6 +230,16 @@ test("rendered roles grant no native tools", () => {
     }
   }
   assert.equal(checked, 7, "every role file must be checked");
+});
+
+test("template Antigravity roles declare inherited model and explicit eager command policy", () => {
+  const files = fileMap(render("template"));
+  for (const role of core.roles) {
+    const frontmatter = /^---\n([\s\S]*?)\n---/u.exec(files.get(`agents/${role.id}.md`))[1];
+    assert.match(frontmatter, /^model: inherit$/mu);
+    assert.match(frontmatter, /^commandExecutionPolicy: eager$/mu);
+    assert.doesNotMatch(frontmatter, /^tools:/mu, "the role does not narrow the parent tool set");
+  }
 });
 
 test("the root override moves the recorded config root but never the package bytes", () => {

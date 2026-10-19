@@ -1,5 +1,5 @@
 {
-  "fileCount": 155,
+  "fileCount": 156,
   "files": [
     {
       "relativePath": ".agents/plugins/marketplace.json",
@@ -183,7 +183,7 @@
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/scripts/sdd-workspace.cjs",
-      "sha256": "526aec516680ea96246da29c9445bb175ec3e749850f28d538b84eaf14aca691",
+      "sha256": "e9689f3dca3c85cb33b4215f90f041ad2ae175c641199a9cb28c0d120366df76",
       "mode": 493
     },
     {
@@ -268,7 +268,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "fd45aaaec4e74c3a4dabd37e666a7d842f8e28d8ea83d5274c9e987a2c3bfbfe",
+      "sha256": "2d6d0404aafcce93b26c1ec85aec18d6f1b63810e155e07ec306cb480e660bd1",
       "mode": null
     },
     {
@@ -388,7 +388,7 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "4652e7d008f46a1acb50dbaa746282f8d71ceb6facc3282b34f13d405ed51821",
+      "sha256": "d0d57257fc9a5fc9a5a5c52a176fafd97482db2bc559bb090f66b75b0b04b987",
       "mode": null
     },
     {
@@ -403,17 +403,17 @@
     },
     {
       "relativePath": "hooks/activity-audit.json",
-      "sha256": "20219f3b0d53b42a2960bf4ab17f0739ce4946db9d50ae2d28e0f3f703b4d879",
+      "sha256": "1b20c03d5312e7a9d13c6f04c8cd0abe48a09674d58ab723eb9d0132b19a7ddc",
       "mode": null
     },
     {
       "relativePath": "hooks/activity-audit.mjs",
-      "sha256": "1403fa97eeaf4fd57f8fa364bac7084f1e742f14b96bb287c1ba72f7a0c2edf0",
+      "sha256": "d96cd8c5bffed046a735cee76435002d11a6dd7bd8f0f19b0cf58f89341d27aa",
       "mode": 493
     },
     {
       "relativePath": "hooks/audit-log.mjs",
-      "sha256": "bd13821e2ac58646630718575e32c7ea26db0304ae90d3304ddfaa9b6b899a04",
+      "sha256": "e782ec1bb19eea8d96ec71aa9d970af7b1cc0014d0d727f87517fd474ddabc3f",
       "mode": 493
     },
     {
@@ -428,18 +428,23 @@
     },
     {
       "relativePath": "hooks/checkpoint.json",
-      "sha256": "eda01120705b46b85fb9c7c3fa9f88903ec5df2f019117b0224796a7c9c3b402",
+      "sha256": "60c49b2175214f65ab63db760458bdce5c4a105df317394109eee9657a831a4f",
       "mode": null
     },
     {
       "relativePath": "hooks/hooks.json",
-      "sha256": "35955973025e11d02a2ed8a9e7e0a5bd55294fa411430e2ef7d9df27c6be2ae4",
+      "sha256": "6d59258f928c48acc1ad873436f0bff3e2cd3fb3f23dda0881f34ead30977345",
       "mode": null
     },
     {
       "relativePath": "hooks/pre-compact.mjs",
-      "sha256": "38c9fd701b8e4e9e372cd300c811d5fb130d9d193f8c8d032e00a8cc2666f7a0",
+      "sha256": "033a9854d256d3137bec8513390f31378ecb28d90c5d1821e0b8e5de61415aa1",
       "mode": 493
+    },
+    {
+      "relativePath": "hooks/state-path.mjs",
+      "sha256": "f314104a2f9b738467c62544492b0ef0ec4448f3457dff2954262286b12af9d5",
+      "mode": null
     },
     {
       "relativePath": "skills/brainstorming/SKILL.md",
@@ -618,7 +623,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace.cjs",
-      "sha256": "526aec516680ea96246da29c9445bb175ec3e749850f28d538b84eaf14aca691",
+      "sha256": "e9689f3dca3c85cb33b4215f90f041ad2ae175c641199a9cb28c0d120366df76",
       "mode": 493
     },
     {
@@ -703,7 +708,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "fd45aaaec4e74c3a4dabd37e666a7d842f8e28d8ea83d5274c9e987a2c3bfbfe",
+      "sha256": "2d6d0404aafcce93b26c1ec85aec18d6f1b63810e155e07ec306cb480e660bd1",
       "mode": null
     },
     {
@@ -924,7 +929,7 @@
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/scripts/sdd-workspace.cjs",
-      "sha256": "526aec516680ea96246da29c9445bb175ec3e749850f28d538b84eaf14aca691"
+      "sha256": "e9689f3dca3c85cb33b4215f90f041ad2ae175c641199a9cb28c0d120366df76"
     },
     {
       "relativePath": ".agents/skills/subagent-driven-development/scripts/task-brief",
@@ -992,7 +997,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "fd45aaaec4e74c3a4dabd37e666a7d842f8e28d8ea83d5274c9e987a2c3bfbfe"
+      "sha256": "2d6d0404aafcce93b26c1ec85aec18d6f1b63810e155e07ec306cb480e660bd1"
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/codex-tools.md",
@@ -1088,7 +1093,7 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "4652e7d008f46a1acb50dbaa746282f8d71ceb6facc3282b34f13d405ed51821"
+      "sha256": "d0d57257fc9a5fc9a5a5c52a176fafd97482db2bc559bb090f66b75b0b04b987"
     },
     {
       "relativePath": "config.toml",
@@ -1100,15 +1105,15 @@
     },
     {
       "relativePath": "hooks/activity-audit.json",
-      "sha256": "20219f3b0d53b42a2960bf4ab17f0739ce4946db9d50ae2d28e0f3f703b4d879"
+      "sha256": "1b20c03d5312e7a9d13c6f04c8cd0abe48a09674d58ab723eb9d0132b19a7ddc"
     },
     {
       "relativePath": "hooks/activity-audit.mjs",
-      "sha256": "1403fa97eeaf4fd57f8fa364bac7084f1e742f14b96bb287c1ba72f7a0c2edf0"
+      "sha256": "d96cd8c5bffed046a735cee76435002d11a6dd7bd8f0f19b0cf58f89341d27aa"
     },
     {
       "relativePath": "hooks/audit-log.mjs",
-      "sha256": "bd13821e2ac58646630718575e32c7ea26db0304ae90d3304ddfaa9b6b899a04"
+      "sha256": "e782ec1bb19eea8d96ec71aa9d970af7b1cc0014d0d727f87517fd474ddabc3f"
     },
     {
       "relativePath": "hooks/bootstrap.json",
@@ -1120,15 +1125,19 @@
     },
     {
       "relativePath": "hooks/checkpoint.json",
-      "sha256": "eda01120705b46b85fb9c7c3fa9f88903ec5df2f019117b0224796a7c9c3b402"
+      "sha256": "60c49b2175214f65ab63db760458bdce5c4a105df317394109eee9657a831a4f"
     },
     {
       "relativePath": "hooks/hooks.json",
-      "sha256": "35955973025e11d02a2ed8a9e7e0a5bd55294fa411430e2ef7d9df27c6be2ae4"
+      "sha256": "6d59258f928c48acc1ad873436f0bff3e2cd3fb3f23dda0881f34ead30977345"
     },
     {
       "relativePath": "hooks/pre-compact.mjs",
-      "sha256": "38c9fd701b8e4e9e372cd300c811d5fb130d9d193f8c8d032e00a8cc2666f7a0"
+      "sha256": "033a9854d256d3137bec8513390f31378ecb28d90c5d1821e0b8e5de61415aa1"
+    },
+    {
+      "relativePath": "hooks/state-path.mjs",
+      "sha256": "f314104a2f9b738467c62544492b0ef0ec4448f3457dff2954262286b12af9d5"
     },
     {
       "relativePath": "skills/brainstorming/SKILL.md",
@@ -1272,7 +1281,7 @@
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/sdd-workspace.cjs",
-      "sha256": "526aec516680ea96246da29c9445bb175ec3e749850f28d538b84eaf14aca691"
+      "sha256": "e9689f3dca3c85cb33b4215f90f041ad2ae175c641199a9cb28c0d120366df76"
     },
     {
       "relativePath": "skills/subagent-driven-development/scripts/task-brief",
@@ -1340,7 +1349,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "fd45aaaec4e74c3a4dabd37e666a7d842f8e28d8ea83d5274c9e987a2c3bfbfe"
+      "sha256": "2d6d0404aafcce93b26c1ec85aec18d6f1b63810e155e07ec306cb480e660bd1"
     },
     {
       "relativePath": "skills/using-all-about-agents/references/codex-tools.md",

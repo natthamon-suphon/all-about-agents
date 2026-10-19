@@ -34,6 +34,8 @@ test("package metadata declares ESM Node support without dependencies", async ()
   assert.deepEqual(Object.keys(packageJson.scripts).sort(), [
     "doctor",
     "export:claude-ai",
+    "migrate:hook-state",
+    "models",
     "quality:full",
     "quality:quick",
     "quality:skill",
@@ -46,6 +48,8 @@ test("package metadata declares ESM Node support without dependencies", async ()
     "test:static",
     "validate"
   ]);
+  assert.equal(packageJson.scripts.models, "node scripts/model-policy.mjs");
+  assert.equal(packageJson.scripts["migrate:hook-state"], "node scripts/migrate-hook-state.mjs");
   assert.equal(packageJson.scripts["test:static"], "node --test tests/static/*.test.mjs", "test:static must run only its folder");
   assert.equal(packageJson.scripts["test:contracts"], "node --test tests/contracts/*.test.mjs", "test:contracts must run only its folder");
   assert.equal(packageJson.scripts["test:integration"], "node --test tests/integration/*.test.mjs", "test:integration must run only its folder");

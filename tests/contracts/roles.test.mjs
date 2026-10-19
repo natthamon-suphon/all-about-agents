@@ -429,7 +429,7 @@ test("native mutation policy is derived from implementer metadata rather than a 
   assert.match(claude, /(?:^|\n)\s+- Bash\b/u);
 });
 
-test("Codex registers every role with a role-specific effective sandbox config", async () => {
+test("Codex registers every role with profile-specific parent or constrained sandbox policy", async () => {
   const { parseCodexToml } = await import("../../adapters/codex/adapter.mjs");
   const core = await loadCore(process.cwd());
   for (const profile of ["portable", "template"]) {
@@ -438,6 +438,10 @@ test("Codex registers every role with a role-specific effective sandbox config",
     const delivery = result.registrations.find((entry) => entry.kind === "agents" && entry.rootEnv === "CODEX_HOME" && entry.destination === "agents");
     assert.ok(delivery, "Codex must declare the CODEX_HOME agents delivery mapping");
     const config = parseCodexToml(files.get("config.toml"));
+    if (profile === "template") {
+      assert.equal(config.sandbox_mode, "danger-full-access");
+      assert.equal(config.approval_policy, "never");
+    }
     assert.deepEqual(Object.keys(config.agents).sort(), [...ROLE_IDS].sort());
     const alternateConfigText = files.get("terra-max.config.toml");
     assert.equal(typeof alternateConfigText === "string", profile === "template");
@@ -453,7 +457,8 @@ test("Codex registers every role with a role-specific effective sandbox config",
       const roleConfig = parseCodexToml(files.get(packageRoleConfigPath));
       assert.equal(roleConfig.name, roleId);
       assert.equal(typeof roleConfig.developer_instructions, "string");
-      assert.equal(roleConfig.sandbox_mode, roleId === "implementer" ? "workspace-write" : "read-only");
+      const expectedSandbox = profile === "portable" ? (roleId === "implementer" ? "workspace-write" : "read-only") : undefined;
+      assert.equal(roleConfig.sandbox_mode, expectedSandbox);
       assert.notEqual(roleConfig.sandbox_mode, "danger-full-access");
       assert.equal(files.has(`${delivery.relativeDirectory}/${roleId}.config.toml`), false);
       if (alternateConfig !== null) {
@@ -462,7 +467,7 @@ test("Codex registers every role with a role-specific effective sandbox config",
         const alternateRoleConfig = parseCodexToml(files.get(`${delivery.relativeDirectory}/${alternateRegistration.config_file.slice(delivery.destination.length + 1)}`));
         assert.equal(alternateRoleConfig.name, roleId);
         assert.equal(typeof alternateRoleConfig.developer_instructions, "string");
-        assert.equal(alternateRoleConfig.sandbox_mode, roleId === "implementer" ? "workspace-write" : "read-only");
+        assert.equal(alternateRoleConfig.sandbox_mode, expectedSandbox);
         assert.notEqual(alternateRoleConfig.sandbox_mode, "danger-full-access");
       }
     }

@@ -20,6 +20,7 @@ const CODEX_TARGET_RUNTIMES = Object.freeze(["cli", "desktop"]);
 const BOOTSTRAP_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.mjs", import.meta.url), "utf8");
 const BOOTSTRAP_CONFIG_SOURCE = readFileSync(new URL("../../core/hooks/bootstrap.json", import.meta.url), "utf8");
 const AUDIT_LOG_SOURCE = readFileSync(new URL("../../installers/lib/audit-log.mjs", import.meta.url), "utf8");
+const STATE_PATH_SOURCE = readFileSync(new URL("../../core/hooks/state-path.mjs", import.meta.url), "utf8");
 const CODEX_SEMANTIC_MAPPINGS = Object.freeze({
   "repository-read": Object.freeze(["AGENTS.md"]),
   "repository-write": Object.freeze(["AGENTS.md"]),
@@ -142,7 +143,7 @@ function renderSkill(name, record, presentation) {
   };
 }
 
-function renderRole(name, role, presentation) {
+function renderRole(name, role, presentation, profile) {
   const description = role.description || role.purpose;
   const capabilities = [
     ...(Array.isArray(role.capabilities) ? role.capabilities : []),
@@ -162,7 +163,7 @@ function renderRole(name, role, presentation) {
     `name = ${JSON.stringify(name)}`,
     `description = ${JSON.stringify(description)}`,
     `developer_instructions = ${JSON.stringify(instructions)}`,
-    `sandbox_mode = ${JSON.stringify(sandboxMode)}`,
+    ...(profile.authority === "full" ? [] : [`sandbox_mode = ${JSON.stringify(sandboxMode)}`]),
     ""
   ].join("\n"));
 }
@@ -436,7 +437,7 @@ function capabilityGuidance(profile) {
     "- `AGENTS.md` is rendered as a regular instruction file for the canonical rules and presentation catalog.",
     "- Skills are packaged under `skills/<skill>/SKILL.md` for plugin discovery and mirrored under `.agents/skills/<skill>/SKILL.md` for direct/global installation; missing canonical sources remain marked `DEFERRED`.",
     "- Custom roles are standalone custom-agent TOML files under `.codex/agents/<role>.toml`.",
-    "- Each canonical `[agents.<role>]` registration points `config_file` at the delivered `agents/<role>.toml` role layer. That standalone file contains `developer_instructions` and top-level `sandbox_mode` (`read-only` for read-only roles and `workspace-write` only for the implementer). Relative `config_file` paths resolve from the declaring `config.toml`.",
+    "- Each canonical `[agents.<role>]` registration points `config_file` at the delivered `agents/<role>.toml` role layer. The template inherits parent permissions without local sandbox overrides. Portable role layers retain their controlled sandbox declarations, whose native enforcement depends on the client. Relative `config_file` paths resolve from the declaring `config.toml`.",
     "- This role-layer pattern follows the official Codex Configuration Reference (https://developers.openai.com/codex/config-reference/); the published docs do not show one combined registration example, so native client acceptance remains a later manual check.",
     modelGuidance,
     "- To select the explicit CLI recovery profile, run `codex --profile terra-max`; the adapter does not configure an automatic Sol-to-Terra fallback.",
@@ -478,17 +479,19 @@ export function renderCodex(input = {}) {
   addFile(files, "hooks/activity-audit.json", renderJson(codexActivityTemplate));
   addFile(files, "hooks/checkpoint.json", renderJson(codexCheckpointTemplate));
   addFile(files, "hooks/audit-log.mjs", AUDIT_LOG_SOURCE, 0o755);
+  addFile(files, "hooks/state-path.mjs", STATE_PATH_SOURCE);
   addFile(files, "hooks/activity-audit.mjs", `#!/usr/bin/env node
 import { appendAuditEvent } from "./audit-log.mjs";
 import { readBoundedStdin } from "./bootstrap.mjs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { resolveHookDataRoot } from "./state-path.mjs";
 
 const rawInput = await readBoundedStdin();
 if (rawInput === null) process.exit(0);
 try {
   const payload = JSON.parse(rawInput || "{}");
-  await appendAuditEvent(join(dirname(fileURLToPath(import.meta.url)), "audit"), {
+  const root = resolveHookDataRoot("codex", { segments: ["audit"] });
+  if (!root) { process.stderr.write("all-about-agents: native plugin data unavailable\\n"); process.exit(0); }
+  await appendAuditEvent(root, {
     surface: "codex",
     actionId: payload.actionId ?? payload.tool_name,
     outcome: payload.outcome ?? "success",
@@ -499,8 +502,8 @@ try {
   addFile(files, "hooks/pre-compact.mjs", `#!/usr/bin/env node
 import { appendFile, mkdir } from "node:fs/promises";
 import { readBoundedStdin } from "./bootstrap.mjs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+import { resolveHookDataRoot } from "./state-path.mjs";
 
 const safe = (value, fallback) => typeof value === "string" && value.trim() ? value.trim().replace(/[^A-Za-z0-9._-]/gu, "-").slice(0, 64) || fallback : fallback;
 const rawInput = await readBoundedStdin();
@@ -512,9 +515,10 @@ try {
     sessionId: safe(payload.session_id, "unknown"),
     trigger: safe(payload.trigger, "unknown")
   };
-  const root = join(dirname(fileURLToPath(import.meta.url)), "checkpoints");
-  await mkdir(root, { recursive: true });
-  await appendFile(join(root, "checkpoint.jsonl"), JSON.stringify(checkpoint) + "\\n", { encoding: "utf8", flag: "a" });
+  const target = resolveHookDataRoot("codex", { segments: ["checkpoints", "checkpoint.jsonl"] });
+  if (!target) { process.stderr.write("all-about-agents: native plugin data unavailable\\n"); process.exit(0); }
+  await mkdir(dirname(target), { recursive: true });
+  await appendFile(target, JSON.stringify(checkpoint) + "\\n", { encoding: "utf8", flag: "a" });
 } catch { /* durable checkpoint is fail-open */ }
 `, 0o755);
   addFile(files, "AGENTS.md", renderAgentsDocument(core));
@@ -536,7 +540,7 @@ try {
   const renderedRoles = roleNames.map((roleName) => roleRecords.get(roleName));
   addFile(files, "config.toml", configFor(null, profile, true, renderedRoles));
   if (semanticProfile.modelPolicies[CODEX_SURFACE] !== "surface-default") addFile(files, "terra-max.config.toml", configFor(null, profile, false, renderedRoles));
-  for (const roleName of roleNames) addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName), core.presentation));
+  for (const roleName of roleNames) addFile(files, `.codex/agents/${roleName}.toml`, renderRole(roleName, roleRecords.get(roleName), core.presentation, semanticProfile));
   files.sort((left, right) => compareCodePoints(left.relativePath, right.relativePath));
   for (const file of files) {
     if (file.relativePath.endsWith(".toml")) parseCodexToml(new TextDecoder().decode(file.content));

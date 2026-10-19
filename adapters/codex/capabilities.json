@@ -14,7 +14,10 @@
       "value": {
         "package": "AGENTS.md",
         "destination": "$CODEX_HOME/AGENTS.md",
-        "consumers": ["codex-cli", "codex-desktop"]
+        "consumers": [
+          "codex-cli",
+          "codex-desktop"
+        ]
       },
       "notes": "The canonical global body is rendered once at the start of AGENTS.md, followed by the canonical rules; project AGENTS.override.md or AGENTS.md is the more specific second layer."
     },
@@ -83,7 +86,7 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-codex.md",
-      "checkedAt": "2026-08-31",
+      "checkedAt": "2026-10-19",
       "productVersion": "0.151.0-alpha.7.2",
       "value": {
         "global": "~/.codex/agents/",
@@ -95,7 +98,7 @@
           "explorer"
         ]
       },
-      "notes": "Documented custom-agent locations and built-in agents."
+      "notes": "Documented native discovery and config_file registrations. Template roles inherit parent permissions without sandbox overrides. Portable declarations are retained but native per-role enforcement must be checked against the installed client; assignment text is not a sandbox."
     },
     {
       "feature": "hooks.lifecycle",
@@ -160,13 +163,16 @@
     },
     {
       "feature": "statusline.native",
-      "support": "unknown",
-      "stability": "unknown",
+      "support": "supported",
+      "stability": "stable",
       "source": "docs/evaluations/research-codex.md",
-      "checkedAt": "2026-08-31",
+      "checkedAt": "2026-10-19",
       "productVersion": "0.151.0-alpha.7.2",
-      "value": null,
-      "notes": "The reviewed Codex records do not establish a native statusline configuration contract."
+      "value": {
+        "settingsKey": "tui.status_line",
+        "surface": "CLI TUI"
+      },
+      "notes": "Current config reference documents tui.status_line. This package does not configure a custom Codex statusline or claim Desktop UI equivalence; --statusline-name remains Claude-only."
     },
     {
       "feature": "install.plugin",

@@ -71,7 +71,7 @@ native product loaded the package.
 Review the surface capability record and compatibility page together. Check
 the statusline block and display name for Claude. Check the explicit Terra
 recovery profile for Codex. Check that Antigravity still renders no hooks and
-no status line, and that its `GEMINI.md` keeps the inlined routing contract.
+no custom status line, and that its `GEMINI.md` keeps one inlined routing contract. Native `SessionStart` and CLI `/statusline` support are separate from this package choice.
 
 ## Disposable-root checks
 
@@ -145,3 +145,12 @@ For each result, record:
 Use the status names in the [evaluation method](../evaluations/method.md).
 Static tests, package validators, and file listings do not promote a native
 state. Use the [session prompt](session-prompt.md) in another AI coding tool.
+
+## Model and data checks
+
+Use [model policy](model-policy.md) to verify dynamic catalog selection and
+record the actual effort. Run the model-policy, native-command and hook-state
+migration contracts along with adapter/registration tests. Audit/checkpoint
+history belongs to native plugin data, not the package. Validate replacement
+survival and reject symlink/hardlink targets. A dry-run catalog selection is
+not proof of a model turn, GUI defaults or native hook execution.
