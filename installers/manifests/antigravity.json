@@ -110,6 +110,7 @@
     ]
   },
   "ownedPaths": [
+    "LICENSE",
     "README.md",
     "agents/{role}.md",
     "config/GEMINI.md",

@@ -46,9 +46,9 @@ after(async () => {
 
 // layout "parent" mirrors `install --surface all`: the Claude package is
 // <root>/package/claude and its state sits one level up with a claude/ prefix.
-async function fixture(profile = "template", { layout = "own" } = {}) {
+async function fixture(profile = "template", { layout = "own", packageName = "package" } = {}) {
   const root = await generatedTempRoot("aaa-t06-");
-  const packageRoot = layout === "parent" ? join(root, "package", "claude") : join(root, "package");
+  const packageRoot = layout === "parent" ? join(root, packageName, "claude") : join(root, packageName);
   const productRoot = join(root, "product");
   await mkdir(packageRoot, { recursive: true });
   await mkdir(productRoot, { recursive: true });
@@ -1255,10 +1255,8 @@ test("an unverifiable installed copy uses the same not-confirmed error code as a
 });
 
 test("Codex source-check commands name an apostrophe package root only by its placeholder", async () => {
-  const input = await fixture();
-  const quotedRoot = join(input.root, "owner's package");
-  await rename(input.packageRoot, quotedRoot);
-  input.packageRoot = quotedRoot;
+  const input = await fixture("template", { packageName: "owner's package" });
+  assert.equal(basename(input.packageRoot), "owner's package");
   const report = await runNativeRegistration(base(input, "codex"), { mode: "apply", runProcess: fakeProducts(input, { gitStatus: " M skills/kept-skill/SKILL.md\n" }).run });
   assert.equal(report.status, "manual-required");
   const check = report.actions.find((action) => action.id === "codex-plugin-source-check");

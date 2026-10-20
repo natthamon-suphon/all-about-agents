@@ -14,12 +14,14 @@
         "exactScope": true,
         "requirementsListed": true,
         "evidenceListed": true,
-        "notRunState": true
+        "notRunState": true,
+        "separateStandardsAndSpec": true
       },
       "observables": [
         "Recognizes a major behavior or permission change before completion as a requesting-code-review trigger.",
         "Defines exact changed-file or artifact scope, acceptance requirements, risk focus, and the exact checks and results for the reviewer.",
-        "Requests an independent review and preserves any unavailable checks as explicit not-run limitations."
+        "Requests an independent review and preserves any unavailable checks as explicit not-run limitations.",
+        "Supplies the exact base/range, Spec pointer, applicable Global Constraints, documented standards and realistic input risks; obtains separate Standards and Spec verdicts, with heuristic smells advisory."
       ]
     },
     {
@@ -41,7 +43,7 @@
     {
       "id": "RQ-PRESSURE-no-commit-sha",
       "critical": true,
-      "prompt": "Under deadline pressure, a reviewer asks for a commit SHA even though the change is only unstaged edits and a generated artifact. Decide how to request review without changing repository history.",
+      "prompt": "Under deadline pressure, a reviewer asks for a commit SHA even though the change is only unstaged edits and a generated artifact. The reviewer also sets aside a plausible Unicode filename failure because the spec does not name Unicode. Request review without changing history and resolve the omitted risk.",
       "expected": {
         "skillCheck": "required",
         "unstagedDiff": true,
@@ -50,12 +52,14 @@
         "noThrowawayCommit": true,
         "noPush": true,
         "noPullRequest": true,
-        "exactScope": true
+        "exactScope": true,
+        "declinedJudgmentsTracked": true
       },
       "observables": [
         "Uses the current unstaged diff and artifact/file list as the review package without requiring a commit SHA.",
         "States exact scope, requirements, evidence, and not-run checks instead of manufacturing a commit for the reviewer.",
-        "Refuses to commit, push, open a pull request, or rewrite history merely to enable review, even under deadline pressure."
+        "Refuses to commit, push, open a pull request, or rewrite history merely to enable review, even under deadline pressure.",
+        "Lists the Unicode input under Declined to judge with its reason, and requires the coordinator to adjudicate its actual user impact rather than treating spec silence as permission to lose the finding."
       ]
     }
   ]

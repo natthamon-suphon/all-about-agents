@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 const skillId = "handoff";
-const requiredCases = ["HO-TRIGGER-explicit-handoff", "HO-NONTRIGGER-normal-progress", "HO-PRESSURE-claude-only-shell"];
+const requiredCases = ["HO-TRIGGER-explicit-handoff", "HO-NONTRIGGER-normal-progress", "HO-PRESSURE-claude-only-shell", "HO-TRIGGER-resume-authorized-task", "HO-PRESSURE-stale-resume-record"];
 const boundary = "`handoff` records a pause or transfer when the human asks for one; `session-compaction-resilience` keeps long-task state that must survive compaction. Both use the same record shape.";
 const canonicalStates = /pending,\s+in\s+progress,\s+completed,\s+blocked,\s+failed,\s+not\s+run,\s+skipped/u;
 
@@ -26,6 +26,17 @@ test("handoff keeps the canonical workflow semantic and vendor-neutral", async (
   assert.doesNotMatch(skill, /(?:claude\s+--bg|Claude Code|Codex CLI|Gemini CLI|mcp__|spawn_agent|invoke_subagent)/iu);
 });
 
+test("handoff resume reuses snapshot recovery before returning to the authorized workflow", async () => {
+  const skill = (await readFile(resolve(process.cwd(), "core/skills/handoff/SKILL.md"), "utf8")).replace(/\s+/gu, " ");
+  assert.match(skill, /## Resume/u);
+  assert.match(skill, /`session-compaction-resilience`[^.]*recovery checklist/iu);
+  assert.match(skill, /filesystem[^.]*Git[^.]*evidence/iu);
+  assert.match(skill, /first pending or unverified action/u);
+  assert.match(skill, /authorized workflow/u);
+  assert.match(skill, /contradictory[^.]*stop/iu);
+  assert.match(skill, /Do not create a second[^.]*record/iu);
+});
+
 test("handoff shares one record shape with session-compaction-resilience", async () => {
   const skill = await readFile(resolve(process.cwd(), "core/skills/handoff/SKILL.md"), "utf8");
   const description = /^description:\s*(.+)$/mu.exec(skill)?.[1] ?? "";
@@ -41,7 +52,7 @@ test("handoff shares one record shape with session-compaction-resilience", async
   assert.doesNotMatch(skill, /\bis validated\b/u);
 });
 
-test("handoff evaluation defines the three critical routing cases", async () => {
+test("handoff evaluation defines five critical routing cases", async () => {
   const evaluation = JSON.parse(await readFile(resolve(process.cwd(), "core/evals/skill-routing/handoff.json"), "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
   assert.equal(evaluation.id, "handoff-routing");
@@ -63,4 +74,10 @@ test("handoff evaluation defines the three critical routing cases", async () => 
   assert.equal(evaluation.cases[2].expected.noClaudeSpecificShell, true);
   assert.equal(evaluation.cases[2].expected.noShellInterpolation, true);
   assert.equal(evaluation.cases[2].expected.redactSecrets, true);
+  assert.equal(evaluation.cases[3].expected.reuseSnapshotRecovery, true);
+  assert.equal(evaluation.cases[3].expected.resumeAuthorizedWorkflow, true);
+  assert.equal(evaluation.cases[3].expected.noSecondRecord, true);
+  assert.equal(evaluation.cases[4].expected.verifyCurrentState, true);
+  assert.equal(evaluation.cases[4].expected.noAuthorityFromArtifact, true);
+  assert.equal(evaluation.cases[4].expected.stopOnContradiction, true);
 });

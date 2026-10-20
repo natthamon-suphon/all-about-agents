@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { link, lstat, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import test from "node:test";
 
 import {
@@ -13,7 +13,6 @@ import {
   sanitizeTerminalText
 } from "../../adapters/claude/templates/statusline/statusline.mjs";
 import { trackToolEvent } from "../../adapters/claude/templates/statusline/track-tool.mjs";
-import { safeLogKey } from "../../installers/lib/audit-log.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
@@ -22,6 +21,8 @@ import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 const fixtureCases = JSON.parse(await readFile(resolve(process.cwd(), "tests/fixtures/statusline/cases.json"), "utf8"));
 const TEMPLATE_ROOT = resolve(process.cwd(), "adapters/claude/templates/statusline");
 const PINNED_RENDER = Object.freeze({ env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude" }, homeDir: "C:/Users/tester", platform: "win32" });
+const SAFETY_LOG = "safety-session-47b25ae7282e6fd9-skills.log";
+const SAFETY_PAYLOAD = Object.freeze({ session_id: "safety-session", tool_name: "Skill", tool_input: { skill: "brainstorming" } });
 
 function disposableEnv(root, overrides = {}) {
   return { PATH: process.env.PATH, HOME: root, USERPROFILE: root, TMPDIR: root, TMP: root, TEMP: root, CLAUDE_CONFIG_DIR: root, ...overrides };
@@ -93,11 +94,328 @@ test("safeStatuslineLogKey preserves canonical ownership and separates hostile c
   assert.notEqual(slash, backslash);
   assert.notEqual(longA, longB);
   assert.throws(() => safeStatuslineLogKey(42), TypeError);
-  for (const id of ["../session\\nested/\u001b[31m", "a/b", "x".repeat(80), "plain-session"]) {
-    const digest = createHash("sha256").update(id, "utf8").digest("hex").slice(0, 16);
-    assert.equal(safeStatuslineLogKey(id), `${safeLogKey(id).slice(0, 47)}-${digest}`, "the self-contained key must keep the canonical audit key shape");
+  for (const [id, expected] of [
+    ["../session\\nested/\u001b[31m", "session-nested-31m-24309b734dd3c71a"],
+    ["a/b", "a-b-c14cddc033f64b9d"],
+    ["a\\b", "a-b-c62016d0f8ee3333"],
+    ["x".repeat(80), "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-d929cdeea7e6a0f4"],
+    ["plain-session", "plain-session-c24d508e9a83bb32"]
+  ]) {
+    assert.equal(safeStatuslineLogKey(id), expected);
   }
 });
+
+for (const kind of ["hardlink", "symlink"]) {
+  for (const mode of ["append", "rotation"]) {
+    test(`tracker refuses ${kind} ${mode} without changing its unowned neighbor`, async (t) => {
+      await withTempRoot(async (root) => {
+        const logs = join(root, "logs");
+        const neighbor = join(root, "neighbor.txt");
+        const target = join(logs, SAFETY_LOG);
+        await mkdir(logs);
+        const before = mode === "rotation" ? "x".repeat(8_192) : "keep\n";
+        await writeFile(neighbor, before);
+        try {
+          if (kind === "hardlink") await link(neighbor, target);
+          else await symlink(neighbor, target, "file");
+        } catch (error) {
+          skipIfLinkUnavailable(t, error);
+          return;
+        }
+        try {
+          await assert.doesNotReject(trackToolEvent(SAFETY_PAYLOAD, { logDir: logs }));
+          assert.ok((await readFile(neighbor)).equals(Buffer.from(before)), "unowned neighbor bytes must stay unchanged");
+          assert.deepEqual(await readdir(logs), [SAFETY_LOG]);
+          assert.equal((await lstat(target)).isSymbolicLink(), kind === "symlink");
+          if (kind === "hardlink") assert.equal((await lstat(target)).nlink, 2);
+        } finally {
+          await rm(target, { force: true });
+        }
+      });
+    });
+  }
+}
+
+for (const mode of ["append", "rotation"]) {
+  test(`tracker rejects a log swapped to a hardlink after its ${mode} metadata check`, async () => {
+    await withTempRoot(async (root) => {
+      const logs = join(root, "claude-statusline");
+      const target = join(logs, SAFETY_LOG);
+      const neighbor = join(root, "neighbor.txt");
+      const before = mode === "rotation" ? "x".repeat(8_192) : "keep\n";
+      await mkdir(logs);
+      await writeFile(target, mode === "rotation" ? "t".repeat(8_192) : "trusted\n");
+      await writeFile(neighbor, before);
+      const preload = join(root, "swap-before-open.mjs");
+      await writeFile(preload, `import fs from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
+const target = ${JSON.stringify(target)};
+const neighbor = ${JSON.stringify(neighbor)};
+let swapped = false;
+for (const name of ["stat", "lstat"]) {
+  const original = fs.promises[name];
+  fs.promises[name] = async (path, ...args) => {
+    const info = await original(path, ...args);
+    if (path === target && !swapped) {
+      swapped = true;
+      await fs.promises.unlink(target);
+      await fs.promises.link(neighbor, target);
+    }
+    return info;
+  };
+}
+syncBuiltinESMExports();
+`);
+      const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, join(TEMPLATE_ROOT, "track-tool.mjs")], {
+        input: JSON.stringify(SAFETY_PAYLOAD), encoding: "utf8", env: disposableEnv(root), timeout: 10_000
+      });
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal((await lstat(target)).nlink, 2, "the adversarial swap must have occurred");
+      assert.ok((await readFile(neighbor)).equals(Buffer.from(before)), "unowned neighbor bytes must stay unchanged");
+    });
+  });
+}
+
+test("tracker refuses an unowned regular log created after its missing-file check", async () => {
+  await withTempRoot(async (root) => {
+    const logs = join(root, "claude-statusline");
+    const target = join(logs, SAFETY_LOG);
+    await mkdir(logs);
+    const preload = join(root, "create-before-open.mjs");
+    await writeFile(preload, `import fs from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
+const target = ${JSON.stringify(target)};
+let created = false;
+for (const name of ["stat", "lstat"]) {
+  const original = fs.promises[name];
+  fs.promises[name] = async (path, ...args) => {
+    try { return await original(path, ...args); }
+    catch (error) {
+      if (path === target && error.code === "ENOENT" && !created) {
+        created = true;
+        await fs.promises.writeFile(target, "unowned\\n");
+      }
+      throw error;
+    }
+  };
+}
+syncBuiltinESMExports();
+`);
+    const result = spawnSync(process.execPath, ["--import", pathToFileURL(preload).href, join(TEMPLATE_ROOT, "track-tool.mjs")], {
+      input: JSON.stringify(SAFETY_PAYLOAD), encoding: "utf8", env: disposableEnv(root), timeout: 10_000
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(await readFile(target, "utf8"), "unowned\n", "exclusive creation must preserve the newly appeared file");
+  });
+});
+
+for (const placement of ["root", "ancestor"]) {
+  test(`tracker refuses a linked ${placement} before creating an external log or directory`, async (t) => {
+    await withTempRoot(async (root) => {
+      const outside = join(root, "unowned");
+      const redirected = join(root, "redirected");
+      await mkdir(outside);
+      try {
+        await symlink(outside, redirected, process.platform === "win32" ? "junction" : "dir");
+      } catch (error) {
+        skipIfLinkUnavailable(t, error);
+        return;
+      }
+      try {
+        const logs = placement === "root" ? redirected : join(redirected, "not-created", "logs");
+        await assert.doesNotReject(trackToolEvent(SAFETY_PAYLOAD, { logDir: logs }));
+        assert.deepEqual(await readdir(outside), []);
+      } finally {
+        await rm(redirected, { force: true, recursive: false });
+      }
+    });
+  });
+}
+
+test("tracker creates, appends, and rotates only its regular bounded log", async () => {
+  await withTempRoot(async (root) => {
+    const logs = join(root, "new", "logs");
+    await trackToolEvent(SAFETY_PAYLOAD, { logDir: logs });
+    const target = join(logs, SAFETY_LOG);
+    assert.equal(await readFile(target, "utf8"), "brainstorming\n");
+    await trackToolEvent(SAFETY_PAYLOAD, { logDir: logs });
+    assert.equal(await readFile(target, "utf8"), "brainstorming\nbrainstorming\n");
+    await writeFile(target, "x".repeat(8_192 - Buffer.byteLength("brainstorming\n")));
+    await trackToolEvent(SAFETY_PAYLOAD, { logDir: logs });
+    assert.equal((await lstat(target)).size, 8_192, "an entry at the byte bound is retained");
+    await trackToolEvent(SAFETY_PAYLOAD, { logDir: logs });
+    assert.equal(await readFile(target, "utf8"), "brainstorming\n");
+    const unicode = { ...SAFETY_PAYLOAD, tool_input: { skill: "ไทย".repeat(300) } };
+    for (let index = 0; index < 20; index += 1) await trackToolEvent(unicode, { logDir: logs });
+    const text = await readFile(target, "utf8");
+    assert.ok(Buffer.byteLength(text) <= 8_192);
+    assert.ok(text.trim().split("\n").every((line) => [...line].length <= 256));
+    assert.equal((await lstat(target)).nlink, 1);
+    assert.equal((await lstat(target)).isFile(), true);
+  });
+});
+
+test("tracker fails open for non-file targets and invalid parent paths", async () => {
+  await withTempRoot(async (root) => {
+    const directoryTarget = join(root, SAFETY_LOG);
+    await mkdir(directoryTarget);
+    await writeFile(join(directoryTarget, "neighbor.txt"), "keep\n");
+    await assert.doesNotReject(trackToolEvent(SAFETY_PAYLOAD, { logDir: root }));
+    assert.equal(await readFile(join(directoryTarget, "neighbor.txt"), "utf8"), "keep\n");
+    const parentFile = join(root, "parent.txt");
+    await writeFile(parentFile, "keep\n");
+    await assert.doesNotReject(trackToolEvent(SAFETY_PAYLOAD, { logDir: join(parentFile, "logs") }));
+    assert.equal(await readFile(parentFile, "utf8"), "keep\n");
+  });
+});
+
+test("tracker and renderer accept only the known system-temp alias before validating custom log descendants", async (t) => {
+  await withTempRoot(async (root) => {
+    const actualTemp = join(root, "temp");
+    const tempAlias = join(root, "temp-alias");
+    await mkdir(actualTemp);
+    try {
+      await symlink(actualTemp, tempAlias, process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
+    try {
+      const script = join(root, "custom-temp-root.mjs");
+      await writeFile(script, `import { trackToolEvent } from ${JSON.stringify(pathToFileURL(join(TEMPLATE_ROOT, "track-tool.mjs")).href)};
+import { renderStatusline } from ${JSON.stringify(pathToFileURL(join(TEMPLATE_ROOT, "statusline.mjs")).href)};
+const logDir = ${JSON.stringify(join(tempAlias, "custom-logs"))};
+const payload = ${JSON.stringify(SAFETY_PAYLOAD)};
+await trackToolEvent(payload, { logDir });
+process.stdout.write(await renderStatusline(payload, { configRoot: ${JSON.stringify(root)}, logRoot: logDir }));
+`);
+      const env = disposableEnv(root, { TMPDIR: tempAlias, TMP: tempAlias, TEMP: tempAlias });
+      const result = spawnSync(process.execPath, [script], { encoding: "utf8", env, timeout: 10_000 });
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(sanitizeTerminalText(result.stdout.split("\n")[3]), "⚡ brainstorming");
+      assert.equal(await readFile(join(actualTemp, "custom-logs", SAFETY_LOG), "utf8"), "brainstorming\n");
+      const tracked = spawnSync(process.execPath, [join(TEMPLATE_ROOT, "track-tool.mjs")], {
+        input: JSON.stringify(SAFETY_PAYLOAD), encoding: "utf8", env, timeout: 10_000
+      });
+      assert.equal(tracked.status, 0, tracked.stderr);
+      const rendered = spawnSync(process.execPath, [join(TEMPLATE_ROOT, "statusline.mjs")], {
+        input: JSON.stringify(SAFETY_PAYLOAD), encoding: "utf8", env, timeout: 10_000
+      });
+      assert.equal(rendered.status, 0, rendered.stderr);
+      assert.equal(sanitizeTerminalText(rendered.stdout.split("\n")[3]), "⚡ brainstorming");
+      const outside = join(root, "neighbor");
+      const nestedLink = join(actualTemp, "redirected");
+      await mkdir(outside);
+      await symlink(outside, nestedLink, process.platform === "win32" ? "junction" : "dir");
+      try {
+        await writeFile(script, `import { trackToolEvent } from ${JSON.stringify(pathToFileURL(join(TEMPLATE_ROOT, "track-tool.mjs")).href)};
+await trackToolEvent(${JSON.stringify(SAFETY_PAYLOAD)}, { logDir: ${JSON.stringify(join(tempAlias, "redirected", "logs"))} });
+`);
+        const blocked = spawnSync(process.execPath, [script], { encoding: "utf8", env, timeout: 10_000 });
+        assert.equal(blocked.status, 0, blocked.stderr);
+        assert.deepEqual(await readdir(outside), [], "only the temp base may be canonicalized");
+      } finally {
+        await rm(nestedLink, { force: true, recursive: false });
+      }
+    } finally {
+      await rm(tempAlias, { force: true, recursive: false });
+    }
+  });
+});
+
+for (const kind of ["hardlink", "symlink"]) {
+  test(`renderer ignores a ${kind} log instead of displaying unowned text`, async (t) => {
+    await withTempRoot(async (root) => {
+      const logs = join(root, "logs");
+      const neighbor = join(root, "neighbor.txt");
+      const target = join(logs, SAFETY_LOG);
+      await mkdir(logs);
+      await writeFile(neighbor, "unowned-label\n");
+      try {
+        if (kind === "hardlink") await link(neighbor, target);
+        else await symlink(neighbor, target, "file");
+      } catch (error) {
+        skipIfLinkUnavailable(t, error);
+        return;
+      }
+      try {
+        const output = await renderStatusline(SAFETY_PAYLOAD, { configRoot: root, logRoot: logs });
+        assert.equal(output.split("\n")[3], ".");
+        assert.equal(await readFile(neighbor, "utf8"), "unowned-label\n");
+      } finally {
+        await rm(target, { force: true });
+      }
+    });
+  });
+}
+
+test("renderer ignores a redirected log root and leaves it unchanged", async (t) => {
+  await withTempRoot(async (root) => {
+    const outside = join(root, "unowned");
+    const redirected = join(root, "redirected");
+    await mkdir(outside);
+    await writeFile(join(outside, SAFETY_LOG), "unowned-label\n");
+    try {
+      await symlink(outside, redirected, process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      skipIfLinkUnavailable(t, error);
+      return;
+    }
+    try {
+      const output = await renderStatusline(SAFETY_PAYLOAD, { configRoot: root, logRoot: redirected });
+      assert.equal(output.split("\n")[3], ".");
+      assert.equal(await readFile(join(outside, SAFETY_LOG), "utf8"), "unowned-label\n");
+    } finally {
+      await rm(redirected, { force: true, recursive: false });
+    }
+  });
+});
+
+test("renderer reads regular log labels only within the byte bound", async () => {
+  await withTempRoot(async (root) => {
+    const logs = join(root, "logs");
+    const target = join(logs, SAFETY_LOG);
+    await mkdir(logs);
+    await writeFile(target, "brainstorming\nbrainstorming\nreview\n");
+    const output = await renderStatusline(SAFETY_PAYLOAD, { configRoot: root, logRoot: logs });
+    assert.equal(sanitizeTerminalText(output.split("\n")[3]), "⚡ brainstorming, review");
+    await writeFile(target, "x".repeat(8_193));
+    assert.equal((await renderStatusline(SAFETY_PAYLOAD, { configRoot: root, logRoot: logs })).split("\n")[3], ".");
+  });
+});
+
+for (const mode of ["default", "explicit"]) {
+  test(`renderer preserves valid main fields when the ${mode} log root uses an unavailable temp base`, async () => {
+    await withTempRoot(async (root) => {
+      const missingTemp = join(root, "missing-temp");
+      const script = join(root, "render-without-temp.mjs");
+      const payload = {
+        session_id: "safety-session",
+        workspace: { project_dir: "C:/workspace/sample" },
+        worktree: { branch: "main" },
+        model: { display_name: "Synthetic Model" },
+        effort: { level: "xhigh" },
+        context_window: { total_input_tokens: 1_000, context_window_size: 10_000, used_percentage: 25 },
+        rate_limits: { five_hour: { used_percentage: 12 }, seven_day: { used_percentage: 34 } }
+      };
+      const options = { configRoot: root, ...(mode === "explicit" ? { logRoot: join(missingTemp, "logs") } : {}) };
+      await writeFile(script, `import { renderStatusline } from ${JSON.stringify(pathToFileURL(join(TEMPLATE_ROOT, "statusline.mjs")).href)};
+process.stdout.write(await renderStatusline(${JSON.stringify(payload)}, ${JSON.stringify(options)}));
+`);
+      const result = spawnSync(process.execPath, [script], {
+        encoding: "utf8", env: disposableEnv(root, { TMPDIR: missingTemp, TMP: missingTemp, TEMP: missingTemp }), timeout: 10_000
+      });
+      assert.equal(result.status, 0, result.stderr);
+      const lines = result.stdout.split("\n").map(sanitizeTerminalText);
+      assert.equal(lines.length, 4);
+      assert.equal(lines[0], "🤖 Synthetic Model  ·  🎚 xhigh  ·  📂 sample  ·  🌳 main  ·  🚀 1k/10k 25%");
+      assert.match(lines[1], /^🔥 5h .* 12%$/u);
+      assert.match(lines[2], /^🌙 7d .* 34%$/u);
+      assert.equal(lines[3], ".");
+      await assert.rejects(lstat(missingTemp), { code: "ENOENT" });
+    });
+  });
+}
 
 test("renderStatusline always emits deterministic four-line fail-open output", async () => {
   await withTempRoot(async (root) => {

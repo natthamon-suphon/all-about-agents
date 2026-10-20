@@ -74,6 +74,10 @@ action:
 - Push the explicitly named branch and/or open a pull request, only when the
   human explicitly authorizes push and pull-request creation separately.
 
+When PR-body drafting is authorized, use `pr` with the verified change and
+current evidence, following the repository's PR template. A local reviewable
+draft does not authorize push, publication, merge, or cleanup.
+
 Never push, merge, or clean up automatically. Never infer commit, push, pull
 request, or merge authority from the word "finish" or from an approved plan
 that does not explicitly authorize the current operation. Do not delete a

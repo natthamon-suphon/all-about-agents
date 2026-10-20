@@ -9,7 +9,7 @@ an explicit launch; it does not register an account or prove runtime behavior.
 
 | Path | Responsibility |
 | --- | --- |
-| `core/` | Vendor-neutral records: 27 skills, 7 roles, 9 rules, hooks, and evaluations. |
+| `core/` | Vendor-neutral records: 31 skills, 7 roles, 9 rules, hooks, and evaluations. |
 | `profiles/` | `portable` and `template` policy profiles. |
 | `adapters/` | Antigravity, Claude, and Codex renderers, manifests, native mappings, and limitations. |
 | `installers/` | Root resolution, validation, deterministic planning, atomic writes, managed state, and launchers. |
@@ -69,11 +69,13 @@ Use these guides to keep the same source and quality on every machine:
 - [Global instructions and presentation](docs/maintenance/global-instructions.md)
 - [Sync and update](docs/maintenance/sync-and-update.md)
 - [Skill development](docs/maintenance/skill-development.md)
+- [Reviewed upstream updates](docs/maintenance/upstream-updates.md)
 - [Cross-tool quality](docs/maintenance/cross-tool-quality.md)
 - [Native registration](docs/maintenance/native-registration.md)
 - [Native verification](docs/maintenance/native-verification.md)
 - [Automatic model policy and hook history](docs/maintenance/model-policy.md)
 - [Prompt for another session](docs/maintenance/session-prompt.md)
+- [Copy-and-paste instructions for Claude, ChatGPT, and Gemini web](docs/setup/web-instructions.md)
 - [claude.ai skill pack](docs/setup/claude-ai.md)
 
 Design specs for multi-phase changes live in `docs/plans/YYYY-MM-DD-<name>.md` and are

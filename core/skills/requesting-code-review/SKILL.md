@@ -25,6 +25,8 @@ reproducible package; do not make unrelated repository changes to create one.
    requirements, behavior to inspect, risk boundaries, and checks already run.
    Keep unrelated files and historical context out of scope unless they are
    required to understand the change.
+   Supply the exact Spec pointer and applicable Global Constraints, documented
+   project standards, task/whole-change base, and realistic user inputs to check.
 3. Build the smallest review package that exposes the current change. It may
    use an unstaged diff, staged diff, a commit or commit range, or a named
    artifact/file list. A commit SHA is optional; a review must not be blocked
@@ -36,6 +38,10 @@ reproducible package; do not make unrelated repository changes to create one.
    never commit, push, create a pull request, or rewrite history merely to
    enable review. If a transport is unavailable, provide the package locally
    and report that limitation.
+6. Obtain separate Standards and Spec verdicts; one cannot hide the other.
+   Resolve every `Declined to judge` item through an evidence-backed coordinator
+   ruling with reason and cost if wrong. Keep actual user impact visible when
+   the Spec omits an input. Self-review does not replace independent review.
 
 The gate is satisfied only when the reviewer can identify the exact current
 change, requirements, evidence, and remaining `not run` checks without
@@ -69,17 +75,50 @@ Choose exactly the form that matches the current state:
 Do not mix an old commit range with unrelated current worktree edits without
 labeling both scopes. Review exactly what the reviewer is asked to inspect.
 
+Pin the task's recorded base commit or tree snapshot, including uncommitted
+work when appropriate; never substitute `HEAD~1` for a multi-commit task.
+Reject empty evidence and unrelated committed ranges before dispatch. Review
+authority is read-only; it does not permit checkout, branch, index, stash or
+worktree changes. Preserve required native inherited context and the approved
+model policy; never fabricate reviewer capability or results.
+
+## Two-axis judgment
+
+Standards asks whether the change follows documented repository rules. Spec
+asks whether it implements the authorized requirement, including realistic
+user inputs. Keep separate verdicts even when one reviewer evaluates both;
+independent reviewers may run concurrently only through verified native
+read-only capability. Missing Spec means `Not run: no spec available`, not a
+Spec pass; identify the missing source before a whole-change completion claim.
+
+Heuristic smells such as unclear names, duplicated logic, speculative
+abstraction or scattered ownership are advisory, not automatic violations.
+Documented project standards win. Skip style checks already enforced by
+tooling. Grade findings by concrete user impact; retain the existing
+Critical/Important/Minor calibration.
+
+The reviewer lists every behavior considered but set aside under
+`Declined to judge`, with its reason, or `None`. The coordinator adjudicates
+each entry, carries true gaps into fixes and scoped re-review, and records
+deferred findings with owners. Spec silence never silently removes a plausible
+user-facing failure.
+
 ## Request template
 
 ```text
 Review scope: <files, range, or artifact list>
 Requirements: <acceptance criteria to check>
+Spec pointer: <exact path or authorized requirement source>
+Global Constraints: <applicable exact requirements>
+Standards sources: <documented rules and paths>
+Base and target: <recorded task/whole-change base; commit, tree, WORKTREE or artifacts>
 Risk focus: <behavior, security, portability, data loss, or release risks>
 Evidence:
   - <exact command>: <exit code and observed result>
   - <exact command>: <exit code and observed result>
 Not run: <check> — <concrete reason>
 Questions: <specific uncertainties for the reviewer>
+Verdicts: Standards and Spec separately; Declined to judge with reasons
 ```
 
 The package is complete when it identifies the diff or artifact, requirements,

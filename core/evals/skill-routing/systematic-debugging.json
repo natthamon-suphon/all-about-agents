@@ -14,12 +14,14 @@
         "redFeedbackLoop": true,
         "smallestReproducibleEvidence": true,
         "rankedHypotheses": true,
-        "originalReproAfterFix": true
+        "originalReproAfterFix": true,
+        "originalFullScenario": true
       },
       "observables": [
         "Recognizes a failure or regression as a systematic-debugging trigger and invokes it before proposing a fix.",
         "Builds one unattended red-capable command at the public seam, reads the complete error, and minimizes the reproducer before hypotheses.",
-        "Ranks falsifiable hypotheses, tests one at a time, fixes the confirmed root cause, and reruns the original scenario plus cleanup checks."
+        "Ranks falsifiable hypotheses, tests one at a time, fixes the confirmed root cause, and reruns the original full scenario, not only the minimized reproduction, plus cleanup checks.",
+        "Runs focused regression first and the relevant project suite, reports every observed failure by name, and distinguishes an intended RED from a failing GREEN regression."
       ]
     },
     {

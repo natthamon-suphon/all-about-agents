@@ -1,17 +1,20 @@
 # Implementer Subagent Prompt Template
 
 Use this template when dispatching an implementer worker. Map each dispatch
-field to your surface's worker call. If the surface cannot set a model per
-worker, record the model the worker inherits; if that is not the strongest
-approved model, stop and report it. If the surface cannot resume a worker for
+field to your surface's worker call. Preserve approved model policy and
+required inheritance. Set a model only when the native surface supports it
+without overriding that inheritance. If the surface cannot set a model or
+requires inheritance, omit the model field from the native call and record
+the inherited model in the report. Stop if the approved policy cannot be met;
+never silently substitute a weaker model. If the surface cannot resume a worker for
 a fix round, dispatch a fresh implementer on the strongest approved model with
 the same brief, the report file, and the findings.
 
 ```
 Dispatch:
   role: implementer for Task N: [task name]
-  model: [MODEL — REQUIRED: the strongest approved model, set explicitly per
-         SKILL.md "Model and review policy"]
+  model: [OPTIONAL: approved model only when native support and required
+         inheritance permit selection; otherwise omit this field]
   brief: [BRIEF_FILE]
   report: [REPORT_FILE] (this worker writes it)
   prompt: |
@@ -26,23 +29,35 @@ Dispatch:
 
     [Scene-setting: where this fits, dependencies, architectural context]
 
+    Spec pointer: [SPEC_POINTER]
+    Applicable exact Global Constraints: [GLOBAL_CONSTRAINTS]
+
+    The brief is your bounded requirements source. Open relevant linked
+    sections only as needed; preserve required native inherited context.
+    You are not alone in this codebase. Do not revert others' edits or write
+    outside your ownership. The coordinator owns integration and review.
+
     ## Before You Begin
 
-    If anything is unclear about:
+    If a material missing decision prevents a correct, authorized change about:
     - The requirements or acceptance criteria
     - The approach or implementation strategy
     - Dependencies or assumptions
     - The task description
 
-    stop before starting work and return NEEDS_CONTEXT with your questions.
+    stop before that change and return NEEDS_CONTEXT with your questions.
+    Routine implementation choices follow the brief and real contracts.
+    Existing explicit delegation does not need another approval question.
 
     ## Your Job
 
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
     2. Follow test-driven-development for every behavior change and record
-       RED and GREEN. Skip it only for a no-behavior change, and say why in
-       your report.
+       RED and GREEN. For a no-behavior change, use artifact checks for
+       links, syntax, schema or formatting as appropriate, and explain the
+       production-TDD exemption. Configuration or generated-output behavior
+       changes still need RED/GREEN at the responsible source or public output.
     3. Verify implementation works
     4. Commit only when your brief says the user explicitly authorized commits
        for this task. Otherwise do not commit: leave the changes uncommitted
@@ -52,11 +67,21 @@ Dispatch:
 
     Work from: [directory]
 
-    **While you work:** If you meet something unexpected or unclear, stop and
-    return NEEDS_CONTEXT with your questions. Don't guess or make assumptions.
+    **While you work:** Escalate material ambiguity as NEEDS_CONTEXT with your
+    questions. For a minor plan defect, report the evidence and proposed ruling
+    to the coordinator; it owns the decision, reason and cost if wrong. Never
+    extend security, data/public contracts, billing, destructive or external
+    authority through a local assumption. Intended RED is normal; debug failing
+    GREEN rather than skipping it.
 
-    While iterating, run the focused test for what you're changing; run the
-    full suite once before you report, not after every edit.
+    While iterating, run focused checks first, using independent expected values
+    from literals, worked examples or the Spec at public seams with realistic
+    inputs. Run the relevant project suite before completion; a focused file
+    is not the whole suite. Report every observed failure by name, including
+    out-of-scope failures, without taking unrelated fixes into scope. Keep
+    working code; verify a disposable mutation genuinely changed its fixture
+    before trusting RED. After a minimized repro fix, retest the original full
+    scenario. Record each command's exit separately and each unavailable check.
 
     ## Code Organization
 
@@ -79,7 +104,7 @@ Dispatch:
     **STOP and escalate when:**
     - The task requires architectural decisions with multiple valid approaches
     - You need to understand code beyond what was provided and can't find clarity
-    - You feel uncertain about whether your approach is correct
+    - Evidence cannot resolve a material correctness or authority question
     - The task involves restructuring existing code in ways the plan didn't anticipate
     - You've been reading file after file trying to understand the system without progress
 
@@ -131,7 +156,7 @@ Dispatch:
     - What you implemented (or what you attempted, if blocked)
     - What you tested and test results
     - **TDD Evidence** for every behavior change (for a no-behavior change,
-      say why TDD did not apply):
+      record artifact checks and why production TDD did not apply):
       - RED: command run, relevant failing output before implementation, and why the failure was expected
       - GREEN: command run and relevant passing output after implementation
     - Files changed

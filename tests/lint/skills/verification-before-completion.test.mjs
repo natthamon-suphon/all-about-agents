@@ -50,3 +50,15 @@ test("verification-before-completion names its boundary with finishing-a-develop
   const skill = await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8");
   assert.match(skill, /`verification-before-completion` gates any success claim with fresh evidence; `finishing-a-development-branch` handles integration, runs the full suite, and uses the verification gate\./u);
 });
+
+test("verification requires relevant project evidence and preserves every failure and proof level", async () => {
+  const skill = (await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8")).replace(/\s+/gu, " ");
+  assert.match(skill, /focused[^.]*first[^.]*relevant project suite/iu);
+  assert.match(skill, /every observed failure by name/iu);
+  assert.match(skill, /static lint[^.]*model[^.]*native/iu);
+  assert.match(skill, /NOT_RUN_UNAVAILABLE/u);
+  assert.match(skill, /each[^.]*command[^.]*exit (?:code|status)[^.]*separately/iu);
+  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
+  assert.equal(evaluation.cases[0].expected.relevantProjectSuite, true);
+  assert.equal(evaluation.cases[2].expected.allObservedFailuresNamed, true);
+});

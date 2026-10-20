@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const skillId = "interviewing";
-const requiredCases = ["IN-TRIGGER-open-design-decisions", "IN-NONTRIGGER-discoverable-answer", "IN-PRESSURE-ask-many-at-once"];
+const requiredCases = ["IN-TRIGGER-open-design-decisions", "IN-NONTRIGGER-discoverable-answer", "IN-PRESSURE-ask-many-at-once", "IN-TRIGGER-missing-intent", "IN-TRIGGER-independent-decisions", "IN-NONTRIGGER-explicit-skip"];
 
 const skillPath = new URL("../../../core/skills/interviewing/SKILL.md", import.meta.url);
 const evaluationPath = new URL("../../../core/evals/skill-routing/interviewing.json", import.meta.url);
@@ -38,13 +38,16 @@ test("Skill Gate Protocol discovers facts and filters material decisions", async
   assert.match(skill, /Resolve facts that are answerable from those sources[\s\S]*before asking/iu);
   assert.match(skill, /could change scope, behavior, structure,[\s\S]*authorization, destination, or acceptance criteria/iu);
   assert.match(skill, /Skip preferences and[\s\S]*decisions already settled/iu);
-  assert.match(skill, /Ask exactly one question in one message/iu);
-  assert.match(skill, /attach the answer you recommend/iu);
+  assert.match(skill, /intent[^.]*missing[^.]*open question/iu);
+  assert.match(skill, /independent[^.]*questions[^.]*group[^.]*round/iu);
+  assert.match(skill, /unsettled prerequisite/iu);
+  assert.match(skill, /recommendation/iu);
+  assert.doesNotMatch(skill, /Ask exactly one question in one message|Do not batch/iu);
   assert.match(skill, /Record the decision in the wrapper's artifact immediately/iu);
   assert.match(skill, /Stop when an[\s\S]*implementer can proceed without guessing/iu);
 });
 
-test("interviewing evaluation defines three complete critical routing cases", async () => {
+test("interviewing evaluation separates dependent choices from independent rounds", async () => {
   const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
   assert.equal(evaluation.skill, skillId);
@@ -66,4 +69,10 @@ test("interviewing evaluation defines three complete critical routing cases", as
   assert.equal(evaluation.cases[2].expected.batchQuestions, false);
   assert.equal(evaluation.cases[2].expected.inferHumanAnswer, false);
   assert.equal(evaluation.cases[2].expected.pressureResistance, true);
+  assert.equal(evaluation.cases[2].expected.unsettledPrerequisites, true);
+  assert.equal(evaluation.cases[3].expected.openQuestionFirst, true);
+  assert.equal(evaluation.cases[4].expected.batchQuestions, true);
+  assert.equal(evaluation.cases[4].expected.unsettledPrerequisites, false);
+  assert.equal(evaluation.cases[5].expected.askHuman, false);
+  assert.equal(evaluation.cases[5].expected.preserveAuthorityBoundaries, true);
 });

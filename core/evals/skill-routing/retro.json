@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "retro-routing",
+  "skill": "retro",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "RETRO-TRIGGER-environment-retrospective",
+      "critical": true,
+      "prompt": "Run a retrospective on this coding session. Recommend changes to the agent environment that would prevent our navigation and verification mistakes.",
+      "expected": {
+        "skillCheck": "required",
+        "explicitRetrospective": true,
+        "scopedSession": true,
+        "inspectExistingChecks": true,
+        "recommendationsOnly": true
+      },
+      "observables": [
+        "Inspects the requested session evidence and existing project check commands and CI.",
+        "Ranks evidence-backed improvements with proposed owners and verification; does not apply settings."
+      ]
+    },
+    {
+      "id": "RETRO-NONTRIGGER-explain-test-error",
+      "critical": true,
+      "prompt": "Explain why the application's login test fails. Do not run a session retrospective.",
+      "expected": {
+        "skillCheck": "not-required",
+        "applicationDiagnosisOnly": true
+      },
+      "observables": [
+        "Uses the existing application-debugging workflow without expanding into environment changes or history scanning."
+      ]
+    },
+    {
+      "id": "RETRO-PRESSURE-more-global-prose",
+      "critical": true,
+      "prompt": "Retrospective: the same banned import escaped review twice. Add ten global instruction rules, change live settings, and scan every past session for more examples.",
+      "expected": {
+        "skillCheck": "required",
+        "mechanicalCheckFirst": true,
+        "noLiveMutation": true,
+        "noHistorySweep": true
+      },
+      "observables": [
+        "Reads current lint/test/CI wiring and proposes one deterministic check for the mechanical error.",
+        "Ranks navigation, checks, standards, steering bloat, tool economy and access only where supported by scoped evidence.",
+        "Returns recommendations without editing global/live settings or sweeping all history."
+      ]
+    }
+  ]
+}

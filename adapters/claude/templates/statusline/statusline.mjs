@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { closeSync, openSync, readSync, realpathSync } from "node:fs";
-import { open } from "node:fs/promises";
+import { closeSync, constants, openSync, readSync, realpathSync } from "node:fs";
+import { lstat, mkdir, open, realpath } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const MAX_CONFIG_BYTES = 8_192;
@@ -34,18 +34,104 @@ export function clampPercent(value) {
   return Math.max(0, Math.min(100, Math.round(number)));
 }
 
-async function readBoundedText(filePath, maxBytes) {
+function sameIdentity(left, right) {
+  return left.dev === right.dev && left.ino !== 0n && left.ino === right.ino;
+}
+
+function matchesHandle(pathInfo, handleInfo) {
+  // Node 22 on Windows reports zero for path-stat dev; handles retain the volume ID.
+  const deviceMatches = pathInfo.dev === handleInfo.dev || (process.platform === "win32" && pathInfo.dev === 0n);
+  return deviceMatches && pathInfo.ino !== 0n && pathInfo.ino === handleInfo.ino && pathInfo.birthtimeNs === handleInfo.birthtimeNs;
+}
+
+async function directoryChain(root, allowMissing = false) {
+  const entries = new Map();
+  for (let current = root; ; current = dirname(current)) {
+    try {
+      const info = await lstat(current, { bigint: true });
+      if (!info.isDirectory() || info.isSymbolicLink()) throw new Error("statusline root must not cross a link or non-directory");
+      const canonical = await realpath(current);
+      const actual = await lstat(canonical, { bigint: true });
+      if (!sameIdentity(info, actual)) throw new Error("statusline root crosses a redirect");
+      entries.set(current, info);
+    } catch (error) {
+      if (!allowMissing || error?.code !== "ENOENT") throw error;
+    }
+    if (dirname(current) === current) return entries;
+  }
+}
+
+function assertDirectoryIdentity(expected, actual) {
+  for (const [path, info] of expected) {
+    if (!actual.has(path) || !sameIdentity(info, actual.get(path))) throw new Error("statusline root changed");
+  }
+}
+
+function assertRegularLog(info) {
+  if (!info.isFile() || info.nlink !== 1n) throw new Error("statusline log must be a single regular file");
+}
+
+/** Resolve only the known system-temp prefix; leave log descendants for link checks. */
+export async function resolveStatuslineLogRoot(value) {
+  const temp = resolve(tmpdir());
+  const root = typeof value === "string" && value.trim() ? resolve(value) : join(temp, "claude-statusline");
+  const suffix = relative(temp, root);
+  const withinTemp = suffix === "" || (suffix !== ".." && !suffix.startsWith(`..${sep}`) && !isAbsolute(suffix));
+  return withinTemp ? resolve(await realpath(temp), suffix) : root;
+}
+
+/** Keep log reads and writes on a checked handle within a verified directory chain. */
+export async function withStatuslineLog(logRoot, name, mode, operation) {
+  if (typeof logRoot !== "string" || !logRoot.trim() || /[\u0000-\u001f\u007f]/u.test(logRoot) || !/^[A-Za-z0-9._-]+-(?:agents|skills)\.log$/u.test(name) || !["read", "append", "rotate"].includes(mode)) {
+    throw new TypeError("invalid statusline log path");
+  }
+  const root = await resolveStatuslineLogRoot(logRoot);
+  const create = mode === "append";
+  const initialDirectories = await directoryChain(root, create);
+  if (create) await mkdir(root, { recursive: true, mode: 0o700 });
+  const directories = await directoryChain(root);
+  assertDirectoryIdentity(initialDirectories, directories);
+  const noFollow = (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0);
+  let directoryHandle;
   let handle;
   try {
-    handle = await open(filePath, "r");
-    const buffer = Buffer.alloc(maxBytes + 1);
-    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
-    if (bytesRead > maxBytes) return null;
-    return buffer.subarray(0, bytesRead).toString("utf8");
-  } catch {
-    return null;
+    directoryHandle = await open(root, constants.O_RDONLY | noFollow | (constants.O_DIRECTORY ?? 0));
+    const directoryInfo = await directoryHandle.stat({ bigint: true });
+    if (!directoryInfo.isDirectory() || !matchesHandle(directories.get(root), directoryInfo)) throw new Error("statusline root changed before open");
+    const filePath = join(root, name);
+    let before;
+    try {
+      before = await lstat(filePath, { bigint: true });
+      assertRegularLog(before);
+    } catch (error) {
+      if (!create || error?.code !== "ENOENT") throw error;
+    }
+    const flags = (mode === "read" ? constants.O_RDONLY : constants.O_WRONLY | (create ? constants.O_APPEND : 0)) | noFollow;
+    handle = await open(filePath, flags | (before ? 0 : constants.O_CREAT | constants.O_EXCL), 0o600);
+    const opened = await handle.stat({ bigint: true });
+    assertRegularLog(opened);
+    if (opened.dev !== directoryInfo.dev || (before && !matchesHandle(before, opened))) throw new Error("statusline log changed before open");
+    assertDirectoryIdentity(directories, await directoryChain(root));
+    const after = await lstat(filePath, { bigint: true });
+    assertRegularLog(after);
+    if (!matchesHandle(after, opened)) throw new Error("statusline log changed after open");
+    return await operation(handle, opened);
   } finally {
     await handle?.close().catch(() => undefined);
+    await directoryHandle?.close().catch(() => undefined);
+  }
+}
+
+async function readBoundedText(logRoot, name, maxBytes) {
+  try {
+    return await withStatuslineLog(logRoot, name, "read", async (handle) => {
+      const buffer = Buffer.alloc(maxBytes + 1);
+      const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+      if (bytesRead > maxBytes) return null;
+      return buffer.subarray(0, bytesRead).toString("utf8");
+    });
+  } catch {
+    return null;
   }
 }
 
@@ -104,11 +190,7 @@ export function readStatuslineConfig(root) {
   }
 }
 
-/**
- * The same normalization as safeLogKey in installers/lib/audit-log.mjs, kept
- * here because the renderer is deployed to the config root without the plugin's
- * hooks/ directory while the tracker runs from the plugin.
- */
+/** Keep shared filename normalization inside the separately deployed statusline modules. */
 function canonicalSafeLogKey(id) {
   const normalized = id.normalize("NFKC")
     .replace(/[^A-Za-z0-9._-]/gu, "-")
@@ -118,7 +200,7 @@ function canonicalSafeLogKey(id) {
   return key && key !== "." && key !== ".." ? key : "unknown";
 }
 
-/** Extend the canonical audit key with an input hash so normalization collisions remain distinct. */
+/** Add an input hash so normalization collisions remain distinct. */
 export function safeStatuslineLogKey(id) {
   if (typeof id !== "string") throw new TypeError("id must be a string");
   const canonical = canonicalSafeLogKey(id);
@@ -226,7 +308,7 @@ function gitDirty(cwd) {
 
 async function readLogValues(logRoot, sessionId, kind) {
   const key = safeStatuslineLogKey(sessionId);
-  const text = await readBoundedText(join(logRoot, `${key}-${kind}.log`), MAX_LOG_BYTES);
+  const text = await readBoundedText(logRoot, `${key}-${kind}.log`, MAX_LOG_BYTES);
   if (!text) return "";
   const values = [];
   for (const raw of text.split(/\r?\n/gu)) {

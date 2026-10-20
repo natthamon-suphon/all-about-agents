@@ -34,14 +34,14 @@
         "skillCheck": "not-required",
         "explicitInvocation": false,
         "autoInvokeLoopMe": false,
-        "normalBrainstormingRouting": true,
         "longInterview": false,
         "askLoopQuestions": false,
-        "inventWorkflow": false
+        "inventWorkflow": false,
+        "applicableRouting": true
       },
       "observables": [
         "Does not auto-route an ordinary feature request to loop-me.",
-        "Keeps normal feature design on the applicable brainstorming path without starting an unrequested interview.",
+        "Returns the ordinary feature request to the applicable router or authorized workflow; uses brainstorming only when material design decisions remain.",
         "Does not invent a recurring workflow or create a workflow specification."
       ]
     },
@@ -87,6 +87,36 @@
         "Asks one material question at a time with a recommendation and records each decision in the workflow artifact that loop-me owns.",
         "Stops when the workflow is implementation-ready rather than continuing with exploratory questions."
       ]
+    },
+    {
+      "id": "LM-NONTRIGGER-approved-plan",
+      "prompt": "The implementation plan for the recurring report workflow is approved. I already chose inline execution and delegated it. Continue the first pending task without another interview.",
+      "expected": {
+        "skillCheck": "not-required",
+        "routeTo": "execution",
+        "restartBrainstorming": false,
+        "askLoopQuestions": false
+      },
+      "observables": [
+        "Returns to the selected execution workflow with existing scope and authority.",
+        "Does not start workflow grilling, restart brainstorming or request the same approval again."
+      ],
+      "critical": true
+    },
+    {
+      "id": "LM-NONTRIGGER-workflow-failure",
+      "prompt": "The recurring import workflow now drops one CSV row. The test expected 10 rows and got 9. Find the cause before changing code; I am not requesting an interview.",
+      "expected": {
+        "skillCheck": "not-required",
+        "routeTo": "systematic-debugging",
+        "askLoopQuestions": false,
+        "autoInvokeLoopMe": false
+      },
+      "observables": [
+        "Routes the known failure to systematic-debugging through the applicable router.",
+        "Does not treat the word workflow as opt-in consent, start an interview or create a workflow specification."
+      ],
+      "critical": true
     }
   ]
 }

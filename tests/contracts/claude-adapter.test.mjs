@@ -102,6 +102,19 @@ test("Claude semantic mappings use documented Claude tools only", () => {
   }
 });
 
+test("Claude semantic guide distinguishes portable restrictions and template inheritance", () => {
+  for (const profileId of ["portable", "template"]) {
+    const files = fileMap(resultFor(profileId));
+    const guide = files.get("docs/semantic-mappings.md");
+    const reviewer = files.get("agents/reviewer.md").split("---\n")[1];
+    assert.equal(/^disallowedTools:/mu.test(reviewer), profileId === "portable");
+    assert.match(guide, /Portable read-only roles use Claude's `disallowedTools`/u);
+    assert.match(guide, /Template agents inherit the parent's tools, model and full-access permission policy/u);
+    assert.match(guide, /Read-only task assignments remain instructions, not native isolation/u);
+    assert.doesNotMatch(guide, /^Read-only agents use Claude's/mu);
+  }
+});
+
 test("portable Claude render contains every native component and all canonical skills", () => {
   const result = resultFor();
   const files = fileMap(result);

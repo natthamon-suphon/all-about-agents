@@ -1,9 +1,7 @@
 #!/usr/bin/env node
-import { appendFile, mkdir, stat, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-import { collectBoundedStdin, isMainModule, safeStatuslineLogKey, sanitizeTerminalText } from "./statusline.mjs";
+import { collectBoundedStdin, isMainModule, resolveStatuslineLogRoot, safeStatuslineLogKey, sanitizeTerminalText, withStatuslineLog } from "./statusline.mjs";
 
 const MAX_LOG_BYTES = 8_192;
 const MAX_VALUE_CODE_POINTS = 256;
@@ -14,18 +12,20 @@ function boundedLogValue(value) {
   return [...sanitized].slice(0, MAX_VALUE_CODE_POINTS).join("");
 }
 
-async function appendBounded(filePath, value) {
+async function appendBounded(logRoot, name, value) {
   const line = `${value}\n`;
   const bytes = Buffer.byteLength(line, "utf8");
   if (bytes > MAX_LOG_BYTES) return;
-  let current = 0;
-  try {
-    current = (await stat(filePath)).size;
-  } catch (error) {
-    if (error?.code !== "ENOENT") return;
-  }
-  if (current + bytes > MAX_LOG_BYTES) await writeFile(filePath, "", "utf8");
-  await appendFile(filePath, line, "utf8");
+  await withStatuslineLog(logRoot, name, "append", async (handle, info) => {
+    if (info.size + BigInt(bytes) > BigInt(MAX_LOG_BYTES)) {
+      // Windows append-only handles cannot truncate; verify the second handle before rotation.
+      await withStatuslineLog(logRoot, name, "rotate", async (rotationHandle, rotationInfo) => {
+        if (info.dev !== rotationInfo.dev || info.ino !== rotationInfo.ino) throw new Error("statusline log changed before rotation");
+        await rotationHandle.truncate(0);
+      });
+    }
+    await handle.writeFile(line, "utf8");
+  });
 }
 
 function enqueue(filePath, operation) {
@@ -49,12 +49,9 @@ export async function trackToolEvent(payload, options = {}) {
     const candidate = kind === "agents" ? toolInput.subagent_type : toolInput.skill;
     const value = boundedLogValue(typeof candidate === "string" ? candidate : "unknown");
     if (!value) return;
-    const logRoot = typeof options.logDir === "string" && options.logDir.trim()
-      ? resolve(options.logDir)
-      : join(tmpdir(), "claude-statusline");
-    await mkdir(logRoot, { recursive: true });
-    const filePath = join(logRoot, `${safeStatuslineLogKey(sessionId)}-${kind}.log`);
-    await enqueue(filePath, () => appendBounded(filePath, value));
+    const logRoot = await resolveStatuslineLogRoot(options.logDir);
+    const name = `${safeStatuslineLogKey(sessionId)}-${kind}.log`;
+    await enqueue(join(logRoot, name), () => appendBounded(logRoot, name, value));
   } catch {
     // Tracking is optional and must never interrupt the tool lifecycle.
   }

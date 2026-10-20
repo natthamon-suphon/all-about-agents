@@ -142,9 +142,9 @@ test("Codex AGENTS.md inlines the routing contract because Windows Codex cannot 
   const routing = agents.indexOf("\n## Routing contract\n");
   assert.ok(routing > agents.indexOf("# All About Agents for Codex"), "the routing contract opens the Codex section");
   assert.ok(routing < agents.indexOf("## Canonical repository rules"), "the routing contract comes before the canonical rules");
-  for (const marker of ["<SUBAGENT-STOP>", "<EXTREMELY-IMPORTANT>", "## Red flags", "If there is even a 1% chance that a skill applies"]) {
-    assert.ok(agents.includes(marker), `AGENTS.md must inline the bootstrap body (${marker})`);
-  }
+  const bootstrap = core.skills.find((record) => record.id === "using-all-about-agents");
+  assert.ok(bootstrap, "core must provide the bootstrap skill");
+  assert.equal(agents.split(bootstrap.content.trim()).length - 1, 1, "AGENTS.md must inline the complete current canonical bootstrap exactly once");
   assert.equal(agents.includes("---\nname: using-all-about-agents"), false, "the inlined body must not carry skill frontmatter");
 });
 

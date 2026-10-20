@@ -3,6 +3,18 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
 
+test("compaction judgment preserves original reasoning and handles unavoidable mid-phase loss", async () => {
+  const skill = await readFile(new URL("../../../core/skills/session-compaction-resilience/SKILL.md", import.meta.url), "utf8");
+  assert.match(skill, /continue[^.]*original reasoning/isu);
+  assert.match(skill, /voluntary[^.]*phase boundary/isu);
+  assert.match(skill, /lossy secondary\s+sources/iu);
+  assert.match(skill, /host-forced[^.]*checkpoint[^.]*when possible/isu);
+  assert.match(skill, /Never automatically[^.]*compact[^.]*handoff/isu);
+  const evaluation = JSON.parse(await readFile(new URL("../../../core/evals/skill-routing/session-compaction-resilience.json", import.meta.url), "utf8"));
+  assert.equal(evaluation.cases[0].expected.hostForcedCheckpoint, true);
+  assert.equal(evaluation.cases[2].expected.continueWithOriginalReasoning, true);
+});
+
 const skillId = "session-compaction-resilience";
 const requiredCases = [
   "SC-TRIGGER-long-task-compaction",

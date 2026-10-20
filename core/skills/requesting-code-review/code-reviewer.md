@@ -20,6 +20,12 @@ Reviewer:
 
     [PLAN_OR_REQUIREMENTS]
 
+    Spec pointer: [SPEC_POINTER]
+    Applicable exact Global Constraints: [GLOBAL_CONSTRAINTS]
+    Documented standards sources: [STANDARDS_SOURCES]
+    Preserve required native inherited context. Use the bounded review scope
+    and relevant linked sections; do not expand task ownership.
+
     ## Change to Review
 
     [REVIEW_PACKAGE]
@@ -36,6 +42,12 @@ Reviewer:
 
     For an artifact or file list, read the listed paths.
 
+    Validate the recorded task/whole-change base and exact target. A tree base
+    or WORKTREE package is valid without a real commit. Never substitute
+    HEAD~1, accept empty/unrelated evidence, or change Git state to enable
+    review. A missing WORKTREE package must be rebuilt by the coordinator,
+    not through an unapproved write during review.
+
     ## Read-Only Review
 
     Your review is read-only. Do not change the working tree, the index, HEAD,
@@ -44,6 +56,22 @@ Reviewer:
     a worktree or check out another revision. If you truly need a full
     checkout, stop and report that need to the coordinator, who decides and
     applies the `using-git-worktrees` gate.
+
+    Perform this review yourself. Do not dispatch duplicate reviewers.
+
+    ## Standards and Spec
+
+    Return separate Standards and Spec verdicts. Standards checks the cited
+    repository rules; Spec checks the authorized requirements. Documented
+    project standards override heuristic smells, which remain advisory.
+    Unclear names, duplicate logic, speculative abstractions and scattered
+    ownership suggest focused investigation, not automatic refactoring.
+    Skip rules already enforced by tooling. If no Spec is available, mark
+    its verdict Not run with the missing source; do not invent a pass.
+
+    Check realistic user inputs, malformed data, platform conditions and
+    error paths affected by the diff. A Spec cannot enumerate every input;
+    grade plausible failures by actual user impact when the Spec is silent.
 
     ## What to Check
 
@@ -88,6 +116,11 @@ Reviewer:
     If you find issues with the plan itself rather than the implementation,
     say so.
 
+    Under `Declined to judge`, list every behavior considered but set aside,
+    one line per behavior with the reason, or None. The coordinator must
+    adjudicate each item with evidence, reason and cost if wrong. Do not
+    quietly discard plausible user-facing failures as outside the Spec.
+
     ## Output Format
 
     ### Strengths (optional)
@@ -114,7 +147,13 @@ Reviewer:
     ### Recommendations
     [Improvements for code quality, architecture, or process]
 
+    ### Declined to judge
+    [Each behavior set aside and reason, or None. Coordinator adjudicates each.]
+
     ### Assessment
+
+    Standards: [Pass | Findings | Not run] — [rule/evidence references]
+    Spec: [Pass | Findings | Not run: no spec available] — [requirement/evidence references]
 
     **Ready to merge?** [Yes | No | With fixes]
 
@@ -140,10 +179,14 @@ Reviewer:
 **Placeholders:**
 - `[DESCRIPTION]` — brief summary of what was built
 - `[PLAN_OR_REQUIREMENTS]` — what it should do (plan file path, task text, or requirements)
+- `[SPEC_POINTER]` — exact plan/brief Spec pointer or authorized requirement source
+- `[GLOBAL_CONSTRAINTS]` — applicable exact requirements from the plan or Spec
+- `[STANDARDS_SOURCES]` — documented repository rules with paths
 - `[REVIEW_PACKAGE]` — the package form and its scope: unstaged diff, staged diff, commit range, or artifact/file list (SHA is optional)
 - `[BASE_SHA]`, `[HEAD_SHA]` — only for a commit range: the starting and ending commits
 
-**Reviewer returns:** Strengths (optional), Issues (Critical / Important / Minor), Recommendations, Assessment
+**Reviewer returns:** Strengths (optional), Issues (Critical / Important / Minor),
+Recommendations, Declined to judge, separate Standards/Spec verdicts and Assessment
 
 ## Example Output
 
@@ -176,7 +219,13 @@ Reviewer:
 - Add progress reporting for user experience
 - Consider config file for excluded projects (portability)
 
+### Declined to judge
+None.
+
 ### Assessment
+
+Standards: Findings — the CLI help rule requires the documented flag (index-conversations:1).
+Spec: Findings — invalid dates reach the query without the required validation (search.ts:25).
 
 **Ready to merge: With fixes**
 

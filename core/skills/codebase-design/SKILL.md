@@ -51,7 +51,10 @@ Use these terms consistently:
    compatibility breaks.
 2. **Collect current evidence.** Read the real callers, tests, types, runtime
    paths, data flow, failure handling, and existing adapters. Record which facts
-   are verified and which remain assumptions.
+   are verified and which remain assumptions. Read existing `GLOSSARY.md`, the
+   relevant context from `GLOSSARY-MAP.md`, and relevant ADRs when present. Use
+   their domain terms in recommendations and alternative-design briefs. If these
+   records are missing, continue from evidence; do not create empty artifacts.
 3. **Describe the current interface completely.** List entry points and every
    fact a caller must know: invariants, ordering, errors, configuration, side
    effects, concurrency, and performance characteristics. Identify the current

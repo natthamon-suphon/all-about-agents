@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { posix, win32 } from "node:path";
 
@@ -13,6 +14,7 @@ import { profileTranslation, resolveProfile } from "../../profiles/profile-contr
 import { renderAntigravityGlobalInstructions, renderAntigravityGlobalRules } from "../shared/global-instructions.mjs";
 
 const ANTIGRAVITY_SURFACE = "antigravity";
+const LICENSE_SOURCE = readFileSync(new URL("../../LICENSE", import.meta.url));
 const ANTIGRAVITY_TARGET_RUNTIMES = Object.freeze(["cli", "desktop"]);
 const PLUGIN_NAME = "all-about-agents";
 
@@ -173,7 +175,7 @@ function desktopInstructions(semanticProfile) {
     "`~/.gemini/config/plugins/`. `agy plugin install` copies this package",
     "there, so a host with `agy` needs no other step.",
     "",
-    "On a host without `agy`, copy `plugin.json`, `skills/`, and `agents/` from",
+    "On a host without `agy`, copy `LICENSE`, `plugin.json`, `skills/`, and `agents/` from",
     "this package into:",
     "",
     "```text",
@@ -238,7 +240,7 @@ function packageReadme(semanticProfile) {
     "## Antigravity Desktop and IDE",
     "",
     "Both apps read `~/.gemini/config/plugins/all-about-agents/`, which",
-    "`agy plugin install` fills. Without `agy`, copy `plugin.json`, `skills/`,",
+    "`agy plugin install` fills. Without `agy`, copy `LICENSE`, `plugin.json`, `skills/`,",
     "and `agents/` there by hand; see `docs/manual-desktop.md`.",
     ""
   ].join("\n"));
@@ -330,6 +332,7 @@ export function renderAntigravity(input = {}) {
   });
 
   const files = [];
+  files.push({ relativePath: "LICENSE", content: new Uint8Array(LICENSE_SOURCE), mode: null });
   addFile(files, "plugin.json", renderJson(pluginManifest()));
   addFile(files, "config/GEMINI.md", renderAntigravityGlobalInstructions(core));
   addFile(files, "config/rules/all-about-agents.md", renderAntigravityGlobalRules(core, { canonicalRules: core.rules }));
@@ -399,7 +402,7 @@ export function renderAntigravity(input = {}) {
         kind: "manual-step",
         surface: "antigravity-desktop",
         id: "desktop-workspace-slot",
-        instruction: "Without agy, copy plugin.json, skills/, and agents/ into ~/.gemini/config/plugins/all-about-agents/ for Antigravity Desktop and IDE; agy plugin install fills the same folder. See docs/manual-desktop.md."
+        instruction: "Without agy, copy LICENSE, plugin.json, skills/, and agents/ into ~/.gemini/config/plugins/all-about-agents/ for Antigravity Desktop and IDE; agy plugin install fills the same folder. See docs/manual-desktop.md."
       },
       ...(semanticProfile.modelPolicies[ANTIGRAVITY_SURFACE] === "surface-default" ? [] : [{
         kind: "manual-step",

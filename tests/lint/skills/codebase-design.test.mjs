@@ -9,6 +9,19 @@ async function readSkill(relativePath = "SKILL.md") {
   return readFile(new URL(`../../../core/skills/${skillId}/${relativePath}`, import.meta.url), "utf8");
 }
 
+test("codebase design carries existing domain vocabulary into each design brief without creating empty artifacts", async () => {
+  const skill = await readSkill();
+  const brief = await readSkill("DESIGN-IT-TWICE.md");
+  assert.match(skill, /GLOSSARY-MAP\.md/u);
+  assert.match(skill, /GLOSSARY\.md/u);
+  assert.match(skill, /relevant ADRs/u);
+  assert.match(skill, /missing[^.]*do not[^.]*creat/isu);
+  assert.match(brief, /domain vocabulary[^;]*GLOSSARY/iu);
+  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
+  assert.equal(evaluation.cases[0].expected.preserveExistingDomainTerms, true);
+  assert.equal(evaluation.cases[2].expected.noEmptyDomainArtifacts, true);
+});
+
 test("codebase-design preserves the deep-module vocabulary and evidence gate", async () => {
   const skill = await readSkill();
   assert.match(skill, /survey[^.]*belongs to `improve-codebase-architecture`/iu);

@@ -46,6 +46,55 @@ from there, and the Antigravity manifest names it in its description.
   activation ownership and RTK 0.50.0 Codex hook support. The clean-profile CI
   list includes Antigravity on both Windows and macOS.
 
+## [2.4.0] - 2026-10-20
+
+### Added
+
+- Four portable skills: `domain-modeling`, `pr`, `retro`, and
+  `diagnosing-agent-workflows`. All three surfaces now carry 31 canonical
+  skills and their owned companions.
+- Reviewed provenance for Superpowers v7.0.0 and Matt Pocock's skills at
+  pinned commits, with one explained disposition for every canonical skill.
+  Core loading rejects missing, duplicate, malformed, or unsafe provenance.
+- Each managed plugin package carries the unchanged root LICENSE, including
+  the upstream copyright and permission notices.
+
+### Changed
+
+- Design and interviews start from intent and use a process sized to the work.
+  Plans capture exact decisions, constraints, assertions, and review focus.
+- Approved execution continues through local task helpers, bounded rulings,
+  guarded review evidence, and independent review without routine pauses.
+- Design and architecture surveys use existing domain language and relevant
+  ADR evidence. Compaction preserves original reasoning and disk recovery;
+  wayfinding retires mis-scoped tickets without treating them as route decisions.
+- PR-body drafting uses `pr` only when authorized. Reviews and tests use public
+  seams, realistic inputs, and separate source, model, and native evidence.
+- Native role prompts and metadata now distinguish behavior tests from
+  no-behavior artifact checks. Reviewers return separate Standards and Spec
+  judgments, missing-Spec results, and every declined judgment.
+- Worker templates respect required model/context inheritance. Parallel writers
+  require separate verified worktrees; explicit resume reuses snapshot recovery,
+  and nontrigger routing returns to the applicable workflow.
+
+### Fixed
+
+- Optional Claude statusline I/O validates regular files and checked handles
+  before append, rotation or read. Linked targets preserve their neighbors;
+  an unavailable log root leaves the main status fields visible.
+- The visual companion starts and stops through Node on Windows without Bash.
+  Authenticated loopback control verifies the exact instance, closes live
+  connections, preserves project screens and refuses uncertain cleanup. Partial
+  deletion errors report retained proof and whether a safe retry is available.
+- Shared semantic guidance distinguishes portable restrictions from full-access
+  inheritance. Snapshot and model-test instructions use actual candidate output.
+- Native registration no longer walks unused render metadata or accepts it as
+  planner input. Fixed command builders and source-hash checks remain in charge.
+
+These are repository and rendered-package changes. They do not install or
+register a plugin, change model/access/emergency-deny policy, or prove native
+runtime behavior. See [reviewed upstream updates](docs/maintenance/upstream-updates.md).
+
 ## [2.3.0] - 2026-10-10
 
 ### Changed

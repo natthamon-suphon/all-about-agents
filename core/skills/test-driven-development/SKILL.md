@@ -50,14 +50,21 @@ generated file as a substitute for the source change.
 4. Write one minimal test for one behavior before writing or changing
    production code. Use real code and real inputs at the chosen seam; avoid
    mocks unless the dependency cannot be exercised safely.
+   Use independent expected values from literals, hand-checked worked
+   examples or the Spec; never compute both sides with the implementation or
+   its helpers. Include realistic inputs at the public boundary.
 5. Run that test and confirm a genuine RED result: the assertion fails because
    the required behavior is missing or wrong. A syntax, import, fixture, or
    environment error is not RED. Fix the test or environment error first.
 6. Implement only the smallest production change that satisfies that failing
    test. Do not add speculative options, unrelated refactors, or extra
    behavior.
-7. Run the same test and confirm GREEN. Then run the relevant focused suite and
-   required checks. Keep exact commands and observed results as evidence.
+7. Run the same test and confirm GREEN. Run focused checks first, then the
+   relevant project suite before a completion claim, even if the task named
+   one file. Keep exact commands, each exit status and observed results.
+   Report every observed failure by name, including unrelated failures;
+   describe their impact without taking unrelated fixes into scope. A focused
+   green file is not a green project suite. Mark unavailable checks `not run`.
 8. Refactor only after GREEN: remove duplication, improve names, or extract a
    helper without changing behavior. Re-run the tests after every refactor.
 9. Repeat one vertical slice at a time. Record RED evidence, GREEN evidence,
@@ -115,6 +122,8 @@ order to manufacture a RED result.
    use a minimal failing fixture or a disposable copy/mutation that never
    changes the working tree. Restore or discard only that disposable state.
    Never delete working production code as a test setup step.
+   Inspect the mutation's diff against a pristine copy and confirm it
+   genuinely changed the fixture before trusting that RED result.
 4. Record the observed RED result (or state that a safe RED check was not run)
    and why, then run the test GREEN against the preserved implementation.
 5. Treat a previous summary, manual click-through, or existing code as

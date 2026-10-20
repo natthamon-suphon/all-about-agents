@@ -5,19 +5,11 @@ import { access, link, mkdir, readFile, readdir, writeFile } from "node:fs/promi
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { appendAuditEvent, safeLogKey } from "../../installers/lib/audit-log.mjs";
+import { appendAuditEvent } from "../../installers/lib/audit-log.mjs";
 import { withTempRoot } from "../helpers/temp-root.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
 import { renderCodex } from "../../adapters/codex/adapter.mjs";
-
-test("safeLogKey rejects path traversal and terminal control data", () => {
-  const key = safeLogKey("../session\\nested\u001b[31m\nkey");
-  assert.match(key, /^[A-Za-z0-9._-]+$/u);
-  assert.doesNotMatch(key, /[\\/\u0000-\u001f\u007f]/u);
-  assert.ok(key.length <= 64);
-  assert.throws(() => safeLogKey(42), TypeError);
-});
 
 const validEvent = Object.freeze({
   timestamp: "2026-08-30T00:00:00.000Z",

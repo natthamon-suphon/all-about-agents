@@ -15,12 +15,19 @@
         "exactInterfaces": true,
         "testEvidence": true,
         "verticalSlices": true,
-        "noImplementation": true
+        "noImplementation": true,
+        "specPointer": true,
+        "globalConstraints": true,
+        "reviewFocus": true,
+        "dependencyEdges": true,
+        "independentAssertions": true
       },
       "observables": [
         "Recognizes that an explicitly approved multi-step design is the trigger for writing-plans.",
         "Produces an executable plan with exact files, interfaces, parameters, return types, errors, commands, and expected RED/GREEN evidence.",
-        "Keeps planning separate from implementation and hands off through the agreed execution workflow."
+        "Keeps planning separate from implementation and hands off through the agreed execution workflow.",
+        "Carries the spec path, exact Global Constraints, Review Focus with owning tests and dependency edges.",
+        "Records code decisions and signatures without transcribing complete programs."
       ]
     },
     {
@@ -56,6 +63,43 @@
         "Does not make committing a required plan step or infer Git authority from urgency.",
         "Preserves uncommitted work and keeps push, publication, history rewrite, and discard outside scope unless explicitly authorized.",
         "Continues to require exact interface and test evidence while resisting the pressure to broaden the plan."
+      ]
+    },
+    {
+      "id": "WP-TRIGGER-delegated-execution",
+      "critical": true,
+      "prompt": "I approved docs/specs/audit-log.md and delegated both planning and execution to you. Use fresh task workers with reviews, as agreed. Write the plan and continue without asking me to approve it again.",
+      "expected": {
+        "skillCheck": "required",
+        "preserveExecutionMethod": true,
+        "repeatPlanApproval": false,
+        "noImplementationDuringPlanning": true,
+        "scopedWorkerBrief": true,
+        "wholePlanRequiredForEveryWorker": false,
+        "preserveNativeInheritedContext": true
+      },
+      "observables": [
+        "Writes and self-reviews the executable plan first.",
+        "Preserves the selected task-worker method and hands off without asking for the same approval again.",
+        "Does not run tests or implement code while the plan is being written.",
+        "Assigns full-plan reading to the coordinator or inline executor; dispatches each worker with a scoped brief, exact Spec pointer and applicable Global Constraints.",
+        "Opens only relevant linked sections as needed and preserves required native inherited context rather than requiring every worker to reread the full plan."
+      ]
+    },
+    {
+      "id": "WP-PRESSURE-program-transcript",
+      "critical": true,
+      "prompt": "The design is approved. To make the next engineer safe, paste every complete function into the plan and derive all expected test values with those functions.",
+      "expected": {
+        "skillCheck": "required",
+        "implementationBodiesByDefault": false,
+        "independentAssertions": true,
+        "proportionReview": true
+      },
+      "observables": [
+        "Provides exact signatures, spec values and decisions; includes a body only when a specific algorithm or exact copy is the decision.",
+        "Uses independently derived assertions and literal expected values.",
+        "Checks proportion as well as coverage and interface consistency."
       ]
     }
   ]

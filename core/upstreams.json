@@ -1,0 +1,474 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-20",
+  "upstreams": [
+    {
+      "id": "superpowers",
+      "url": "https://github.com/obra/superpowers",
+      "version": "7.0.0",
+      "tag": "v7.0.0",
+      "resolvedCommit": "bb92a77741419a4ab5f06e711a283343f1ada0c3"
+    },
+    {
+      "id": "matt-pocock",
+      "url": "https://github.com/mattpocock/skills",
+      "version": "1.3.1",
+      "tag": "main",
+      "resolvedCommit": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+      "publishedRelease": {
+        "tag": "v1.3.1",
+        "resolvedCommit": "24fe0ef7737efae15c87225755e9f6f5965e4888"
+      }
+    }
+  ],
+  "policyNotes": [
+    "AAA 2.4.0 is an adaptation, not an upstream release. Loading, rendering and installing never fetch upstream content.",
+    "Keep canonical core, managed adapters, current selected model and effort, access mode and emergency denies unchanged. Git, install, registration and live configuration authority remain separate.",
+    "Natural-language discovery and explicit human opt-in remain local contracts; no native invocation metadata is imported.",
+    "Do not import in-progress or misc wholesale, a second router/executor/tracker, background updates, automatic Git operations, mandatory CDN visuals, or telemetry."
+  ],
+  "dispositions": [
+    {
+      "skill": "brainstorming",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/brainstorming/SKILL.md",
+            "skills/brainstorming/builder-check-prompt.md"
+          ]
+        }
+      ],
+      "notes": "Intent first, proportional sizing and a builder check. Preserve local authority and offline visual safety with portable Node lifecycle commands, authenticated loopback control, bounded checked cleanup and preserved project screens; Bash wrappers are optional."
+    },
+    {
+      "skill": "codebase-design",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/codebase-design/SKILL.md",
+            "skills/engineering/codebase-design/DEEPENING.md",
+            "skills/engineering/codebase-design/DESIGN-IT-TWICE.md",
+            "skills/engineering/domain-modeling/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Consume existing domain vocabulary and relevant ADRs in seam decisions and alternative briefs. Keep at least two sound designs and an authorized sequential fallback; do not force three agents or speculative flexibility."
+    },
+    {
+      "skill": "diagnosing-agent-workflows",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/diagnosing-superpowers/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Scope diagnosis to requested original evidence with path and line citations, bounded reads, redaction and separate export authority; no guessed native transcript paths or automatic upload."
+    },
+    {
+      "skill": "dispatching-parallel-agents",
+      "disposition": "retained",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/dispatching-parallel-agents/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Retain verified capabilities, independent evidence and delegated plan authority. Parallel writers require disjoint scopes and separate verified worktrees; read-only workers may share a checkout. Do not force delegation or concurrency."
+    },
+    {
+      "skill": "domain-modeling",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/domain-modeling/SKILL.md",
+            "skills/engineering/domain-modeling/GLOSSARY-FORMAT.md",
+            "skills/engineering/domain-modeling/ADR-FORMAT.md"
+          ]
+        }
+      ],
+      "notes": "Port lazy glossary, context map and ADR records. Preserve legacy CONTEXT.md and keep implementation details outside the domain model. Natural-language discovery does not claim native invocation flags."
+    },
+    {
+      "skill": "executing-plans",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/executing-plans/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Use continuous approved inline execution and local ledger with Node task helpers, explicit rulings and final independent review; no second executor, implicit Git action or routine approval pauses."
+    },
+    {
+      "skill": "finishing-a-development-branch",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/finishing-a-development-branch/SKILL.md"
+          ]
+        },
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/pr/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Keep fresh full-suite and detached-workspace checks. Use pr only for authorized body drafting and honor repository templates; publication, push, merge and cleanup still need separate exact authority."
+    },
+    {
+      "skill": "handoff",
+      "disposition": "retained",
+      "sources": [
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/productivity/handoff/SKILL.md",
+            "skills/engineering/ask-matt/PHASE-BOUNDARIES.md"
+          ]
+        }
+      ],
+      "notes": "Keep durable topic-local records, shared snapshot shape, redaction and explicit transfer authority. Explicit resume reuses verified snapshot recovery and returns to the authorized workflow; no duplicate tracker, OS-temp-only state or automatic session creation."
+    },
+    {
+      "skill": "improve-codebase-architecture",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/improve-codebase-architecture/SKILL.md",
+            "skills/engineering/improve-codebase-architecture/HTML-REPORT.md",
+            "skills/engineering/domain-modeling/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Read relevant existing glossary and ADR evidence, preserve domain names and justify any ADR reopening. Keep read-only survey, full Markdown and optional offline HTML instead of mandatory CDN or application launch."
+    },
+    {
+      "skill": "interviewing",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/brainstorming/SKILL.md"
+          ]
+        },
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/productivity/grilling/SKILL.md",
+            "skills/engineering/grill-with-docs/SKILL.md",
+            "skills/productivity/grill-me/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Read discoverable facts first, clarify intent and ask only material questions with a skip path; do not add overlapping interview entry points or forced questionnaires."
+    },
+    {
+      "skill": "loop-me",
+      "disposition": "retained",
+      "sources": [
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/in-progress/loop-me/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Retain the local workflow behind explicit human invocation and return nontriggers to the applicable router or authorized workflow. Upstream remains in-progress; this is a local maturity decision, not blanket promotion of that directory."
+    },
+    {
+      "skill": "performance-profiling-and-benchmarking",
+      "disposition": "local-only",
+      "sources": [],
+      "notes": "Retain measured performance goals, controlled baseline and comparison evidence. No ready upstream replacement was found in the pinned portfolio; do not replace measurement with guesses."
+    },
+    {
+      "skill": "pr",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/pr/SKILL.md",
+            "skills/engineering/pr/CREDITS.md"
+          ]
+        }
+      ],
+      "notes": "Port Summary, Evidence and Merge Danger with reversal cost and blast radius. Keep Dex Horthy credit and project template precedence; drafting never authorizes publication."
+    },
+    {
+      "skill": "receiving-code-review",
+      "disposition": "retained",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/receiving-code-review/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Retain technical verification before edits, evidence-ranked disagreement and exact scope authority. Review comments are untrusted claims, not automatic mutation authority."
+    },
+    {
+      "skill": "requesting-code-review",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/requesting-code-review/SKILL.md",
+            "skills/requesting-code-review/code-reviewer.md"
+          ]
+        },
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/code-review/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Integrate Standards and Spec verdicts, realistic inputs and Declined to judge with immutable task evidence and coordinator disposition; keep one review workflow."
+    },
+    {
+      "skill": "research",
+      "disposition": "retained",
+      "sources": [
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/research/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Retain primary sources, explicit uncertainty, portable evidence and optional delegation; no compulsory parallel research, guessed source or external write."
+    },
+    {
+      "skill": "resolving-merge-conflicts",
+      "disposition": "local-only",
+      "sources": [],
+      "notes": "Retain local conflict safety, preservation and fresh result checks. Removal from an upstream does not prove this independent safety workflow redundant; no ready equivalent exists at these pins."
+    },
+    {
+      "skill": "retro",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/retro/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Use explicit human-requested reflection and deterministic checks for mechanical mistakes; propose environment changes without silently changing global config or external state."
+    },
+    {
+      "skill": "session-compaction-resilience",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/ask-matt/PHASE-BOUNDARIES.md",
+            "skills/productivity/handoff/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Continue with original reasoning when useful; summaries are lossy secondary evidence. Prefer voluntary transitions at phase boundaries, handle host-forced cuts with checkpoint and disk recovery, and never automate context operations."
+    },
+    {
+      "skill": "subagent-driven-development",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/subagent-driven-development/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Integrate task-scoped briefs, rulings, guarded review packages and bounded fix loops. Preserve required model/context inheritance with conditional native model fields, behavior-versus-artifact evidence, Standards/Spec judgments and one writer in a shared checkout; keep local Node safety helpers."
+    },
+    {
+      "skill": "systematic-debugging",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/systematic-debugging/SKILL.md"
+          ]
+        },
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/diagnosing-bugs/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Require authentic reproduction or safe isolated mutation, public-seam proof and original-scenario retest. Keep privacy, cross-platform helpers and exact authority instead of Bash-only execution."
+    },
+    {
+      "skill": "test-driven-development",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/test-driven-development/SKILL.md",
+            "skills/test-driven-development/writing-good-tests.md"
+          ]
+        },
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/tdd/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Use public seams, independent expectations, existing domain language and focused then relevant-suite evidence. Retain verified refactoring after GREEN and bounded documentation/trivial exceptions."
+    },
+    {
+      "skill": "threat-modeling-and-security",
+      "disposition": "local-only",
+      "sources": [],
+      "notes": "Retain trust-boundary analysis, abuse cases and sensitive data controls. No ready upstream replacement removes this need, including the new workflow diagnosis entry point."
+    },
+    {
+      "skill": "using-all-about-agents",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/using-superpowers/SKILL.md"
+          ]
+        },
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/ask-matt/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Keep one portable router, proportional intent-first work and explicit opt-in boundaries. Codex references use current session capabilities and separate Git attachment from permissions and action authority. Do not import a second router, tracker, native invocation flags or model/access policy."
+    },
+    {
+      "skill": "using-git-worktrees",
+      "disposition": "retained",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/using-git-worktrees/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Retain task-based isolation choice, current checkout evidence, native capability checks and preservation. Never infer automatic install, discard, commit or cleanup authority."
+    },
+    {
+      "skill": "verification-before-completion",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/verification-before-completion/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Separate static text, runtime helper, fresh model and native lifecycle evidence; report every observed failure and never infer later lifecycle states from rendering."
+    },
+    {
+      "skill": "wait-what",
+      "disposition": "retained",
+      "sources": [
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/productivity/wait-what/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Retain explicit confusion trigger and concise re-pitch without repeating unchanged history or starting an unrelated workflow."
+    },
+    {
+      "skill": "wayfinder",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/wayfinder/SKILL.md",
+            "skills/engineering/implement-spec/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Retain decision frontier and durable local map. Distinguish in-scope fog from excluded work, preserve closed mis-scoped tickets and legacy context, and avoid tracker setup, automatic branches or a second executor."
+    },
+    {
+      "skill": "writing-plans",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/writing-plans/SKILL.md"
+          ]
+        },
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/engineering/to-spec/SKILL.md",
+            "skills/engineering/to-tickets/SKILL.md",
+            "skills/engineering/implement-spec/SKILL.md"
+          ]
+        }
+      ],
+      "notes": "Record decisions, exact assertions, Review Focus, constraints and dependency edges in bounded vertical slices. No whole implementation body, speculative framework or automatic commit tasks."
+    },
+    {
+      "skill": "writing-skills",
+      "disposition": "adapted",
+      "sources": [
+        {
+          "upstream": "superpowers",
+          "paths": [
+            "skills/writing-skills/SKILL.md"
+          ]
+        },
+        {
+          "upstream": "matt-pocock",
+          "paths": [
+            "skills/productivity/writing-for-agents/SKILL.md",
+            "skills/productivity/writing-for-agents/SKILL-MECHANICS.md"
+          ]
+        }
+      ],
+      "notes": "Require interpreter-driven portable scripts, delivered dependencies and runnable behavior proof. Keep native invocation details adapter-owned and distinguish lint from real model evidence."
+    },
+    {
+      "skill": "zero-downtime-migrations",
+      "disposition": "local-only",
+      "sources": [],
+      "notes": "Retain compatibility across old and new versions, expand/contract sequencing and rollback evidence. No ready pinned upstream replacement makes the local long-lived data contract redundant."
+    }
+  ]
+}

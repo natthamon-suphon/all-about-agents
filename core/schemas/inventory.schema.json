@@ -28,8 +28,8 @@
     },
     "skills": {
       "type": "array",
-      "minItems": 27,
-      "maxItems": 27,
+      "minItems": 31,
+      "maxItems": 31,
       "items": {
         "type": "string",
         "pattern": "^[a-z0-9][a-z0-9-]*$"
@@ -37,8 +37,8 @@
     },
     "skillSources": {
       "type": "array",
-      "minItems": 27,
-      "maxItems": 27,
+      "minItems": 31,
+      "maxItems": 31,
       "items": {
         "type": "object",
         "additionalProperties": false,

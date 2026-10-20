@@ -194,7 +194,7 @@ own copy of the package, a correct answer cannot say which copy was loaded.
 Antigravity Desktop and Antigravity IDE read the same global slot,
 `~/.gemini/config/plugins/all-about-agents/`, which the `agy plugin install`
 step fills. On a host without `agy`, the manual step `antigravity-desktop-slot`
-applies: copy `plugin.json`, `skills/`, and `agents/` there by hand. An
+applies: copy `LICENSE`, `plugin.json`, `skills/`, and `agents/` there by hand. An
 `--apply` run on such a host stops at the validate step, so read this step in
 the `--dry-run` report or in `docs/manual-desktop.md`. Then check the app's
 Customizations view; neither app has a headless mode.

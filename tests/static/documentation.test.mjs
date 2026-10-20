@@ -9,11 +9,28 @@ import { loadCore } from "../../installers/lib/load-core.mjs";
 
 const root = process.cwd();
 
+test("the latest release entry and documented portfolio match published metadata", async () => {
+  const pkg = JSON.parse(await readFile(resolve(root, "package.json"), "utf8"));
+  const changelog = await readFile(resolve(root, "WhatsNew.md"), "utf8");
+  const release = /^## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})$/mu.exec(changelog);
+  assert.ok(release, "a dated release entry is required");
+  assert.equal(release[1], pkg.version);
+  const inventory = JSON.parse(await readFile(resolve(root, "core/inventory.json"), "utf8"));
+  for (const path of ["README.md", "docs/maintenance/native-verification.md"]) {
+    assert.match(await readFile(resolve(root, path), "utf8"), new RegExp(`\\b${inventory.skills.length} skills\\b`, "u"));
+  }
+});
+
 const requiredOutputs = [
   "README.md",
   "docs/setup/windows.md",
   "docs/setup/macos.md",
+  "docs/setup/web-instructions.md",
+  "docs/instructions/claude-web.txt",
+  "docs/instructions/chatgpt-web.txt",
+  "docs/instructions/gemini-web.txt",
   "docs/maintenance/global-instructions.md",
+  "docs/maintenance/upstream-updates.md",
   "docs/compatibility/antigravity.md",
   "docs/compatibility/claude-code.md",
   "docs/compatibility/codex.md",

@@ -1,69 +1,62 @@
 > Codex only. Every surface ships this file, but it applies only when the
-> selected adapter is Codex. The multi-agent facts below were checked
-> 2026-09-27 on codex-cli 0.146.0 with `codex features list`. After a Codex
-> upgrade, check them again against the installed CLI and the
-> current Codex documentation.
+> selected adapter is Codex. Official OpenAI documentation checked 2026-10-20:
+> [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+> Recheck current Codex documentation when a decision needs a new native fact.
 
-## Subagent dispatch requires multi-agent support
+## Session capabilities and delegation
 
-Run `codex features list` and read the `multi_agent` row before any subagent
-dispatch. As checked 2026-09-27 on codex-cli 0.146.0 with `codex features list`,
-`multi_agent` is `stable` and `true` (the value in effect on that
-install), and `multi_agent_v2` is
-`stable` and `false`. The tool names `spawn_agent`, `wait_agent`,
-`close_agent`, `send_input`, `resume_agent`, and `list_agents` were found as
-strings in the 0.146.0 binary; no Codex documentation was checked for them.
+Inspect the current native tool surface and applicable host instructions
+before dispatch. Current Codex releases enable subagents by default, but this
+does not establish availability in every session or identical App, CLI and
+IDE controls. Delegate only within explicit human authority or applicable
+project/skill instructions, and use only documented or exposed native actions.
 
-If the command fails or `multi_agent` is not `true`, stop and ask the human
-before changing any config. Never edit `~/.codex/config.toml` without the
-human's explicit authority for that exact change.
+Use an installed CLI probe such as `codex features list` only when diagnosing
+that CLI. A separate CLI's absence or flags do not negate a capability already
+exposed in the active session. Never infer native tool names from binary strings
+or remembered releases. If the needed capability is unavailable, report it and
+follow the selected workflow's authorized fallback; do not invent a transport.
+Never edit live config without explicit authority for that exact change.
 
-Custom agents are standalone TOML files, one per agent, under
-`~/.codex/agents/` (personal) or `.codex/agents/` (project), beside the
-built-in `default`, `worker`, and `explorer` agents
-([Codex subagents](https://developers.openai.com/codex/subagents), retrieved
-2026-08-31).
+Preserve approved model policy and required inherited context. Follow
+`subagent-driven-development` for worker/reviewer fix rounds and
+`dispatching-parallel-agents` for independent concurrent work. Use only exposed
+worker lifecycle actions: resume when supported, or provide a fresh worker
+the bounded brief, report and findings. Do not invent a close or resume call.
+Concurrent writers still need separate verified worktrees; read-only workers
+may share context without creating a worktree.
 
-Skills like `dispatching-parallel-agents` and `subagent-driven-development`
-use these tools. When using subagent-driven-development, close reviewer
-subagents when their review returns. Keep each implementer subagent open until
-its task's review passes — the fix loop resumes the implementer — then close
-it. If your harness cannot send another message to a spawned agent, dispatch
-each fix round as a fresh implementer carrying the brief, the report file, and
-the findings.
+## Git-state detection
 
-## Environment Detection
-
-Skills that create worktrees or finish branches should detect their
-environment with read-only git commands before proceeding. Both commands work
-the same in any shell; `--path-format` needs Git 2.31 or later
-([Git 2.31.0 release notes](https://github.com/git/git/blob/master/Documentation/RelNotes/2.31.0.adoc),
-checked 2026-09-27):
+Inspect Git attachment and worktree identity with read-only, shell-neutral
+commands before applying `using-git-worktrees` or
+`finishing-a-development-branch`:
 
 ```text
 git rev-parse --path-format=absolute --git-dir --git-common-dir
 git branch --show-current
 ```
 
-- The first command prints two lines. Two different paths → already in a
-  linked worktree (skip creation).
-- The second command prints nothing → detached HEAD (cannot branch/push/PR
-  from sandbox).
+`--path-format` needs Git 2.31 or later
+([Git 2.31.0 release notes](https://github.com/git/git/blob/master/Documentation/RelNotes/2.31.0.adoc),
+checked 2026-09-27). The first command prints the Git and common Git directories;
+different paths indicate a linked worktree. Verify that checkout's identity and
+isolation rather than creating a second worktree automatically.
 
-See `using-git-worktrees` steps 3-4 and `finishing-a-development-branch`
-step 4 for how each skill uses these signals.
+An empty branch name indicates detached HEAD, a Git attachment state. It does
+not establish a sandbox restriction, write permission or remote permission.
+Inspect actual host controls, repository policy and operation evidence
+separately. Git state, available native capability and human action authority
+are distinct checks.
 
-## Codex App Finishing
+## Finishing and native actions
 
-When the sandbox blocks branch/push operations (detached HEAD in an
-externally managed worktree), the agent commits only when the user gave
-explicit commit authority for this work; otherwise it leaves the changes
-uncommitted. Either way, it tells the user to use the App's native controls.
-These control names were not checked against the current Codex App or its
-documentation; if the App shows other names, use what it shows:
+Require explicit Git-action authority for commit, push, history changes and
+pull-request creation. Detached HEAD neither grants that authority nor proves
+those actions impossible. Preserve unrelated and uncommitted work.
 
-- **"Create branch"** — names the branch, then commit/push/PR via App UI
-- **"Hand off to local"** — transfers work to the user's local checkout
-
-The agent can still run tests and output suggested branch names, commit
-messages, and PR descriptions for the user to copy.
+If an authorized operation is blocked, report its observed error and exact
+affected step. Use an exposed App action only when its documented behavior and
+the human's authority fit the task. Do not guess App control names or assume a
+transfer changes Git or filesystem permissions. Keep Git operations separate
+from native installation, registration and live configuration changes.

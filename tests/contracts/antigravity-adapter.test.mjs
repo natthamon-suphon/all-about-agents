@@ -64,9 +64,7 @@ test("GEMINI.md is one marked block that inlines the routing contract without a 
   assert.ok(block, "GEMINI.md is one marked block, so registration can keep the operator's text around it");
   assert.match(block[1], /^# Global Operating Rules/u);
   assert.match(gemini, /## Routing contract/u);
-  for (const marker of ["<SUBAGENT-STOP>", "<EXTREMELY-IMPORTANT>", "## Red flags"]) {
-    assert.ok(gemini.includes(marker), `GEMINI.md must inline the bootstrap body (${marker})`);
-  }
+  assert.equal(gemini.split(bootstrap.content.trim()).length - 1, 1, "GEMINI.md must inline the complete current canonical bootstrap exactly once");
   assert.equal(gemini.includes("---\nname: using-all-about-agents"), false, "the inlined body must not carry skill frontmatter");
   assert.doesNotMatch(gemini, /## Canonical repository rules|Presentation catalog/u, "the canonical rules and the catalog live in the global rule file");
 });

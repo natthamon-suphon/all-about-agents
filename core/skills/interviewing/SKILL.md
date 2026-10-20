@@ -5,71 +5,60 @@ evaluationCases:
   - IN-TRIGGER-open-design-decisions
   - IN-NONTRIGGER-discoverable-answer
   - IN-PRESSURE-ask-many-at-once
+  - IN-TRIGGER-missing-intent
+  - IN-TRIGGER-independent-decisions
+  - IN-NONTRIGGER-explicit-skip
 ---
 
 # Interviewing
 
-Use this as a questioning discipline inside a wrapping skill. The wrapper owns
-the artifact and decides when the interview starts and ends. `brainstorming`
-uses it while shaping a design; `loop-me` uses it while specifying a workflow.
+The wrapping skill owns the output and decides when discovery begins and ends.
+`brainstorming` owns the design; `loop-me` owns the workflow specification.
 Do not make this skill the entry point for building or changing something.
 
-**Core principle:** Ask one compact question at a time, with a recommendation,
-until no material unknown could change the wrapper's output.
+Ask only what could change the work. Find facts yourself. Keep the human's
+decisions separate from assumptions and choices delegated to the builder.
 
 ## Skill Gate Protocol
 
-1. Confirm that a wrapping skill owns the output: the workflow specification
-   that `loop-me` owns, or the design that `brainstorming` owns. If no wrapper
-   owns an artifact, stop rather than interview for its own sake.
+1. Confirm a wrapping skill owns the output: the design from `brainstorming`
+   or workflow specification from `loop-me`. Honor the wrapper's scope and
+   existing decisions. An explicit request to skip discovery returns control
+   to the wrapper; preserve authority and security boundaries.
 2. Inspect the request, existing brief, repository evidence, and decisions
    already recorded. Resolve facts that are answerable from those sources
-   before asking the human. If a needed fact belongs outside the workspace,
-   route it to the applicable research workflow instead of guessing.
-3. Keep only decisions whose answer could change scope, behavior, structure,
+   before asking the human. Research material external facts through the
+   applicable workflow. A pending fact is an unsettled prerequisite; do not
+   guess the answer or ask its dependent questions yet.
+3. Keep decisions whose answer could change scope, behavior, structure,
    authorization, destination, or acceptance criteria. Skip preferences and
-   decisions already settled in the brief, files, or transcript.
-4. Ask exactly one question in one message. Offer two or three concrete
-   options when possible, attach the answer you recommend and one short reason,
-   and keep the question small enough to answer directly.
-5. Record the decision in the wrapper's artifact immediately. Follow the live
-   branch depth-first; ask the sharper follow-up before opening another branch.
-6. Re-check the remaining material unknowns after every answer. Stop when an
-   implementer can proceed without guessing, and hand control back to the
-   wrapper.
+   decisions already settled, routine builder choices, and curiosity that
+   cannot change the result.
+4. When intent is missing, ask one open question about a real moment, problem,
+   or outcome before presenting solution options. Use the human's vocabulary.
+   For a concrete choice, give a short recommendation with its main trade-off;
+   offer two or three options when that helps them decide. Identify delegated
+   defaults as your calls rather than claiming they approved them.
+5. Follow dependencies. Ask the highest-impact unsettled prerequisite first.
+   When independent material questions have settled prerequisites, group them
+   in one compact round only if that saves a round without adding confusion.
+   Number grouped questions and make each answer unambiguous. Never infer
+   answers from urgency or silence. Recompute the remaining branches after
+   actual answers arrive.
+6. Record the decision in the wrapper's artifact immediately, or its chat
+   description when no document is needed. Explain conflicts with an approved
+   constraint and resolve the smallest corrective decision. Stop when an
+   implementer can proceed without guessing a material requirement; return
+   control to the wrapper. A resolved question is not a new approval gate.
 
-## Question contract
+## Stop conditions
 
-Each question has one decision, its impact, and a recommendation. Do not batch
-questions, answer for the human, or repeat a question whose answer is already
-known. If an answer creates a conflict with an approved constraint, explain the
-conflict and ask the smallest corrective question before recording it.
+- A discoverable fact needs no interview; inspect it and report its source.
+- A read-only answer or an already decision-ready brief needs no questionnaire.
+- An explicit opt-out ends interviewing without granting external, paid, live,
+  destructive, or otherwise missing authority.
+- If a question repeats, depends on an unanswered choice, or cannot change the
+  output, remove it from the current round.
 
-Example:
-
-> Should the workflow retry a transient upload failure? **I recommend three
-> attempts with bounded backoff** because the observed failures are temporary;
-> otherwise choose no retry or manual review.
-
-## When not to interview
-
-- A fact can be discovered from the supplied context or repository: discover
-  it and report the evidence.
-- The request is a bounded read-only answer or review with no material choice.
-- The wrapper already has enough recorded decisions for implementation.
-- The question would only satisfy curiosity and cannot change the output.
-
-## Common mistakes and red flags
-
-| Mistake or pressure | Required response |
-|---|---|
-| “Ask these four together to save time.” | Ask the highest-impact one, then continue one at a time. |
-| “The human is busy; infer the answer.” | Ask with a recommendation; never invent their decision. |
-| “This repository fact is faster to ask.” | Discover it first and cite the source. |
-| “We have talked enough.” | Check whether any material branch still changes implementation. |
-| “The answer is close enough.” | Push back on ambiguity or conflict before recording it. |
-
-**Stop and reassess** when a question repeats, asks for an already-answerable
-fact, bundles independent decisions, or continues after implementation is
-unblocked. The interview is done when the wrapper can hand off a decision-ready
-artifact without another question.
+Use concise playback only where it checks understanding. No fixed word count,
+mandatory solution menu, or interview for every task.

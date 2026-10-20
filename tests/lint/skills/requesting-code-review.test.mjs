@@ -71,3 +71,23 @@ test("requesting-code-review links a read-only reviewer template with evidence-b
   assert.ok(strengths.length > 0);
   for (const line of strengths) assert.match(line, /\([\w.-]+:\d+(?:-\d+)?\)/u, `strength without file:line: ${line}`);
 });
+
+test("review packages require exact constraints and two independent verdicts", async () => {
+  const skill = (await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8")).replace(/\s+/gu, " ");
+  const template = (await readFile(new URL(`../../../core/skills/${skillId}/code-reviewer.md`, import.meta.url), "utf8")).replace(/\s+/gu, " ");
+  for (const text of [skill, template]) {
+    assert.match(text, /Standards[^.]*Spec/u);
+    assert.match(text, /Declined to judge/u);
+    assert.match(text, /Global Constraints/u);
+    assert.match(text, /Spec pointer/u);
+    assert.match(text, /realistic[^.]*inputs/iu);
+  }
+  assert.match(skill, /empty[^.]*unrelated|unrelated[^.]*empty/iu);
+  assert.match(template, /documented[^.]*standards[^.]*(?:win|override)/iu);
+  assert.match(template, /heuristic[^.]*advisory/iu);
+  assert.match(template, /Standards: \[Pass \| Findings \| Not run\]/u);
+  assert.match(template, /Spec: \[Pass \| Findings \| Not run/u);
+  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
+  assert.equal(evaluation.cases[0].expected.separateStandardsAndSpec, true);
+  assert.equal(evaluation.cases[2].expected.declinedJudgmentsTracked, true);
+});

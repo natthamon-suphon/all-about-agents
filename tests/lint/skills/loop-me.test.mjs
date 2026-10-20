@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const skillId = "loop-me";
-const requiredCases = ["LM-TRIGGER-explicit-workflow-grill", "LM-NONTRIGGER-normal-feature", "LM-PRESSURE-endless-questioning", "LM-TRIGGER-grill-request-no-name"];
+const requiredCases = ["LM-TRIGGER-explicit-workflow-grill", "LM-NONTRIGGER-normal-feature", "LM-PRESSURE-endless-questioning", "LM-TRIGGER-grill-request-no-name", "LM-NONTRIGGER-approved-plan", "LM-NONTRIGGER-workflow-failure"];
 
 const skillPath = new URL("../../../core/skills/loop-me/SKILL.md", import.meta.url);
 const evaluationPath = new URL("../../../core/evals/skill-routing/loop-me.json", import.meta.url);
@@ -23,7 +23,8 @@ test("loop-me is explicit-invocation-first and keeps ordinary brainstorming sepa
   assert.match(frontmatter, /^evaluationCases:\s*$/mu);
   assert.match(skill, /explicit invocation|explicitly invokes?/iu);
   assert.match(skill, /opt-in/iu);
-  assert.match(skill, /normal feature[\s\S]*brainstorming/iu);
+  assert.match(skill.replace(/\s+/gu, " "), /nontrigger[^.]*applicable router or authorized workflow/iu);
+  assert.doesNotMatch(skill.replace(/\s+/gu, " "), /normal feature[^.]*routes to `brainstorming`/iu);
   assert.match(skill, /must not route here automatically|do not invoke.*automatically/iu);
   assert.match(skill, /Skill Gate Protocol/iu);
   assert.match(skill, /This skill owns the workflow specification artifact/u);
@@ -53,7 +54,7 @@ test("loop-me has a measurable ready stop and resists endless questioning", asyn
   assert.match(skill, /do not reopen|does not reopen/iu);
 });
 
-test("loop-me routing evaluation defines four complete critical cases", async () => {
+test("loop-me routing evaluation defines six complete critical cases", async () => {
   const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
   assert.equal(evaluation.skill, skillId);
@@ -75,7 +76,7 @@ test("loop-me routing evaluation defines four complete critical cases", async ()
   assert.equal(evaluation.cases[1].expected.skillCheck, "not-required");
   assert.equal(evaluation.cases[1].expected.explicitInvocation, false);
   assert.equal(evaluation.cases[1].expected.autoInvokeLoopMe, false);
-  assert.equal(evaluation.cases[1].expected.normalBrainstormingRouting, true);
+  assert.equal(evaluation.cases[1].expected.applicableRouting, true);
   assert.equal(evaluation.cases[2].expected.skillCheck, "required");
   assert.equal(evaluation.cases[2].expected.specificationReady, true);
   assert.equal(evaluation.cases[2].expected.unresolvedMaterialQuestions, 0);
@@ -90,4 +91,8 @@ test("loop-me routing evaluation defines four complete critical cases", async ()
   assert.equal(unnamed.expected.directGrillRequest, true);
   assert.equal(unnamed.expected.oneQuestionAtATime, true);
   assert.equal(unnamed.expected.specificationReadyStop, true);
+  assert.equal(evaluation.cases[4].expected.routeTo, "execution");
+  assert.equal(evaluation.cases[4].expected.restartBrainstorming, false);
+  assert.equal(evaluation.cases[5].expected.routeTo, "systematic-debugging");
+  assert.equal(evaluation.cases[5].expected.askLoopQuestions, false);
 });

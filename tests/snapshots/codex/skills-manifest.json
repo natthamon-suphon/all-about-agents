@@ -1,12 +1,14 @@
 {
-  "companionCount": 39,
-  "pathCount": 67,
-  "pathsSha256": "94e400abb2e1bf054a93d5c72429c47d2a1edab8c2baed59384e4c1e88fcc3aa",
-  "skillCount": 27,
+  "companionCount": 48,
+  "pathCount": 80,
+  "pathsSha256": "d486024640693410b070721657c193799fa3996c5bfd8f58c99edf76540876ac",
+  "skillCount": 31,
   "skills": [
     "brainstorming",
     "codebase-design",
+    "diagnosing-agent-workflows",
     "dispatching-parallel-agents",
+    "domain-modeling",
     "executing-plans",
     "finishing-a-development-branch",
     "handoff",
@@ -14,10 +16,12 @@
     "interviewing",
     "loop-me",
     "performance-profiling-and-benchmarking",
+    "pr",
     "receiving-code-review",
     "requesting-code-review",
     "research",
     "resolving-merge-conflicts",
+    "retro",
     "session-compaction-resilience",
     "subagent-driven-development",
     "systematic-debugging",
@@ -32,5 +36,5 @@
     "writing-skills",
     "zero-downtime-migrations"
   ],
-  "uniquePathCount": 67
+  "uniquePathCount": 80
 }

@@ -6,6 +6,8 @@ evaluationCases:
   - DP-NONTRIGGER-shared-state
   - DP-PRESSURE-tool-unavailable
   - DP-NONTRIGGER-reviewed-plan-tasks
+  - DP-TRIGGER-delegated-isolated-writers
+  - DP-PRESSURE-shared-worktree-writers
 ---
 
 # Dispatching Parallel Agents
@@ -19,7 +21,7 @@ authorization, integration, evidence, and final decision.
 Independence, ownership, and native availability must all be true before a
 parallel dispatch.
 
-`subagent-driven-development` runs approved plan tasks one implementer at a time in the shared worktree, with a review after each task; `dispatching-parallel-agents` runs independent items at the same time, and allows writers only with disjoint write scopes.
+`subagent-driven-development` runs approved plan tasks one implementer at a time in the shared worktree, with a review after each task; `dispatching-parallel-agents` runs independent items at the same time, and allows writers only with disjoint write scopes in separate verified worktrees.
 
 ## The threshold, resolved
 
@@ -44,10 +46,12 @@ Run this gate before dispatching any parallel worker:
 
 1. Inspect the request, repository instructions, current branch and worktree
    state, dependencies, and the executable plan when one exists.
-2. Require a **recorded, explicit human approval** of the executable plan for
-   any worker that writes files, Git state, or another mutable resource.
+2. Require recorded, explicit human approval of the executable plan or
+   explicit delegation of plan writing and execution for any worker that
+   writes files, Git state, or another mutable resource. Honor existing
+   delegation without another plan-approval question.
    A draft, issue description, design approval, silence, or urgency is not
-   execution authorization. If approval for a writer is absent, return to
+   execution authorization. If both forms of writer authority are absent, return to
    planning. Read-only workers need no plan approval, but each still needs a
    bounded brief and a named owner.
 3. Enumerate the work items and record why each is useful and independent.
@@ -62,6 +66,11 @@ Run this gate before dispatching any parallel worker:
    workers may write the same file, generated output, branch state, or other
    mutable resource. Read-only overlap is acceptable. If ownership overlaps,
    serialize the work or return to planning; never guess that writes are safe.
+   Before concurrent writers, require separate verified worktrees through
+   `using-git-worktrees`. Record each worktree path, branch identity, base and
+   separate index; also verify generated output and other mutable resources
+   are isolated. If isolation is missing or uncertain, serialize the writers.
+   Read-only workers may share a worktree; they need no separate worktrees.
 6. Record a durable checkpoint containing the base revision, item owners,
    scopes, worker state, commands and observed results, review state, and one
    next action. Dispatch one fresh worker per item only after this record and
@@ -69,9 +78,10 @@ Run this gate before dispatching any parallel worker:
 
 ## Dispatch and coordination
 
-Each worker receives only the bounded brief it needs: its independent question,
+Each worker receives the bounded brief it needs: its independent question,
 inputs, exact output shape, mutation scope (if any), safety constraints, and
-verification command. Do not leak unrelated conversation context or secrets.
+verification command. Preserve required native inherited context; a bounded
+brief does not strip host-supplied context. Do not add unrelated context or secrets.
 
 Start the workers concurrently only after the gate. Wait for every
 worker and preserve its report. The coordinator then checks that scopes did not
@@ -86,7 +96,8 @@ the workflow and is recorded; it is never hidden to preserve throughput.
 ## Non-triggers and safe fallback
 
 Do not dispatch in parallel for a single task, dependent steps, shared mutable
-state, overlapping writers, writers without an approved plan, or work whose
+state, overlapping writers, writers without plan/execution authority or
+separate verified worktrees, or work whose
 split is not useful. Serialize the work or return to planning with the missing
 decision named.
 
@@ -105,9 +116,9 @@ cheaper, guessed, or shell-based substitute.
 
 | Predicate | Action |
 |---|---|
-| At least two useful items, independent results, disjoint ownership, native dispatch verified | Parallel dispatch may proceed after the Skill Gate Protocol |
+| At least two useful items, independent results, disjoint ownership, native dispatch verified; writers also have plan/execution authority and separate verified worktrees | Parallel dispatch may proceed after the Skill Gate Protocol |
 | One item, or two items that are trivial, dependent, or share mutable state | Do not dispatch; combine or run sequentially |
-| Native dispatch unavailable, or plan approval missing for a writer | Do not imitate parallelism; use authorized sequential fallback or stop |
+| Native dispatch unavailable, or plan/execution authority missing for a writer | Do not imitate parallelism; use authorized sequential fallback or stop |
 | Any overlapping writer or unresolved review/verification finding | Serialize or stop and replan |
 
 ## Common mistakes

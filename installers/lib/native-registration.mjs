@@ -305,25 +305,11 @@ function lifecycle(surface) {
   };
 }
 
-function assertRenderedConsistency(rendered, surface) {
-  if (rendered === undefined || rendered === null) return;
-  if (!object(rendered)) throw new TypeError("rendered must be an object when supplied");
-  if (Array.isArray(rendered.registrations)) {
-    for (const registration of rendered.registrations) {
-      if (registration?.surface !== undefined && registration.surface !== surface) continue;
-      // Registration metadata is evidence only. It is intentionally never
-      // used as an executable instruction source.
-    }
-  }
-}
-
 /** Build a deterministic plan from fixed, reviewed product command builders. */
-export function planNativeRegistration({ surface, packageRoot, productRoot, instructionRoot, profile, platform = process.platform, rendered } = {}) {
+export function planNativeRegistration({ surface, packageRoot, productRoot, instructionRoot, profile, platform = process.platform } = {}) {
   if (!SURFACE_SET.has(surface)) throw pathError("unsupported-surface", `unsupported registration surface: ${String(surface)}`);
   if (!PROFILE_SET.has(profile)) throw pathError("invalid-profile", "profile must be portable or template");
   if (typeof platform !== "string" || !platform.trim()) throw new TypeError("platform must be a non-empty string");
-  assertRenderedConsistency(rendered, surface);
-
   const pkg = safeRoot(packageRoot, "packageRoot", { required: true });
   for (const relativePath of requiredPackageFiles(surface)) checkPackageFile(pkg, relativePath);
   const managedPackage = validateManagedPackage(pkg, surface, profile);
@@ -381,7 +367,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push(processAction("antigravity-plugin-validate", "agy", ["plugin", "validate", pkg], pkg, null, "none", false));
     actions.push(processAction("antigravity-plugin-install", "agy", ["plugin", "install", pkg], pkg, null, "none"));
     actions.push(processAction("antigravity-plugin-list", "agy", ["plugin", "list", "--json"], pkg, null, "json", false));
-    actions.push(manualAction("antigravity-desktop-slot", "Without agy, copy plugin.json, skills/, and agents/ into ~/.gemini/config/plugins/all-about-agents/ for Antigravity Desktop and IDE; agy plugin install fills the same folder. See docs/manual-desktop.md."));
+    actions.push(manualAction("antigravity-desktop-slot", "Without agy, copy LICENSE, plugin.json, skills/, and agents/ into ~/.gemini/config/plugins/all-about-agents/ for Antigravity Desktop and IDE; agy plugin install fills the same folder. See docs/manual-desktop.md."));
   }
 
   const plan = {

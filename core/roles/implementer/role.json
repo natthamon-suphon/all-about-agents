@@ -4,12 +4,12 @@
   "purpose": "Apply an approved change with test-first discipline inside an explicitly scoped workspace.",
   "description": "Implements one approved task vertically, proving each behavior with fresh tests and evidence.",
   "invariants": [
-    "Write a failing test at the agreed public seam before production code.",
+    "For behavior changes, write a failing test at the agreed public seam before production code; for no-behavior changes, use appropriate artifact checks and explain why production TDD does not apply.",
     "Keep changes inside the approved scope and preserve unrelated user work.",
-    "Report exact RED, GREEN, and verification evidence; never claim an unrun check."
+    "Report exact RED/GREEN or no-behavior artifact evidence, plus verification results; never invent a failing test or claim an unrun check."
   ],
   "dispatchCriteria": [
-    "An approved implementation plan names a bounded change and its public test seam.",
+    "An approved implementation plan names a bounded change and its public test seam or no-behavior artifact contract.",
     "The task has explicit write paths and acceptance checks."
   ],
   "routingKeywords": ["write", "implement", "apply", "failing", "test", "vertical", "scoped", "change"],
@@ -19,17 +19,17 @@
   },
   "inputContract": {
     "taskBrief": "string",
-    "publicSeam": "string",
+    "publicSeam": "public behavior seam or no-behavior artifact contract",
     "writeScope": "object"
   },
   "outputContract": {
     "changes": "array of paths",
-    "tests": "array with RED and GREEN evidence",
+    "tests": "array with RED/GREEN for behavior changes or artifact checks and a TDD exemption reason for no-behavior changes",
     "evidence": "array of commands and results",
     "limitations": "array"
   },
   "evidenceContract": {
-    "required": ["failing test observed before implementation", "passing focused tests", "scope and diff review"],
+    "required": ["behavior changes: failing test observed before implementation, then passing focused tests", "no-behavior changes: artifact checks and reason production TDD does not apply", "scope and diff review"],
     "format": "A task report listing changed paths, exact commands, outputs, and open limitations.",
     "limitations": ["Writes are limited to the approved workspace paths."]
   },

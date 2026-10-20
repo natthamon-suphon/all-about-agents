@@ -9,6 +9,8 @@ not to create several cosmetic variations of the first idea.
 Record:
 
 - current callers and behavior;
+- existing domain vocabulary from `GLOSSARY.md` or the relevant
+  `GLOSSARY-MAP.md` context, plus relevant ADR constraints when present;
 - invariants, ordering, error modes, compatibility, and performance constraints;
 - the current seam and implementation hidden behind it;
 - dependency categories from [DEEPENING.md](DEEPENING.md);

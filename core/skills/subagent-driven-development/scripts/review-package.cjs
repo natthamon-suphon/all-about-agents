@@ -62,6 +62,13 @@ function refuseUntrackedSecrets(top) {
   if (secrets.length > 0) fail(`review-package: untracked files that look like secrets would enter the package: ${secrets.join(', ')}. Move, ignore, or delete a secret first. To include a file that is not a secret, stage it with \`git add -- <path>\`, only with the human's authority.`);
 }
 
+function snapshot(sddDir) {
+  const top = workTreeTop();
+  refuseUntrackedSecrets(top);
+  if (sddDir) ensureSddDir(sddDir);
+  return worktreeTree(top);
+}
+
 function writePackage(args) {
   const [planFile, base, head, customOut] = args;
   if (args.length > 4 || !planFile || !base || !head) fail(USAGE);
@@ -72,13 +79,14 @@ function writePackage(args) {
   const worktree = head === 'WORKTREE';
   const baseTree = resolveTree('BASE', base);
   const committedTree = worktree ? null : resolveTree('HEAD', head);
+  const baseCommit = resolveObject(base, 'commit');
+  const headCommit = worktree ? null : resolveObject(head, 'commit');
+  if (baseCommit && headCommit && gitOrNull(['merge-base', '--is-ancestor', baseCommit, headCommit]) === null) fail('review-package: BASE must be an ancestor of HEAD for a committed range');
   if (worktree) refuseUntrackedSecrets(top);
   // An existing sdd/ gets its .gitignore back before the snapshot, so its files stay out of the package.
   if (worktree && fs.existsSync(sddDir)) ensureSddDir(sddDir);
   const headTree = committedTree ?? worktreeTree(top);
   const untracked = worktree ? runGit(['ls-files', '--others', '--exclude-standard'], { cwd: top, encoding: 'utf8' }).trim() : null;
-  const baseCommit = resolveObject(base, 'commit');
-  const headCommit = worktree ? null : resolveObject(head, 'commit');
 
   const diffOutput = runGit([...DIFF, '-U10', baseTree, headTree], { encoding: 'utf8' }).trim();
   if (!diffOutput) {
@@ -119,11 +127,15 @@ function writePackage(args) {
   console.log(`wrote ${outFile}: ${commitCount} commit(s), ${Buffer.byteLength(packageContent, 'utf8')} bytes`);
 }
 
-if (process.argv[2] === '--snapshot') {
-  if (process.argv.length !== 3) fail(USAGE);
-  console.log(worktreeTree(workTreeTop()));
-} else {
-  writePackage(process.argv.slice(2));
+module.exports = { resolveTree, snapshot };
+
+if (require.main === module) {
+  if (process.argv[2] === '--snapshot') {
+    if (process.argv.length !== 3) fail(USAGE);
+    console.log(snapshot());
+  } else {
+    writePackage(process.argv.slice(2));
+  }
+  // One event-loop turn delivers a SIGINT or SIGTERM that arrived during a synchronous git call.
+  setImmediate(() => {});
 }
-// One event-loop turn delivers a SIGINT or SIGTERM that arrived during a synchronous git call.
-setImmediate(() => {});

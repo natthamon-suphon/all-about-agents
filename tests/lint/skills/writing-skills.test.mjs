@@ -9,7 +9,7 @@ import { skipIfLinkUnavailable } from "../../helpers/symlink.mjs";
 import { withTempRoot } from "../../helpers/temp-root.mjs";
 
 const id = "writing-skills";
-const cases = ["WS-TRIGGER-create-or-edit-skill", "WS-NONTRIGGER-use-existing-skill", "WS-PRESSURE-prose-only-confidence"];
+const cases = ["WS-TRIGGER-create-or-edit-skill", "WS-NONTRIGGER-use-existing-skill", "WS-PRESSURE-prose-only-confidence", "WS-PRESSURE-universal-ceremony"];
 const assets = ["graphviz-conventions.dot", "persuasion-principles.md", "testing-skills-with-subagents.md"];
 const scripts = ["render-graphs.mjs"];
 const companions = [...assets, ...scripts];
@@ -46,6 +46,16 @@ test("writing-skills routing distinguishes authoring from ordinary use and prose
   assert.equal(evaluation.cases[1].expected.existingSkillUseOnly, true);
   assert.equal(evaluation.cases[2].expected.rejectProseOnlyConfidence, true);
   assert.equal(evaluation.cases[2].expected.requireObservedBehavior, true);
+  assert.equal(evaluation.cases[3].expected.proportionateWorkflow, true);
+  assert.equal(evaluation.cases[3].expected.extraApprovalForAuthorizedTrivialWork, false);
+});
+
+test("writing-skills guards proportionate routing and interpreter-based script invocation", async () => {
+  const skill = (await read()).replace(/\s+/gu, " ");
+  assert.match(skill, /quick[^.]*clear[^.]*authorized[^.]*no[^.]*document[^.]*extra approval/iu);
+  assert.match(skill, /interpreter.{0,80}`node.{0,120}Windows.{0,30}macOS/iu);
+  assert.match(skill, /trigger[^.]*nontrigger[^.]*pressure/iu);
+  assert.match(skill, /static[^.]*behavioral/iu);
 });
 
 test("core loader exposes all writing-skill metadata and companions", async () => {

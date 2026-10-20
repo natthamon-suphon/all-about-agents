@@ -27,19 +27,21 @@ is never required for a text-only or trivial read-only request.
   event log are bounded. Oversized or malformed input is dropped safely.
 - Event records contain only the small allowlisted fields needed for choices;
   values are control-sanitized and the session key is redacted.
-- Cleanup canonicalizes the session and the temp roots (`TMPDIR` and `/tmp`)
+- Cleanup canonicalizes the session and the platform temp roots (including
+  macOS `/var` and `/tmp` aliases)
   and deletes only a proven disposable `brainstorm-*` folder directly inside
   one of them. Project screens and symlink/junction redirects are never
   recursively removed.
 
 ## Start and stop
 
-Prerequisites: `bash` and `node` on the PATH. On Windows, use Git Bash or WSL.
+Prerequisite: Node.js 22.12 or later. Windows and macOS work without Bash.
+The `.sh` commands remain optional thin wrappers on hosts with Bash.
 
 From this directory, start after user approval:
 
 ```text
-bash scripts/start-server.sh --project-dir PROJECT_DIRECTORY --open
+node scripts/start-server.cjs --project-dir "PROJECT_DIRECTORY" --open
 ```
 
 The command prints one JSON object with the complete keyed `url`, the
@@ -53,20 +55,53 @@ The server runs as a background process. If the host stops background
 processes when the command returns, start with `--foreground` in a terminal or
 background task that stays open.
 
+Supported flags are `--project-dir PATH`, `--host HOST`, `--url-host HOST`,
+`--idle-timeout-minutes INTEGER`, `--open`, `--allow-remote`, `--foreground`
+(`--no-daemon`) and `--background` (`--daemon`, the default). The idle timeout
+is four hours by default. It is independent of the short-lived starter shell.
+The explicit timeout accepts 1 through 35791 minutes. Inherited companion
+settings are discarded. Remote binding still needs explicit user authority.
+
 Stop with the session directory:
 
 ```text
-bash scripts/stop-server.sh SESSION_DIRECTORY
+node scripts/stop-server.cjs "SESSION_DIRECTORY"
 ```
 
-The stop operation acts only on a proven disposable temp session and refuses
-any other path untouched. It never kills a stale or unproven PID, reports
-`"removed": true` or `false`, and never deletes project screens.
+The stop command authenticates the exact running instance through a separate
+numeric-loopback control listener. A private `control.json` holds a fresh
+control secret and unpredictable instance identity. Browser cookies and the
+connection URL cannot authorize shutdown. Never copy or log this private file.
+Control requests carrying a browser Origin are refused. No metadata hostname,
+connection URL or redirect receives the control secret.
 
-A failed start prints an `error`. A crash also names the kept `log`: its state
-folder then holds only that redacted `server.log`, with no key, PID, or
-instance id. Stop that session directory (the parent of the log's folder) to
-remove it.
+Stop closes the matching instance's HTTP, WebSocket and control listeners,
+then removes only its validated disposable temp session. It never kills a PID
+and never deletes project screens. Results contain `status` and `removed`:
+`stopped` means authenticated shutdown and removal; `not_running` means the
+session is already absent; `stale` means matching closure evidence or a
+demonstrably absent process and control socket allowed cleanup; `refused` means
+the whole session was retained because the path, links, identity, authentication
+or runtime state was invalid or uncertain. A refusal exits nonzero. Linked
+roots, symlinks, junctions and hardlinked cleanup targets are refused.
+
+Filesystem cleanup failures return `status: "error"`, `removed: false`, and
+`partial` to state whether any session entries were already removed. Cleanup
+is not transactional. The control identity and matching closure proof remain
+until other entries are gone. When `retryable` is true, lift the filesystem
+error and run the same stop command again; it revalidates the retained proof.
+If final proof-file or directory removal fails after that proof is gone,
+`retryable` is false. Do not force cleanup or invent ownership in that case.
+
+A failed start prints one bounded JSON `error`. After its directly owned child
+has exited, it removes the private session and an empty project screen folder.
+If child exit cannot be proved, it retains the session and reports that path.
+Neither command follows a shell command supplied by an operator. All starts
+make fresh credentials. No telemetry, network dependency or package install
+is required.
+
+On Windows, Node.js 24.4.0 can silently leave Unicode paths after `rmSync`.
+This lifecycle uses validated `unlinkSync` and `rmdirSync` cleanup instead.
 
 ## Screen contract
 

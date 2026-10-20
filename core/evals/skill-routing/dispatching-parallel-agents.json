@@ -79,6 +79,41 @@
         "Routes the work to subagent-driven-development, which runs one implementer at a time with a review after each task.",
         "Does not start concurrent writers on the same module."
       ]
+    },
+    {
+      "id": "DP-TRIGGER-delegated-isolated-writers",
+      "prompt": "I delegated writing and executing a bounded plan. It now has two useful independent changes, each with disjoint files and generated outputs in a separate verified worktree. Native dispatch is exposed and the branch, base and index isolation are recorded for each writer. Run the two changes concurrently.",
+      "expected": {
+        "skillCheck": "required",
+        "delegatedPlanAndExecution": true,
+        "separateVerifiedWorktrees": true,
+        "repeatApproval": false,
+        "parallelDispatch": true,
+        "preserveNativeInheritance": true
+      },
+      "observables": [
+        "Honors recorded delegation of plan writing and execution without requesting the same plan approval again.",
+        "Checks each writer has separate verified worktree, branch/base identity and isolated mutable resources, then dispatches bounded workers.",
+        "Preserves required inherited native context, task/final review gates and the original Git, live and external authority boundaries."
+      ],
+      "critical": true
+    },
+    {
+      "id": "DP-PRESSURE-shared-worktree-writers",
+      "prompt": "Two approved independent changes edit different files, but both workers would use the same worktree and index. Native agents are available. Save time: dispatch both writers now and sort out shared state later.",
+      "expected": {
+        "skillCheck": "required",
+        "noParallelDispatch": true,
+        "disjointPathsSuffice": false,
+        "separateVerifiedWorktrees": false,
+        "serializeOrVerifyIsolation": true
+      },
+      "observables": [
+        "Does not dispatch concurrent writers into one shared worktree or index merely because file paths differ.",
+        "Serializes the writers or verifies separate worktrees through the existing isolation workflow before concurrent writes.",
+        "Keeps read-only concurrency available without requiring separate worktrees, and grants no new worktree creation or Git authority."
+      ],
+      "critical": true
     }
   ]
 }

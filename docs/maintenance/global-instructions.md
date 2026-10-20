@@ -72,6 +72,15 @@ limits. Rendered files also retain their product-specific size checks.
 Static contracts check the text and package delivery; native behavior still
 needs a fresh session after an explicitly authorized installation.
 
+## Web instruction text
+
+Claude web, ChatGPT web, and Gemini web have separate plain-text summaries in
+`docs/instructions/`. They are manually maintained, not adapter output. Use
+[the web instruction guide](../setup/web-instructions.md) to copy the matching
+text into the account's instruction field. Review all three summaries when
+shared behavior changes. They do not import Markdown, install companion
+skills, change model or access settings, or prove native behavior.
+
 ## Surface-specific appendices
 
 The shared source reaches every surface. Each surface may add an appendix at

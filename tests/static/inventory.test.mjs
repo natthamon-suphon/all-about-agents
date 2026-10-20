@@ -13,6 +13,8 @@ const expectedBaselineFiles = new Map([
   ["core/presentation/emoji-registry.json", { kind: "metadata", status: "stable" }],
   ["core/presentation/progress-contract.json", { kind: "metadata", status: "stable" }],
   ["core/schemas/presentation.schema.json", { kind: "metadata", status: "stable" }],
+  ["core/upstreams.json", { kind: "metadata", status: "stable" }],
+  ["core/schemas/upstreams.schema.json", { kind: "metadata", status: "stable" }],
   ["core/evals/presentation-trace.mjs", { kind: "source", status: "stable" }],
   ["core/evals/presentation-trace.schema.json", { kind: "metadata", status: "stable" }],
   ["core/evals/scenarios/presentation-contract.json", { kind: "metadata", status: "stable" }],
@@ -38,16 +40,27 @@ core/schemas/presentation.schema.json
 core/skills/brainstorming/SKILL.md
 core/skills/brainstorming/scripts/frame-template.html
 core/skills/brainstorming/scripts/helper.js
+core/skills/brainstorming/scripts/lifecycle.cjs
+core/skills/brainstorming/scripts/start-server.cjs
+core/skills/brainstorming/scripts/stop-server.cjs
 core/skills/brainstorming/scripts/server.cjs
 core/skills/brainstorming/scripts/start-server.sh
 core/skills/brainstorming/scripts/stop-server.sh
-core/skills/brainstorming/spec-document-reviewer-prompt.md
+core/skills/brainstorming/builder-check-prompt.md
 core/skills/brainstorming/visual-companion.md
 core/skills/codebase-design/DEEPENING.md
 core/skills/codebase-design/DESIGN-IT-TWICE.md
 core/skills/codebase-design/SKILL.md
+core/skills/diagnosing-agent-workflows/SKILL.md
+core/skills/diagnosing-agent-workflows/references/context-safety.md
+core/skills/diagnosing-agent-workflows/references/report.md
 core/skills/dispatching-parallel-agents/SKILL.md
+core/skills/domain-modeling/SKILL.md
+core/skills/domain-modeling/GLOSSARY-FORMAT.md
+core/skills/domain-modeling/ADR-FORMAT.md
 core/skills/executing-plans/SKILL.md
+core/skills/executing-plans/scripts/task-done.cjs
+core/skills/executing-plans/scripts/task-start.cjs
 core/skills/finishing-a-development-branch/SKILL.md
 core/skills/handoff/SKILL.md
 core/skills/improve-codebase-architecture/HTML-REPORT.md
@@ -56,11 +69,14 @@ core/skills/interviewing/SKILL.md
 core/skills/loop-me/SKILL.md
 core/skills/performance-profiling-and-benchmarking/SKILL.md
 core/skills/performance-profiling-and-benchmarking/profiling-recipes.md
+core/skills/pr/SKILL.md
+core/skills/pr/CREDITS.md
 core/skills/receiving-code-review/SKILL.md
 core/skills/requesting-code-review/SKILL.md
 core/skills/requesting-code-review/code-reviewer.md
 core/skills/research/SKILL.md
 core/skills/resolving-merge-conflicts/SKILL.md
+core/skills/retro/SKILL.md
 core/skills/session-compaction-resilience/SKILL.md
 core/skills/session-compaction-resilience/snapshot-template.md
 core/skills/subagent-driven-development/SKILL.md
@@ -93,7 +109,6 @@ core/skills/verification-before-completion/SKILL.md
 core/skills/wait-what/SKILL.md
 core/skills/wayfinder/SKILL.md
 core/skills/writing-plans/SKILL.md
-core/skills/writing-plans/plan-document-reviewer-prompt.md
 core/skills/writing-skills/SKILL.md
 core/skills/writing-skills/graphviz-conventions.dot
 core/skills/writing-skills/persuasion-principles.md
@@ -109,15 +124,19 @@ core/evals/presentation-trace.mjs
 core/evals/presentation-trace.schema.json
 core/evals/scenarios/presentation-contract.json
 tests/lint/presentation-contract.test.mjs
+core/upstreams.json
+core/schemas/upstreams.schema.json
 `.trim().split(/\r?\n/u);
 
 test("inventory records exactly the current public skill names", async () => {
   const inventory = JSON.parse(await readFile(resolve(process.cwd(), "core/inventory.json"), "utf8"));
-  assert.equal(inventory.skills.length, 27);
+  assert.equal(inventory.skills.length, 31);
   assert.deepEqual(inventory.skills, [
     "brainstorming",
     "codebase-design",
+    "diagnosing-agent-workflows",
     "dispatching-parallel-agents",
+    "domain-modeling",
     "executing-plans",
     "finishing-a-development-branch",
     "handoff",
@@ -125,10 +144,12 @@ test("inventory records exactly the current public skill names", async () => {
     "interviewing",
     "loop-me",
     "performance-profiling-and-benchmarking",
+    "pr",
     "receiving-code-review",
     "requesting-code-review",
     "research",
     "resolving-merge-conflicts",
+    "retro",
     "session-compaction-resilience",
     "subagent-driven-development",
     "systematic-debugging",

@@ -5,6 +5,7 @@ evaluationCases:
   - WS-TRIGGER-create-or-edit-skill
   - WS-NONTRIGGER-use-existing-skill
   - WS-PRESSURE-prose-only-confidence
+  - WS-PRESSURE-universal-ceremony
 ---
 
 # Writing Skills
@@ -17,6 +18,12 @@ surface, and fails safely when prerequisites are missing.
 Merely using an existing skill without changing or validating it is a
 nontrigger. Follow that skill directly unless its instructions are missing,
 contradictory, or demonstrably broken.
+
+Match process to uncertainty and authority. For quick, clear, authorized work,
+require no design document or extra approval. A small ambiguous change needs
+its material decisions settled; architecture needs a written design and builder
+check. Preserve existing approval and delegation. Test those branches rather
+than imposing a full document/review/approval ritual on every task.
 
 ## Skill Gate Protocol
 
@@ -79,6 +86,10 @@ Product names, model families, native fields, tool permissions, hook events,
 context limits, and install locations are time-sensitive. Keep them in the
 owning adapter or a vendor reference with a verification date and source, and
 fail closed when no current evidence exists.
+
+Invoke scripts through their documented interpreter, such as `node script.mjs`,
+so executable bits and shebang handling do not decide Windows or macOS support.
+Keep command arguments structured and native invocation details in adapters.
 
 ## Match the form to the failure
 

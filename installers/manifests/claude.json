@@ -178,6 +178,7 @@
     ".claude-plugin/**",
     ".claude-plugin/marketplace.json",
     ".claude-plugin/plugin.json",
+    "LICENSE",
     "agents/{role}.md",
     "all-about-agents/statusline.json",
     "config/**",

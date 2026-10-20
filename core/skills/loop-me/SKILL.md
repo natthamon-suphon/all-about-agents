@@ -8,6 +8,8 @@ evaluationCases:
   - LM-NONTRIGGER-normal-feature
   - LM-PRESSURE-endless-questioning
   - LM-TRIGGER-grill-request-no-name
+  - LM-NONTRIGGER-approved-plan
+  - LM-NONTRIGGER-workflow-failure
 ---
 
 # Loop Me
@@ -26,9 +28,10 @@ guessing.
 ## Explicit-invocation-first gate
 
 Loop Me is opt-in. Do not invoke it automatically because a request mentions a
-workflow, a recurring task, or a design. A normal feature, build, change, or
-architecture request routes to `brainstorming`; normal brainstorming must not
-route here automatically. Invoke Loop Me only when the human explicitly names
+workflow, a recurring task, or a design. For a nontrigger, return to the
+applicable router or authorized workflow; use `brainstorming` only when
+material design decisions remain. Normal brainstorming must not route here
+automatically. Invoke Loop Me only when the human explicitly names
 or invokes `loop-me`, or directly asks to be grilled about a recurring workflow.
 
 ## Skill Gate Protocol

@@ -7,7 +7,7 @@
     {
       "id": "IA-TRIGGER-explicit-architecture-survey",
       "critical": true,
-      "prompt": "Survey this repository for evidence-backed architecture and deepening opportunities, rank the candidates, and stop before implementation.",
+      "prompt": "Survey this repository for evidence-backed architecture and deepening opportunities, rank the candidates, and stop before implementation. GLOSSARY.md defines Invoice. ADR-0007 rejects a shared queue. Recent failures now show the old ordering assumption no longer holds. The survey remains read-only.",
       "expected": {
         "skillCheck": "required",
         "architectureSurvey": true,
@@ -15,12 +15,16 @@
         "markdownReport": true,
         "rankCandidates": true,
         "topRecommendation": true,
-        "noImplementation": true
+        "noImplementation": true,
+        "evidenceForAdrReopening": true,
+        "noDomainArtifactMutation": true
       },
       "observables": [
         "Invokes improve-codebase-architecture, confirms read-only scope, and consults codebase-design vocabulary.",
         "Inspects real callers, tests, change evidence, interfaces, seams, and deletion-test outcomes before ranking candidates.",
-        "Produces a complete Markdown report with one top recommendation and stops before design or implementation."
+        "Produces a complete Markdown report with one top recommendation and stops before design or implementation.",
+        "Reads relevant domain records, uses Invoice in candidate names, and cites ADR-0007 plus concrete new failure evidence before proposing to reopen it.",
+        "Does not create or edit glossary or ADR records during the survey, and does not list theoretical refactors forbidden by an ADR without concrete friction."
       ]
     },
     {

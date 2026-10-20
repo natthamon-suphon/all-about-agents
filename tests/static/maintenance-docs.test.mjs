@@ -10,7 +10,8 @@ const maintenanceDocs = [
   "docs/maintenance/cross-tool-quality.md",
   "docs/maintenance/session-prompt.md",
   "docs/maintenance/native-registration.md",
-  "docs/maintenance/native-verification.md"
+  "docs/maintenance/native-verification.md",
+  "docs/maintenance/upstream-updates.md"
 ];
 const relatedDocs = [
   "README.md",

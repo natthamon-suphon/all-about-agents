@@ -7,8 +7,14 @@
     "codebase-design": {
       "emoji": "🧱"
     },
+    "diagnosing-agent-workflows": {
+      "emoji": "🔬"
+    },
     "dispatching-parallel-agents": {
       "emoji": "⚡"
+    },
+    "domain-modeling": {
+      "emoji": "📖"
     },
     "executing-plans": {
       "emoji": "🚀"
@@ -31,6 +37,9 @@
     "performance-profiling-and-benchmarking": {
       "emoji": "⏱️"
     },
+    "pr": {
+      "emoji": "📋"
+    },
     "receiving-code-review": {
       "emoji": "📥"
     },
@@ -42,6 +51,9 @@
     },
     "resolving-merge-conflicts": {
       "emoji": "🧩"
+    },
+    "retro": {
+      "emoji": "🪞"
     },
     "session-compaction-resilience": {
       "emoji": "🗜️"

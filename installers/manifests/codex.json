@@ -133,6 +133,7 @@
     ".codex/agents/{role}.toml",
     ".gitattributes",
     "AGENTS.md",
+    "LICENSE",
     "agents/{role}.toml",
     "config.toml",
     "docs/manual-desktop.md",

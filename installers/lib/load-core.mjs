@@ -955,6 +955,45 @@ async function loadPresentation(repositoryRoot, coreRoot, canonical, errors) {
   return { emojiRegistry, progressContract };
 }
 
+async function loadUpstreams(repositoryRoot, coreRoot, inventory, errors) {
+  const path = resolve(coreRoot, "upstreams.json");
+  if (inventory?.repository !== "all-about-agents" && !await pathExists(path)) return undefined;
+  const sourcePath = toPortablePath(repositoryRoot, path);
+  const record = await readContainedCoreJson(path, sourcePath, errors, { repositoryRoot, coreRoot });
+  if (record === null) {
+    errors.push(errorRecord(sourcePath, "", "type", "upstream provenance must be a JSON object"));
+    return null;
+  }
+  const schema = await schemaFor(repositoryRoot, "upstreams", errors);
+  if (schema) errors.push(...validateSchema({ schema, value: record, sourcePath }).errors);
+  const upstreamIds = new Set();
+  for (const [index, upstream] of (Array.isArray(record.upstreams) ? record.upstreams : []).entries()) {
+    if (upstreamIds.has(upstream?.id)) errors.push(errorRecord(sourcePath, `/upstreams/${index}/id`, "duplicateUpstream", `duplicate upstream ${upstream?.id}`));
+    upstreamIds.add(upstream?.id);
+  }
+  const skillIds = new Set(Array.isArray(inventory?.skills) ? inventory.skills : []);
+  const seen = new Set();
+  for (const [index, entry] of (Array.isArray(record.dispositions) ? record.dispositions : []).entries()) {
+    const pointer = `/dispositions/${index}`;
+    if (!skillIds.has(entry?.skill)) errors.push(errorRecord(sourcePath, `${pointer}/skill`, "unknownDisposition", `unknown canonical skill ${entry?.skill}`));
+    if (seen.has(entry?.skill)) errors.push(errorRecord(sourcePath, `${pointer}/skill`, "duplicateDisposition", `duplicate disposition for ${entry?.skill}`));
+    seen.add(entry?.skill);
+    if (typeof entry?.notes !== "string" || entry.notes.trim() === "") errors.push(errorRecord(sourcePath, `${pointer}/notes`, "adaptationExplanation", "disposition requires a non-empty adaptation or retention explanation"));
+    if (entry?.disposition !== "local-only" && (!Array.isArray(entry?.sources) || entry.sources.length === 0)) errors.push(errorRecord(sourcePath, `${pointer}/sources`, "missingUpstreamSource", "adapted and retained skills require an upstream source"));
+    for (const [sourceIndex, source] of (Array.isArray(entry?.sources) ? entry.sources : []).entries()) {
+      const sourcePointer = `${pointer}/sources/${sourceIndex}`;
+      if (!upstreamIds.has(source?.upstream)) errors.push(errorRecord(sourcePath, `${sourcePointer}/upstream`, "unknownUpstream", `unknown upstream ${source?.upstream}`));
+      for (const [pathIndex, sourceFile] of (Array.isArray(source?.paths) ? source.paths : []).entries()) {
+        if (!validPortableInventoryPath(sourceFile) || /[\u0000-\u001f\u007f<>"|?*]/u.test(sourceFile) || sourceFile.split("/").some((segment) => /[. ]$/u.test(segment) || /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(segment))) {
+          errors.push(errorRecord(sourcePath, `${sourcePointer}/paths/${pathIndex}`, "upstreamSourcePath", "upstream source must be a safe normalized portable relative path"));
+        }
+      }
+    }
+  }
+  for (const skill of skillIds) if (!seen.has(skill)) errors.push(errorRecord(sourcePath, "/dispositions", "missingDisposition", `canonical skill ${skill} requires one disposition`));
+  return record;
+}
+
 export async function loadCore(root, options = {}) {
   if (typeof root !== "string" || root.trim() === "") throw new TypeError("loadCore(root) requires a non-empty root path");
   assertUnifiedSkillPortfolio(options);
@@ -974,12 +1013,13 @@ export async function loadCore(root, options = {}) {
     }
   }
 
-  const [globalInstructions, rules, roles, skills, evals] = await Promise.all([
+  const [globalInstructions, rules, roles, skills, evals, upstreams] = await Promise.all([
     loadGlobalInstructions(repositoryRoot, coreRoot, errors),
     loadJsonCollection(repositoryRoot, coreRoot, "rules", "rule", errors),
     loadRoleCollection(repositoryRoot, coreRoot, errors),
     loadSkills(repositoryRoot, coreRoot, inventory, errors),
-    loadEvaluations(repositoryRoot, coreRoot, errors)
+    loadEvaluations(repositoryRoot, coreRoot, errors),
+    loadUpstreams(repositoryRoot, coreRoot, inventory, errors)
   ]);
   const collections = { rules, roles, skills, evals };
   for (const collection of Object.values(collections)) checkDuplicateIds(collection, errors);
@@ -997,6 +1037,7 @@ export async function loadCore(root, options = {}) {
   if (errors.length > 0) throw new CoreLoadError(errors);
   return {
     inventory,
+    ...(upstreams === undefined ? {} : { upstreams }),
     globalInstructions,
     rules: rules.map((entry) => entry.record),
     roles: roles.map((entry) => entry.record),

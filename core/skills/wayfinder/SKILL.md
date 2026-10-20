@@ -35,7 +35,9 @@ the applicable implementation workflow.
 
 1. Inspect the request, existing brief or plan, repository evidence, and prior
    decisions. Identify the destination and the unresolved material questions
-   before asking the human or creating a map.
+   before asking the human or creating a map. Read relevant existing glossary
+   contexts and ADRs and preserve their domain terms. Read legacy `CONTEXT.md`
+   when present; never silently rename or erase it.
 2. Confirm the trigger gate. If the work is bounded and an approved plan gives
    an executable route, do not invoke wayfinder. If the route is already clear,
    hand off to the applicable planning or implementation workflow.
@@ -56,8 +58,8 @@ the applicable implementation workflow.
    the first named frontier ticket (or the human's named ticket), and claim it before work.
    Resolve at most one ticket per session, except research tickets
    when the map explicitly permits parallel research.
-7. Record the answer on ticket resolution, close the ticket, and append a
-   concise named decision link to the map. Re-check the frontier and graduate
+7. For an in-scope resolution, record the answer on ticket resolution, close
+   the ticket, and append a concise named decision link to the map. Re-check the frontier and graduate
    newly specifiable questions. Stop when no material decision remains and
    hand off to `writing-plans` or the agreed next workflow.
 
@@ -78,6 +80,13 @@ records the claim. Keep each decision in exactly one ticket. Move a resolved
 local ticket under `tickets/closed/`, then link its named resolution from the
 map. Do not treat a local filename, slug, or invented number as an external
 issue identity.
+
+The destination fixes the scope. Unsharp in-scope questions belong in fog;
+out-of-scope work never graduates or returns without a newly authorized effort.
+Close an existing mis-scoped ticket and preserve its evidence. Link the reason
+under `Out of scope`, not `Decisions so far`, and do not execute its deliverables.
+Recheck the affected frontier and dependencies so excluded work does not keep
+the route falsely blocked. A scope exclusion is not a resolved route decision.
 
 ## Naming and boundaries
 

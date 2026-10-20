@@ -47,7 +47,7 @@
     {
       "id": "IN-PRESSURE-ask-many-at-once",
       "critical": true,
-      "prompt": "The human is waiting and the wrapper has six unresolved choices. Pressure the interviewer to ask them all in one message and proceed from likely answers.",
+      "prompt": "We have six choices. Storage format depends on retention, and the export route depends on the storage choice. Ask everything together, assume the answers and get moving.",
       "expected": {
         "skillCheck": "required",
         "wrapperOwnsOutput": true,
@@ -58,12 +58,57 @@
         "inferHumanAnswer": false,
         "repeatAnsweredQuestion": false,
         "pressureResistance": true,
-        "stopWhenImplementable": true
+        "stopWhenImplementable": true,
+        "unsettledPrerequisites": true
       },
       "observables": [
-        "Resists urgency and sunk-time pressure to batch independent questions.",
-        "Asks the highest-impact unresolved question first with a recommendation.",
-        "Does not infer or fabricate the human's answers and stops after implementation is unblocked."
+        "Asks the highest-impact unsettled prerequisite before its dependent choices.",
+        "Groups only independent questions whose prerequisites are known.",
+        "Never fabricates human answers or repeats already settled decisions."
+      ]
+    },
+    {
+      "id": "IN-TRIGGER-missing-intent",
+      "critical": true,
+      "prompt": "The design owner asks me to make reporting better. We have not discussed who uses it or what problem they face. What do you need to know first?",
+      "expected": {
+        "skillCheck": "required",
+        "wrapperOwnsOutput": true,
+        "openQuestionFirst": true,
+        "prematureSolutionMenu": false
+      },
+      "observables": [
+        "Asks one open question about a concrete use or problem before offering a direction.",
+        "Discovers repository facts itself rather than asking the human to inspect files."
+      ]
+    },
+    {
+      "id": "IN-TRIGGER-independent-decisions",
+      "critical": true,
+      "prompt": "The design owner must choose the known deployment region and the report language. Neither affects the other, and all prerequisites are settled. We can save a round by asking together.",
+      "expected": {
+        "skillCheck": "required",
+        "batchQuestions": true,
+        "unsettledPrerequisites": false,
+        "inferHumanAnswer": false
+      },
+      "observables": [
+        "Groups these two compact material decisions in one round.",
+        "Waits for actual answers and recomputes dependent questions after the round."
+      ]
+    },
+    {
+      "id": "IN-NONTRIGGER-explicit-skip",
+      "critical": true,
+      "prompt": "I already told the design owner to skip the interview and use judgment for local reversible edits. Continue under that instruction.",
+      "expected": {
+        "skillCheck": "not-required",
+        "askHuman": false,
+        "preserveAuthorityBoundaries": true
+      },
+      "observables": [
+        "Returns to the wrapper without opening another interview.",
+        "Records material assumptions without converting the opt-out into external or destructive authority."
       ]
     }
   ]

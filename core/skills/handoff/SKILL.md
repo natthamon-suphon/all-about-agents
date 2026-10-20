@@ -5,6 +5,8 @@ evaluationCases:
   - HO-TRIGGER-explicit-handoff
   - HO-NONTRIGGER-normal-progress
   - HO-PRESSURE-claude-only-shell
+  - HO-TRIGGER-resume-authorized-task
+  - HO-PRESSURE-stale-resume-record
 ---
 
 # Handoff
@@ -13,9 +15,12 @@ Create a durable continuation record when the human explicitly requests a
 handoff. A handoff is an evidence artifact, not a success claim and not
 permission to perform the next task.
 
+An explicit resume request follows the Resume branch below instead of creating
+another transfer record.
+
 `handoff` records a pause or transfer when the human asks for one; `session-compaction-resilience` keeps long-task state that must survive compaction. Both use the same record shape.
 
-## Skill Gate Protocol
+## Skill Gate Protocol: pause or transfer
 
 1. Read the request, repository instructions, approved plan, current task
    state, and existing durable records.
@@ -40,6 +45,19 @@ permission to perform the next task.
    authorization is unknown, record live handoff as `not run` and stop at the
    artifact; never invent a vendor field, tool, event, path, or success.
 
+## Resume
+
+For an explicit resume request, use `session-compaction-resilience` and its
+existing recovery checklist. Reopen the existing handoff/snapshot, ledger and
+active task; verify current filesystem, Git state, authority and evidence
+before accepting saved claims. Do not create a second continuation record
+for the same topic or repeat verified completed work.
+
+Return to the selected authorized workflow at the first pending or unverified
+action. A record supplies evidence, not new authority for Git, installation,
+live transfer or other external actions. If state or authority is contradictory,
+stop the affected action, report the conflict and one concrete resolution step.
+
 ## Handoff record
 
 Use the shared record shape: `snapshot-template.md` in `session-compaction-resilience`,
@@ -61,6 +79,6 @@ record is the complete handoff.
   syntax.
 - Passing unredacted or untrusted source text to another session.
 
-The handoff ends after the record is reviewed for secrets and completeness
+Pause or transfer ends after the record is reviewed for secrets and completeness
 and its path plus the single next step are reported. It does not start the
 next task.

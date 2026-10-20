@@ -12,9 +12,9 @@ import { assertUnifiedSkillPortfolio, loadCore } from "../../installers/lib/load
 
 const PINNED = Object.freeze({ env: { CLAUDE_CONFIG_DIR: "C:/disposable/claude", CODEX_HOME: "C:/disposable/codex" }, homeDir: "C:/Users/tester", platform: "win32", targetRuntime: "cli", statuslineName: "" });
 const surfaceSpecs = [
-  { id: "antigravity", prefix: "skills", render: (core, profile = { id: "portable" }) => renderAntigravity({ ...PINNED, core, profile }) },
-  { id: "claude", prefix: "skills", render: (core, profile = { id: "portable" }) => renderClaude({ ...PINNED, core, profile }) },
-  { id: "codex", prefix: ".agents/skills", render: (core, profile = { id: "portable" }) => renderCodex({ ...PINNED, core, profile }) }
+  { id: "antigravity", prefix: "skills", render: (core, profile = { id: "portable" }, host = PINNED) => renderAntigravity({ ...host, core, profile }) },
+  { id: "claude", prefix: "skills", render: (core, profile = { id: "portable" }, host = PINNED) => renderClaude({ ...host, core, profile }) },
+  { id: "codex", prefix: ".agents/skills", render: (core, profile = { id: "portable" }, host = PINNED) => renderCodex({ ...host, core, profile }) }
 ];
 
 function normalized(value) {
@@ -45,14 +45,38 @@ function manifestProjection(core, result, prefix) {
   };
 }
 
-test("canonical inventory and loaded core contain all 27 public names exactly once", async () => {
+test("canonical inventory and loaded core contain all 31 public names exactly once", async () => {
   const core = await loadCore(process.cwd());
-  assert.equal(core.inventory.skills.length, 27);
-  assert.equal(new Set(core.inventory.skills).size, 27);
-  assert.equal(core.inventory.skillSources.length, 27);
-  assert.equal(new Set(core.inventory.skillSources.map((entry) => entry.name)).size, 27);
+  assert.equal(core.inventory.skills.length, 31);
+  assert.equal(new Set(core.inventory.skills).size, 31);
+  assert.equal(core.inventory.skillSources.length, 31);
+  assert.equal(new Set(core.inventory.skillSources.map((entry) => entry.name)).size, 31);
   assert.deepEqual([...core.inventory.skillSources.map((entry) => entry.name)].sort(), [...core.inventory.skills].sort());
   assert.deepEqual([...core.skills.map((entry) => entry.id)].sort(), [...core.inventory.skills].sort());
+});
+
+test("both profiles deliver 31 skills and all companions on every surface", async () => {
+  const core = await loadCore(process.cwd());
+  const hosts = [PINNED, { ...PINNED, platform: "darwin", homeDir: "/Users/tester", env: { CLAUDE_CONFIG_DIR: "/disposable/claude", CODEX_HOME: "/disposable/codex" } }];
+  for (const host of hosts) for (const profile of ["portable", "template"]) {
+    for (const surface of surfaceSpecs) {
+      const result = surface.render(core, { id: profile }, host);
+      const files = new Map(result.files.map((file) => [file.relativePath, file]));
+      assert.equal(files.size, result.files.length);
+      assert.equal(result.files.filter((file) => file.relativePath.startsWith(`${surface.prefix}/`) && file.relativePath.endsWith("/SKILL.md")).length, 31);
+      for (const record of core.skills) {
+        const body = new TextDecoder().decode(files.get(`${surface.prefix}/${record.id}/SKILL.md`).content);
+        if (["domain-modeling", "pr", "retro", "diagnosing-agent-workflows"].includes(record.id)) {
+          assert.doesNotMatch(body, /disable-model-invocation|allow_implicit_invocation/u);
+        }
+        for (const companion of record.companions) {
+          const rendered = files.get(`${surface.prefix}/${record.id}/${companion.relativePath}`);
+          assert.ok(rendered, `${surface.id}:${profile}:${record.id}:${companion.relativePath}`);
+          assert.equal(new TextDecoder().decode(rendered.content), companion.content);
+        }
+      }
+    }
+  }
 });
 
 test("loader exposes every declared companion as contained normalized UTF-8 content", async () => {

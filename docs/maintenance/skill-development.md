@@ -19,6 +19,10 @@ native tool registered, trusted, active, or runtime verified the skill. Use
 The canonical source is `core/skills/<skill-name>/`. Do not edit a generated
 Antigravity, Claude, or Codex copy as the source.
 
+For imported or retained upstream guidance, follow [reviewed upstream
+updates](upstream-updates.md). Keep one explained disposition per canonical
+skill in `core/upstreams.json`; reading an upstream does not install it.
+
 ## New-skill update flow
 
 Use this order when adding a skill:
@@ -65,35 +69,66 @@ file of one skill, and `quality:full` runs every file through the full suite;
 `PASS`, `FAIL`, or `NOT_RUN_UNAVAILABLE` per case. Each run writes its own
 `.aaa/eval-runs/trigger-suite-<UTC timestamp>-<suffix>/result.json`, and
 `quality:full` reports the age and the pass, fail, and not-run counts of the
-newest one; it reads no other file there. It is
-manual: it needs an authenticated `claude` CLI and the installed plugin at the
-current `package.json` version whose cached `SKILL.md` files match a render of
-this checkout, or every case is `NOT_RUN_UNAVAILABLE`. Report a
-skill change as "lint-verified, model run pending" until the model run has a
-`PASS` dated after the change.
+newest one; it reads no other file there. The suite is manual and never runs
+paid calls from a quality gate. It needs an authenticated `claude` CLI. The
+default `installed` mode checks the current version and cached `SKILL.md`
+bytes. `rendered` mode writes a fresh candidate into a disposable directory and
+loads it through `--plugin-dir`. It does not install or register that candidate.
+Set `AAA_MODEL_MODE=rendered` in the calling process to select that mode.
+`AAA_MODEL_PROFILE` selects the expected render profile: `portable` by default,
+or `template` for a template install. This selects expected package bytes; it
+does not apply model settings. The selected config root also shapes those bytes.
 
-The suite scores routing, not presentation. Every case prompt is sent with one
-appended instruction: end the answer with a final line `skill: <the
-all-about-agents skill you route this to, or none>`. The scorer reads the last
-such line. A trigger or pressure case passes when that line names the case's own
-skill; a non-trigger case passes when it names anything else, including `none`.
-A pressure case also fails when the answer contains a phrase from
-`forbiddenPressurePhrases` in `tests/model/suite.json`, such as `here is the code`.
-An answer with no such line is `FAIL` with a reason that says the trailer is
-missing, so an ignored instruction is never confused with a routing verdict.
+The exported `runSuite` function accepts `mode`, `profile`, `skills`, and
+`caseIds` for a scoped manual run. `qualificationOnly: true` runs only one
+forced Skill-load probe. That probe is an infrastructure check and never a
+natural-trigger PASS. `diagnosticOnly: true` requests no tool calls and records
+derived plugin/catalog counts before and after one metadata probe. It never
+qualifies a candidate or runs natural cases. Do not use it to bypass an
+isolation failure. These modes still make a model call and need task authority.
 
-Naming a skill in prose is not routing to it. An answer that explains why a skill
-stays unused names it without routing to it, and the trailer keeps the two apart.
+Each normal run first qualifies the candidate path and Skill completion. A
+missing executable, auth, source identity, stable candidate bytes, or required
+isolation stops model-call fan-out. Record `NOT_RUN_UNAVAILABLE` and its exact
+reason. Keep the natural model run pending until that prerequisite works.
+
+The suite scores route text and native load evidence. Every prompt asks for a
+final line `skill: <the all-about-agents skill you route this to, or none>`.
+That line alone cannot pass an invocation check. A trigger or pressure PASS
+also needs a matching main-conversation Skill call and successful result joined
+by tool-use ID. A complete Read of the exact candidate `SKILL.md` can be parsed
+in unit fixtures; routing-only native runs expose only `Skill`. They cannot
+read private files or test a full workflow. Init skill availability, prose
+mentions, failed calls, partial reads, and subagent loads do not prove main
+invocation. Malformed, partial, duplicate, and oversized streams fail closed.
+
+A nontrigger checks omission of the target skill. A target Skill/Read attempt
+fails even if the trailer says `none`. A valid other package route is allowed.
+Unknown package names fail. Pressure cases also check
+`forbiddenPressurePhrases`, such as `here is the code`. These are bounded
+route/load checks; they do not grade every workflow observable in a case.
 
 A skill listed in `routers` in `tests/model/suite.json` is scored differently,
 because its job is to dispatch to another skill rather than to do the work. Its
-trigger case passes on a route to any skill of this package, its non-trigger case
-requires no route at all, and its pressure case stays strict.
+trigger case needs a route and native load of a real skill of this package.
+Its nontrigger case requires no route/load attempt. `EndConversation`
+housekeeping is allowed. Its pressure case stays strict.
 `using-all-about-agents` is the only router.
 
-The question names this package on purpose. A machine may carry skills from
-other plugins that fit a prompt better, and a route to one of those is reported
-with `(not a skill of this package)` in the reason.
+Per-run settings disable ordinary hooks, bundled skills, inline skill shell
+execution, account connectors, and noncandidate plugin IDs. Empty strict MCP
+config, an MCP deny, and `--no-chrome` bound other tools. The process keeps user
+settings, auth, model, effort, and inherited emergency deny rules. It does not
+copy credentials or change live settings. Native init still must confirm the
+candidate path and absence of foreign tools, plugins, and MCP. Managed-policy
+interference is a limit to report, not a rule to bypass.
+
+`native-evidence.json` stores only normalized, redacted facts: local before/after
+file hashes, candidate path match, model names, tool IDs and completion status,
+catalog counts, and errors. It stores no raw init or private plugin list. Missing
+native effort stays unavailable. A route/load PASS does not prove installed,
+trusted, active, full-workflow, macOS, Desktop, or IDE behavior. Keep those
+checks separate. Unit fixtures test the runner, never model behavior.
 
 Each case gets 300000 ms; set `AAA_CASE_TIMEOUT_MS` to change it. A case that
 outruns the budget is `NOT_RUN_UNAVAILABLE`, never `FAIL`.

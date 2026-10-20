@@ -29,24 +29,30 @@ base_sha=$(git rev-parse --verify --quiet --end-of-options "${base}^{commit}" 2>
 head_sha=$(git rev-parse --verify --quiet --end-of-options "${head}^{commit}" 2>/dev/null) || { echo "bad HEAD commit: $head" >&2; exit 2; }
 
 plan_dir=$(cd "$(dirname "$plan")" && pwd -P)
-dir="$plan_dir/sdd"
+parent_dir="$plan_dir/sdd"
+plan_name=${plan##*/}
+dir="$parent_dir/$plan_name"
 bad_out() { echo "OUTFILE must be inside ${dir} and not start with '.': ${out}" >&2; exit 2; }
 refuse_bad_sdd() {
-  if [ -L "$dir" ]; then
-    echo "refusing a symlinked sdd/ folder: ${dir}" >&2
-    exit 2
-  fi
-  if [ -e "$dir" ] && [ ! -d "$dir" ]; then
-    echo "sdd/ is not a folder: ${dir}" >&2
-    exit 2
-  fi
+  for folder in "$parent_dir" "$dir"; do
+    if [ -L "$folder" ]; then
+      echo "refusing a symlinked sdd/ folder: ${folder}" >&2
+      exit 2
+    fi
+    if [ -e "$folder" ] && [ ! -d "$folder" ]; then
+      echo "sdd/ is not a folder: ${folder}" >&2
+      exit 2
+    fi
+  done
 }
 refuse_bad_sdd
+git merge-base --is-ancestor "$base_sha" "$head_sha" || { echo "review-package: BASE must be an ancestor of HEAD for a committed range" >&2; exit 2; }
 if [ $# -eq 4 ]; then
   out=$4
   case ${out##*/} in .*) bad_out ;; esac
   out_parent=$(dirname "$out")
-  [ "${out_parent##*/}" = sdd ] && [ "$(cd "$(dirname "$out_parent")" 2>/dev/null && pwd -P)" = "$plan_dir" ] || bad_out
+  out_container=$(dirname "$out_parent")
+  [ "${out_parent##*/}" = "$plan_name" ] && [ "${out_container##*/}" = sdd ] && [ "$(cd "$(dirname "$out_container")" 2>/dev/null && pwd -P)" = "$plan_dir" ] || bad_out
 else
   out="$dir/review-$(git rev-parse --short "$base_sha")..$(git rev-parse --short "$head_sha").diff"
 fi

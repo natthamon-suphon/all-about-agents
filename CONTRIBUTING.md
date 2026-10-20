@@ -47,9 +47,15 @@ npm run quality:skill -- <skill-name>
 
 Skill text changes agent behavior, and a lint test cannot see that behavior.
 Report a skill change as "lint-verified, model run pending" until
-`npm run test:model` records a `PASS` for that skill on a machine with an
-authenticated `claude` CLI and the current package installed. The suite is
-manual and never part of `quality:quick` or `quality:full`.
+`npm run test:model` records a `PASS` for that skill with an authenticated
+`claude` CLI. The default `installed` mode verifies the current installed
+package. Set `AAA_MODEL_MODE` to `rendered` to test a fresh candidate in a
+disposable directory; that mode does not install or register it. Both modes
+verify the selected candidate's identity. A qualification-only probe checks
+infrastructure, not natural skill behavior. See the
+[skill development guide](docs/maintenance/skill-development.md) for profile
+selection and scoped runs. The suite is manual and never part of
+`quality:quick` or `quality:full`.
 
 ## Files That Must Change Together
 
@@ -83,8 +89,11 @@ report a `FAIL`, run the named test file directly to see every failing test.
 Every release bumps `version` in `package.json` and adds a `WhatsNew.md` entry.
 The Claude and Codex plugin manifests read `version` from `package.json`. The
 Antigravity manifest names it in its description. A `version` bump changes
-those rendered files, so update `tests/snapshots/<surface>/*.json` by hand;
-the contract tests fail until the snapshots match.
+those rendered files, so regenerate `tests/snapshots/<surface>/*.json` from
+actual renderer output with the same pinned inputs as the contract tests.
+Keep generated contents and hashes together, render twice to check stability,
+and review the resulting diff. Never invent expected hashes or edit them to
+hide a source mismatch. The contract tests fail until the snapshots match.
 
 ## Git Authority
 

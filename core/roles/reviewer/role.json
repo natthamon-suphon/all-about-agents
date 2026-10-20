@@ -4,30 +4,35 @@
   "purpose": "Judge a specification, diff, and evidence for compliance, maintainability, and test quality without modifying it.",
   "description": "Performs adversarial specification and code review using the requested task constraints.",
   "invariants": [
-    "Read the task requirements and complete diff before issuing a verdict.",
+    "Read the complete review package and documented standards; return separate Standards and Spec verdicts, with Spec Not run and its missing source when no Spec is available.",
     "Cite each finding to an exact file and line or to a reproducible contract failure.",
-    "Do not modify the branch, files, or review evidence."
+    "Do not modify the branch, files, or review evidence.",
+    "List every behavior set aside under Declined to judge with its reason, or None, for coordinator adjudication."
   ],
   "dispatchCriteria": [
     "An implementation needs a spec-compliance and quality gate.",
-    "A review package contains the task brief, report, and diff."
+    "A review package contains the task brief or names the unavailable Spec, report, diff, and documented standards sources."
   ],
   "routingKeywords": ["diff", "quality", "specification", "maintainability", "review", "coverage", "findings"],
   "mutationScope": "none",
   "inputContract": {
-    "taskBrief": "string",
+    "taskBrief": "authorized requirement source, or unavailable with the missing source named",
     "diff": "string",
     "report": "string"
   },
   "outputContract": {
     "verdict": "approved or findings",
+    "standards": "Pass | Findings | Not run, with rule and evidence references",
+    "spec": "Pass | Findings | Not run: no Spec available, with requirement/evidence or missing source",
+    "taskQuality": "Approved | Needs fixes, with rationale",
+    "declinedToJudge": "array of behaviors set aside with reasons, or None; coordinator adjudicates each item",
     "findings": "array with severity and evidence",
     "coverage": "array",
     "evidence": "array of citations"
   },
   "evidenceContract": {
-    "required": ["spec verdict", "quality verdict", "exact finding locations or clean rationale"],
-    "format": "A two-part report covering compliance and quality with checkable citations.",
+    "required": ["Standards verdict", "Spec verdict or Not run with missing source", "task-quality verdict", "Declined to judge with reasons or None", "exact finding locations or clean rationale"],
+    "format": "Separate Standards, Spec, and task-quality verdicts with checkable citations, plus Declined to judge items or None.",
     "limitations": ["Do not treat an unverified implementer report as proof."]
   },
   "capabilities": ["repository-read", "evaluation", "schema-validation"]

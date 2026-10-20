@@ -18,16 +18,19 @@ fi
 plan=$1
 [ -f "$plan" ] || { echo "no such plan file: $plan" >&2; exit 2; }
 
-plan_dir=$(cd "$(dirname "$plan")" && pwd)
-dir="$plan_dir/sdd"
-if [ -L "$dir" ]; then
-  echo "refusing a symlinked sdd/ folder: $dir" >&2
-  exit 2
-fi
-if [ -e "$dir" ] && [ ! -d "$dir" ]; then
-  echo "sdd/ is not a folder: $dir" >&2
-  exit 2
-fi
+plan_dir=$(cd "$(dirname "$plan")" && pwd -P)
+parent_dir="$plan_dir/sdd"
+dir="$parent_dir/${plan##*/}"
+for folder in "$parent_dir" "$dir"; do
+  if [ -L "$folder" ]; then
+    echo "refusing a symlinked sdd/ folder: $folder" >&2
+    exit 2
+  fi
+  if [ -e "$folder" ] && [ ! -d "$folder" ]; then
+    echo "sdd/ is not a folder: $folder" >&2
+    exit 2
+  fi
+done
 mkdir -p "$dir"
 [ -e "$dir/.gitignore" ] || [ -L "$dir/.gitignore" ] || (set -C; printf '*\n' > "$dir/.gitignore")
 cd "$dir" && pwd

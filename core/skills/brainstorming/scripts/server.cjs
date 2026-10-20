@@ -5,6 +5,7 @@ const fs = require('fs');
 const http = require('http');
 const os = require('os');
 const path = require('path');
+const { HEX_ID, directory, readPrivate, writePrivate } = require('./lifecycle.cjs');
 
 const OPCODES = Object.freeze({ TEXT: 0x01, CLOSE: 0x08, PING: 0x09, PONG: 0x0a });
 const WS_MAGIC = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
@@ -278,16 +279,20 @@ function sameOrigin(req) {
 }
 
 function startServer() {
-  if (!SESSION_DIR) throw new Error('BRAINSTORM_DIR must name a private session directory; start the companion with start-server.sh');
+  if (!SESSION_DIR) throw new Error('BRAINSTORM_DIR must name a private session directory; start the companion with start-server.cjs');
   assertBindPolicy();
-  fs.mkdirSync(CONTENT_DIR, { recursive: true });
-  fs.mkdirSync(STATE_DIR, { recursive: true });
-  if (!safeRealpath(CONTENT_DIR) || !safeRealpath(STATE_DIR)) throw new Error('companion session roots could not be canonicalized');
+  fs.mkdirSync(SESSION_DIR, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(CONTENT_DIR, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(STATE_DIR, { recursive: true, mode: 0o700 });
+  if (directory(SESSION_DIR) !== SESSION_DIR || directory(CONTENT_DIR) !== CONTENT_DIR || directory(STATE_DIR) !== STATE_DIR) throw new Error('companion session roots could not be canonicalized without links');
 
   let port = Number(process.env.BRAINSTORM_PORT);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) port = 0;
   // A fresh key per start: never read from the environment or disk, never reused.
   TOKEN = crypto.randomBytes(32).toString('hex');
+  const requestedInstance = process.argv.find((value) => value.startsWith('--brainstorm-server-id='))?.split('=')[1];
+  const instance = HEX_ID.test(requestedInstance || '') ? requestedInstance : crypto.randomBytes(32).toString('hex');
+  const controlSecret = crypto.randomBytes(32).toString('hex');
   COOKIE_NAME = 'brainstorm-key-pending';
   const templates = loadTemplates();
   const clients = new Set();
@@ -295,17 +300,32 @@ function startServer() {
   let browserOpened = false;
   let actualPort = port;
   let lifecycleCheck;
+  let stopping = false;
 
   function touchActivity() { lastActivity = Date.now(); }
   function shutdown(reason, exitCode = 0) {
+    if (stopping) return;
+    stopping = true;
     watcher.close();
     clearInterval(lifecycleCheck);
-    for (const socket of clients) { try { socket.destroy(); } catch { /* already closed */ } }
-    for (const name of ['server-info', 'connection-url']) {
-      try { fs.rmSync(path.join(STATE_DIR, name), { force: true }); } catch { /* best effort */ }
-    }
-    fs.writeFileSync(path.join(STATE_DIR, 'server-stopped'), JSON.stringify({ reason: redactToken(reason) }) + '\n', { mode: 0o600 });
-    server.close(() => process.exit(exitCode));
+    for (const socket of clients) socket.destroy();
+    const deadline = setTimeout(() => process.exit(1), 3000);
+    Promise.all([server, controlServer].map((listener) => new Promise((resolve) => {
+      listener.close(resolve);
+      listener.closeAllConnections();
+    }))).then(() => {
+      try {
+        for (const name of ['server-info', 'connection-url']) {
+          if (fs.existsSync(path.join(STATE_DIR, name))) { readPrivate(STATE_DIR, name); fs.unlinkSync(path.join(STATE_DIR, name)); }
+        }
+        writePrivate(STATE_DIR, 'server-stopped', `${JSON.stringify({ reason: redactToken(reason), instance })}\n`);
+        clearTimeout(deadline);
+        process.exit(exitCode);
+      } catch {
+        console.error('companion closed; private closure evidence could not be written');
+        process.exit(1);
+      }
+    });
   }
   function ownerAlive() {
     if (!OWNER_PID) return true;
@@ -396,13 +416,43 @@ function startServer() {
 
   const server = http.createServer(handleRequest);
   server.on('upgrade', handleUpgrade);
+  const controlServer = http.createServer((req, res) => {
+    const peer = req.socket.remoteAddress;
+    const allowed = peer === '127.0.0.1' || peer === '::ffff:127.0.0.1';
+    if (!allowed || req.headers.origin !== undefined || !timingSafeEqualString(req.headers['x-brainstorm-control'] || '', controlSecret) || !timingSafeEqualString(req.headers['x-brainstorm-instance'] || '', instance)) {
+      res.writeHead(403, securityHeaders()); res.end(); return;
+    }
+    if (req.headers.host !== `127.0.0.1:${controlServer.address().port}`) { res.writeHead(403, securityHeaders()); res.end(); return; }
+    const isStop = req.method === 'POST' && req.url === '/stop';
+    const isStatus = req.method === 'GET' && req.url === '/status';
+    if (!isStop && !isStatus) { res.writeHead(404, securityHeaders()); res.end(); return; }
+    if (req.headers['transfer-encoding'] || (req.headers['content-length'] && req.headers['content-length'] !== '0')) { res.writeHead(400, securityHeaders()); res.end(); return; }
+    res.writeHead(200, securityHeaders({ 'Content-Type': 'application/json' }));
+    res.end(`${JSON.stringify({ status: isStop ? 'stopping' : stopping ? 'stopping' : 'active', instance })}\n`, () => {
+      if (isStop) setImmediate(() => shutdown('authenticated stop'));
+    });
+  });
+  controlServer.maxConnections = MAX_CONNECTIONS;
+  controlServer.requestTimeout = 2000;
+  controlServer.headersTimeout = 2000;
+  controlServer.timeout = 2000;
+  controlServer.on('upgrade', (_req, socket) => socket.destroy());
+  controlServer.on('error', () => { console.error('companion control listener failed'); shutdown('control listener failed', 1); });
   const knownFiles = new Set();
   const watcher = fs.watch(CONTENT_DIR, (_eventType, filename) => {
     if (!filename || !filename.endsWith('.html') || filename.startsWith('.')) return;
     const filePath = path.join(CONTENT_DIR, filename);
     if (!isRegularFileInsideContentDir(filePath)) return;
     touchActivity();
-    if (!knownFiles.has(filename)) { knownFiles.add(filename); try { fs.rmSync(path.join(STATE_DIR, 'events'), { force: true }); } catch { /* best effort */ } maybeOpenBrowser(); }
+    if (!knownFiles.has(filename)) {
+      knownFiles.add(filename);
+      try {
+        const events = path.join(STATE_DIR, 'events');
+        const stat = fs.lstatSync(events);
+        if (stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1) fs.unlinkSync(events);
+      } catch (error) { if (error.code !== 'ENOENT') console.error('previous companion events could not be cleared'); }
+      maybeOpenBrowser();
+    }
     const message = encodeFrame(OPCODES.TEXT, Buffer.from(JSON.stringify({ type: 'reload' })));
     for (const socket of clients) { try { socket.write(message); } catch { clients.delete(socket); } }
   });
@@ -416,6 +466,8 @@ function startServer() {
     else if (Date.now() - lastActivity > IDLE_TIMEOUT_MS) shutdown('idle timeout');
   }, LIFECYCLE_CHECK_MS);
   lifecycleCheck.unref();
+  process.once('SIGINT', () => shutdown('signal interrupt'));
+  process.once('SIGTERM', () => shutdown('signal termination'));
 
   function onListen() {
     actualPort = server.address().port;
@@ -429,9 +481,16 @@ function startServer() {
       state_dir: STATE_DIR,
       idle_timeout_ms: IDLE_TIMEOUT_MS
     };
-    fs.writeFileSync(path.join(STATE_DIR, 'server-info'), JSON.stringify(info) + '\n', { mode: 0o600 });
-    fs.writeFileSync(path.join(STATE_DIR, 'connection-url'), companionUrl(actualPort) + '\n', { mode: 0o600 });
-    console.log(JSON.stringify(info));
+    controlServer.listen(0, '127.0.0.1', () => {
+      try {
+        writePrivate(STATE_DIR, 'control.json', `${JSON.stringify({ version: 1, instance, secret: controlSecret, pid: process.pid, port: controlServer.address().port })}\n`);
+        writePrivate(STATE_DIR, 'server.pid', `${process.pid}\n`);
+        writePrivate(STATE_DIR, 'server-instance-id', `${instance}\n`);
+        writePrivate(STATE_DIR, 'server-info', `${JSON.stringify(info)}\n`);
+        writePrivate(STATE_DIR, 'connection-url', `${companionUrl(actualPort)}\n`);
+        console.log(JSON.stringify(info));
+      } catch { console.error('companion private startup state could not be written'); shutdown('private startup state failed', 1); }
+    });
   }
   server.on('error', (error) => {
     console.error(`Server failed to bind: ${redactToken(error.message)}`);

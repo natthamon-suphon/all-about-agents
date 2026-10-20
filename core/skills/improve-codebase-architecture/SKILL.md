@@ -31,7 +31,11 @@ broader survey only after the task if concrete evidence supports it.
    dependency changes, public interface changes, commits, pushes, or cleanup.
 2. **Load the design vocabulary.** Consult `codebase-design` before judging
    modules. Treat depth as caller leverage, not file size or implementation-line
-   count. Keep seam placement distinct from interface shape.
+   count. Keep seam placement distinct from interface shape. Read existing
+   `GLOSSARY.md`, relevant `GLOSSARY-MAP.md` contexts and relevant ADRs when
+   present. Use existing domain terms in candidate names. This read-only survey
+   does not authorize creating or editing domain records; missing records do
+   not block the survey.
 3. **Choose evidence-bearing areas.** If the user named a module or pain point,
    start there. Otherwise inspect change history and recent hot spots when
    available, then widen only if evidence is scattered. Do not equate churn
@@ -103,6 +107,10 @@ For every candidate include:
 - **Benefits** — expected leverage, locality, and test-surface improvement;
 - **Risks** — compatibility, dependency, migration, and uncertainty;
 - **Recommendation strength** — `Strong`, `Worth exploring`, or `Speculative`.
+
+If a candidate contradicts an existing decision, cite the conflicting ADR and
+concrete friction that warrants reopening it in Evidence and Risks. Do not list
+theoretical refactors an ADR rejects without that evidence.
 
 ### Top recommendation
 

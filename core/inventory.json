@@ -1,11 +1,13 @@
 {
   "schemaVersion": 1,
-  "capturedAt": "2026-09-19",
+  "capturedAt": "2026-10-20",
   "repository": "all-about-agents",
   "skills": [
     "brainstorming",
     "codebase-design",
+    "diagnosing-agent-workflows",
     "dispatching-parallel-agents",
+    "domain-modeling",
     "executing-plans",
     "finishing-a-development-branch",
     "handoff",
@@ -13,10 +15,12 @@
     "interviewing",
     "loop-me",
     "performance-profiling-and-benchmarking",
+    "pr",
     "receiving-code-review",
     "requesting-code-review",
     "research",
     "resolving-merge-conflicts",
+    "retro",
     "session-compaction-resilience",
     "subagent-driven-development",
     "systematic-debugging",
@@ -37,13 +41,16 @@
       "source": "skills/brainstorming/SKILL.md",
       "assets": [
         "skills/brainstorming/scripts/frame-template.html",
-        "skills/brainstorming/spec-document-reviewer-prompt.md",
+        "skills/brainstorming/builder-check-prompt.md",
         "skills/brainstorming/visual-companion.md"
       ],
       "scripts": [
         "skills/brainstorming/scripts/helper.js",
+        "skills/brainstorming/scripts/lifecycle.cjs",
         "skills/brainstorming/scripts/server.cjs",
+        "skills/brainstorming/scripts/start-server.cjs",
         "skills/brainstorming/scripts/start-server.sh",
+        "skills/brainstorming/scripts/stop-server.cjs",
         "skills/brainstorming/scripts/stop-server.sh"
       ],
       "auditDisposition": {
@@ -65,6 +72,19 @@
       }
     },
     {
+      "name": "diagnosing-agent-workflows",
+      "source": "skills/diagnosing-agent-workflows/SKILL.md",
+      "assets": [
+        "skills/diagnosing-agent-workflows/references/context-safety.md",
+        "skills/diagnosing-agent-workflows/references/report.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of obra/superpowers bb92a77741419a4ab5f06e711a283343f1ada0c3 diagnosing-superpowers; scoped original-evidence diagnosis without export or product paths."
+      }
+    },
+    {
       "name": "dispatching-parallel-agents",
       "source": "skills/dispatching-parallel-agents/SKILL.md",
       "assets": [],
@@ -75,10 +95,26 @@
       }
     },
     {
+      "name": "domain-modeling",
+      "source": "skills/domain-modeling/SKILL.md",
+      "assets": [
+        "skills/domain-modeling/GLOSSARY-FORMAT.md",
+        "skills/domain-modeling/ADR-FORMAT.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of mattpocock/skills 5beb35b040e3de97e54fa9e386d7e42d15c295c2 domain-modeling; lazy glossary/ADR and preserved legacy context."
+      }
+    },
+    {
       "name": "executing-plans",
       "source": "skills/executing-plans/SKILL.md",
       "assets": [],
-      "scripts": [],
+      "scripts": [
+        "skills/executing-plans/scripts/task-done.cjs",
+        "skills/executing-plans/scripts/task-start.cjs"
+      ],
       "auditDisposition": {
         "status": "stable",
         "reason": "Current public skill retained in the unified baseline."
@@ -149,6 +185,18 @@
       }
     },
     {
+      "name": "pr",
+      "source": "skills/pr/SKILL.md",
+      "assets": [
+        "skills/pr/CREDITS.md"
+      ],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of mattpocock/skills 5beb35b040e3de97e54fa9e386d7e42d15c295c2 pr, with Matt Pocock and Dex Horthy attribution; drafting remains separate from publication."
+      }
+    },
+    {
       "name": "receiving-code-review",
       "source": "skills/receiving-code-review/SKILL.md",
       "assets": [],
@@ -188,6 +236,16 @@
       "auditDisposition": {
         "status": "stable",
         "reason": "Current public skill retained in the unified baseline."
+      }
+    },
+    {
+      "name": "retro",
+      "source": "skills/retro/SKILL.md",
+      "assets": [],
+      "scripts": [],
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of mattpocock/skills 5beb35b040e3de97e54fa9e386d7e42d15c295c2 retro; explicit scoped retrospective and deterministic-check-first recommendations."
       }
     },
     {
@@ -322,9 +380,7 @@
     {
       "name": "writing-plans",
       "source": "skills/writing-plans/SKILL.md",
-      "assets": [
-        "skills/writing-plans/plan-document-reviewer-prompt.md"
-      ],
+      "assets": [],
       "scripts": [],
       "auditDisposition": {
         "status": "stable",
@@ -482,6 +538,30 @@
       }
     },
     {
+      "path": "core/skills/brainstorming/scripts/lifecycle.cjs",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable Node lifecycle and bounded authenticated instance control for the optional visual companion."
+      }
+    },
+    {
+      "path": "core/skills/brainstorming/scripts/start-server.cjs",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable Node lifecycle and bounded authenticated instance control for the optional visual companion."
+      }
+    },
+    {
+      "path": "core/skills/brainstorming/scripts/stop-server.cjs",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable Node lifecycle and bounded authenticated instance control for the optional visual companion."
+      }
+    },
+    {
       "path": "core/skills/brainstorming/scripts/server.cjs",
       "kind": "script",
       "auditDisposition": {
@@ -506,11 +586,11 @@
       }
     },
     {
-      "path": "core/skills/brainstorming/spec-document-reviewer-prompt.md",
+      "path": "core/skills/brainstorming/builder-check-prompt.md",
       "kind": "source",
       "auditDisposition": {
         "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
+        "reason": "Replaces the superseded spec reviewer with a material-question builder check."
       }
     },
     {
@@ -546,6 +626,30 @@
       }
     },
     {
+      "path": "core/skills/diagnosing-agent-workflows/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of obra/superpowers bb92a77741419a4ab5f06e711a283343f1ada0c3 diagnosing-superpowers; scoped original-evidence diagnosis without export or product paths."
+      }
+    },
+    {
+      "path": "core/skills/diagnosing-agent-workflows/references/context-safety.md",
+      "kind": "asset",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of obra/superpowers bb92a77741419a4ab5f06e711a283343f1ada0c3 diagnosing-superpowers; scoped original-evidence diagnosis without export or product paths."
+      }
+    },
+    {
+      "path": "core/skills/diagnosing-agent-workflows/references/report.md",
+      "kind": "asset",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of obra/superpowers bb92a77741419a4ab5f06e711a283343f1ada0c3 diagnosing-superpowers; scoped original-evidence diagnosis without export or product paths."
+      }
+    },
+    {
       "path": "core/skills/dispatching-parallel-agents/SKILL.md",
       "kind": "source",
       "auditDisposition": {
@@ -554,11 +658,51 @@
       }
     },
     {
+      "path": "core/skills/domain-modeling/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of mattpocock/skills 5beb35b040e3de97e54fa9e386d7e42d15c295c2 domain-modeling; lazy glossary/ADR and preserved legacy context."
+      }
+    },
+    {
+      "path": "core/skills/domain-modeling/GLOSSARY-FORMAT.md",
+      "kind": "asset",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of mattpocock/skills 5beb35b040e3de97e54fa9e386d7e42d15c295c2 domain-modeling; lazy glossary/ADR and preserved legacy context."
+      }
+    },
+    {
+      "path": "core/skills/domain-modeling/ADR-FORMAT.md",
+      "kind": "asset",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of mattpocock/skills 5beb35b040e3de97e54fa9e386d7e42d15c295c2 domain-modeling; lazy glossary/ADR and preserved legacy context."
+      }
+    },
+    {
       "path": "core/skills/executing-plans/SKILL.md",
       "kind": "source",
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "core/skills/executing-plans/scripts/task-done.cjs",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable task verification helper delivered with executing-plans."
+      }
+    },
+    {
+      "path": "core/skills/executing-plans/scripts/task-start.cjs",
+      "kind": "script",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable task brief and snapshot helper delivered with executing-plans."
       }
     },
     {
@@ -626,6 +770,22 @@
       }
     },
     {
+      "path": "core/skills/pr/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of mattpocock/skills 5beb35b040e3de97e54fa9e386d7e42d15c295c2 pr, with Matt Pocock and Dex Horthy attribution; drafting remains separate from publication."
+      }
+    },
+    {
+      "path": "core/skills/pr/CREDITS.md",
+      "kind": "asset",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of mattpocock/skills 5beb35b040e3de97e54fa9e386d7e42d15c295c2 pr, with Matt Pocock and Dex Horthy attribution; drafting remains separate from publication."
+      }
+    },
+    {
       "path": "core/skills/receiving-code-review/SKILL.md",
       "kind": "source",
       "auditDisposition": {
@@ -663,6 +823,14 @@
       "auditDisposition": {
         "status": "stable",
         "reason": "Retained as an existing baseline source or test artifact."
+      }
+    },
+    {
+      "path": "core/skills/retro/SKILL.md",
+      "kind": "source",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Portable adaptation of mattpocock/skills 5beb35b040e3de97e54fa9e386d7e42d15c295c2 retro; explicit scoped retrospective and deterministic-check-first recommendations."
       }
     },
     {
@@ -922,14 +1090,6 @@
       }
     },
     {
-      "path": "core/skills/writing-plans/plan-document-reviewer-prompt.md",
-      "kind": "source",
-      "auditDisposition": {
-        "status": "stable",
-        "reason": "Retained as an existing baseline source or test artifact."
-      }
-    },
-    {
       "path": "core/skills/writing-skills/SKILL.md",
       "kind": "source",
       "auditDisposition": {
@@ -1047,6 +1207,22 @@
       "auditDisposition": {
         "status": "stable",
         "reason": "Behavior tests for structured presentation traces and the three native render surfaces."
+      }
+    },
+    {
+      "path": "core/upstreams.json",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Reviewed upstream provenance is enforced through loadCore without network access."
+      }
+    },
+    {
+      "path": "core/schemas/upstreams.schema.json",
+      "kind": "metadata",
+      "auditDisposition": {
+        "status": "stable",
+        "reason": "Reviewed upstream provenance is enforced through loadCore without network access."
       }
     }
   ],

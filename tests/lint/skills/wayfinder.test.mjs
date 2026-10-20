@@ -8,6 +8,19 @@ const requiredCases = ["WF-TRIGGER-unclear-multi-session-route", "WF-NONTRIGGER-
 const skillPath = new URL("../../../core/skills/wayfinder/SKILL.md", import.meta.url);
 const evaluationPath = new URL("../../../core/evals/skill-routing/wayfinder.json", import.meta.url);
 
+test("wayfinder retires mis-scoped tickets without treating exclusion as a resolved route decision", async () => {
+  const skill = await readFile(skillPath, "utf8");
+  assert.match(skill, /destination fixes[^.]*scope/isu);
+  assert.match(skill, /out-of-scope work never graduates/iu);
+  assert.match(skill, /close[^.]*mis-scoped ticket[^.]*preserve[^.]*evidence/isu);
+  assert.match(skill, /Out of scope[^.]*not[^.]*Decisions so far/isu);
+  assert.match(skill, /recheck[^.]*frontier and dependencies/isu);
+  assert.match(skill, /legacy `CONTEXT\.md`[^.]*never silently rename or erase/isu);
+  const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
+  assert.equal(evaluation.cases[2].expected.retireMisScopedTicket, true);
+  assert.equal(evaluation.cases[2].expected.noOutOfScopeDeliverables, true);
+});
+
 test("wayfinder routes only unclear multi-session efforts", async () => {
   const skill = await readFile(skillPath, "utf8");
   const closing = skill.indexOf("\n---\n", 4);
@@ -48,7 +61,7 @@ test("wayfinder gate protocol claims and resolves one named frontier ticket", as
   assert.match(skill, /claim.*before work|before work.*claim/iu);
   assert.match(skill, /at most one ticket per session|one ticket per session/iu);
   assert.match(skill, /record the answer|ticket resolution/iu);
-  assert.match(skill, /close the ticket/iu);
+  assert.match(skill, /close\s+the ticket/iu);
   assert.match(skill, /writing-plans/iu);
 });
 

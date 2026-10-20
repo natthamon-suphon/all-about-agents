@@ -37,9 +37,21 @@ check into a current success claim.
    import, schema, deterministic-render, or focused regression checks when
    those checks are what the claim needs. Never expose secrets while showing
    output; redact credentials, tokens, private values, and sensitive paths.
+   Run focused checks first, then the relevant project suite before claiming
+   whole-change completion. A task's narrow deliverable does not reduce the
+   required project verification. Record each command's exit status separately;
+   a later command's success does not prove an earlier command passed.
+   Report every observed failure by name, including out-of-scope failures,
+   with impact; do not take unrelated fixes into scope.
 5. If a relevant check cannot run, say `not run` and give the concrete reason.
    Do not call the work complete, force an unrelated substitute, or silently
    downgrade the requirement. Report partial evidence as partial.
+
+Keep static lint, actual model behavior and native lifecycle evidence
+separate. Static checks cannot prove model decisions, discovery, registration,
+trust, active sessions or runtime behavior. Record unavailable model/native/OS
+checks as `NOT_RUN_UNAVAILABLE` with reason and later owner. Describe an
+unqualified skill change as `lint-verified, model run pending`.
 
 The gate is mandatory even under deadline pressure, after a successful manual
 check, or when another agent reports success.
@@ -123,7 +135,7 @@ to interpret the check.
 |---|---|
 | “It passed earlier.” | Rerun the exact command after the last relevant change. |
 | “The diff is tiny.” | Verify the behavior at its public boundary. |
-| “The full suite is too slow.” | Run the smallest direct check and mark broader checks `not run`. |
+| “The full suite is too slow.” | Run focused checks first; without the required relevant suite, report partial evidence and its blocker. |
 | “The agent/reviewer said it works.” | Inspect the workspace and run fresh evidence yourself. |
 | “The command exited zero.” | Confirm it asserted the claimed behavior and did not skip tests. |
 | “I need to finish quickly.” | Pressure does not waive the evidence gate. |

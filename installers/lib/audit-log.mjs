@@ -3,7 +3,6 @@ import { appendFile, lstat, mkdir, readdir, rename, unlink, writeFile } from "no
 import { join, resolve } from "node:path";
 
 const AUDIT_FILE = "activity-audit.log";
-const MAX_KEY_CODE_POINTS = 64;
 const DEFAULT_MAX_BYTES = 1024 * 1024;
 const DEFAULT_MAX_FILES = 5;
 const SURFACES = new Set(["claude", "codex"]);
@@ -184,17 +183,6 @@ function enqueue(root, operation) {
   return current.finally(() => {
     if (queues.get(root) === current) queues.delete(root);
   });
-}
-
-/** Convert an external identifier into a bounded, filename-safe key. */
-export function safeLogKey(id) {
-  if (typeof id !== "string") throw new TypeError("id must be a string");
-  const normalized = id.normalize("NFKC")
-    .replace(/[^A-Za-z0-9._-]/gu, "-")
-    .replace(/-{2,}/gu, "-")
-    .replace(/^[-.]+|[-.]+$/gu, "");
-  const key = [...normalized].slice(0, MAX_KEY_CODE_POINTS).join("");
-  return key && key !== "." && key !== ".." ? key : "unknown";
 }
 
 /** Append one bounded, redacted JSON-line event; audit failures never escape. */

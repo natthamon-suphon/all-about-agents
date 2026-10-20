@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const skillId = "writing-plans";
-const requiredCases = ["WP-TRIGGER-approved-multistep-spec", "WP-NONTRIGGER-unapproved-design", "WP-PRESSURE-auto-commit"];
+const requiredCases = ["WP-TRIGGER-approved-multistep-spec", "WP-NONTRIGGER-unapproved-design", "WP-PRESSURE-auto-commit", "WP-TRIGGER-delegated-execution", "WP-PRESSURE-program-transcript"];
 
 const skillPath = new URL("../../../core/skills/writing-plans/SKILL.md", import.meta.url);
 const evaluationPath = new URL("../../../core/evals/skill-routing/writing-plans.json", import.meta.url);
@@ -19,7 +19,7 @@ test("writing-plans requires an explicitly approved design or specification", as
   assert.match(frontmatter, /^evaluationCases:\s*$/mu);
   assert.match(skill, /approved (?:design|specification)|approved design or specification/iu);
   assert.match(skill, /before (?:writing|creating) (?:the )?(?:implementation )?plan/iu);
-  assert.match(skill, /do not (?:write|create|start) (?:the )?(?:implementation )?plan/iu);
+  assert.match(skill, /do\s+not (?:write|create|start) (?:the )?(?:implementation )?plan/iu);
   assert.match(skill, /return to|hand back|brainstorming/iu);
   assert.match(skill, /Skill Gate Protocol/iu);
   assert.doesNotMatch(skill, /(?:\.claude|\.codex|\.gemini|mcp__|WebSearch|WebFetch|spawn_agent|invoke_subagent)/iu);
@@ -35,7 +35,7 @@ test("writing-plans makes interfaces and test evidence exact", async () => {
   assert.match(skill, /failing test|RED/iu);
   assert.match(skill, /run (?:the )?(?:focused )?test|test command/iu);
   assert.match(skill, /expected:.*(?:fail|pass)|expected.*(?:fail|pass)/isu);
-  assert.match(skill, /verification evidence/iu);
+  assert.match(skill, /verification\s+evidence/iu);
   assert.match(skill, /no placeholders|placeholder/iu);
 });
 
@@ -50,7 +50,7 @@ test("writing-plans preserves Git authority and does not mandate commits", async
   assert.doesNotMatch(skill, /git\s+commit/iu);
 });
 
-test("writing-plans routing evaluation defines three complete critical cases", async () => {
+test("writing-plans routing evaluation covers approved lean plans and delegated handoff", async () => {
   const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
   assert.equal(evaluation.skill, skillId);
@@ -75,18 +75,38 @@ test("writing-plans routing evaluation defines three complete critical cases", a
   assert.equal(evaluation.cases[2].expected.noAutomaticCommit, true);
   assert.equal(evaluation.cases[2].expected.explicitGitAuthority, true);
   assert.equal(evaluation.cases[2].expected.preserveUncommittedWork, true);
+  assert.equal(evaluation.cases[3].expected.preserveExecutionMethod, true);
+  assert.equal(evaluation.cases[3].expected.repeatPlanApproval, false);
+  assert.equal(evaluation.cases[4].expected.implementationBodiesByDefault, false);
+  assert.equal(evaluation.cases[4].expected.independentAssertions, true);
 });
 
-test("writing-plans names test commands without running them and links its reviewer prompt", async () => {
+test("writing-plans records decisions, independent assertions and a proportionate self-review", async () => {
   const skill = await readFile(skillPath, "utf8");
   const flat = skill.replace(/\s+/gu, " ");
-  const reviewer = (await readFile(new URL("../../../core/skills/writing-plans/plan-document-reviewer-prompt.md", import.meta.url), "utf8")).replace(/\s+/gu, " ");
   assert.doesNotMatch(flat, /Run the focused test command and record/iu);
   assert.match(flat, /names the focused test command and the expected RED\/GREEN result that the executor records as verification evidence/u);
   assert.match(flat, /Planning runs no tests/u);
-  assert.match(flat, /\[plan-document-reviewer-prompt\.md\]\(plan-document-reviewer-prompt\.md\)/u);
-  assert.match(flat, /`Approved` is not human plan approval/u);
-  assert.match(reviewer, /`Approved` is not human plan approval/u);
-  assert.doesNotMatch(flat, /exact file paths and exact portable paths/iu);
-  assert.doesNotMatch(flat, /Record parameters and return types for every interface/iu);
+  for (const field of ["**Spec:**", "## Global Constraints", "## Review Focus", "**Dependencies:**"]) assert.ok(skill.includes(field), field);
+  assert.match(flat, /exact values[^.]*verbatim from the spec/iu);
+  assert.match(flat, /assertions[^.]*independent[^.]*implementation/iu);
+  assert.match(flat, /code step[^.]*signature[^.]*file[^.]*decision/iu);
+  assert.match(flat, /Proportion[^.]*bodies[^.]*signatures/iu);
+  assert.match(flat, /already[^.]*execution method[^.]*preserve/iu);
+  assert.match(flat, /delegated[^.]*plan[^.]*execution[^.]*do not ask[^.]*again/iu);
+  assert.doesNotMatch(flat, /plan-document-reviewer-prompt/u);
+});
+
+test("task handoff assigns full-plan reading to coordinators and scoped briefs to workers", async () => {
+  const skill = (await readFile(skillPath, "utf8")).replace(/\s+/gu, " ");
+  assert.doesNotMatch(skill, /All tasks[^.]*read[^.]*spec[^.]*plan/iu);
+  assert.match(skill, /coordinator and inline executor[^.]*read the full plan/iu);
+  assert.match(skill, /dispatched worker[^.]*scoped brief[^.]*exact Spec pointer[^.]*Global Constraints/iu);
+  assert.match(skill, /worker[^.]*relevant linked sections[^.]*as needed/iu);
+  assert.match(skill, /Preserve required native inherited context/u);
+  const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
+  const handoff = evaluation.cases.find((entry) => entry.id === "WP-TRIGGER-delegated-execution");
+  assert.equal(handoff.expected.scopedWorkerBrief, true);
+  assert.equal(handoff.expected.wholePlanRequiredForEveryWorker, false);
+  assert.equal(handoff.expected.preserveNativeInheritedContext, true);
 });

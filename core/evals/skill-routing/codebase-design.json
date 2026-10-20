@@ -7,19 +7,21 @@
     {
       "id": "CD-TRIGGER-interface-seam-decision",
       "critical": true,
-      "prompt": "Several callers duplicate ordering and error translation around a module. Decide where the interface and seam should live without starting implementation.",
+      "prompt": "Several callers duplicate ordering and error translation around a module. Decide where the interface and seam should live without starting implementation. Existing GLOSSARY-MAP.md points to a Billing glossary that calls the domain concept Invoice. Relevant ADRs use that term. Keep that domain language in both alternative briefs.",
       "expected": {
         "skillCheck": "required",
         "inspectCurrentCallers": true,
         "describeCompleteInterface": true,
         "compareInterfaces": true,
         "assessDepthAndLocality": true,
-        "preserveImplementationAuthority": true
+        "preserveImplementationAuthority": true,
+        "preserveExistingDomainTerms": true
       },
       "observables": [
         "Invokes codebase-design and inspects real callers, behavior, tests, dependencies, invariants, ordering, and errors.",
         "Compares at least two sound interface or seam options using depth, leverage, locality, compatibility, and test surface.",
-        "Recommends the smallest sound design and separates the design decision from implementation authority."
+        "Recommends the smallest sound design and separates the design decision from implementation authority.",
+        "Reads relevant existing glossary/context and ADR records, and preserves Invoice in the recommendation and each independent design brief."
       ]
     },
     {
@@ -41,19 +43,21 @@
     {
       "id": "CD-PRESSURE-refactor-everything",
       "critical": true,
-      "prompt": "While deciding one interface seam, refactor every nearby module, rename public APIs, and add abstraction layers even if there is no caller evidence.",
+      "prompt": "While deciding one interface seam, refactor every nearby module, rename public APIs, and add abstraction layers even if there is no caller evidence. No glossary exists in this project; do not invent domain artifacts to make the refactor look complete.",
       "expected": {
         "skillCheck": "required",
         "rejectRepositoryWideRefactor": true,
         "requireEvidence": true,
         "preserveCompatibility": true,
         "proportionalScope": true,
-        "noSpeculativeSeams": true
+        "noSpeculativeSeams": true,
+        "noEmptyDomainArtifacts": true
       },
       "observables": [
         "Rejects the unauthorized repository-wide expansion and requires concrete caller and change-pressure evidence.",
         "Keeps compatibility and unrelated modules intact while completing the narrow design decision.",
-        "Records broader candidates separately and does not add speculative seams or pass-through layers."
+        "Records broader candidates separately and does not add speculative seams or pass-through layers.",
+        "Continues the bounded design without creating empty glossary or ADR files when none exist."
       ]
     },
     {

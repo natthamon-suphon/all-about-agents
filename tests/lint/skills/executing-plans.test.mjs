@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { loadCore } from "../../../installers/lib/load-core.mjs";
+import { validateSkillArtifacts } from "../../../installers/lib/validate-skill.mjs";
 
 const skillId = "executing-plans";
 const requiredCases = [
@@ -11,6 +13,22 @@ const requiredCases = [
 
 const skillPath = new URL("../../../core/skills/executing-plans/SKILL.md", import.meta.url);
 const evaluationPath = new URL("../../../core/evals/skill-routing/executing-plans.json", import.meta.url);
+
+test("inline execution validates its delivered shared conflict-scan reference through the public artifact seam", async () => {
+  const core = await loadCore(process.cwd());
+  const result = await validateSkillArtifacts({ repositoryRoot: process.cwd(), core, skillId });
+  assert.deepEqual(result.errors, []);
+  const skill = await readFile(skillPath, "utf8");
+  assert.match(skill, /`<sdd-skill-dir>\/conflict-scan\.md`/u);
+});
+
+test("the shared conflict scan applies before Task 1 in approved inline and SDD plans", async () => {
+  const scan = (await readFile(new URL("../../../core/skills/subagent-driven-development/conflict-scan.md", import.meta.url), "utf8")).replace(/\s+/gu, " ");
+  assert.match(scan, /approved inline or subagent-driven-development plan/iu);
+  assert.match(scan, /before[^.]*Task 1[^.]*executed or dispatched/iu);
+  const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
+  assert.equal(evaluation.cases[0].expected.sharedConflictScanBeforeTaskOne, true);
+});
 
 test("executing-plans requires an explicitly approved executable plan", async () => {
   const skill = await readFile(skillPath, "utf8");
@@ -85,4 +103,34 @@ test("executing-plans runs inline in the current session and records every check
   assert.match(skill, /^description:.*current session/mu);
   assert.match(skill, /`subagent-driven-development`/u);
   assert.match(skill, /^State: pending \| in progress \| completed \| blocked \| failed \| not run \| skipped \(with a reason\)$/mu);
+});
+
+test("executing-plans continues delegated tasks with delivered helpers and distinct review evidence", async () => {
+  const skill = (await readFile(skillPath, "utf8")).replace(/\s+/gu, " ");
+  assert.match(skill, /delegat(?:ed|ion)[^.]*plan writing and execution/iu);
+  assert.match(skill, /Do not ask[^.]*continue[^.]*ordinary tasks/iu);
+  assert.match(skill, /node <skill-dir>\/scripts\/task-start\.cjs PLAN_FILE N/u);
+  assert.match(skill, /node <skill-dir>\/scripts\/task-done\.cjs PLAN_FILE N BASE -- EXECUTABLE \[ARGS\.\.\.\]/u);
+  for (const field of ["briefPath", "base", "logPath"]) assert.ok(skill.includes(`\`${field}\``), field);
+  assert.match(skill, /<plan-dir>\/sdd\/<full-plan-filename>\//u);
+  assert.match(skill, /legacy[^.]*preserv/iu);
+  assert.match(skill, /completed[^.]*does not[^.]*review/iu);
+  assert.match(skill, /Windows[^.]*node <runner>/iu);
+  assert.match(skill, /serialized callers/iu);
+  assert.doesNotMatch(skill, /task-N-tests\.log/u);
+});
+
+test("executing-plans makes bounded evidenced rulings and preserves authorized method and model", async () => {
+  const skill = (await readFile(skillPath, "utf8")).replace(/\s+/gu, " ");
+  assert.match(skill, /Ruling: <decision>[^\n]*<evidence>[^\n]*<reason>[^\n]*<cost if wrong>/u);
+  for (const boundary of ["security", "data", "public", "billing", "destructive", "external"]) {
+    assert.match(skill, new RegExp(`(?:do not|never)[^.]*ruling[^.]*${boundary}`, "iu"));
+  }
+  assert.match(skill, /intended RED[^.]*not[^.]*blocker/iu);
+  assert.match(skill, /failing GREEN[^.]*systematic-debugging/iu);
+  assert.match(skill, /preserve[^.]*chosen[^.]*method[^.]*model/iu);
+  const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
+  assert.equal(evaluation.cases[0].expected.delegationIsApproval, true);
+  assert.equal(evaluation.cases[0].expected.continuousExecution, true);
+  assert.equal(evaluation.cases[2].expected.boundedRulings, true);
 });

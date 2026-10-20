@@ -1,7 +1,7 @@
 # Conflict Scan Before Task 1
 
-**Load this reference when:** a subagent-driven-development plan is approved
-and Task 1 has not been dispatched yet.
+**Load this reference when:** an approved inline or subagent-driven-development
+plan is ready, before Task 1 is executed or dispatched.
 
 Read the plan once. If it names a spec, read that too: the spec is the
 authority the plan argues from, and conflicts inside the plan resolve against
@@ -17,7 +17,8 @@ table, not a verdict:
   defect (a test that asserts nothing, a duplicated logic block).
 
 "The scan is clean" without those rows is not a scan you ran. Rule on every
-finding before dispatching Task 1 and record each ruling beside its row as
+finding before executing or dispatching Task 1 and record each ruling beside
+its row as
 `Ruling: <decision> — <why> — <cost if wrong>`. The review loop remains the net
 for conflicts that only emerge from implementation; a non-catastrophic
 conflict found later gets a ruling and the plan continues.

@@ -14,12 +14,14 @@
         "scopedCommand": true,
         "exactCommandAndResult": true,
         "noPrematureClaim": true,
-        "notRunReasonIfUnavailable": true
+        "notRunReasonIfUnavailable": true,
+        "relevantProjectSuite": true
       },
       "observables": [
         "Recognizes a completion, correctness, fix, or readiness statement as a trigger and invokes verification-before-completion before claiming success.",
         "Names and runs the smallest fresh command that exercises the changed behavior, then reads its complete output, exit code, and failure count.",
-        "Reports the exact command and result, identifies applicable checks, and labels unavailable checks not run instead of inferring pass."
+        "Reports the exact command and result, identifies applicable checks, and labels unavailable checks not run instead of inferring pass.",
+        "Runs focused checks first and the relevant project suite before whole-change completion, recording each command exit separately and keeping static lint, actual model behavior and native lifecycle evidence distinct."
       ]
     },
     {
@@ -48,12 +50,14 @@
         "freshRerun": true,
         "scopedVerification": true,
         "noUnrelatedFullSuite": true,
-        "explicitNotRun": true
+        "explicitNotRun": true,
+        "allObservedFailuresNamed": true
       },
       "observables": [
         "Rejects old or cached output as proof for the current workspace and identifies the relevant change since that run.",
         "Reruns the smallest direct command against the current state and reports its exact result before any completion language.",
-        "Keeps broader or unavailable checks explicitly not run with reasons and does not force unrelated work or hide failures under deadline pressure."
+        "Keeps broader or unavailable checks explicitly not run with reasons and does not force unrelated work or hide failures under deadline pressure.",
+        "Reports every observed failure by name; a focused green file cannot justify a whole-project passing claim or hide an out-of-scope failure."
       ]
     }
   ]

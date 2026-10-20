@@ -12,7 +12,9 @@ const requiredCases = [
   "SD-TRIGGER-independent-plan-tasks",
   "SD-NONTRIGGER-overlapping-writers",
   "SD-PRESSURE-cheap-model-cleanup",
-  "SD-NONTRIGGER-concurrent-independent-reads"
+  "SD-NONTRIGGER-concurrent-independent-reads",
+  "SD-TRIGGER-no-behavior-plan",
+  "SD-PRESSURE-required-model-inheritance"
 ];
 
 const skillPath = resolve(process.cwd(), "core/skills/subagent-driven-development/SKILL.md");
@@ -23,7 +25,7 @@ const reviewPackagePath = join(scriptsDirectory, "review-package.cjs");
 const taskBriefPath = join(scriptsDirectory, "task-brief.cjs");
 const sddWorkspacePath = join(scriptsDirectory, "sdd-workspace.cjs");
 const promptNames = ["implementer-prompt.md", "task-reviewer-prompt.md", "re-review-prompt.md"];
-const sddDispatchBoundary = "`subagent-driven-development` runs approved plan tasks one implementer at a time in the shared worktree, with a review after each task; `dispatching-parallel-agents` runs independent items at the same time, and allows writers only with disjoint write scopes.";
+const sddDispatchBoundary = "`subagent-driven-development` runs approved plan tasks one implementer at a time in the shared worktree, with a review after each task; `dispatching-parallel-agents` runs independent items at the same time, and allows writers only with disjoint write scopes in separate verified worktrees.";
 const flatten = (text) => text.replace(/\s+/gu, " ");
 const runNode = (script, args, cwd) => spawnSync(process.execPath, [script, ...args], { cwd, encoding: "utf8", shell: false });
 
@@ -87,7 +89,7 @@ test("review-package passes an untrusted Git ref as one argument without shell e
 test("review-package keeps its valid review text and summary format", async () => {
   const root = await mkdtemp(join(tmpdir(), "aaa-review-output-"));
   const plan = join(root, "plan.md");
-  const outFile = join(root, "sdd", "review.diff");
+  const outFile = join(root, "sdd", "plan.md", "review.diff");
   const git = (args) => {
     const result = spawnSync("git", args, { cwd: root, encoding: "utf8", shell: false });
     assert.equal(result.status, 0, result.stderr);
@@ -136,7 +138,8 @@ async function uncommittedRepo(prefix) {
   git(["commit", "--quiet", "-m", "first"]);
   const run = (args) => runNode(reviewPackagePath, args, root);
   const cleanup = () => rm(root, { force: true, recursive: true });
-  return { root, sdd: join(root, "sdd"), git, run, cleanup, base: git(["rev-parse", "HEAD"]) };
+  await mkdir(join(root, "sdd"));
+  return { root, sdd: join(root, "sdd", "plan.md"), git, run, cleanup, base: git(["rev-parse", "HEAD"]) };
 }
 
 test("review-package packages uncommitted work against the recorded base without touching the index", async () => {
@@ -258,7 +261,7 @@ test("review-package keeps tracked-but-ignored files and recorded modes in a WOR
   }
 });
 
-test("subagent-driven-development routing evaluation defines four complete critical cases", async () => {
+test("subagent-driven-development routing evaluation defines six complete critical cases", async () => {
   const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
   assert.equal(evaluation.skill, skillId);
@@ -289,6 +292,10 @@ test("subagent-driven-development routing evaluation defines four complete criti
   assert.equal(evaluation.cases[2].expected.noBroadDeletion, true);
   assert.equal(evaluation.cases[3].expected.skillCheck, "not-required");
   assert.equal(evaluation.cases[3].expected.routeTo, "dispatching-parallel-agents");
+  assert.equal(evaluation.cases[4].expected.artifactChecks, true);
+  assert.equal(evaluation.cases[4].expected.noFabricatedRed, true);
+  assert.equal(evaluation.cases[5].expected.omitNativeModelField, true);
+  assert.equal(evaluation.cases[5].expected.preserveRequiredInheritance, true);
   for (const entry of evaluation.cases) {
     assert.doesNotMatch(entry.prompt, /subagent-driven-development|\bSDD\b|\bskill\b/iu, `${entry.id} prompt must not name the skill`);
   }
@@ -418,12 +425,12 @@ test("review-package, task-brief, and sdd-workspace never write through a symlin
 
     assert.equal(runNode(sddWorkspacePath, [plan], repo.root).status, 0);
     const planLink = join(repo.sdd, "link.diff");
-    await symlink(join("..", "plan.md"), planLink);
+    await symlink(join("..", "..", "plan.md"), planLink);
     assert.equal(repo.run([plan, repo.base, "WORKTREE", planLink]).status, 2);
     assert.equal(runNode(taskBriefPath, [plan, "1", planLink], repo.root).status, 2);
 
-    await symlink(join("..", "plan.md"), join(repo.sdd, "task-1-brief.md"));
-    repo.git(["add", "-f", "sdd/task-1-brief.md"]);
+    await symlink(join("..", "..", "plan.md"), join(repo.sdd, "task-1-brief.md"));
+    repo.git(["add", "-f", "sdd/plan.md/task-1-brief.md"]);
     repo.git(["commit", "--quiet", "-m", "tracked link at the default brief name"]);
     const trackedLink = runNode(taskBriefPath, [plan, "1"], repo.root);
     assert.equal(trackedLink.status, 2, trackedLink.stderr);
@@ -517,13 +524,13 @@ test("outputs replace their target by rename and leave no temp file", async () =
   const root = await mkdtemp(join(tmpdir(), "aaa-sdd-rename-"));
   try {
     const plan = join(root, "plan.md");
-    const brief = join(root, "sdd", "task-1-brief.md");
+    const brief = join(root, "sdd", "plan.md", "task-1-brief.md");
     await writeFile(plan, "## Task 1: one\nbody\n", "utf8");
     assert.equal(runNode(taskBriefPath, [plan, "1"], root).status, 0);
     const before = (await stat(brief)).ino;
     assert.equal(runNode(taskBriefPath, [plan, "1"], root).status, 0);
     assert.notEqual((await stat(brief)).ino, before, "the brief must be replaced by rename, not truncated in place");
-    assert.deepEqual((await readdir(join(root, "sdd"))).filter((name) => name.startsWith(".tmp")), []);
+    assert.deepEqual((await readdir(join(root, "sdd", "plan.md"))).filter((name) => name.startsWith(".tmp")), []);
   } finally {
     await rm(root, { force: true, recursive: true });
   }
@@ -618,7 +625,7 @@ test("bash wrappers ignore CDPATH when they resolve their own folder", async (t)
     await writeFile(plan, "## Task 1: one\nbody\n", "utf8");
     const result = spawnSync("bash", [join("scripts", "task-brief"), plan, "1"], { cwd: skillDirectory, env: { ...process.env, CDPATH: decoy }, encoding: "utf8", shell: false });
     assert.equal(result.status, 0, result.stderr);
-    assert.match(await readFile(join(root, "sdd", "task-1-brief.md"), "utf8"), /body/u);
+    assert.match(await readFile(join(root, "sdd", "plan.md", "task-1-brief.md"), "utf8"), /body/u);
   } finally {
     await rm(root, { force: true, recursive: true });
   }
@@ -635,7 +642,7 @@ test("task-brief accepts only a whole task number and extracts exactly that task
     }
     const result = runNode(taskBriefPath, [plan, "01"], root);
     assert.equal(result.status, 0, result.stderr);
-    const brief = await readFile(join(root, "sdd", "task-1-brief.md"), "utf8");
+    const brief = await readFile(join(root, "sdd", "plan.md", "task-1-brief.md"), "utf8");
     assert.match(brief, /body one/u);
     assert.doesNotMatch(brief, /eleven/u);
   } finally {
@@ -693,7 +700,7 @@ async function assertBriefCases(runBrief) {
       await writeFile(plan, `${briefPlanLines.join(eol)}${eol}`, "utf8");
       for (const [task, expected] of briefCases) {
         const label = `Task ${task} with ${JSON.stringify(eol)} line ends`;
-        const brief = join(root, "sdd", `task-${task}-brief.md`);
+        const brief = join(root, "sdd", "plan.md", `task-${task}-brief.md`);
         await rm(brief, { force: true });
         const result = runBrief(plan, task, root);
         if (expected === null) {
@@ -742,7 +749,7 @@ test("every script restores a missing sdd/.gitignore and never overwrites an exi
   const root = await mkdtemp(join(tmpdir(), "aaa-sdd-ignore-"));
   try {
     const plan = join(root, "plan.md");
-    const gitignore = join(root, "sdd", ".gitignore");
+    const gitignore = join(root, "sdd", "plan.md", ".gitignore");
     await writeFile(plan, "## Task 1: one\nbody\n", "utf8");
     await mkdir(join(root, "sdd"));
     const brief = runNode(taskBriefPath, [plan, "1"], root);
@@ -751,7 +758,7 @@ test("every script restores a missing sdd/.gitignore and never overwrites an exi
     await writeFile(gitignore, "custom\n", "utf8");
     const workspace = runNode(sddWorkspacePath, [plan], root);
     assert.equal(workspace.status, 0, workspace.stderr);
-    assert.equal(workspace.stdout.trim(), join(root, "sdd"));
+    assert.equal(workspace.stdout.trim(), join(root, "sdd", "plan.md"));
     assert.equal(await readFile(gitignore, "utf8"), "custom\n");
   } finally {
     await rm(root, { force: true, recursive: true });
@@ -808,6 +815,11 @@ test("the bash task-brief fallback extracts the same briefs as task-brief.cjs", 
     const root = await mkdtemp(join(tmpdir(), "aaa-brief-args-"));
     try {
       const plan = join(root, "plan.md");
+      await writeFile(plan, "# Plan\n**Spec:** ./spec.md\n\n~~~text\n## Task 1: fake\n~~~\n\n## Global Constraints\nKeep user work.\n\n## Task 1: real\nbody\n## Task 2: next\n", "utf8");
+      const context = wrapper([plan, "1"], root);
+      assert.equal(context.status, 0, context.stderr);
+      assert.equal(await readFile(join(root, "sdd", "plan.md", "task-1-brief.md"), "utf8"), "**Spec:** ./spec.md\n\n## Global Constraints\nKeep user work.\n\n## Task 1: real\nbody\n");
+      await rm(join(root, "sdd"), { recursive: true, force: true });
       await writeFile(plan, "## Task 1: one\nbody\n", "utf8");
       for (const args of [[root, "1"], [plan, "1", join(root, "sdd", "brief.md"), "extra"]]) {
         assert.equal(wrapper(args, root).status, 2, args.join(" "));
@@ -867,7 +879,7 @@ test("bash wrappers keep working when node is not on PATH", async (t) => {
     await assert.rejects(access(join(repo.root, "pwned.txt")), { code: "ENOENT" });
 
     const planLink = join(repo.sdd, "link.diff");
-    await symlink(join("..", "plan.md"), planLink);
+    await symlink(join("..", "..", "plan.md"), planLink);
     for (const target of [plan, planLink, join(repo.sdd, ".GITIGNORE")]) {
       const escaped = wrapper("review-package", [plan, repo.base, head, target]);
       assert.equal(escaped.status, 2, `review-package must refuse ${target}: ${escaped.stderr}`);
@@ -885,16 +897,16 @@ test("bash wrappers keep working when node is not on PATH", async (t) => {
     assert.match(injected.stderr, /invalid task number/u);
     const brief = wrapper("task-brief", [tasks, "1"]);
     assert.equal(brief.status, 0, brief.stderr);
-    const briefText = await readFile(join(repo.sdd, "task-1-brief.md"), "utf8");
+    const briefText = await readFile(join(repo.root, "sdd", "tasks.md", "task-1-brief.md"), "utf8");
     assert.match(briefText, /body one/u);
     assert.doesNotMatch(briefText, /eleven/u);
     await writeFile(tasks, "## Task 7: seven\nbody seven\n", "utf8");
     const leadingZero = wrapper("task-brief", [tasks, "07"]);
     assert.equal(leadingZero.status, 0, leadingZero.stderr);
-    assert.match(await readFile(join(repo.sdd, "task-7-brief.md"), "utf8"), /body seven/u);
+    assert.match(await readFile(join(repo.root, "sdd", "tasks.md", "task-7-brief.md"), "utf8"), /body seven/u);
     const missing = wrapper("task-brief", [tasks, "9"]);
     assert.equal(missing.status, 3, missing.stderr);
-    await assert.rejects(access(join(repo.sdd, "task-9-brief.md")), { code: "ENOENT" });
+    await assert.rejects(access(join(repo.root, "sdd", "tasks.md", "task-9-brief.md")), { code: "ENOENT" });
     for (const target of [plan, planLink, join(repo.sdd, ".GITIGNORE")]) {
       const escaped = wrapper("task-brief", [tasks, "7", target]);
       assert.equal(escaped.status, 2, `task-brief must refuse ${target}: ${escaped.stderr}`);
@@ -1023,11 +1035,16 @@ test("worker prompts use a surface-neutral dispatch shape and mandatory TDD", as
       assert.match(prompt, new RegExp(`^  ${field}: `, "mu"), `${name} lacks the ${field} dispatch field`);
     }
     assert.match(flatten(prompt), /cannot set a model/u, `${name} must say what to do when a surface cannot set a model`);
+    assert.match(flatten(prompt), /omit the model field/iu, `${name} must allow native inheritance`);
+    assert.match(prompt, /^  model: \[OPTIONAL:/mu, name);
+    assert.doesNotMatch(prompt, /MODEL [—-] REQUIRED|set explicitly per/u, name);
+    assert.match(flatten(prompt), /required inheritance/iu, name);
   }
   const implementer = flatten(await readFile(join(skillDirectory, "implementer-prompt.md"), "utf8"));
   assert.doesNotMatch(implementer, /if task says|if required|Ask them now|ask questions|your report is the test evidence/iu);
   assert.match(implementer, /test-driven-development for every behavior change/u);
   assert.match(implementer, /no-behavior change/u);
+  assert.match(implementer, /no-behavior[^.]*artifact checks/iu);
   assert.match(implementer, /NEEDS_CONTEXT with your questions/u);
   assert.match(implementer, /cannot resume a worker/u);
   const reviewer = flatten(await readFile(join(skillDirectory, "task-reviewer-prompt.md"), "utf8"));
@@ -1040,4 +1057,65 @@ test("the overlapping-writers non-trigger does not name the skill it tests", asy
   const nonTrigger = evaluation.cases.find((entry) => entry.id === "SD-NONTRIGGER-overlapping-writers");
   assert.doesNotMatch(nonTrigger.prompt, /subagent-driven-development/u);
   assert.match(nonTrigger.prompt, /depends on/u);
+});
+
+test("SDD carries scoped constraints and native inheritance without repeated approval", async () => {
+  const skill = flatten(await readFile(skillPath, "utf8"));
+  assert.match(skill, /delegat(?:ed|ion)[^.]*plan writing and execution/iu);
+  assert.match(skill, /Do not ask[^.]*ordinary tasks/iu);
+  assert.match(skill, /<plan-dir>\/sdd\/<full-plan-filename>\//u);
+  assert.match(skill, /legacy[^.]*preserv/iu);
+  assert.match(skill, /required native inherited context/iu);
+  for (const name of promptNames) {
+    const prompt = flatten(await readFile(join(skillDirectory, name), "utf8"));
+    assert.match(prompt, /\[SPEC_POINTER\]/u, name);
+    assert.match(prompt, /\[GLOBAL_CONSTRAINTS\]/u, name);
+    assert.match(prompt, /required native inherited context/iu, name);
+    assert.doesNotMatch(prompt, /read (?:the )?(?:whole|full) plan/iu, name);
+  }
+  const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
+  assert.equal(evaluation.cases[0].expected.boundedBriefAndConstraints, true);
+  assert.equal(evaluation.cases[0].expected.nativeInheritedContext, true);
+});
+
+test("SDD reviews exact ranges and adjudicates every declined or uncertain judgment", async () => {
+  const skill = flatten(await readFile(skillPath, "utf8"));
+  assert.match(skill, /Declined to judge/u);
+  assert.match(skill, /Cannot verify from diff/u);
+  assert.match(skill, /Standards[^.]*Spec/u);
+  for (const name of ["task-reviewer-prompt.md", "re-review-prompt.md"]) {
+    const prompt = flatten(await readFile(join(skillDirectory, name), "utf8"));
+    assert.match(prompt, /Declined to judge/u, name);
+    assert.match(prompt, /realistic[^.]*inputs/iu, name);
+    assert.match(prompt, /worktrees/iu, name);
+  }
+  const implementer = flatten(await readFile(join(skillDirectory, "implementer-prompt.md"), "utf8"));
+  assert.match(implementer, /independent[^.]*expected values/iu);
+  assert.match(implementer, /relevant project suite/iu);
+  assert.match(implementer, /every observed failure by name/iu);
+});
+
+test("task review preserves no-Spec Not run separately from unverified diff evidence", async () => {
+  const prompt = await readFile(join(skillDirectory, "task-reviewer-prompt.md"), "utf8");
+  const specSlot = /### Spec Compliance\n([\s\S]*?)\n    ### Strengths/u.exec(prompt)?.[1] ?? "";
+  assert.match(specSlot, /Spec: \[Pass \| Findings \| Not run: no Spec available\]/u);
+  assert.match(specSlot, /missing source/u);
+  assert.match(specSlot, /Cannot verify from diff: \[requirements with an available source/u);
+  const returns = /\*\*Reviewer returns:\*\*([\s\S]*)$/u.exec(prompt)?.[1] ?? "";
+  assert.match(returns, /Spec Compliance verdict \(Pass\/Findings\/Not run\)/u);
+  assert.match(returns, /Standards verdict/u);
+});
+
+test("SDD keeps executed failures failed and reserves not run for unattempted checks", async () => {
+  const skill = flatten(await readFile(skillPath, "utf8"));
+  assert.match(skill, /executed failing checks[^.]*`failed`/iu);
+  assert.match(skill, /only unavailable or unattempted checks[^.]*`not run`[^.]*reason[^.]*blocker[^.]*owner/iu);
+  assert.doesNotMatch(skill, /failed checks and unavailable checks[^.]*`not run`/iu);
+  assert.match(skill, /Stop for[^.]*invalid GREEN/iu);
+  assert.match(skill, /State: pending \| in progress \| completed \| blocked \| failed \| not run \| skipped \(reason\)/u);
+  const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
+  const pressure = evaluation.cases.find((entry) => entry.id === "SD-PRESSURE-cheap-model-cleanup");
+  assert.equal(pressure.expected.observedFailureState, "failed");
+  assert.equal(pressure.expected.unavailableCheckState, "not run");
+  assert.equal(pressure.expected.stopInvalidGreen, true);
 });

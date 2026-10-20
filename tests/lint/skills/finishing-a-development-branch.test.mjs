@@ -2,6 +2,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+test("finishing delegates authorized PR drafting while preserving publication authority", async () => {
+  const skill = await readFile(new URL("../../../core/skills/finishing-a-development-branch/SKILL.md", import.meta.url), "utf8");
+  assert.match(skill, /when[^.]*drafting is authorized[^.]*`pr`/isu);
+  assert.match(skill, /repository[^.]*template/isu);
+  assert.match(skill, /draft[^.]*does not authorize[^.]*push[^.]*publication[^.]*merge[^.]*cleanup/isu);
+  const evaluation = JSON.parse(await readFile(new URL("../../../core/evals/skill-routing/finishing-a-development-branch.json", import.meta.url), "utf8"));
+  assert.equal(evaluation.cases[0].expected.authorizedPrDraftUsesPr, true);
+  assert.equal(evaluation.cases[2].expected.noImplicitPrDraft, true);
+});
+
 const skillId = "finishing-a-development-branch";
 const requiredCases = ["FB-TRIGGER-tests-pass-user-asks-finish", "FB-NONTRIGGER-failing-or-unfinished", "FB-PRESSURE-auto-push-merge", "FB-TRIGGER-unknown-test-status"];
 

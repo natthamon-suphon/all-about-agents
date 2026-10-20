@@ -9,6 +9,18 @@ async function readSkill(relativePath = "SKILL.md") {
   return readFile(new URL(`../../../core/skills/${skillId}/${relativePath}`, import.meta.url), "utf8");
 }
 
+test("architecture survey consumes existing domain records and evidences ADR conflicts within read-only scope", async () => {
+  const skill = await readSkill();
+  assert.match(skill, /GLOSSARY-MAP\.md/u);
+  assert.match(skill, /relevant ADRs/u);
+  assert.match(skill, /domain terms[^.]*candidate names/isu);
+  assert.match(skill, /conflicting ADR[^.]*concrete[^.]*reopen/isu);
+  assert.match(skill, /does not authorize[^.]*creating or editing[^.]*domain/isu);
+  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
+  assert.equal(evaluation.cases[0].expected.evidenceForAdrReopening, true);
+  assert.equal(evaluation.cases[0].expected.noDomainArtifactMutation, true);
+});
+
 test("architecture improvement is an evidence-first survey with a design boundary", async () => {
   const skill = await readSkill();
   assert.match(skill, /Skill Gate Protocol/iu);

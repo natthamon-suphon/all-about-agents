@@ -14,11 +14,12 @@
         "redBeforeImplementation": true,
         "greenAfterImplementation": true,
         "publicSeam": true,
-        "minimalImplementation": true
+        "minimalImplementation": true,
+        "independentExpectedValues": true
       },
       "observables": [
         "Recognizes a feature or bug fix as a behavior change and invokes test-driven-development before production edits.",
-        "Chooses an observable public seam, writes one focused behavior test, and runs it to confirm the intended RED failure.",
+        "Chooses an observable public seam with realistic inputs and independent expected values from a literal, worked example or spec; never computes expected output using the implementation under test.",
         "Implements the smallest change, reruns the same test to confirm GREEN, and refactors only after the green result."
       ]
     },
@@ -50,12 +51,14 @@
         "noDestructiveDeletion": true,
         "retainRedGreenEvidence": true,
         "safeSensitivityCheck": true,
-        "noMandatorySeamCeremony": true
+        "noMandatorySeamCeremony": true,
+        "verifyMutationActuallyChanged": true
       },
       "observables": [
         "Preserves existing and unrelated work and writes a focused test at the observable public seam rather than deleting working production code.",
-        "If the test passes immediately, proves sensitivity with a disposable failing fixture or safe isolated mutation and records the RED limitation honestly.",
-        "Runs the preserved implementation GREEN, keeps RED/GREEN evidence, and does not let deadline pressure waive the test contract or force seam-confirmation stalling."
+        "If the test passes immediately, proves sensitivity with a disposable failing fixture or safe isolated mutation, verifies the mutation diff genuinely changed the fixture, and records the RED limitation honestly.",
+        "Runs the preserved implementation GREEN, keeps RED/GREEN evidence, and does not let deadline pressure waive the test contract or force seam-confirmation stalling.",
+        "Runs the relevant project suite after focused GREEN and reports every observed failure by name without claiming a whole-suite pass from the focused test."
       ]
     }
   ]

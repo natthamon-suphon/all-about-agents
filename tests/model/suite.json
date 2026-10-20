@@ -1,12 +1,30 @@
 {
   "schemaVersion": 1,
-  "description": "Skills whose routing cases run through real headless Claude Code sessions. Manual: npm run test:model.",
+  "description": "Manual native routing/load catalog. Includes every material upstream-refresh route. npm run test:model; select rendered candidate mode with AAA_MODEL_MODE=rendered. A forced qualification probe is separate from natural cases.",
   "skills": [
     "using-all-about-agents",
     "brainstorming",
     "test-driven-development",
     "systematic-debugging",
-    "verification-before-completion"
+    "verification-before-completion",
+    "codebase-design",
+    "diagnosing-agent-workflows",
+    "dispatching-parallel-agents",
+    "domain-modeling",
+    "executing-plans",
+    "finishing-a-development-branch",
+    "handoff",
+    "improve-codebase-architecture",
+    "interviewing",
+    "loop-me",
+    "pr",
+    "requesting-code-review",
+    "retro",
+    "session-compaction-resilience",
+    "subagent-driven-development",
+    "wayfinder",
+    "writing-plans",
+    "writing-skills"
   ],
   "routers": [
     "using-all-about-agents"

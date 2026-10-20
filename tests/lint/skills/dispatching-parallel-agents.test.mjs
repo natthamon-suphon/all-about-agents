@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const skillId = "dispatching-parallel-agents";
-const requiredCases = ["DP-TRIGGER-two-independent-reads", "DP-NONTRIGGER-shared-state", "DP-PRESSURE-tool-unavailable", "DP-NONTRIGGER-reviewed-plan-tasks"];
+const requiredCases = ["DP-TRIGGER-two-independent-reads", "DP-NONTRIGGER-shared-state", "DP-PRESSURE-tool-unavailable", "DP-NONTRIGGER-reviewed-plan-tasks", "DP-TRIGGER-delegated-isolated-writers", "DP-PRESSURE-shared-worktree-writers"];
 
 const skillPath = new URL("../../../core/skills/dispatching-parallel-agents/SKILL.md", import.meta.url);
 const evaluationPath = new URL("../../../core/evals/skill-routing/dispatching-parallel-agents.json", import.meta.url);
@@ -40,7 +40,7 @@ test("dispatching-parallel-agents requires the Skill Gate Protocol and explicit 
   assert.match(skill, /explicit.*authori[sz]|authority/iu);
 });
 
-test("dispatching-parallel-agents routing evaluation defines four critical cases", async () => {
+test("dispatching-parallel-agents routing evaluation defines six critical cases", async () => {
   const evaluation = JSON.parse(await readFile(evaluationPath, "utf8"));
   assert.equal(evaluation.schemaVersion, 1);
   assert.equal(evaluation.skill, skillId);
@@ -69,12 +69,28 @@ test("dispatching-parallel-agents routing evaluation defines four critical cases
   assert.doesNotMatch(evaluation.cases[2].observables.join("\n"), /approved/iu);
   assert.equal(evaluation.cases[3].expected.skillCheck, "not-required");
   assert.equal(evaluation.cases[3].expected.routeTo, "subagent-driven-development");
+  assert.equal(evaluation.cases[4].expected.delegatedPlanAndExecution, true);
+  assert.equal(evaluation.cases[4].expected.separateVerifiedWorktrees, true);
+  assert.equal(evaluation.cases[4].expected.repeatApproval, false);
+  assert.equal(evaluation.cases[5].expected.noParallelDispatch, true);
+  assert.equal(evaluation.cases[5].expected.disjointPathsSuffice, false);
 });
 
 test("dispatching-parallel-agents requires plan approval only for writers and names the SDD boundary", async () => {
   const skill = await readFile(skillPath, "utf8");
-  assert.match(skill, /`subagent-driven-development` runs approved plan tasks one implementer at a time in the shared worktree, with a review after each task; `dispatching-parallel-agents` runs independent items at the same time, and allows writers only with disjoint write scopes\./u);
-  assert.match(skill, /recorded, explicit human approval\*\* of the executable plan for\s+(?:any|every)\s+worker\s+that\s+writes/u);
+  assert.match(skill, /allows writers only with disjoint write scopes in separate verified worktrees\./u);
+  assert.match(skill.replace(/\s+/gu, " "), /explicit human approval[^.]*or[^.]*delegation of plan writing and execution/iu);
+  assert.match(skill, /without another plan-approval question/u);
   assert.match(skill, /Read-only workers need no plan approval[^.]*bounded brief[^.]*named owner/isu);
   assert.doesNotMatch(skill, /Require a \*\*recorded, explicit human approval\*\* of the executable plan\.\n/u);
+});
+
+test("parallel writers require separate verified worktrees, not only separate file names", async () => {
+  const skill = (await readFile(skillPath, "utf8")).replace(/\s+/gu, " ");
+  assert.match(skill, /Before concurrent writers[^.]*separate verified worktrees/u);
+  assert.match(skill, /`using-git-worktrees`/u);
+  assert.match(skill, /worktree path[^.]*branch[^.]*base[^.]*index/iu);
+  assert.match(skill, /isolation[^.]*missing[^.]*serialize/iu);
+  assert.match(skill, /Read-only[^.]*share[^.]*worktree/iu);
+  assert.match(skill, /Preserve required native inherited context/u);
 });

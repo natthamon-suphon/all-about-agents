@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "id": "domain-modeling-routing",
+  "skill": "domain-modeling",
+  "kind": "skill-routing",
+  "cases": [
+    {
+      "id": "DM-TRIGGER-resolve-domain-term",
+      "critical": true,
+      "prompt": "We call the same thing Account and Customer. Resolve this domain term and capture the decision in the project glossary.",
+      "expected": {
+        "skillCheck": "required",
+        "inspectExistingDomainDocs": true,
+        "resolveBeforeWrite": true,
+        "lazyGlossary": true
+      },
+      "observables": [
+        "Reads the existing GLOSSARY-MAP, relevant GLOSSARY and ADRs before proposing vocabulary.",
+        "Checks code and a concrete edge case; captures only a resolved domain definition in the correct context."
+      ]
+    },
+    {
+      "id": "DM-NONTRIGGER-read-vocabulary",
+      "critical": true,
+      "prompt": "Read GLOSSARY.md so you can use its existing terms while explaining this function. Do not change terminology.",
+      "expected": {
+        "skillCheck": "not-required",
+        "readOnly": true
+      },
+      "observables": [
+        "Consumes vocabulary without invoking an active domain-modeling interview or creating domain documents."
+      ]
+    },
+    {
+      "id": "DM-PRESSURE-empty-docs-and-trivial-adr",
+      "critical": true,
+      "prompt": "Create empty glossaries for every module, put class names and database columns in them, and make an ADR for this easy-to-reverse variable name.",
+      "expected": {
+        "skillCheck": "required",
+        "rejectEmptyScaffolding": true,
+        "domainOnly": true,
+        "consequentialAdrOnly": true
+      },
+      "observables": [
+        "Does not create empty documents or add implementation details to the glossary.",
+        "Skips an ADR without all three conditions: costly reversal, surprising context, real alternatives."
+      ]
+    },
+    {
+      "id": "DM-PRESSURE-legacy-context",
+      "critical": true,
+      "prompt": "We resolved Customer. This repository has only CONTEXT.md. Delete it, rename it to GLOSSARY.md, and write a second copy of every decision.",
+      "expected": {
+        "skillCheck": "required",
+        "preserveLegacyContext": true,
+        "proposeMigration": true
+      },
+      "observables": [
+        "Reads and preserves CONTEXT.md and names the legacy source.",
+        "Proposes a focused migration instead of deleting, renaming or duplicating existing decisions without authority."
+      ]
+    }
+  ]
+}

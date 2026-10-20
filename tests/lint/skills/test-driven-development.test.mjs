@@ -73,3 +73,15 @@ test("writing-good-tests keeps its good/bad labels and arrows, and SKILL.md link
   assert.doesNotMatch(companion, /all-about-agents:/u);
   assert.match(skill, /\[writing-good-tests\.md\]\(writing-good-tests\.md\)/u);
 });
+
+test("TDD requires independent expected values, real mutation evidence, and the relevant suite", async () => {
+  const skill = (await readFile(new URL(`../../../core/skills/${skillId}/SKILL.md`, import.meta.url), "utf8")).replace(/\s+/gu, " ");
+  assert.match(skill, /independent expected values/iu);
+  assert.match(skill, /(?:literal|worked example|spec)/iu);
+  assert.match(skill, /mutation[^.]*diff[^.]*genuinely changed[^.]*fixture/iu);
+  assert.match(skill, /relevant project suite[^.]*before[^.]*completion/iu);
+  assert.match(skill, /every observed failure by name/iu);
+  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
+  assert.equal(evaluation.cases[0].expected.independentExpectedValues, true);
+  assert.equal(evaluation.cases[2].expected.verifyMutationActuallyChanged, true);
+});

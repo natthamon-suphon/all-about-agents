@@ -23,40 +23,80 @@ esac
 n=$((10#$n))
 
 plan_dir=$(cd "$(dirname "$plan")" && pwd -P)
-dir="$plan_dir/sdd"
+parent_dir="$plan_dir/sdd"
+plan_name=${plan##*/}
+dir="$parent_dir/$plan_name"
 bad_out() { echo "OUTFILE must be inside ${dir} and not start with '.': ${out}" >&2; exit 2; }
 refuse_bad_sdd() {
-  if [ -L "$dir" ]; then
-    echo "refusing a symlinked sdd/ folder: ${dir}" >&2
-    exit 2
-  fi
-  if [ -e "$dir" ] && [ ! -d "$dir" ]; then
-    echo "sdd/ is not a folder: ${dir}" >&2
-    exit 2
-  fi
+  for folder in "$parent_dir" "$dir"; do
+    if [ -L "$folder" ]; then
+      echo "refusing a symlinked sdd/ folder: ${folder}" >&2
+      exit 2
+    fi
+    if [ -e "$folder" ] && [ ! -d "$folder" ]; then
+      echo "sdd/ is not a folder: ${folder}" >&2
+      exit 2
+    fi
+  done
 }
 refuse_bad_sdd
 if [ $# -eq 3 ]; then
   out=$3
   case ${out##*/} in .*) bad_out ;; esac
   out_parent=$(dirname "$out")
-  [ "${out_parent##*/}" = sdd ] && [ "$(cd "$(dirname "$out_parent")" 2>/dev/null && pwd -P)" = "$plan_dir" ] || bad_out
+  out_container=$(dirname "$out_parent")
+  [ "${out_parent##*/}" = "$plan_name" ] && [ "${out_container##*/}" = sdd ] && [ "$(cd "$(dirname "$out_container")" 2>/dev/null && pwd -P)" = "$plan_dir" ] || bad_out
 else
   out="$dir/task-${n}-brief.md"
 fi
 
 # Keep these rules in step with task-brief.cjs. The trailing x keeps the brief's final newlines.
 brief=$(awk -v n="$n" '
-  { sub(/\r$/, "") }
-  /^[ \t]*```/ { infence = !infence }
-  !infence && /^#+([ \t]|$)/ {
-    level = match($0, /[^#]/) ? RSTART - 1 : length($0)
-    is_task = ($0 ~ /^#+[ \t]+Task[ \t]+[0-9]+([^0-9]|$)/)
-    is_this = ($0 ~ ("^#+[ \t]+Task[ \t]+0*" n "([^0-9]|$)"))
-    if (task_level > 0 && (level <= task_level || (is_task && !is_this))) exit
-    if (task_level == 0 && is_this) task_level = level
+  {
+    sub(/\r$/, "")
+    text[NR] = $0
+    marker = ""
+    if (match($0, /^[ \t]*(```+|~~~+)/)) {
+      marker = substr($0, 1, RLENGTH)
+      rest = substr($0, RLENGTH + 1)
+      sub(/^[ \t]*/, "", marker)
+    }
+    if (fence != "") {
+      if (substr(marker, 1, 1) == substr(fence, 1, 1) && length(marker) >= length(fence) && rest ~ /^[ \t]*$/) fence = ""
+      next
+    }
+    if (marker != "") { fence = marker; next }
+    outside[NR] = 1
+    if ($0 ~ /^#+([ \t]|$)/) {
+      levels[NR] = match($0, /[^#]/) ? RSTART - 1 : length($0)
+      if ($0 ~ /^#+[ \t]+Task[ \t]+[0-9]+([^0-9]|$)/) {
+        tasks[NR] = 1
+        number = $0
+        sub(/^#+[ \t]+Task[ \t]+/, "", number)
+        if (!first_task) first_task = NR
+        if (!start && number + 0 == n) start = NR
+      }
+    }
   }
-  task_level > 0 { print }
+  END {
+    if (!start) exit
+    for (i = 1; i < first_task; i++) {
+      if (!outside[i]) continue
+      if (tolower(text[i]) ~ /^[ \t]*(\*\*)?(spec(ification)?|design( spec)?):(\*\*)?[ \t]*[^ \t]/) print text[i] "\n"
+      if (levels[i] && tolower(text[i]) ~ /^#+[ \t]+global constraints[ \t]*#*[ \t]*$/) {
+        limit = i + 1
+        while (limit <= NR && (!levels[limit] || levels[limit] > levels[i])) limit++
+        for (j = i; j < limit; j++) print text[j]
+        if (text[limit - 1] != "") print ""
+        i = limit - 1
+      }
+    }
+    print text[start]
+    for (i = start + 1; i <= NR; i++) {
+      if (levels[i] && (levels[i] <= levels[start] || tasks[i])) break
+      print text[i]
+    }
+  }
 ' "$plan" && printf x)
 brief=${brief%x}
 

@@ -21,6 +21,7 @@ import { renderClaudeGlobalInstructions } from "../shared/global-instructions.mj
 import { renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
 
 const CLAUDE_SURFACE = "claude";
+const LICENSE_SOURCE = readFileSync(new URL("../../LICENSE", import.meta.url));
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
 const CONTROL_OR_ANSI = /[\u0000-\u001f\u007f]|\u001b\[[0-?]*[ -/]*[@-~]/u;
 const compareCodePoints = (left, right) => left === right ? 0 : left < right ? -1 : 1;
@@ -441,9 +442,10 @@ function mappingsDocument() {
   lines.push(
     "",
     "Settings are shared by Claude Code CLI and Claude Desktop local Code through `CLAUDE_CONFIG_DIR`.",
-    "Read-only agents use Claude's `disallowedTools` for `Agent`, `Bash`, `Edit`, and `Write`.",
-    "Read-only capability diagnostics identify any semantic action suppressed by that policy; record it as unavailable or not run rather than inferring a native substitute.",
-    "The implementer's native Write/Edit controls are workspace-wide; its declared task paths remain an outer approval boundary.",
+    "Portable read-only roles use Claude's `disallowedTools` for `Agent`, `Bash`, `Edit`, and `Write`.",
+    "Portable read-only capability diagnostics identify any semantic action suppressed by that policy; record it as unavailable or not run rather than inferring a native substitute.",
+    "The portable implementer's native Write/Edit controls are workspace-wide; its declared task paths remain an outer approval boundary.",
+    "Template agents inherit the parent's tools, model and full-access permission policy. Read-only task assignments remain instructions, not native isolation. Declared task paths do not narrow inherited permissions.",
     "The plugin root carries no `CLAUDE.md`: the global file is rendered at `config/CLAUDE.md` for registration only, and rules are emitted as independent files under `rules/`, and registration copies them to `<CLAUDE_CONFIG_DIR>/rules/all-about-agents/`, a folder this package owns."
   );
   return ensureText(lines.join("\n"));
@@ -509,6 +511,7 @@ export function renderClaude(input = {}) {
   const configRoot = resolveClaudeConfigDir(input);
   const statuslineCommand = renderClaudeStatuslineCommand({ configRoot, homeDir: input.homeDir, platform: input.platform });
   const files = [];
+  files.push({ relativePath: "LICENSE", content: new Uint8Array(LICENSE_SOURCE), mode: null });
   const skillRecords = new Map(core.skills.map((record) => [record.id || record.name, record]));
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
 

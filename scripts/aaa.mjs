@@ -345,8 +345,7 @@ async function registerNative(options, output, errorOutput, cwd, invocationCwd, 
       productRoot,
       instructionRoot,
       profile: options.profile,
-      platform: process.platform,
-      rendered: runtime.rendered
+      platform: process.platform
     });
     const report = await runNativeRegistration(plan, {
       mode: options.mode,

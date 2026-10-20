@@ -7,15 +7,18 @@ code quality.
 **Purpose:** Verify one task's implementation matches its requirements (nothing
 more, nothing less) and is well-built (clean, tested, maintainable)
 
-Map each dispatch field to your surface's worker call. If the surface cannot
-set a model per worker, record the model the worker inherits; if that is not
-the strongest approved model, stop and report it.
+Map each dispatch field to your surface's worker call. Preserve approved model
+policy and required inheritance. Set a model only when the native surface
+supports it without overriding that inheritance. If the surface cannot set a
+model or requires inheritance, omit the model field from the native call and
+record the inherited model in the report. Stop if the approved policy cannot
+be met; never silently substitute a weaker model.
 
 ```
 Dispatch:
   role: task reviewer for Task N (spec + quality)
-  model: [MODEL — REQUIRED: the strongest approved model, set explicitly per
-         SKILL.md "Model and review policy"]
+  model: [OPTIONAL: approved model only when native support and required
+         inheritance permit selection; otherwise omit this field]
   brief: [BRIEF_FILE]
   report: [REPORT_FILE] (the implementer's report; read-only input)
   prompt: |
@@ -28,8 +31,14 @@ Dispatch:
 
     Read the task brief: [BRIEF_FILE]
 
+    Spec pointer: [SPEC_POINTER]
+    Preserve required native inherited context. The bounded brief and relevant
+    linked sections define this task; host-supplied context remains intact.
+
     Global constraints from the spec/design that bind this task:
     [GLOBAL_CONSTRAINTS]
+
+    Documented standards sources: [STANDARDS_SOURCES]
 
     ## What the Implementer Claims They Built
 
@@ -62,7 +71,9 @@ Dispatch:
     checking the call sites is the right method.
 
     Your review is read-only on this checkout. Do not mutate the working
-    tree, the index, HEAD, or branch state in any way.
+    tree, the index, HEAD, branches, stashes or worktrees. Do not check out
+    another revision; report a missing checkout need to the coordinator.
+    Do this review yourself; do not dispatch duplicate reviewers.
 
     ## Do Not Trust the Report
 
@@ -115,6 +126,14 @@ Dispatch:
     - Do the new and changed tests verify real behavior, not mocks?
     - Are the task's edge cases covered?
 
+    Inspect realistic user inputs and actual user impact even when the Spec
+    does not enumerate them. Documented project standards override advisory
+    heuristic smells; neither spec silence nor a smell alone establishes
+    severity. Keep compliance and quality verdicts separate.
+    Return separate Standards and Spec verdicts. Standards cites documented
+    repository rules; Spec cites authorized requirements. If no Spec is
+    available, mark Spec Not run with its missing source; do not invent a pass.
+
     **Structure:**
     - Does each file have one clear responsibility with a well-defined interface?
     - Are units decomposed so they can be understood and tested independently?
@@ -146,20 +165,25 @@ Dispatch:
     block), that IS a finding — report it as Important, labeled
     plan-mandated. The plan's authorship does not grade its own work; the
     human decides.
-    Acknowledge what was done well before listing issues — accurate praise
-    helps the implementer trust the rest of the feedback.
+    Strengths are optional and require specific file:line evidence.
+
+    Before the verdict, list every behavior set aside under `Declined to judge`
+    with its reason, or `None`. Keep plausible failures visible for coordinator
+    adjudication. `Cannot verify from diff` needs the missing evidence named;
+    it is not a silent pass or permission to expand the review.
 
     ## Output Format
 
     ### Spec Compliance
 
-    - ✅ Spec compliant | ❌ Issues found: [what's missing/extra/misunderstood,
-      with file:line references]
-    - ⚠️ Cannot verify from diff: [requirements you could not verify from the
-      diff alone, and what the controller should check — report alongside the
-      ✅/❌ verdict for everything you could verify]
+    - Spec: [Pass | Findings | Not run: no Spec available] — [requirement/evidence
+      references, or the missing source; list missing/extra/misunderstood
+      behavior with file:line references when requirements are available]
+    - ⚠️ Cannot verify from diff: [requirements with an available source that
+      this diff alone cannot prove, and the evidence the controller should
+      check; this is separate from a missing-Spec Not run verdict]
 
-    ### Strengths
+    ### Strengths (optional)
     [What's well done? Be specific.]
 
     ### Issues
@@ -171,7 +195,13 @@ Dispatch:
     For each issue: file:line, what's wrong, why it matters, how to fix
     (if not obvious).
 
+    ### Declined to judge
+    [Each excluded behavior and reason, or None; coordinator adjudicates each.]
+
     ### Assessment
+
+    Standards: [Pass | Findings | Not run] — [rule/evidence references]
+    Spec: [Pass | Findings | Not run: no Spec available] — [requirement/evidence references]
 
     **Task quality:** [Approved | Needs fixes]
 
@@ -179,7 +209,8 @@ Dispatch:
 ```
 
 **Placeholders:**
-- `[MODEL]` — REQUIRED: reviewer model per SKILL.md "Model and review policy"
+- `[OPTIONAL: approved model ...]` — omit the native model field when unsupported
+  or required inheritance applies; otherwise follow SKILL.md "Model and review policy"
 - `[BRIEF_FILE]` — REQUIRED: the task brief file
   (`node <skill-dir>/scripts/task-brief.cjs PLAN_FILE N` prints the path, where
   `<skill-dir>` is the folder that holds SKILL.md; same file the implementer
@@ -188,6 +219,8 @@ Dispatch:
   the plan's Global Constraints section or the spec: exact values, formats,
   and stated relationships between components (not process rules — those
   are already in this template)
+- `[SPEC_POINTER]` — exact spec pointer from the plan or scoped brief
+- `[STANDARDS_SOURCES]` — applicable documented repository rules with paths
 - `[REPORT_FILE]` — REQUIRED: the file the implementer wrote its detailed
   report to
 - `[BASE_SHA]` — commit before this task, or the `--snapshot` tree id
@@ -198,5 +231,6 @@ Dispatch:
   package to (`node <skill-dir>/scripts/review-package.cjs PLAN_FILE BASE HEAD|WORKTREE`
   prints the unique path it wrote; the package never enters the controller's context)
 
-**Reviewer returns:** Spec Compliance verdict (✅/❌/⚠️), Strengths, Issues
-(Critical/Important/Minor), Task quality verdict
+**Reviewer returns:** Spec Compliance verdict (Pass/Findings/Not run),
+Cannot verify from diff items, Standards verdict, Strengths, Issues
+(Critical/Important/Minor), Declined to judge items or None, Task quality verdict

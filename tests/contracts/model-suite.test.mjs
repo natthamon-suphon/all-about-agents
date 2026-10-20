@@ -7,10 +7,125 @@ import { pathToFileURL } from "node:url";
 
 import { renderForSurface } from "../../installers/lib/render.mjs";
 import { makeTempRoot } from "../helpers/temp-root.mjs";
-import { buildCasePrompt, checkPreconditions, evaluateCase, parseSkillTrailer, redact, resolveCaseTimeoutMs, runSuite } from "../model/run-trigger-suite.mjs";
+import { buildCasePrompt, checkPreconditions, evaluateCase as evaluateObservedCase, evaluateRouteText as evaluateCase, parseClaudeStream, parseSkillTrailer, redact, resolveCaseTimeoutMs, runSuite } from "../model/run-trigger-suite.mjs";
 import { describeSuiteAge } from "../model/suite-age.mjs";
 
 const root = process.cwd();
+
+test("a self-reported trailer alone never verifies a native skill invocation", () => {
+  const result = evaluateObservedCase({ skill: "brainstorming", caseSpec: { id: "BR-TRIGGER-feature-design" }, resultText: "skill: brainstorming" });
+  assert.equal(result.status, "FAIL", "the trailer is model-authored text, not a completed native tool call");
+});
+
+const candidateRoot = resolve(tmpdir(), "aaa-independent-candidate");
+const packageSkills = new Set(["brainstorming", "using-all-about-agents", "systematic-debugging"]);
+const initEvent = { type: "system", subtype: "init", model: "selected-model", claude_code_version: "2.1.304", plugins: [{ name: "all-about-agents", path: candidateRoot }], skills: ["all-about-agents:brainstorming"], tools: ["Skill"], mcp_servers: [] };
+const callEvent = { type: "assistant", parent_tool_use_id: null, message: { id: "msg_call", model: "selected-model", role: "assistant", content: [{ type: "tool_use", id: "tool_main", name: "Skill", input: { skill: "all-about-agents:brainstorming" } }] } };
+const completionEvent = { type: "user", parent_tool_use_id: null, message: { role: "user", content: [{ type: "tool_result", tool_use_id: "tool_main", content: "Launching skill: all-about-agents:brainstorming" }] } };
+const finalEvent = { type: "result", subtype: "success", is_error: false, result: "Design comes first.\n\nskill: brainstorming", modelUsage: { "selected-model": { inputTokens: 30, outputTokens: 9 } }, permission_denials: [] };
+const capture = (...events) => events.map((event) => JSON.stringify(event)).join("\n") + "\n";
+const parse = (stdout, options = {}) => parseClaudeStream(stdout, { candidateRoot, packageSkills, ...options });
+const score = (observation, extra = {}) => evaluateObservedCase({ skill: "brainstorming", caseSpec: { id: "BR-TRIGGER-independent" }, resultText: observation.resultText, observation, packageSkills, ...extra });
+
+test("native scoring requires exact candidate init identity and correlated main-conversation completion", () => {
+  const observed = parse(capture(initEvent, callEvent, completionEvent, finalEvent));
+  assert.equal(observed.candidateLoaded, true);
+  assert.deepEqual(observed.loadedSkills, ["brainstorming"]);
+  assert.equal(score(observed).status, "PASS");
+  assert.equal(observed.effort, null, "missing native effort is unknown");
+  assert.deepEqual(observed.models, ["selected-model"]);
+  const alternate = { ...initEvent, plugins: [{ name: "all-about-agents", path: resolve(tmpdir(), "stale-installed-copy") }] };
+  assert.equal(score(parse(capture(alternate, callEvent, completionEvent, finalEvent))).status, "FAIL");
+  const pluginError = { ...initEvent, plugin_errors: [{ plugin: "all-about-agents", type: "skill", message: "invalid component" }] };
+  assert.equal(score(parse(capture(pluginError, callEvent, completionEvent, finalEvent))).status, "FAIL");
+  const noCall = parse(capture(initEvent, finalEvent));
+  assert.equal(score(noCall).status, "FAIL", "init availability and result trailer do not mean invocation");
+});
+
+test("native catalog evidence reports candidate and foreign counts without retaining private skill names", () => {
+  const observation = parse(capture({ ...initEvent, skills: ["all-about-agents:brainstorming", "private-plugin:private-skill"] }, finalEvent));
+  assert.equal(observation.candidateSkillCount, 1);
+  assert.equal(observation.foreignSkillCount, 1);
+  assert.doesNotMatch(JSON.stringify(observation), /private-plugin|private-skill/u);
+});
+
+test("attempts, denials, unknown skills, mismatched IDs and subagents never pass as a main load", () => {
+  const badCompletions = [
+    { ...completionEvent, message: { role: "user", content: [{ type: "tool_result", tool_use_id: "wrong-id", content: "Launching skill" }] } },
+    { ...completionEvent, message: { role: "user", content: [{ type: "tool_result", tool_use_id: "tool_main", is_error: true, content: "Permission denied" }] } },
+    { ...completionEvent, message: { role: "user", content: [{ type: "tool_result", tool_use_id: "tool_main", content: "Permission denied" }] } },
+    { ...completionEvent, message: { role: "user", content: [{ type: "tool_result", tool_use_id: "tool_main", content: "" }] } }
+  ];
+  for (const completion of badCompletions) assert.equal(score(parse(capture(initEvent, callEvent, completion, finalEvent))).status, "FAIL");
+  assert.equal(score(parse(capture(initEvent, callEvent, finalEvent))).status, "FAIL");
+  const subCall = { ...callEvent, parent_tool_use_id: "agent_parent" };
+  const subResult = { ...completionEvent, parent_tool_use_id: "agent_parent" };
+  assert.equal(score(parse(capture(initEvent, subCall, subResult, finalEvent))).status, "FAIL");
+  assert.equal(score(parse(capture(initEvent, subCall, completionEvent, finalEvent))).status, "FAIL", "tool-use IDs are scoped to the parent conversation");
+  const unknown = { ...callEvent, message: { ...callEvent.message, content: [{ type: "tool_use", id: "tool_main", name: "Skill", input: { skill: "all-about-agents:invented" } }] } };
+  const unknownObservation = parse(capture(initEvent, unknown, completionEvent, { ...finalEvent, result: "skill: none" }));
+  assert.deepEqual(unknownObservation.loadedSkills, []);
+  assert.equal(score(unknownObservation, { caseSpec: { id: "BR-NONTRIGGER-independent" } }).status, "FAIL");
+  const deniedResult = { ...finalEvent, permission_denials: [{ tool_name: "Skill", tool_use_id: "tool_main", tool_input: { skill: "all-about-agents:brainstorming" } }] };
+  assert.equal(score(parse(capture(initEvent, callEvent, completionEvent, deniedResult))).status, "FAIL");
+});
+
+test("malformed, partial, duplicate and over-limit streams fail closed", () => {
+  const samples = [
+    "{not-json}\n" + capture(initEvent, callEvent, completionEvent, finalEvent),
+    capture(initEvent, callEvent, completionEvent),
+    capture(initEvent, callEvent, callEvent, completionEvent, finalEvent),
+    capture(initEvent, callEvent, completionEvent, finalEvent, finalEvent),
+    capture(initEvent, callEvent, completionEvent, finalEvent) + '{"type":'
+  ];
+  for (const stdout of samples) assert.equal(score(parse(stdout)).status, "FAIL");
+  assert.equal(score(parse(capture(initEvent, callEvent, completionEvent, finalEvent), { outputTooLarge: true })).status, "FAIL");
+  assert.equal(score(parse(capture(initEvent, callEvent, completionEvent, finalEvent), { maxBytes: 20 })).status, "FAIL");
+});
+
+test("invalid native shapes and records after final result cannot be accepted", () => {
+  for (const event of [
+    { ...initEvent, plugins: "invalid" },
+    { ...initEvent, tools: {} },
+    { ...callEvent, message: { content: {} } },
+    { ...completionEvent, message: { content: "invalid" } }
+  ]) {
+    assert.doesNotThrow(() => parse(capture(event, finalEvent)));
+    assert.equal(score(parse(capture(event, finalEvent))).status, "FAIL");
+  }
+  assert.equal(score(parse(capture(initEvent, finalEvent, callEvent, completionEvent))).status, "FAIL");
+});
+
+test("synthetic full-file Read evidence is exact, correlated and never accepts a partial body", () => {
+  const filePath = join(candidateRoot, "skills", "brainstorming", "SKILL.md");
+  const readCall = { ...callEvent, message: { ...callEvent.message, content: [{ type: "tool_use", id: "read_1", name: "Read", input: { file_path: filePath } }] } };
+  const readResult = { ...completionEvent, tool_use_result: { type: "text", file: { filePath, content: "one\ntwo\n", numLines: 2, startLine: 1, totalLines: 2 } }, message: { role: "user", content: [{ type: "tool_result", tool_use_id: "read_1", content: "1 one\n2 two" }] } };
+  assert.equal(score(parse(capture(initEvent, readCall, readResult, finalEvent))).status, "PASS");
+  for (const file of [{ ...readResult.tool_use_result.file, startLine: 2 }, { ...readResult.tool_use_result.file, numLines: 1 }, { ...readResult.tool_use_result.file, truncatedByTokenCap: true }, { ...readResult.tool_use_result.file, filePath: join(candidateRoot, "other", "SKILL.md") }]) {
+    const result = { ...readResult, tool_use_result: { type: "text", file } };
+    assert.equal(score(parse(capture(initEvent, readCall, result, finalEvent))).status, "FAIL");
+  }
+});
+
+test("native nontrigger scoring observes unwanted loads and rejects bogus routes", () => {
+  const nontrigger = { caseSpec: { id: "BR-NONTRIGGER-independent" } };
+  const none = { ...finalEvent, result: "skill: none" };
+  assert.equal(score(parse(capture(initEvent, none)), nontrigger).status, "PASS");
+  assert.equal(score(parse(capture(initEvent, callEvent, completionEvent, none)), nontrigger).status, "FAIL", "a none trailer must not hide a real load");
+  const bogus = { ...finalEvent, result: "skill: invented" };
+  assert.equal(score(parse(capture(initEvent, bogus)), nontrigger).status, "FAIL");
+  const router = { skill: "using-all-about-agents", isRouter: true, caseSpec: { id: "UA-TRIGGER-independent" } };
+  assert.equal(score(parse(capture(initEvent, callEvent, completionEvent, finalEvent)), router).status, "PASS");
+  assert.equal(score(parse(capture(initEvent, finalEvent)), router).status, "FAIL");
+  assert.equal(score(parse(capture(initEvent, callEvent, completionEvent, none)), { ...router, caseSpec: { id: "UA-NONTRIGGER-worker" } }).status, "FAIL");
+});
+
+test("EndConversation housekeeping does not count as a router nontrigger skill load", () => {
+  const endCall = { ...callEvent, message: { ...callEvent.message, content: [{ type: "tool_use", id: "end_1", name: "EndConversation", input: {} }] } };
+  const endResult = { ...completionEvent, message: { role: "user", content: [{ type: "tool_result", tool_use_id: "end_1", content: "Conversation ended" }] } };
+  const observation = parse(capture({ ...initEvent, tools: ["Skill", "EndConversation"] }, endCall, endResult, { ...finalEvent, result: "skill: none" }));
+  assert.equal(score(observation, { skill: "using-all-about-agents", isRouter: true, caseSpec: { id: "UA-NONTRIGGER-worker" } }).status, "PASS");
+});
 
 test("trigger suite exists, is manual, spawns without a shell, and stays out of the quality gates", async () => {
   const runner = readFileSync(resolve(root, "tests/model/run-trigger-suite.mjs"), "utf8");
@@ -24,6 +139,7 @@ test("trigger suite exists, is manual, spawns without a shell, and stays out of 
   const suite = JSON.parse(readFileSync(resolve(root, "tests/model/suite.json"), "utf8"));
   assert.ok(suite.skills.length >= 4);
   for (const skill of suite.skills) JSON.parse(readFileSync(resolve(root, "core/evals/skill-routing", `${skill}.json`), "utf8"));
+  for (const skill of ["diagnosing-agent-workflows", "domain-modeling", "pr", "retro", "codebase-design", "writing-plans", "writing-skills", "executing-plans", "subagent-driven-development", "dispatching-parallel-agents", "handoff", "loop-me", "requesting-code-review", "session-compaction-resilience", "wayfinder", "interviewing", "finishing-a-development-branch", "improve-codebase-architecture"]) assert.ok(suite.skills.includes(skill), `${skill} needs a manual routing entry`);
 });
 
 test("case evaluation reads the routing trailer and the case kind", () => {
@@ -107,6 +223,7 @@ test("redaction removes home paths and email addresses from stored excerpts", ()
   assert.doesNotMatch(out, /tester|alice@example\.com|\/home\/alice/u);
   assert.match(out, /<HOME>|<USER_PATH>/u);
   assert.match(out, /<EMAIL>/u);
+  assert.doesNotMatch(redact("Bearer synthetic-test-value123 api_key=synthetic_secret_value sk-syntheticabcdefghijklmnop"), /synthetic/u);
 });
 
 test("stale or missing installations make every case NOT_RUN_UNAVAILABLE without spawning claude", async () => {
@@ -128,33 +245,225 @@ test("stale or missing installations make every case NOT_RUN_UNAVAILABLE without
   }
 });
 
-test("a fake claude executable drives PASS and FAIL classification per case", async () => {
+test("the public runner qualifies the rendered candidate before scoring normalized native events", async () => {
   const sandbox = mkdtempSync(join(tmpdir(), "aaa-model-suite-"));
   try {
     const outputDir = join(sandbox, "eval-runs");
     mkdirSync(outputDir, { recursive: true });
     const suitePath = join(sandbox, "suite.json");
     writeFileSync(suitePath, JSON.stringify({ schemaVersion: 1, skills: ["brainstorming"], forbiddenPressurePhrases: ["I have implemented"] }), "utf8");
+    let modelCalls = 0;
     const run = async ({ executable, args }) => {
       const ok = { exitCode: 0, stderr: "", unavailable: false, timedOut: false, outputTooLarge: false };
       if (executable === "git") return { ...ok, stdout: "" };
       assert.equal(executable, "claude");
+      if (args.includes("list")) return { ...ok, stdout: JSON.stringify([{ id: "private-plugin@example", enabled: true }, { id: "all-about-agents@inline", enabled: true }]) };
       assert.equal(args[0], "-p", "the prompt travels as a structured argument, never through a shell");
+      modelCalls += 1;
       const prompt = args[1];
+      const pluginRoot = args[args.indexOf("--plugin-dir") + 1];
+      assert.ok(readFileSync(join(pluginRoot, "skills", "brainstorming", "SKILL.md"), "utf8").includes("brainstorming"));
+      assert.equal(args[args.indexOf("--tools") + 1], "Skill");
+      assert.equal(args[args.indexOf("--setting-sources") + 1], "user");
+      assert.ok(args.includes("--strict-mcp-config"));
+      assert.equal(args.includes("--model"), false);
+      assert.equal(args.includes("--effort"), false);
+      const settings = JSON.parse(args[args.indexOf("--settings") + 1]);
+      assert.equal(settings.disableBundledSkills, true);
+      assert.equal(settings.enabledPlugins["private-plugin@example"], false);
+      assert.equal(settings.disableAllHooks, true);
+      assert.equal(settings.disableSkillShellExecution, true);
       assert.match(prompt, /^skill: /mu, "every case prompt must carry the trailer instruction");
+      const probe = prompt.includes("Qualification probe only");
       const answer = /trivial|read-only|bounded read-only|status or file listing|find out why|implementation plan/iu.test(prompt)
         ? "The listing is short.\n\nskill: none"
         : "A behavior change needs a design first.\n\nskill: brainstorming";
-      return { ...ok, stdout: JSON.stringify({ result: answer }) };
+      const route = probe ? "using-all-about-agents" : /skill: none/u.test(answer) ? null : "brainstorming";
+      const call = { ...callEvent, message: { ...callEvent.message, content: [{ type: "tool_use", id: "tool_main", name: "Skill", input: { skill: `all-about-agents:${route}` } }] } };
+      return { ...ok, stdout: capture({ ...initEvent, plugins: [{ name: "all-about-agents", path: pluginRoot }] }, ...(route ? [call, completionEvent] : []), { ...finalEvent, result: probe ? "skill: using-all-about-agents" : answer }) };
     };
-    const preconditions = async () => ({ ok: true, reasons: [], packageVersion: "2.0.0", configDir: sandbox });
-    const { summary } = await runSuite({ run, preconditions, suitePath, outputDir });
+    const preconditions = async () => ({ ok: true, reasons: [], packageVersion: JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version, configDir: sandbox });
+    const { summary, qualification, runDir } = await runSuite({ run, preconditions, suitePath, outputDir, mode: "rendered", caseIds: ["BR-TRIGGER-feature-design", "BR-NONTRIGGER-trivial-readonly", "BR-PRESSURE-code-immediately"] });
     assert.equal(summary.notRun, 0);
-    assert.equal(summary.fail, 0, "every brainstorming routing case should pass against the fake announcer");
+    assert.equal(summary.fail, 0, "independent native fixtures should pass the runner contract");
     assert.equal(summary.pass, summary.total);
+    assert.equal(modelCalls, summary.total + 1, "the forced probe is separate from every natural case");
+    assert.equal(qualification.status, "PASS");
+    const evidence = readFileSync(join(runDir, "native-evidence.json"), "utf8");
+    assert.doesNotMatch(evidence, /private-plugin|msg_call|Launching skill/u, "raw plugin lists and tool payloads must not be stored");
   } finally {
     rmSync(sandbox, { recursive: true, force: true });
   }
+});
+
+function publicRunnerProcess({ rejectTurn = null, rejection = null } = {}) {
+  let modelCalls = 0;
+  const run = async ({ executable, args }) => {
+    const ok = { exitCode: 0, stderr: "", unavailable: false, timedOut: false, outputTooLarge: false };
+    if (executable === "git") return { ...ok, stdout: "" };
+    if (args.includes("list")) return { ...ok, stdout: "[]" };
+    assert.equal(args[0], "-p");
+    modelCalls += 1;
+    if (modelCalls === rejectTurn) throw rejection;
+    const path = args[args.indexOf("--plugin-dir") + 1];
+    const diagnostic = args[1].includes("Metadata diagnostic only");
+    const skill = args[1].includes("Qualification probe only") ? "using-all-about-agents" : "brainstorming";
+    const call = { ...callEvent, message: { ...callEvent.message, content: [{ type: "tool_use", id: "tool_main", name: "Skill", input: { skill: `all-about-agents:${skill}` } }] } };
+    return { ...ok, stdout: capture({ ...initEvent, plugins: [{ name: "all-about-agents", path }] }, ...(diagnostic ? [] : [call, completionEvent]), { ...finalEvent, result: `skill: ${diagnostic ? "none" : skill}` }) };
+  };
+  return { run, modelCalls: () => modelCalls };
+}
+
+const currentPreconditions = async () => ({ ok: true, reasons: [], packageVersion: JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version });
+const threeNaturalCases = ["BR-TRIGGER-feature-design", "BR-TRIGGER-spike-question", "BR-PRESSURE-code-immediately"];
+
+for (const selector of ["skills", "caseIds"]) {
+  test(`empty normal ${selector} selection rejects before any model turn`, async () => {
+    const sandbox = mkdtempSync(join(tmpdir(), "aaa-model-empty-"));
+    try {
+      const process = publicRunnerProcess();
+      await assert.rejects(runSuite({ run: process.run, preconditions: currentPreconditions, mode: "rendered", [selector]: [], outputDir: join(sandbox, "eval-runs") }), /at least one natural case/u);
+      assert.equal(process.modelCalls(), 0);
+    } finally { rmSync(sandbox, { recursive: true, force: true }); }
+  });
+}
+
+for (const onlyMode of ["qualificationOnly", "diagnosticOnly"]) {
+  test(`${onlyMode} remains valid with no selected natural cases`, async () => {
+    const sandbox = mkdtempSync(join(tmpdir(), "aaa-model-only-"));
+    try {
+      const process = publicRunnerProcess();
+      const { summary, qualification, runDir } = await runSuite({ run: process.run, preconditions: currentPreconditions, mode: "rendered", skills: [], caseIds: [], [onlyMode]: true, outputDir: join(sandbox, "eval-runs") });
+      assert.equal(process.modelCalls(), 1);
+      assert.equal(summary.total, 0);
+      assert.equal(qualification.status, onlyMode === "qualificationOnly" ? "PASS" : "NOT_RUN_UNAVAILABLE");
+      assert.ok(readdirSync(runDir).includes("native-evidence.json"));
+    } finally { rmSync(sandbox, { recursive: true, force: true }); }
+  });
+}
+
+test("later expected launch rejection retains earlier results and stops model fan-out", async () => {
+  const sandbox = mkdtempSync(join(tmpdir(), "aaa-model-launch-"));
+  try {
+    const rejection = Object.assign(new Error(`synthetic launch blocked /home/private/session.json private@example.com api_key=synthetic_secret ${"x".repeat(1200)}`), { code: "EPERM" });
+    const process = publicRunnerProcess({ rejectTurn: 3, rejection });
+    let returned;
+    await assert.doesNotReject(async () => { returned = await runSuite({ run: process.run, preconditions: currentPreconditions, mode: "rendered", skills: ["brainstorming"], caseIds: threeNaturalCases, outputDir: join(sandbox, "eval-runs") }); });
+    const { summary, runDir } = returned;
+    assert.equal(process.modelCalls(), 3, "qualification, first case and rejected launch only");
+    assert.deepEqual(summary, { total: 3, pass: 1, fail: 0, notRun: 2 });
+    const batch = JSON.parse(readFileSync(join(runDir, "result.json"), "utf8"));
+    assert.deepEqual(batch.results.map((entry) => entry.metadata.status), ["PASS", "NOT_RUN_UNAVAILABLE", "NOT_RUN_UNAVAILABLE"]);
+    assert.match(batch.results[1].metadata.reason, /EPERM/u);
+    assert.ok(batch.results[1].metadata.reason.length <= 400);
+    assert.doesNotMatch(batch.results[1].metadata.reason, /\/home\/private|private@example|synthetic_secret/u);
+    const evidence = JSON.parse(readFileSync(join(runDir, "native-evidence.json"), "utf8"));
+    assert.equal(evidence.qualification.status, "PASS");
+    assert.equal(evidence.cases[0].caseId, threeNaturalCases[0]);
+    assert.equal(evidence.cases[1].launchError.code, "EPERM");
+    assert.equal(evidence.cases.length, 2);
+    assert.doesNotMatch(JSON.stringify(evidence.cases[1]), /\/home\/private|private@example|synthetic_secret/u);
+  } finally { rmSync(sandbox, { recursive: true, force: true }); }
+});
+
+for (const rejectTurn of [1, 3]) {
+  test(`unexpected programming error on model turn ${rejectTurn} rejects with partial normalized evidence`, async () => {
+    const sandbox = mkdtempSync(join(tmpdir(), "aaa-model-unexpected-"));
+    try {
+      const rejection = new TypeError("synthetic programming defect");
+      const process = publicRunnerProcess({ rejectTurn, rejection });
+      const outputDir = join(sandbox, "eval-runs");
+      await assert.rejects(runSuite({ run: process.run, preconditions: currentPreconditions, mode: "rendered", skills: ["brainstorming"], caseIds: threeNaturalCases, outputDir }), (error) => error === rejection);
+      assert.equal(process.modelCalls(), rejectTurn);
+      const runDir = join(outputDir, readdirSync(outputDir)[0]);
+      assert.ok(readdirSync(runDir).includes("native-evidence.json"), "unexpected error must retain partial normalized evidence");
+      const evidence = JSON.parse(readFileSync(join(runDir, "native-evidence.json"), "utf8"));
+      assert.equal(evidence.abort.name, "TypeError");
+      assert.match(evidence.abort.reason, /synthetic programming defect/u);
+      assert.equal(evidence.partialResults.length, rejectTurn === 1 ? 0 : 1);
+      if (rejectTurn === 3) {
+        assert.equal(evidence.qualification.status, "PASS");
+        assert.equal(evidence.partialResults[0].metadata.status, "PASS");
+        assert.equal(evidence.cases[0].caseId, threeNaturalCases[0]);
+      }
+    } finally { rmSync(sandbox, { recursive: true, force: true }); }
+  });
+}
+
+test("failed qualification never fans out model calls or counts a forced probe as a natural PASS", async () => {
+  const sandbox = mkdtempSync(join(tmpdir(), "aaa-model-probe-"));
+  try {
+    const suitePath = join(sandbox, "suite.json");
+    writeFileSync(suitePath, JSON.stringify({ skills: ["brainstorming"] }));
+    let modelCalls = 0;
+    const run = async ({ executable, args }) => {
+      const ok = { exitCode: 0, stdout: "", stderr: "", unavailable: false, timedOut: false, outputTooLarge: false };
+      if (executable === "git") return ok;
+      if (args.includes("list")) return { ...ok, stdout: "[]" };
+      modelCalls += 1;
+      return { ...ok, stdout: capture(initEvent, finalEvent) };
+    };
+    const preconditions = async () => ({ ok: true, reasons: [], packageVersion: "2.4.0" });
+    const { summary, qualification } = await runSuite({ run, preconditions, suitePath, outputDir: join(sandbox, "eval-runs"), mode: "rendered" });
+    assert.equal(modelCalls, 1);
+    assert.equal(summary.pass, 0);
+    assert.equal(summary.notRun, summary.total);
+    assert.equal(qualification.status, "NOT_RUN_UNAVAILABLE");
+  } finally { rmSync(sandbox, { recursive: true, force: true }); }
+});
+
+test("metadata diagnostics retain derived inventory only and never qualify or run natural cases", async () => {
+  const sandbox = mkdtempSync(join(tmpdir(), "aaa-model-diagnostic-"));
+  try {
+    let modelCalls = 0;
+    const run = async ({ executable, args }) => {
+      const ok = { exitCode: 0, stderr: "", unavailable: false, timedOut: false, outputTooLarge: false };
+      if (executable === "git") return { ...ok, stdout: "" };
+      if (args.includes("list")) return { ...ok, stdout: JSON.stringify([{ id: "private-plugin@example", enabled: !args.includes("--settings") }, { id: "all-about-agents@inline", enabled: true }]) };
+      modelCalls += 1;
+      assert.match(args[1], /Metadata diagnostic only/u);
+      const path = args[args.indexOf("--plugin-dir") + 1];
+      return { ...ok, stdout: capture({ ...initEvent, plugins: [{ name: "all-about-agents", path }] }, { ...finalEvent, result: "skill: none" }) };
+    };
+    const preconditions = async () => ({ ok: true, reasons: [], packageVersion: "2.4.0" });
+    const { qualification, summary, runDir } = await runSuite({ run, preconditions, mode: "rendered", diagnosticOnly: true, outputDir: join(sandbox, "eval-runs") });
+    const evidence = JSON.parse(readFileSync(join(runDir, "native-evidence.json"), "utf8"));
+    assert.equal(modelCalls, 1);
+    assert.equal(qualification.status, "NOT_RUN_UNAVAILABLE");
+    assert.deepEqual(summary, { total: 0, pass: 0, fail: 0, notRun: 0 });
+    assert.equal(evidence.probeKind, "metadata-diagnostic");
+    assert.deepEqual(evidence.inventoryBefore, { rowCount: 2, candidateRows: 1, enabledCandidateRows: 1, disabledNoncandidateRows: 1, enabledNoncandidateRows: 0 });
+    assert.deepEqual(evidence.inventoryAfter, evidence.inventoryBefore);
+    assert.doesNotMatch(JSON.stringify(evidence), /private-plugin/u);
+  } finally { rmSync(sandbox, { recursive: true, force: true }); }
+});
+
+test("installed candidate qualification accepts current template bytes at a custom config root", async () => {
+  const sandbox = mkdtempSync(join(tmpdir(), "aaa-model-template-"));
+  try {
+    const configDir = join(sandbox, "custom config");
+    const installPath = join(configDir, "plugins", "cache", "all-about-agents", "all-about-agents", "current");
+    const rendered = await renderForSurface({ repositoryRoot: root, surface: "claude", profile: "template", env: { CLAUDE_CONFIG_DIR: configDir }, homeDir: sandbox, platform: process.platform });
+    for (const file of rendered.files) {
+      const path = join(installPath, ...file.relativePath.split("/"));
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, file.content);
+    }
+    const version = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
+    writeFileSync(join(configDir, "CLAUDE.md"), "# user-global\n");
+    writeFileSync(join(configDir, "plugins", "installed_plugins.json"), JSON.stringify({ plugins: { "all-about-agents@all-about-agents": [{ version, installPath }] } }));
+    const run = async ({ executable, args }) => {
+      const ok = { exitCode: 0, stderr: "", unavailable: false, timedOut: false, outputTooLarge: false };
+      if (executable === "git") return { ...ok, stdout: "" };
+      if (args.includes("--version")) return { ...ok, stdout: "2.1.304 (Claude Code)" };
+      if (args.includes("list")) return { ...ok, stdout: "[]" };
+      const call = { ...callEvent, message: { ...callEvent.message, content: [{ type: "tool_use", id: "tool_main", name: "Skill", input: { skill: "all-about-agents:using-all-about-agents" } }] } };
+      return { ...ok, stdout: capture({ ...initEvent, plugins: [{ name: "all-about-agents", path: installPath }] }, call, completionEvent, { ...finalEvent, result: "skill: none" }) };
+    };
+    const preconditions = (options) => checkPreconditions({ ...options, home: sandbox, env: { CLAUDE_CONFIG_DIR: configDir } });
+    const { qualification } = await runSuite({ run, preconditions, mode: "installed", profile: "template", qualificationOnly: true, outputDir: join(sandbox, "eval-runs") });
+    assert.equal(qualification.status, "PASS", qualification.reason);
+  } finally { rmSync(sandbox, { recursive: true, force: true }); }
 });
 
 // A checkout outside the current directory: one routing file, and a runner shim that
@@ -284,23 +593,24 @@ test("a claude error or a failed fixture repository is NOT_RUN_UNAVAILABLE, neve
   try {
     const suitePath = join(sandbox, "suite.json");
     writeFileSync(suitePath, JSON.stringify({ schemaVersion: 1, skills: ["brainstorming"], forbiddenPressurePhrases: [] }), "utf8");
-    const preconditions = async () => ({ ok: true, reasons: [], packageVersion: "2.0.0", configDir: sandbox });
+    const preconditions = async () => ({ ok: true, reasons: [], packageVersion: JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version, configDir: sandbox });
     const ok = { exitCode: 0, stdout: "", stderr: "", unavailable: false, timedOut: false, outputTooLarge: false };
     const scenarios = [
       { name: "nonzero exit", claude: { ...ok, exitCode: 1, stderr: "Error: overloaded" }, reason: /exited 1/u },
-      { name: "is_error result", claude: { ...ok, stdout: JSON.stringify({ is_error: true, result: "API Error: 500\n\nskill: brainstorming" }) }, reason: /error result/u },
+      { name: "is_error result", claude: { ...ok, stdout: capture(initEvent, { type: "result", subtype: "error_during_execution", is_error: true, result: "API Error: 500\n\nskill: brainstorming" }) }, reason: /error result/u },
       { name: "git init failure", git: { ...ok, exitCode: 128, stderr: "fatal: cannot init" }, reason: /git init failed/u }
     ];
     for (const scenario of scenarios) {
       const outputDir = join(sandbox, scenario.name.replaceAll(" ", "-"), "eval-runs");
       mkdirSync(outputDir, { recursive: true });
       let claudeCalls = 0;
-      const run = async ({ executable }) => {
+      const run = async ({ executable, args }) => {
         if (executable === "git") return scenario.git ?? ok;
+        if (args.includes("list")) return { ...ok, stdout: "[]" };
         claudeCalls += 1;
         return scenario.claude;
       };
-      const { summary, batch, runDir } = await runSuite({ run, preconditions, suitePath, outputDir });
+      const { summary, batch, runDir } = await runSuite({ run, preconditions, suitePath, outputDir, mode: "rendered" });
       assert.equal(summary.notRun, summary.total, scenario.name);
       assert.equal(summary.fail, 0, scenario.name);
       assert.ok(batch.results.every((entry) => scenario.reason.test(entry.metadata.reason)), `${scenario.name}: ${batch.results.map((entry) => entry.metadata.reason).join("; ")}`);

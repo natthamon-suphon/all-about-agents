@@ -75,6 +75,55 @@ function roleFilePath(surface, roleId) {
 
 const antigravityRender = (core) => renderAntigravity({ core, profile: "portable", env: {}, homeDir: "C:/Users/tester", platform: "win32" });
 
+test("implementer evidence distinguishes behavior tests from no-behavior artifact checks on every native surface", async () => {
+  const core = await loadCore(process.cwd());
+  const role = core.roles.find((entry) => entry.id === "implementer");
+  assert.match(role.invariants.join(" "), /behavior changes[^.]*failing test/iu);
+  assert.match(role.evidenceContract.required.join(" "), /no-behavior[^.]*artifact checks/iu);
+  assert.match(role.outputContract.tests, /artifact checks/iu);
+  for (const profile of ["portable", "template"]) {
+    const renders = [
+      ["claude", renderClaude({ core, profile, statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+      ["codex", renderCodex({ core, profile, env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+      ["antigravity", renderAntigravity({ core, profile, env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ];
+    for (const [surface, result] of renders) {
+      const content = textFiles(result).get(roleFilePath(surface, "implementer"));
+      const prompt = surface === "codex" ? parseCodexToml(content).developer_instructions : content;
+      assert.match(prompt, /behavior changes[^.]*RED[^.]*GREEN/iu, `${surface}/${profile}`);
+      assert.match(prompt, /no-behavior[^.]*artifact checks/iu, `${surface}/${profile}`);
+      assert.match(prompt, /links, syntax, schema[^.]*formatting/iu, `${surface}/${profile}`);
+      assert.match(prompt, /generated[^.]*behavior/iu, `${surface}/${profile}`);
+      assert.match(prompt, /why[^.]*TDD/iu, `${surface}/${profile}`);
+    }
+  }
+});
+
+test("reviewer returns separate Standards and Spec verdicts, no-Spec Not run and every declined judgment on every native surface", async () => {
+  const core = await loadCore(process.cwd());
+  const role = core.roles.find((entry) => entry.id === "reviewer");
+  assert.match(role.outputContract.standards, /Pass.*Findings.*Not run/u);
+  assert.match(role.outputContract.spec, /Not run.*no Spec/u);
+  assert.match(role.outputContract.declinedToJudge, /None/u);
+  assert.match(role.evidenceContract.required.join(" "), /Standards verdict.*Spec verdict.*Declined to judge/u);
+  for (const profile of ["portable", "template"]) {
+    const renders = [
+      ["claude", renderClaude({ core, profile, statuslineName: "roles", env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+      ["codex", renderCodex({ core, profile, env: {}, homeDir: "C:/Users/tester", platform: "win32" })],
+      ["antigravity", renderAntigravity({ core, profile, env: {}, homeDir: "C:/Users/tester", platform: "win32" })]
+    ];
+    for (const [surface, result] of renders) {
+      const content = textFiles(result).get(roleFilePath(surface, "reviewer"));
+      const prompt = surface === "codex" ? parseCodexToml(content).developer_instructions : content;
+      assert.match(prompt, /Standards: \[Pass \| Findings \| Not run\]/u, `${surface}/${profile}`);
+      assert.match(prompt, /Spec: \[Pass \| Findings \| Not run: no Spec available\]/u, `${surface}/${profile}`);
+      assert.match(prompt, /Declined to judge[^.]*None/su, `${surface}/${profile}`);
+      assert.match(prompt, /realistic[^.]*inputs[^.]*impact/iu, `${surface}/${profile}`);
+      assert.match(prompt, /read-only/iu, `${surface}/${profile}`);
+    }
+  }
+});
+
 function parseNativeArtifact(surface, content) {
   if (surface === "claude") {
     const tools = content.match(/^tools:\n([\s\S]*?)(?:^disallowedTools:|^---$)/mu)?.[1] || "";

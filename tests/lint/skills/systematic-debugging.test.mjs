@@ -241,3 +241,13 @@ test("systematic-debugging evaluation has exact trigger, non-trigger, and pressu
   assert.equal(evaluation.cases[3].expected.routeTo, "performance-profiling-and-benchmarking");
   assert.equal("routesTo" in evaluation.cases[3].expected, false);
 });
+
+test("debugging distinguishes intended RED and retests the original full scenario", async () => {
+  const skill = (await readSkillFile("SKILL.md")).replace(/\s+/gu, " ");
+  assert.match(skill, /intended RED[^.]*not[^.]*regression/iu);
+  assert.match(skill, /original full scenario/iu);
+  assert.match(skill, /relevant project suite/iu);
+  assert.match(skill, /every observed failure by name/iu);
+  const evaluation = JSON.parse(await readFile(new URL(`../../../core/evals/skill-routing/${skillId}.json`, import.meta.url), "utf8"));
+  assert.equal(evaluation.cases[0].expected.originalFullScenario, true);
+});

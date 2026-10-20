@@ -12,8 +12,6 @@ evaluationCases:
 
 **Core principle:** ALWAYS find root cause before attempting fixes. Symptom fixes are failure.
 
-**Violating the letter of this process is violating the spirit of debugging.**
-
 ## Skill Gate Protocol
 
 1. Classify the request before changing anything. A failure, regression,
@@ -33,9 +31,12 @@ evaluationCases:
    experiments. Never delete or reset working user data to manufacture a RED
    result. Use `find-polluter.sh` only after confirming the checked path was
    absent, and treat a pre-existing path as an inconclusive setup error.
-5. After the root-cause fix, rerun the original evidence command, the focused
-   regression test, and cleanup checks. Remove temporary diagnostics and state;
-   report every unavailable check as `not run`.
+5. An intended RED in a test-first task is not an unexpected regression;
+   investigate failing GREEN and unintended failures. After the root-cause
+   fix, rerun the original full scenario, focused regression and cleanup
+   checks, then the relevant project suite. Report every observed failure by
+   name, including out-of-scope failures; do not absorb unrelated fixes.
+   Remove temporary diagnostics; mark unavailable checks `not run`.
 
 The gate is satisfied only when the evidence supports the diagnosis. A quick
 guess, a passing command that hid a test failure, or a secret dump is not a
@@ -47,10 +48,8 @@ debugging result.
 NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
 ```
 
-If you haven't completed Phase 1, you cannot propose fixes. This holds for any
-technical issue, and **especially** under time pressure, when "just one quick fix" seems obvious,
-after a previous fix failed, or when you don't fully understand the issue.
-Simple bugs have root causes too, and systematic is faster than thrashing.
+Complete Phase 1 before proposing fixes, including under time pressure or
+after a previous fix failed.
 
 ## The Five Phases
 
@@ -86,10 +85,8 @@ You MUST complete each phase before proceeding to the next.
 
 ### Phase 2: Pattern Analysis
 
-Find similar working code in the same codebase. When implementing a pattern,
-read the reference implementation COMPLETELY. List every difference between
-working and broken, however small; don't assume "that can't matter". Check
-the components, config, environment, and assumptions it depends on.
+Read the complete similar working pattern. Compare its data, components,
+configuration, environment and assumptions with the failing path.
 
 ### Phase 3: Hypothesis and Testing
 
@@ -139,9 +136,8 @@ the components, config, environment, and assumptions it depends on.
 4. **If the fix doesn't work, STOP and count failed fixes.** Fewer than 3:
    return to Phase 1 with the new information. **After 3 failed fixes, STOP
    and question the architecture** with your human partner before fix #4.
-   Signs: each fix reveals new coupling elsewhere, needs "massive
-   refactoring", or creates new symptoms. Is the pattern sound, or kept
-   through inertia? This is a wrong architecture, not a failed hypothesis.
+   Signs include new coupling or symptoms after each fix and required major
+   restructuring. Do not treat structural failure as another small fix.
 
 ### Phase 5: Cleanup and Post-Mortem
 
