@@ -3,11 +3,17 @@
 These rules describe stable behavior for every repository. Project and plugin
 instructions are a more specific second layer and may add local facts.
 
+For coding work, use the installed `karpathy-guidelines` skill when available.
+Keep it external; these global rules also apply when that skill is unavailable.
+
 ## Correctness and depth
 
 Choose correctness and depth over fast agreement. For important work, consider
 at least two sound approaches, choose one, and state the main trade-off. Fix
 the root cause. Say when a change is only a temporary patch.
+State assumptions and resolve material ambiguity before editing. Ask when
+uncertainty affects the outcome; do not silently choose between different goals.
+Suggest a simpler approach when it fits. Use judgment for trivial changes.
 
 ## Inspect before action
 
@@ -15,15 +21,23 @@ Read the real files, types, configuration, tests, and APIs before changing
 them. Do not guess a signature, option, path, or command. Check failure paths
 and keep unrelated work untouched.
 
+## Simplicity first
+
+Reuse suitable existing code, standard libraries, native features, and installed
+dependencies. Do not add speculative features, single-use abstractions, or
+unrequested configuration. Handle real failure paths, not impossible scenarios.
+Keep required validation, security, accessibility, and data-loss protection.
+
 ## Simple language and direct reporting
 
-Always answer in simple English at CEFR A2 level. Use short sentences, common
-words, and one idea per sentence. Keep the answer short. Give the outcome first,
-then only the detail the reader must act on. Add more detail only when the
-reader asks for it. Keep technical terms, names, paths, and commands unchanged,
-and add a short plain gloss when a term is not obvious. Switch to
-the language of the current session only when the reader asks for that
-language, and keep the same simple level. Avoid filler.
+Use the language of the current session and follow the user's latest language
+request. Infer it from the user's messages, not quoted text, code, or logs.
+Default to simple English at CEFR A1-A2 only when no session language is clear.
+Give the outcome first. Use the shortest clear answer that preserves key facts,
+required checks, risks, and next actions. Omit filler, repetition, and unasked detail.
+Use short sentences and common words. Do not sacrifice clarity for brevity.
+Add detail only when asked or needed for correctness or safety. Keep technical
+terms, code, names, paths, commands, and exact errors unchanged.
 Do not repeat unchanged status messages.
 
 ## Evidence, assumptions, and primary-source research
@@ -51,11 +65,22 @@ focused regression check.
 Follow the repository style and use the smallest change that solves the task.
 Add a behavior test before production code for a feature or bug fix. Run a
 focused check first, then relevant build, tests, and lint checks. Handle errors
-explicitly. Leave no dead code, empty catches, or placeholder stubs.
+explicitly. Do not introduce dead code, empty catches, or placeholder stubs.
 
-Write few comments. Let clear names and small units carry the meaning. Add a
-comment only for non-obvious intent, a real constraint, or a required notice.
-Delete comments that restate the code.
+Prefer zero code comments; use clear names and small units. Add a short comment
+only for non-obvious intent, a necessary constraint, or a required notice.
+Never explain obvious code in comments. Preserve existing comments outside
+the task. Delete only new comments that restate the code.
+
+Do not change unrelated code, comments, or formatting. Do not refactor working
+code outside the task. Remove only imports, variables, and functions
+your changes made unused. Report unrelated dead code instead of deleting it.
+Every changed line must serve the request.
+
+Define observable success criteria before implementation. For multi-step work,
+pair each material step with a check. Reproduce bugs before fixing them; for
+refactoring, check behavior before and after. Stop when the requested checks
+pass, and report anything that could not run.
 
 ## Safe file, destructive, external, and Git actions
 

@@ -388,7 +388,7 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "d0d57257fc9a5fc9a5a5c52a176fafd97482db2bc559bb090f66b75b0b04b987",
+      "sha256": "b5d3fa1cd3a450eb6317bcefefba13d2f2da4fd3463836e9e3c686ebc4537d0e",
       "mode": null
     },
     {
@@ -1093,7 +1093,7 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "d0d57257fc9a5fc9a5a5c52a176fafd97482db2bc559bb090f66b75b0b04b987"
+      "sha256": "b5d3fa1cd3a450eb6317bcefefba13d2f2da4fd3463836e9e3c686ebc4537d0e"
     },
     {
       "relativePath": "config.toml",

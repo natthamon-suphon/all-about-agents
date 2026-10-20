@@ -37,6 +37,16 @@ test("T005 creates exactly the nine canonical rule IDs", async () => {
   assert.deepEqual(entries.map(({ id }) => id), ruleIds);
 });
 
+test("implementation quality scopes cleanup to the active task and preserves existing comments", async () => {
+  const record = JSON.parse(await readFile(resolve(process.cwd(), "core/rules/implementation-quality/rule.json"), "utf8"));
+  const comments = record.requirements.find((entry) => entry.startsWith("implementation-quality/minimal-comments:"));
+  const errors = record.requirements.find((entry) => entry.startsWith("implementation-quality/error-paths:"));
+  assert.match(comments, /preserve existing comments outside the task/iu);
+  assert.match(comments, /only (?:new|introduced) comments/iu);
+  assert.match(comments, /default to no code comments/iu);
+  assert.match(errors, /do not introduce/iu);
+});
+
 test("canonical rules validate against the strict rule schema and preserve design invariants", async () => {
   const schema = JSON.parse(await readFile(resolve(process.cwd(), "core/schemas/rule.schema.json"), "utf8"));
   const records = await Promise.all(ruleIds.map(async (id) => JSON.parse(await readFile(resolve(process.cwd(), `core/rules/${id}/rule.json`), "utf8"))));

@@ -24,6 +24,54 @@ Keep these files in the project or plugin layer:
 This is a two-layer model: global behavior first, then project or plugin
 behavior. A project file does not replace the shared source.
 
+## Default replies and code comments
+
+All surfaces share these defaults:
+
+- Prefer no code comments. Add short comments only for non-obvious intent,
+  necessary constraints, or required notices. Preserve existing comments
+  outside the task.
+- Follow the session language and the user's latest language request without
+  requiring a separate language command. Quoted text, code, logs, and technical
+  terms do not choose the reply language. Use simple English at CEFR A1-A2
+  only when the session language is unclear.
+- Give the outcome first and keep replies as short as clarity allows. Retain
+  key facts, required checks, risks, and next actions. Give more detail when
+  requested or needed for correctness or safety. Keep exact technical text.
+
+## Karpathy coding discipline
+
+The shared source integrates the four principles from
+[karpathy-guidelines](https://github.com/multica-ai/andrej-karpathy-skills/blob/2c606141936f1eeef17fa3043a72095b4765b9c2/skills/karpathy-guidelines/SKILL.md),
+reviewed on 2026-10-20:
+
+- Think before coding: state assumptions, resolve material ambiguity, and
+  explain a simpler option when it fits.
+- Simplicity first: reuse suitable code and tools; add only what the task needs.
+- Surgical changes: preserve unrelated code, comments, and formatting. Remove
+  only code made unused by the current change; report other dead code.
+- Goal-driven execution: define observable success criteria, give each material
+  step a check, and verify bugs and refactors at the relevant boundary.
+
+These constraints apply through the shared source to Claude Code's `CLAUDE.md`,
+Codex's `AGENTS.md`, and Antigravity's `GEMINI.md`. Antigravity CLI, Desktop 2.0,
+and IDE use the same global instruction source; this is a rendering contract,
+not proof that each native product loaded the file.
+
+When the external `karpathy-guidelines` skill is installed and discoverable,
+use it for the full coding guidance. It remains optional and external: this
+repository does not bundle it, install it, or add a second bootstrap hook.
+The global rules remain usable without it. See
+[companion tooling](../setup/companion-tooling.md#karpathy-guidelines).
+
+Keep required validation, safety, accessibility, and data-loss protection.
+This alignment does not change the selected model policy, access mode,
+emergency denies, or operator-owned sections outside the managed block.
+The shared source must stay below its existing 160-line and 8,000-character
+limits. Rendered files also retain their product-specific size checks.
+Static contracts check the text and package delivery; native behavior still
+needs a fresh session after an explicitly authorized installation.
+
 ## Surface-specific appendices
 
 The shared source reaches every surface. Each surface may add an appendix at

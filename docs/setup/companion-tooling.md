@@ -161,9 +161,14 @@ from this repository.
 The [current package](https://github.com/multica-ai/andrej-karpathy-skills)
 provides [karpathy-guidelines](https://github.com/multica-ai/andrej-karpathy-skills/blob/main/skills/karpathy-guidelines/SKILL.md).
 The reviewed Claude manifest is skills-only. Do not invent hooks, agent roles,
-or cross-product registration support from that manifest. Apply its assumptions,
-surgical edits and observable success criteria alongside repository rules;
-it does not need another global bootstrap loop.
+or cross-product registration support from that manifest. The
+[shared global instructions](../maintenance/global-instructions.md#karpathy-coding-discipline)
+summarize its four principles and route coding work to the installed
+`karpathy-guidelines` skill when available. The skill stays external and optional;
+its full instructions are not copied into each tool's global file. Preserve
+required safety checks and leave unrelated code and existing comments alone.
+It does not need another global bootstrap loop. Static package checks do not
+prove native discovery or behavior; verify those after installation in each tool.
 
 ## Verification on Windows and macOS
 

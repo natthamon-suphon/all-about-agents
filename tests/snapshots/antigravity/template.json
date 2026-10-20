@@ -43,12 +43,12 @@
     },
     {
       "relativePath": "config/GEMINI.md",
-      "sha256": "a60f5f6f08182199e0bea227751aa36df0913b9eb9750c7544e42727c7f66649",
+      "sha256": "3fca635a036d054c2b9a1dd304ed1daf95228562a903c81f37e02c80c92db435",
       "mode": null
     },
     {
       "relativePath": "config/rules/all-about-agents.md",
-      "sha256": "bf5ddc57dc1b42f72a7b629bc09dd92e349ee72dc44a8ba8cbf4223fe9926dcb",
+      "sha256": "50dc5e0d379598a6189f918e46a8e4471fb4afa181de2e9416b5c6395b78da1e",
       "mode": null
     },
     {
@@ -432,11 +432,11 @@
     },
     {
       "relativePath": "config/GEMINI.md",
-      "sha256": "a60f5f6f08182199e0bea227751aa36df0913b9eb9750c7544e42727c7f66649"
+      "sha256": "3fca635a036d054c2b9a1dd304ed1daf95228562a903c81f37e02c80c92db435"
     },
     {
       "relativePath": "config/rules/all-about-agents.md",
-      "sha256": "bf5ddc57dc1b42f72a7b629bc09dd92e349ee72dc44a8ba8cbf4223fe9926dcb"
+      "sha256": "50dc5e0d379598a6189f918e46a8e4471fb4afa181de2e9416b5c6395b78da1e"
     },
     {
       "relativePath": "docs/manual-desktop.md",

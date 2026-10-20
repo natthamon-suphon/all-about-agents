@@ -171,6 +171,48 @@ test("canonical global body carries the migration meaning without legacy conflic
   assert.equal(validateGlobalInstructionBody({ sourcePath, content }).valid, true);
 });
 
+test("shared global coding and communication policies reach every packaged file on Windows and macOS", async () => {
+  const { loadCore } = await import("../../installers/lib/load-core.mjs");
+  const { renderClaude } = await import("../../adapters/claude/adapter.mjs");
+  const { renderCodex } = await import("../../adapters/codex/adapter.mjs");
+  const { renderAntigravity } = await import("../../adapters/antigravity/adapter.mjs");
+  const core = await loadCore(repositoryRoot);
+  const contracts = [
+    ["optional external skill", /installed `karpathy-guidelines` skill when available/u],
+    ["material ambiguity", /resolve material ambiguity before editing/iu],
+    ["no speculative work", /(?:do not|never) add\s+speculative features/iu],
+    ["preserve adjacent code", /(?:do not|never) (?:clean up|change) unrelated code, comments, or formatting/iu],
+    ["remove only new orphans", /Remove only imports, variables, and functions\s+(?:that )?your changes made unused/iu],
+    ["observable goals", /Define observable success criteria before implementation/iu],
+    ["step checks", /pair each material step with a check/iu],
+    ["session language", /Use the language of the current session/iu],
+    ["ignore quoted language", /Infer it from the user's messages, not quoted text, code, or logs/iu],
+    ["English fallback", /Default to simple English at CEFR A1-A2 only when no session language is clear/iu],
+    ["minimal replies", /Use the shortest clear answer that preserves key facts/iu],
+    ["readable replies", /Do not sacrifice clarity for brevity/iu],
+    ["minimal code comments", /Prefer zero code comments/iu]
+  ];
+  for (const platform of ["win32", "darwin"]) {
+    for (const profile of ["portable", "template"]) {
+      const input = { core, platform, profile: { id: profile }, env: {}, homeDir: platform === "win32" ? "C:/Users/tester" : "/Users/tester" };
+      const packages = [
+        ["claude", renderClaude(input), "config/CLAUDE.md"],
+        ["codex", renderCodex(input), "AGENTS.md"],
+        ["antigravity-cli", renderAntigravity({ ...input, targetRuntime: "cli" }), "config/GEMINI.md"],
+        ["antigravity-desktop", renderAntigravity({ ...input, targetRuntime: "desktop" }), "config/GEMINI.md"]
+      ];
+      for (const [surface, result, path] of packages) {
+        const label = `${surface}/${profile}/${platform}`;
+        const file = result.files.find((entry) => entry.relativePath === path);
+        assert.ok(file, `${label} must publish ${path}`);
+        const body = new TextDecoder().decode(file.content);
+        for (const [name, pattern] of contracts) assert.ok(pattern.test(body), `${label} lacks ${name}`);
+        assert.equal(body.split(core.globalInstructions.content.trimEnd()).length - 1, 1, `${label} must carry one canonical body`);
+      }
+    }
+  }
+});
+
 test("loadCore rejects a missing canonical global instructions file", async () => {
   const root = await mkdtemp(join(tmpdir(), "aaa-t001-global-missing-"));
   try {

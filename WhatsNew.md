@@ -7,6 +7,16 @@ from there, and the Antigravity manifest names it in its description.
 
 ## [Unreleased]
 
+### Changed
+
+- Shared global instructions apply Karpathy's coding discipline while keeping
+  the external skill optional. Cleanup stays within the task and preserves
+  existing comments outside it.
+- Replies follow the session language automatically, use English CEFR A1-A2
+  only when no language is clear, and keep answers short without losing key
+  facts or clarity. Code comments are limited to necessary short explanations,
+  constraints, and required notices.
+
 ### Fixed
 
 - Antigravity registration requests JSON before parsing plugin discovery.
