@@ -53,9 +53,9 @@ test("legacy hook import is dry-run by default, repeatable, bounded and source-p
   });
 });
 
-test("legacy import accepts Windows volume serial widths but rejects a different device or inode", async () => {
+test("legacy import tolerates missing or inconsistent path volume serials", async () => {
   const { migrateHookState } = await import("../../scripts/migrate-hook-state.mjs");
-  for (const change of ["serial-width", "device", "inode"]) {
+  for (const serial of ["missing", "wide"]) {
     await withTempRoot(async (root) => {
       const packageRoot = join(root, "old package");
       const dataRoot = join(root, "data");
@@ -66,29 +66,65 @@ test("legacy import accepts Windows volume serial widths but rejects a different
       fs.promises.lstat = async function (path, ...args) {
         const info = await original.call(this, path, ...args);
         if (info.isFile() && String(path).startsWith(root)) {
-          const field = change === "inode" ? "ino" : "dev";
-          const value = BigInt(info[field]);
-          const changed = change === "serial-width"
-            ? (0x12345678n << 32n) | BigInt.asUintN(32, value)
-            : value ^ 1n;
-          info[field] = typeof info[field] === "bigint" ? changed : Number(changed);
+          const changed = serial === "missing" ? 0n : (0x12345678n << 32n) | BigInt.asUintN(32, BigInt(info.dev));
+          info.dev = typeof info.dev === "bigint" ? changed : Number(changed);
         }
         return info;
       };
       syncBuiltinESMExports();
       try {
         const input = { surface: "codex", packageRoot, env: { PLUGIN_DATA: dataRoot } };
-        if (change === "serial-width" && process.platform === "win32") {
-          assert.equal((await migrateHookState(input)).status, "dry-run");
-          const applied = await migrateHookState({ ...input, apply: true });
-          assert.equal(await readFile(applied.files[0].destination, "utf8"), "old history\n");
-          assert.equal((await migrateHookState({ ...input, apply: true })).files[0].changed, false);
-        } else {
-          await assert.rejects(() => migrateHookState({ ...input, apply: true }), /stable regular file without links/u, change);
-          await assert.rejects(access(dataRoot), { code: "ENOENT" });
-        }
+        assert.equal((await migrateHookState(input)).status, "dry-run");
+        const applied = await migrateHookState({ ...input, apply: true });
+        assert.equal(await readFile(applied.files[0].destination, "utf8"), "old history\n");
+        assert.equal((await migrateHookState({ ...input, apply: true })).files[0].changed, false);
       } finally {
         fs.promises.lstat = original;
+        syncBuiltinESMExports();
+      }
+      assert.equal(await readFile(source, "utf8"), "old history\n");
+    });
+  }
+});
+
+test("legacy import requires exact handle identities before and after reading", async () => {
+  const { migrateHookState } = await import("../../scripts/migrate-hook-state.mjs");
+  for (const change of ["none", "before-device", "before-wide-device", "before-inode", "after-device", "after-inode", "mtime"]) {
+    await withTempRoot(async (root) => {
+      const packageRoot = join(root, "old package");
+      const dataRoot = join(root, "data");
+      const source = join(packageRoot, "hooks", "audit", "activity-audit.log");
+      await mkdir(join(packageRoot, "hooks", "audit"), { recursive: true });
+      await writeFile(source, "old history\n");
+      const original = fs.promises.open;
+      let opened = 0;
+      fs.promises.open = async function (path, ...args) {
+        const handle = await original.call(this, path, ...args);
+        if (String(path) === source) {
+          const index = ++opened;
+          const stat = handle.stat.bind(handle);
+          let inspected = 0;
+          handle.stat = async (...options) => {
+            const info = await stat(...options);
+            info.ino = (1n << 60n) + 3n;
+            const stage = index === 2 ? "before" : index === 3 ? "after" : null;
+            if (stage && change === `${stage}-device`) info.dev ^= 1n;
+            if (stage && change === `${stage}-wide-device`) info.dev ^= 1n << 32n;
+            if (stage && change === `${stage}-inode`) info.ino += 1n;
+            if (++inspected === 2 && index === 1 && change === "mtime") info.mtimeNs += 1n;
+            return info;
+          };
+        }
+        return handle;
+      };
+      syncBuiltinESMExports();
+      try {
+        const input = { surface: "codex", packageRoot, env: { PLUGIN_DATA: dataRoot } };
+        if (change === "none") assert.equal((await migrateHookState(input)).status, "dry-run");
+        else await assert.rejects(() => migrateHookState(input), change.startsWith("before-") ? /stable regular file/u : /source changed during review/u, change);
+        await assert.rejects(access(dataRoot), { code: "ENOENT" });
+      } finally {
+        fs.promises.open = original;
         syncBuiltinESMExports();
       }
       assert.equal(await readFile(source, "utf8"), "old history\n");
