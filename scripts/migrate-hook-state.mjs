@@ -8,14 +8,22 @@ import { assertStatePath, resolveHookDataRoot } from "../core/hooks/state-path.m
 
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
+function sameFileIdentity(left, right) {
+  // Older Windows libuv mixes 64-bit path serials with 32-bit handle serials.
+  const sameDevice = process.platform === "win32"
+    ? BigInt.asUintN(32, left.dev) === BigInt.asUintN(32, right.dev)
+    : left.dev === right.dev;
+  return sameDevice && left.ino === right.ino;
+}
+
 async function readBoundedFile(path, maxBytes) {
   assertStatePath(path, { allowFile: true });
   const handle = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
   try {
-    const before = await handle.stat();
-    const named = await lstat(path);
-    if (!before.isFile() || before.nlink !== 1 || before.dev !== named.dev || before.ino !== named.ino) throw new Error("legacy import requires a stable regular file without links");
-    if (before.size > maxBytes) throw new Error("legacy import byte limit exceeded");
+    const before = await handle.stat({ bigint: true });
+    const named = await lstat(path, { bigint: true });
+    if (!before.isFile() || before.nlink !== 1n || !sameFileIdentity(before, named)) throw new Error("legacy import requires a stable regular file without links");
+    if (before.size > BigInt(maxBytes)) throw new Error("legacy import byte limit exceeded");
     const chunks = [];
     let total = 0;
     while (true) {
@@ -26,10 +34,10 @@ async function readBoundedFile(path, maxBytes) {
       if (total > maxBytes) throw new Error("legacy import byte limit exceeded");
       chunks.push(buffer.subarray(0, bytesRead));
     }
-    const after = await handle.stat();
+    const after = await handle.stat({ bigint: true });
     assertStatePath(path, { allowFile: true });
-    const current = await lstat(path);
-    if (after.size !== before.size || after.mtimeMs !== before.mtimeMs || after.nlink !== 1 || current.dev !== before.dev || current.ino !== before.ino) throw new Error("legacy source changed during review");
+    const current = await lstat(path, { bigint: true });
+    if (after.size !== before.size || after.mtimeNs !== before.mtimeNs || after.nlink !== 1n || !sameFileIdentity(current, before)) throw new Error("legacy source changed during review");
     return Buffer.concat(chunks, total);
   } finally { await handle.close(); }
 }

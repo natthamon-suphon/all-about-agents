@@ -18,6 +18,8 @@ from there, and the Antigravity manifest names it in its description.
 - Claude/Codex audit and checkpoint history uses native plugin data directories.
   Path guards reject symlinks and hardlinks; legacy imports are bounded,
   repeatable, dry-run by default and preserve source files.
+- Legacy history imports handle older Windows libuv volume-serial widths and
+  retain exact inode checks with BigInt, including on the minimum Node version.
 - Windows native execution resolves supported npm CLI entry points without
   evaluating command-shell wrappers.
 - Registration groups parent checks within synchronous scans and rechecks

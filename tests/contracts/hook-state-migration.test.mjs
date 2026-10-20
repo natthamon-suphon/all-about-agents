@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { access, link, mkdir, readFile, symlink, writeFile } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
 import test from "node:test";
 import { withTempRoot } from "../helpers/temp-root.mjs";
@@ -49,6 +51,49 @@ test("legacy hook import is dry-run by default, repeatable, bounded and source-p
     await assert.rejects(() => module.migrateHookState({ ...input, maxBytes: 1 }), /limit/u);
     assert.equal(await readFile(source, "utf8"), "old history\n");
   });
+});
+
+test("legacy import accepts Windows volume serial widths but rejects a different device or inode", async () => {
+  const { migrateHookState } = await import("../../scripts/migrate-hook-state.mjs");
+  for (const change of ["serial-width", "device", "inode"]) {
+    await withTempRoot(async (root) => {
+      const packageRoot = join(root, "old package");
+      const dataRoot = join(root, "data");
+      const source = join(packageRoot, "hooks", "audit", "activity-audit.log");
+      await mkdir(join(packageRoot, "hooks", "audit"), { recursive: true });
+      await writeFile(source, "old history\n");
+      const original = fs.promises.lstat;
+      fs.promises.lstat = async function (path, ...args) {
+        const info = await original.call(this, path, ...args);
+        if (info.isFile() && String(path).startsWith(root)) {
+          const field = change === "inode" ? "ino" : "dev";
+          const value = BigInt(info[field]);
+          const changed = change === "serial-width"
+            ? (0x12345678n << 32n) | BigInt.asUintN(32, value)
+            : value ^ 1n;
+          info[field] = typeof info[field] === "bigint" ? changed : Number(changed);
+        }
+        return info;
+      };
+      syncBuiltinESMExports();
+      try {
+        const input = { surface: "codex", packageRoot, env: { PLUGIN_DATA: dataRoot } };
+        if (change === "serial-width" && process.platform === "win32") {
+          assert.equal((await migrateHookState(input)).status, "dry-run");
+          const applied = await migrateHookState({ ...input, apply: true });
+          assert.equal(await readFile(applied.files[0].destination, "utf8"), "old history\n");
+          assert.equal((await migrateHookState({ ...input, apply: true })).files[0].changed, false);
+        } else {
+          await assert.rejects(() => migrateHookState({ ...input, apply: true }), /stable regular file without links/u, change);
+          await assert.rejects(access(dataRoot), { code: "ENOENT" });
+        }
+      } finally {
+        fs.promises.lstat = original;
+        syncBuiltinESMExports();
+      }
+      assert.equal(await readFile(source, "utf8"), "old history\n");
+    });
+  }
 });
 
 test("hook state refuses hardlinked checkpoint targets without modifying an unowned neighbor", async () => {
