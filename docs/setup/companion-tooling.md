@@ -9,6 +9,23 @@ The repository remains zero-dependency and needs Node.js 22.12 or newer.
 Optional companions can have other runtime requirements. An absent companion
 is `NOT_RUN_UNAVAILABLE` for its native check, not a repository test failure.
 
+## Global installation policy
+
+Install shared skills, agents, rules, hooks, and settings once per user and
+tool on each computer. Use that global installation across projects. Do not
+copy the shared setup into every repository or create project rules merely
+to activate a companion.
+
+The files in `core/`, `adapters/`, and `installers/` are package sources.
+Repository entrypoints and test fixtures describe development of this package;
+they do not require a separate companion installation in each project. Use
+the [global instruction deployment](../maintenance/global-instructions.md)
+and [setup runner](../maintenance/sync-and-update.md#one-command-setup).
+
+When a companion supports only project scope, use an existing supported
+global instruction carrier if it covers the behavior. Otherwise report that
+global integration as unavailable. Do not silently fall back to project setup.
+
 ## Responsibilities and routing
 
 | Tool | Role | Boundary |
@@ -155,6 +172,16 @@ A failing `gain` can mean another binary called `rtk` resolves first.
 `rtk rg` also requires ripgrep. Use `where.exe rtk` on Windows or `command -v rtk`
 on macOS to inspect resolution. Do not rewrite an RTK-owned instruction file
 from this repository.
+
+The shared global instructions already include RTK house rules for Claude,
+Codex, and Antigravity. No project-level
+`.agents/rules/antigravity-rtk-rules.md` is needed. On the reviewed Windows
+RTK 0.50.0 host, `rtk init --agent antigravity --global --dry-run` reports
+`Antigravity is project-scoped`. Do not run its suggested project-only init
+under this global policy. Antigravity receives the shared RTK rules through
+its global `GEMINI.md` after authorized registration. Without an observed
+working hook, those rules use manual command prefixes. This does not claim
+native hook rewriting, and the source file alone does not prove activation.
 
 ## Karpathy guidelines
 

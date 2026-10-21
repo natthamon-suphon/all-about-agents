@@ -5,6 +5,7 @@ import { access, chmod, link, mkdir, mkdtemp, readdir, readFile, rm, stat, symli
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import test from "node:test";
+import { makeTempRoot } from "../../helpers/temp-root.mjs";
 import { skipIfLinkUnavailable } from "../../helpers/symlink.mjs";
 
 const skillId = "subagent-driven-development";
@@ -746,7 +747,7 @@ test("the node scripts refuse a folder as PLAN_FILE and extra arguments", async 
 });
 
 test("every script restores a missing sdd/.gitignore and never overwrites an existing one", async () => {
-  const root = await mkdtemp(join(tmpdir(), "aaa-sdd-ignore-"));
+  const root = await makeTempRoot("aaa-sdd-ignore-");
   try {
     const plan = join(root, "plan.md");
     const gitignore = join(root, "sdd", "plan.md", ".gitignore");

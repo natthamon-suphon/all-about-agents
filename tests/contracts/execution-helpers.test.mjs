@@ -5,6 +5,7 @@ import { access, link, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, unl
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
+import { makeTempRoot } from "../helpers/temp-root.mjs";
 import { skipIfLinkUnavailable } from "../helpers/symlink.mjs";
 import { loadCore } from "../../installers/lib/load-core.mjs";
 import { renderClaude } from "../../adapters/claude/adapter.mjs";
@@ -18,7 +19,7 @@ const doneScript = resolve("core/skills/executing-plans/scripts/task-done.cjs");
 const run = (script, args, cwd) => spawnSync(process.execPath, [script, ...args], { cwd, encoding: "utf8", shell: false });
 
 async function fixture() {
-  const root = await mkdtemp(join(tmpdir(), "aaa-execution ทีม spaces-"));
+  const root = await makeTempRoot("aaa-execution ทีม spaces-");
   const plan = join(root, "plan ทีม with spaces.md");
   const git = (args) => {
     const result = spawnSync("git", args, { cwd: root, encoding: "utf8", shell: false });
