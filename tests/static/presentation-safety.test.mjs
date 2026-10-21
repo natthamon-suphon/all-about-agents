@@ -10,6 +10,7 @@ import { SURFACES, SURFACE_ROOT_ENV } from "../../adapters/shared/surfaces.mjs";
 
 const DISPOSABLE_ROOT_ENV = Object.fromEntries(SURFACES.map((surface) => [SURFACE_ROOT_ENV[surface], `C:/disposable/${surface}`]));
 const PROFILES = ["portable", "template"];
+const CLAUDE_ICON = await readFile(new URL("../../adapters/claude/templates/icon.png", import.meta.url));
 const EMOJI = /\p{Extended_Pictographic}/u;
 const RAW_ESCAPE = /\u001B|\x1B/u;
 const PRIVATE_HOME = /(?:^|[\\/])Users[\\/](?!tester(?:[\\/]|$)|test-user(?:[\\/]|$)|disposable(?:[\\/]|$))[^\\/]+|(?:^|[\\/])home[\\/](?!user(?:[\\/]|$))[^\\/]+/iu;
@@ -161,6 +162,10 @@ function assertSafePackage({ surface, profile, result, core }) {
     portablePath(`${surface}/${profile} file`, file.relativePath);
     assert.equal(BACKUP_SUFFIX.test(file.relativePath), false, `${surface}/${profile} must not render backup file: ${file.relativePath}`);
     assert.equal(PRIVATE_HOME.test(file.relativePath), false, `${surface}/${profile} path leaks a private home: ${file.relativePath}`);
+    if (surface === "claude" && file.relativePath === ".claude-plugin/icon.png") {
+      assert.equal(Buffer.compare(file.content, CLAUDE_ICON), 0, "binary listing asset must match the approved icon bytes");
+      continue;
+    }
     const body = new TextDecoder("utf-8", { fatal: true }).decode(file.content);
     if (isOpaqueCompanion(surface, file.relativePath, core)) continue;
     parseFrontmatter(file.relativePath, body);
@@ -232,6 +237,17 @@ test("the safety scan rejects machine-id emoji and forbidden package content", a
   assert.throws(() => assertNoBackupPath("fixture", { fileCount: 1 }), /no paths/u);
   assert.throws(() => assertNoBackupPath("fixture", { fileCount: 1, paths: ["GEMINI.md"], registrations: [{ actions: [{ destination: "GEMINI.md.bak" }] }] }), /backup artifact: GEMINI\.md\.bak/u);
   assert.throws(() => assertNoBackupPath("fixture", { fileCount: 1, paths: ["CLAUDE.md"], registration: { relativePath: "CLAUDE.md.backup" } }), /backup artifact/u);
+});
+
+test("the safety scan rejects text disguised as the binary listing icon", () => {
+  const relativePath = ".claude-plugin/icon.png";
+  const content = new TextEncoder().encode("not a PNG\n");
+  const result = {
+    files: [{ relativePath, content }],
+    ownership: [{ relativePath, sha256: createHash("sha256").update(content).digest("hex") }],
+    registrations: []
+  };
+  assert.throws(() => assertSafePackage({ surface: "claude", profile: "portable", result, core: {} }), /approved icon bytes/u);
 });
 
 test("manifest and package snapshots contain no private home path or backup artifact", async () => {

@@ -22,6 +22,21 @@ history. New work must use `core/`, `profiles/`, `adapters/`, and
 `installers/`. The Claude adapter renders its plugin manifest and local
 marketplace together inside the generated package.
 
+## Skills, agents, and routing
+
+The [skills and agents guide](docs/reference/skills-and-agents.md) explains all
+31 skills and seven agent roles in easy English: when to use them, when not
+to use them, inputs, outputs, examples, and authority limits.
+
+Short routes are generated from the actual skill descriptions and agent
+dispatch criteria. Global `CLAUDE.md` includes these rules. Codex's `AGENTS.md`
+links to its full routing reference to leave room for user and project text.
+Antigravity links from `GEMINI.md` to its always-on rule file. Each route links
+to its own guide section. The guide ships with every package and is copied
+beside global instructions only during authorized registration. It is read on
+demand, not loaded as another always-on rule or bootstrap hook. See
+[global instructions](docs/maintenance/global-instructions.md#skill-and-agent-routing-rules).
+
 ## Requirements
 
 - Node.js **22.12.0 or newer** (`node --version`).

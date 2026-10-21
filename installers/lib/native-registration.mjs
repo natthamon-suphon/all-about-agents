@@ -13,7 +13,7 @@ import { hashBytes } from "./hash.mjs";
 import { parseManagedState, STATE_RELATIVE_PATH } from "./state.mjs";
 import { runProcess as defaultRunProcess } from "../../scripts/lib/process-runner.mjs";
 import { SURFACES, SURFACE_SET as SUPPORTED_SURFACE_SET } from "../../adapters/shared/surfaces.mjs";
-import { MANAGED_BLOCK_BEGIN_PREFIX, MANAGED_BLOCK_END_PREFIX } from "../../adapters/shared/global-instructions.mjs";
+import { MANAGED_BLOCK_BEGIN_PREFIX, MANAGED_BLOCK_END_PREFIX, SKILL_AGENT_GUIDE_PATH, SKILL_AGENT_ROUTING_PATH } from "../../adapters/shared/global-instructions.mjs";
 
 export const REGISTRATION_SURFACES = SURFACES;
 const SURFACE_SET = SUPPORTED_SURFACE_SET;
@@ -93,10 +93,10 @@ function requiredPackageFiles(surface) {
 const ANTIGRAVITY_RULES_FILE = "config/rules/all-about-agents.md";
 
 function requiredRegistrationSourceFiles(surface, profile) {
-  const markers = requiredPackageFiles(surface);
+  const markers = [...requiredPackageFiles(surface), SKILL_AGENT_GUIDE_PATH];
   if (surface === "claude") return [...markers, "config/CLAUDE.md", "settings.json", "all-about-agents/statusline.json", "statusline/statusline.mjs", "statusline/track-tool.mjs", "statusline/statusline.ps1", "statusline/statusline.sh", `${CLAUDE_RULES_FOLDER}/presentation.md`];
   if (surface === "antigravity") return [...markers, "config/GEMINI.md", ANTIGRAVITY_RULES_FILE, ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.md`)];
-  if (surface === "codex") return [...markers, "AGENTS.md", "config.toml", ...(profile === "template" ? ["terra-max.config.toml"] : []), ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.toml`)];
+  if (surface === "codex") return [...markers, SKILL_AGENT_ROUTING_PATH, "AGENTS.md", "config.toml", ...(profile === "template" ? ["terra-max.config.toml"] : []), ...["architect", "implementer", "investigator", "researcher", "reviewer", "security-reviewer", "verifier"].map((role) => `agents/${role}.toml`)];
   return markers;
 }
 
@@ -322,6 +322,8 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     expectedSourceHash: managedPackage.ownership.get(`${managedPackage.ownershipPrefix}${sourceRelativePath}`)
   });
 
+  actions.push(deployFile("routing-guide-deploy", SKILL_AGENT_GUIDE_PATH, SKILL_AGENT_GUIDE_PATH, {}, instruction));
+
   if (surface === "claude") {
     actions.push(deployFile("claude-instructions-deploy", "config/CLAUDE.md", "CLAUDE.md", { guard: "managed-block" }));
     actions.push({ id: "claude-settings-deploy", kind: "settings-overlay", targetPath: join(product, "settings.json"), overlayPath: join(pkg, "settings.json"), expectedOverlayHash: managedPackage.ownership.get(`${managedPackage.ownershipPrefix}settings.json`), allowedRoot: product, transform: "claude-statusline-product-root", mutates: true, required: true, expectedProbe: "settings-merge", automaticWrite: true });
@@ -350,6 +352,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
     actions.push({ id: "claude-plugin-cache-check", kind: "plugin-cache-check", probe: "claude-plugin-list", mutates: false, required: true, expectedProbe: "installed-copy-matches-package" });
     actions.push(manualAction("claude-reload", "Restart Claude Code or reload the plugin before checking native behavior."));
   } else if (surface === "codex") {
+    actions.push(deployFile("codex-routing-rules-deploy", SKILL_AGENT_ROUTING_PATH, SKILL_AGENT_ROUTING_PATH, {}, instruction));
     actions.push(deployFile("codex-instructions-deploy", "AGENTS.md", "AGENTS.md", { guard: "managed-block" }));
     actions.push(deployFile("codex-config-deploy", "config.toml", "config.toml", { guard: "no-clobber", match: "toml-tables" }));
     if (profile === "template") actions.push(deployFile("codex-terra-profile-deploy", "terra-max.config.toml", "terra-max.config.toml"));

@@ -8,7 +8,6 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const MAX_CONFIG_BYTES = 8_192;
-const MAX_LOG_BYTES = 8_192;
 const MAX_STDIN_BYTES = 64 * 1024;
 const MAX_DISPLAY_CODE_POINTS = 64;
 const MAX_FIELD_CODE_POINTS = 256;
@@ -119,19 +118,6 @@ export async function withStatuslineLog(logRoot, name, mode, operation) {
   } finally {
     await handle?.close().catch(() => undefined);
     await directoryHandle?.close().catch(() => undefined);
-  }
-}
-
-async function readBoundedText(logRoot, name, maxBytes) {
-  try {
-    return await withStatuslineLog(logRoot, name, "read", async (handle) => {
-      const buffer = Buffer.alloc(maxBytes + 1);
-      const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
-      if (bytesRead > maxBytes) return null;
-      return buffer.subarray(0, bytesRead).toString("utf8");
-    });
-  } catch {
-    return null;
   }
 }
 
@@ -291,31 +277,24 @@ function usageLine(icon, label, labelStyle, percent, resetIn) {
   return `${icon} ${paint(labelStyle, label)} ${meter}${resetIn ? paint(STYLE.muted, resetIn) : ""}`;
 }
 
-/** Best-effort git dirty check: absent git, non-repo paths, and slow calls all fail open to null (indicator omitted). */
-function gitDirty(cwd) {
-  if (typeof cwd !== "string" || !cwd.trim()) return null;
+/** Read branch and dirty state together; unavailable Git state omits the indicator. */
+function gitState(cwd) {
+  if (typeof cwd !== "string" || !isAbsolute(cwd) || /[\u0000-\u001f\u007f]/u.test(cwd)) return null;
   try {
-    const output = execFileSync("git", ["-C", cwd, "status", "--porcelain"], {
+    const output = execFileSync("git", ["--no-optional-locks", "-C", cwd, "status", "--porcelain=v2", "--branch"], {
       encoding: "utf8",
-      timeout: 200,
+      timeout: 500,
+      windowsHide: true,
       stdio: ["ignore", "pipe", "ignore"]
     });
-    return output.trim().length > 0;
+    const lines = output.split("\n");
+    const head = lines.find((line) => line.startsWith("# branch.head "))?.slice(14);
+    const oid = lines.find((line) => line.startsWith("# branch.oid "))?.slice(13);
+    const branch = head === "(detached)" ? `HEAD${oid ? ` (${oid.slice(0, 7)})` : ""}` : head;
+    return { branch, dirty: lines.some((line) => line && !line.startsWith("# ")) };
   } catch {
     return null;
   }
-}
-
-async function readLogValues(logRoot, sessionId, kind) {
-  const key = safeStatuslineLogKey(sessionId);
-  const text = await readBoundedText(logRoot, `${key}-${kind}.log`, MAX_LOG_BYTES);
-  if (!text) return "";
-  const values = [];
-  for (const raw of text.split(/\r?\n/gu)) {
-    const value = boundedField(raw, "");
-    if (value && !values.includes(value)) values.push(value);
-  }
-  return values.join(", ");
 }
 
 function emptyRender() {
@@ -329,15 +308,15 @@ export async function renderStatusline(data = {}, options = {}) {
     const configRoot = typeof options.configRoot === "string" && options.configRoot.trim()
       ? options.configRoot
       : (process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude"));
-    const logRoot = typeof options.logRoot === "string" && options.logRoot.trim()
-      ? options.logRoot
-      : join(tmpdir(), "claude-statusline");
     const { displayName } = readStatuslineConfig(configRoot);
     const repo = repoName(payload.workspace?.project_dir);
-    const branch = boundedField(payload.worktree?.branch, "N/A");
+    const cwd = [payload.workspace?.current_dir, payload.cwd, payload.workspace?.project_dir]
+      .find((value) => typeof value === "string" && isAbsolute(value) && !/[\u0000-\u001f\u007f]/u.test(value));
+    const git = gitState(cwd);
+    const branch = boundedField(git?.branch || payload.worktree?.branch, "N/A");
     const model = boundedField(payload.model?.display_name, "unknown");
     const effort = boundedField(payload.effort?.level, "");
-    const dirty = gitDirty(typeof payload.workspace?.current_dir === "string" ? payload.workspace.current_dir : "");
+    const dirty = git?.dirty;
     const contextPct = clampPercent(payload.context_window?.used_percentage);
     const inputTokens = formatTokens(payload.context_window?.total_input_tokens);
     const totalTokens = formatTokens(payload.context_window?.context_window_size);
@@ -345,12 +324,6 @@ export async function renderStatusline(data = {}, options = {}) {
     const rate7d = clampPercent(payload.rate_limits?.seven_day?.used_percentage);
     const reset5h = formatResetIn(payload.rate_limits?.five_hour?.resets_at);
     const reset7d = formatResetIn(payload.rate_limits?.seven_day?.resets_at);
-    const sessionId = typeof payload.session_id === "string" && payload.session_id ? payload.session_id : "default";
-    const [agents, skills] = await Promise.all([
-      readLogValues(logRoot, sessionId, "agents"),
-      readLogValues(logRoot, sessionId, "skills")
-    ]);
-
     const identity = [
       `🤖 ${paint(STYLE.model, model)}`,
       effort ? `🎚 ${paint(STYLE.effort, effort)}` : "",
@@ -361,8 +334,7 @@ export async function renderStatusline(data = {}, options = {}) {
     const line1 = identity.join(paint(STYLE.muted, "  ·  "));
     const line2 = usageLine("🔥", "5h", STYLE.window, rate5h, reset5h);
     const line3 = usageLine("🌙", "7d", STYLE.weekly, rate7d, reset7d);
-    const extras = [agents ? `🤖 ${agents}` : "", skills ? `⚡ ${skills}` : "", displayName || ""].filter(Boolean);
-    const line4 = extras.length ? paint(STYLE.extras, extras.join(" · ")) : ".";
+    const line4 = displayName ? paint(STYLE.extras, displayName) : ".";
     return `${line1}\n${line2}\n${line3}\n${line4}`;
   } catch {
     return emptyRender();

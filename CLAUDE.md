@@ -4,6 +4,13 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) and the relevant guide under `docs/`
 before work. Inspect the real files, tests, schemas, and current Git state.
 Use the [cross-tool quality guide](docs/maintenance/cross-tool-quality.md).
 
+## Skill and agent routing
+
+Use the [skills and agents guide](docs/reference/skills-and-agents.md) to find
+the matching route. Check installed descriptions and each skill's trigger.
+Read only the relevant guide section, then the actual skill or role instructions.
+Preserve existing decisions. Delegate only when useful, authorized, and available.
+
 For a skill change, use `all-about-agents:writing-skills` and its behavior-test
 workflow. Run the focused check, then:
 

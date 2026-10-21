@@ -13,7 +13,7 @@ import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, hasScopedMutation, nativeScopeDiagnostics, isRoleReadOnly } from "../../core/roles/contract.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
-import { renderCodexGlobalInstructions } from "../shared/global-instructions.mjs";
+import { renderCodexGlobalInstructions, renderSkillAgentRoutingRules, SKILL_AGENT_GUIDE, SKILL_AGENT_GUIDE_PATH, SKILL_AGENT_ROUTING_PATH } from "../shared/global-instructions.mjs";
 
 const CODEX_SURFACE = "codex";
 const LICENSE_SOURCE = readFileSync(new URL("../../LICENSE", import.meta.url));
@@ -365,6 +365,7 @@ function desktopInstructions(profile) {
     "",
     ...modelLines,
     "Permission deny rules are manual Desktop controls; registration, active state, and runtime evidence remain manual and are not claimed by this render.",
+    "Global AGENTS.md links to all-about-agents/skill-agent-routing.md; registration deploys that reference and all-about-agents/skills-and-agents.md beside the global file. Keep both files when performing an authorized manual setup.",
     ""
   ].join("\n"));
 }
@@ -436,6 +437,7 @@ function capabilityGuidance(profile) {
     "",
     "- `CODEX_HOME` selects the shared Codex CLI/Desktop configuration root; the fallback is the user's `.codex` directory.",
     "- `AGENTS.md` is rendered as a regular instruction file for the canonical rules and presentation catalog.",
+    "- `AGENTS.md` links to `all-about-agents/skill-agent-routing.md`; each short route links to the neighboring `skills-and-agents.md` guide. Registration copies both references beneath the instruction root, outside always-loaded instructions.",
     "- Skills are packaged under `skills/<skill>/SKILL.md` for plugin discovery and mirrored under `.agents/skills/<skill>/SKILL.md` for direct/global installation; missing canonical sources remain marked `DEFERRED`.",
     "- Custom roles are standalone custom-agent TOML files under `.codex/agents/<role>.toml`.",
     "- Each canonical `[agents.<role>]` registration points `config_file` at the delivered `agents/<role>.toml` role layer. The template inherits parent permissions without local sandbox overrides. Portable role layers retain their controlled sandbox declarations, whose native enforcement depends on the client. Relative `config_file` paths resolve from the declaring `config.toml`.",
@@ -524,6 +526,8 @@ try {
 } catch { /* durable checkpoint is fail-open */ }
 `, 0o755);
   addFile(files, "AGENTS.md", renderAgentsDocument(core));
+  addFile(files, SKILL_AGENT_GUIDE_PATH, SKILL_AGENT_GUIDE);
+  addFile(files, SKILL_AGENT_ROUTING_PATH, renderSkillAgentRoutingRules(core, "skills-and-agents.md"));
   addFile(files, "docs/manual-desktop.md", desktopInstructions(semanticProfile));
   const skillRecords = new Map(core.skills.map((record) => [record.id || record.name, record]));
   const missingSkills = [];

@@ -18,7 +18,9 @@ template-only `fable-advisor-availability` warning.
 
 The generated package is a self-contained `all-about-agents` local
 marketplace. From its root, add the marketplace before installing the named
-plugin; neither step is automatic. Hooks use exec-form `node` commands from
+plugin; neither step is automatic. Both profiles include `icon.png` as
+`.claude-plugin/icon.png` for directory validation. Keep its PNG bytes unchanged
+when rendering; it is not a text template. Hooks use exec-form `node` commands from
 `${CLAUDE_PLUGIN_ROOT}`. The statusline command runs the `statusline.sh` or
 `statusline.ps1` launcher under the config root, which finds `node` on `PATH`
 and starts `statusline.mjs`. The manifest preflight rejects hosts without

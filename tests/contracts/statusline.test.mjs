@@ -54,6 +54,54 @@ test("clampPercent handles negative, over-100, decimal, numeric-string, and non-
   assert.deepEqual(fixtureCases.percentages.map(clampPercent), [0, 0, 43, 100, 100, 0]);
 });
 
+test("statusline shows the current Git branch without a worktree-session payload", async () => {
+  await withTempRoot(async (root) => {
+    const git = (...args) => {
+      const result = spawnSync("git", ["-C", root, ...args], { encoding: "utf8", windowsHide: true });
+      assert.equal(result.status, 0, result.stderr);
+      return result.stdout.trim();
+    };
+    git("init", "--initial-branch=main");
+    const nested = join(root, "workspace ไทย with spaces");
+    await mkdir(nested);
+    const options = { configRoot: root, logRoot: join(root, "logs") };
+    for (const location of [
+      { workspace: { current_dir: nested, project_dir: "unused" } },
+      { cwd: nested },
+      { workspace: { project_dir: nested } }
+    ]) {
+      const line = sanitizeTerminalText((await renderStatusline(location, options)).split("\n")[0]);
+      assert.match(line, /🌳 main ✓/u, "an empty repository still has a named, clean branch");
+    }
+    await writeFile(join(root, "file.txt"), "tracked\n");
+    const payload = { workspace: { current_dir: nested }, worktree: { branch: "stale-session-branch" } };
+    assert.match(sanitizeTerminalText(await renderStatusline(payload, options)), /🌳 main ✗/u);
+    git("add", "file.txt");
+    git("-c", "user.name=Statusline Test", "-c", "user.email=statusline@example.test", "-c", "commit.gpgsign=false", "-c", "core.hooksPath=", "commit", "--no-verify", "-m", "fixture");
+    git("checkout", "-b", "feature/statusline-ไทย");
+    assert.match(sanitizeTerminalText(await renderStatusline(payload, options)), /🌳 feature\/statusline-ไทย ✓/u);
+    git("checkout", "--detach");
+    const detached = sanitizeTerminalText(await renderStatusline(payload, options));
+    assert.ok(detached.includes(`🌳 HEAD (${git("rev-parse", "--short=7", "HEAD")}) ✓`));
+  });
+});
+
+test("statusline omits Git state outside a repository and preserves worktree metadata when Git is unavailable", async () => {
+  await withTempRoot(async (root) => {
+    const options = { configRoot: root, logRoot: join(root, "logs") };
+    const outside = sanitizeTerminalText(await renderStatusline({ workspace: { current_dir: root } }, options));
+    assert.match(outside, /🌳 N\/A\s+·/u);
+    assert.doesNotMatch(outside, /[✓✗]/u);
+    const result = spawnSync(process.execPath, [join(TEMPLATE_ROOT, "statusline.mjs")], {
+      input: JSON.stringify({ workspace: { current_dir: root }, worktree: { branch: "session-branch" } }),
+      encoding: "utf8", env: disposableEnv(root, { PATH: "" }), timeout: 10_000, windowsHide: true
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(sanitizeTerminalText(result.stdout), /🌳 session-branch\s+·/u);
+    assert.doesNotMatch(result.stdout, /[✓✗]/u);
+  });
+});
+
 test("readStatuslineConfig is JSON-only, bounded, and fail-open", async () => {
   const writeConfig = async (root, text) => {
     await mkdir(join(root, "all-about-agents"), { recursive: true });
@@ -269,7 +317,7 @@ test("tracker fails open for non-file targets and invalid parent paths", async (
   });
 });
 
-test("tracker and renderer accept only the known system-temp alias before validating custom log descendants", async (t) => {
+test("tracker accepts only the known system-temp alias while the renderer omits tracked labels", async (t) => {
   await withTempRoot(async (root) => {
     const actualTemp = join(root, "temp");
     const tempAlias = join(root, "temp-alias");
@@ -292,7 +340,7 @@ process.stdout.write(await renderStatusline(payload, { configRoot: ${JSON.string
       const env = disposableEnv(root, { TMPDIR: tempAlias, TMP: tempAlias, TEMP: tempAlias });
       const result = spawnSync(process.execPath, [script], { encoding: "utf8", env, timeout: 10_000 });
       assert.equal(result.status, 0, result.stderr);
-      assert.equal(sanitizeTerminalText(result.stdout.split("\n")[3]), "⚡ brainstorming");
+      assert.equal(sanitizeTerminalText(result.stdout.split("\n")[3]), ".");
       assert.equal(await readFile(join(actualTemp, "custom-logs", SAFETY_LOG), "utf8"), "brainstorming\n");
       const tracked = spawnSync(process.execPath, [join(TEMPLATE_ROOT, "track-tool.mjs")], {
         input: JSON.stringify(SAFETY_PAYLOAD), encoding: "utf8", env, timeout: 10_000
@@ -302,7 +350,7 @@ process.stdout.write(await renderStatusline(payload, { configRoot: ${JSON.string
         input: JSON.stringify(SAFETY_PAYLOAD), encoding: "utf8", env, timeout: 10_000
       });
       assert.equal(rendered.status, 0, rendered.stderr);
-      assert.equal(sanitizeTerminalText(rendered.stdout.split("\n")[3]), "⚡ brainstorming");
+      assert.equal(sanitizeTerminalText(rendered.stdout.split("\n")[3]), ".");
       const outside = join(root, "neighbor");
       const nestedLink = join(actualTemp, "redirected");
       await mkdir(outside);
@@ -371,15 +419,37 @@ test("renderer ignores a redirected log root and leaves it unchanged", async (t)
   });
 });
 
-test("renderer reads regular log labels only within the byte bound", async () => {
+test("renderer omits tracked skills and agents while preserving the configured name and session fields", async () => {
   await withTempRoot(async (root) => {
     const logs = join(root, "logs");
     const target = join(logs, SAFETY_LOG);
     await mkdir(logs);
     await writeFile(target, "brainstorming\nbrainstorming\nreview\n");
-    const output = await renderStatusline(SAFETY_PAYLOAD, { configRoot: root, logRoot: logs });
-    assert.equal(sanitizeTerminalText(output.split("\n")[3]), "⚡ brainstorming, review");
+    await writeFile(join(logs, `${safeStatuslineLogKey(SAFETY_PAYLOAD.session_id)}-agents.log`), "investigator\n");
+    await mkdir(join(root, "all-about-agents"));
+    const payload = {
+      ...SAFETY_PAYLOAD,
+      model: { display_name: "Synthetic Model" },
+      effort: { level: "xhigh" },
+      workspace: { project_dir: "sample" },
+      worktree: { branch: "feature/display" },
+      context_window: { total_input_tokens: 1_000, context_window_size: 10_000, used_percentage: 25 },
+      rate_limits: { five_hour: { used_percentage: 12 }, seven_day: { used_percentage: 34 } }
+    };
+    for (const displayName of ["", "Operator"]) {
+      await writeFile(join(root, "all-about-agents", "statusline.json"), JSON.stringify({ schemaVersion: 1, displayName }));
+      const output = await renderStatusline(payload, { configRoot: root, logRoot: logs });
+      const lines = output.split("\n").map(sanitizeTerminalText);
+      assert.equal(lines.length, 4);
+      assert.equal(lines[0], "🤖 Synthetic Model  ·  🎚 xhigh  ·  📂 sample  ·  🌳 feature/display  ·  🚀 1k/10k 25%");
+      assert.match(lines[1], /^🔥 5h .* 12%$/u);
+      assert.match(lines[2], /^🌙 7d .* 34%$/u);
+      assert.equal(lines[3], displayName || ".");
+      assert.doesNotMatch(output, /brainstorming|review|investigator/u);
+    }
+    assert.equal(await readFile(target, "utf8"), "brainstorming\nbrainstorming\nreview\n");
     await writeFile(target, "x".repeat(8_193));
+    await writeFile(join(root, "all-about-agents", "statusline.json"), JSON.stringify({ schemaVersion: 1, displayName: "" }));
     assert.equal((await renderStatusline(SAFETY_PAYLOAD, { configRoot: root, logRoot: logs })).split("\n")[3], ".");
   });
 });
@@ -547,7 +617,7 @@ test("Claude production render owns cross-platform statusline launchers", async 
   assert.equal(JSON.parse(files.get("config/statusline.json")).displayName, "ทีม Claude");
 });
 
-test("a statusline deployed apart from the plugin shows the plugin tracker's agents and skills", async () => {
+test("a statusline deployed apart from the plugin omits the plugin tracker's agents and skills", async () => {
   const core = await loadCore(process.cwd());
   const result = renderClaude({ core, profile: "portable", statuslineName: "", ...PINNED_RENDER });
   await withTempRoot(async (root) => {
@@ -566,7 +636,8 @@ test("a statusline deployed apart from the plugin shows the plugin tracker's age
     const rendered = spawnSync(process.execPath, [join(configRoot, "statusline", "statusline.mjs")], { input: JSON.stringify({ session_id: "deployed-session" }), encoding: "utf8", env });
     assert.equal(rendered.status, 0, rendered.stderr);
     const line4 = rendered.stdout.split("\n")[3].replace(/\u001b\[[0-9;]+m/gu, "");
-    assert.equal(line4, "🤖 reviewer · ⚡ brainstorming");
+    assert.equal(line4, ".");
+    assert.doesNotMatch(rendered.stdout, /reviewer|brainstorming/u);
   });
 });
 

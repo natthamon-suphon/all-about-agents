@@ -1,6 +1,7 @@
 {
-  "fileCount": 117,
+  "fileCount": 119,
   "paths": [
+    ".claude-plugin/icon.png",
     ".claude-plugin/marketplace.json",
     ".claude-plugin/plugin.json",
     "LICENSE",
@@ -11,6 +12,7 @@
     "agents/reviewer.md",
     "agents/security-reviewer.md",
     "agents/verifier.md",
+    "all-about-agents/skills-and-agents.md",
     "config/CLAUDE.md",
     "config/settings.json",
     "config/statusline.json",
@@ -146,6 +148,7 @@
     "hooks/hooks.json": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/activity-audit.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          },\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/statusline/track-tool.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreCompact\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--skill-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md\",\n              \"--config-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \"startup|clear|compact\"\n      }\n    ]\n  }\n}\n"
   },
   "ownershipHashes": {
+    ".claude-plugin/icon.png": "906177762fe11528e11b954393cfe6107d0c73981103d5a72b5c455b44c0dcf6",
     ".claude-plugin/marketplace.json": "289cb48b373db30ceb0c9f797d133e6b7d8e2032ad6ceaa537ca7416d5db7a35",
     ".claude-plugin/plugin.json": "bbc94b9a2912979f3121cf8397b45d9d16d0fd3505598cfcefac63e1639a7de0",
     "LICENSE": "d03652b98c7251626556ae8e3b369af34c6ec0bdceba4ac04a8c344221185e23",
@@ -156,7 +159,8 @@
     "agents/reviewer.md": "3df35ac1fa43ddd74e6b58bf22a5f2e29d1efc01a79cda0896b44375ca1d6969",
     "agents/security-reviewer.md": "70d1902ae2e198ce92e85de58041b809bf0c07b98adcdd157c754a39c6e0a7a9",
     "agents/verifier.md": "6d0177aa46cee131cdaa850f273ce323d142fa649762105506678546d5060ecf",
-    "config/CLAUDE.md": "3f60d6655bb53d021f8cd17142db57fba030592471728aa7ebb60505ee6b227a",
+    "all-about-agents/skills-and-agents.md": "fcc3de591bfa32483d45c8a96dcc178eeb65d1a2276dfa299042c2a657b3ec71",
+    "config/CLAUDE.md": "b6de64a1e05cb3ef1f844bce8e18c5b6919798ac4e0887839ef3258474b6c82b",
     "config/settings.json": "116098166bb4da6ff08685c89e889a64c09fd25604ebc38cabdc455b6d537d98",
     "config/statusline.json": "93d4c71fbddf648936df1a555d1919fe9bff5a1e1d278b0dd0acf4fabf6d61ea",
     "docs/semantic-mappings.md": "b945ad5a550cb549235e2b0ea04263a0f34ce462193b23f9e15fe8469df6f69b",
@@ -259,7 +263,7 @@
     "skills/writing-skills/testing-skills-with-subagents.md": "af769ed473569b0df45acd3951f61ad1fdf2b986381c161f18c4d1d5bd9a0571",
     "skills/zero-downtime-migrations/SKILL.md": "10dc9da575550d356b8811fe74fb6b328c3cc6823d730125e4aec2df591e78cf",
     "skills/zero-downtime-migrations/postgres-expand-contract-examples.md": "99242465fcf2058cadc9d89d1c5b86ecd9b50f34a66289f94ab96c1c4e354aab",
-    "statusline/statusline.mjs": "e06167947ebf2d038914627cee7b14ec8f6b7bbf81a26e157c6b45ffb57be061",
+    "statusline/statusline.mjs": "c3a5b39ee4d2194acb3692865f79cef665fca5156c87447884d546deb6bd8332",
     "statusline/statusline.ps1": "0f1a063d6a715f550dccfc78f605cbe971ca3eab0b91e4088300964ad5601d94",
     "statusline/statusline.sh": "c0fbfc6fa4e8c4bb943099373b05963010b1e45064887d795aac4c65f4c004f9",
     "statusline/track-tool.mjs": "112d255143361abea22efebdf6d1dff00abb182902b1ec8803f418524e2712c2"

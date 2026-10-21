@@ -36,6 +36,8 @@
     ]
   },
   "components": {
+    "routingGuide": "all-about-agents/skills-and-agents.md",
+    "routingRules": "all-about-agents/skill-agent-routing.md",
     "pluginManifest": ".codex-plugin/plugin.json",
     "marketplace": ".agents/plugins/marketplace.json",
     "instructions": "AGENTS.md",
@@ -135,6 +137,8 @@
     "AGENTS.md",
     "LICENSE",
     "agents/{role}.toml",
+    "all-about-agents/skill-agent-routing.md",
+    "all-about-agents/skills-and-agents.md",
     "config.toml",
     "docs/manual-desktop.md",
     "hooks/**",
@@ -150,7 +154,7 @@
     "progressContract": "core/presentation/progress-contract.json",
     "renderedIn": "AGENTS.md and native skill/role prompts"
   },
-  "rootInstructionContext": "AGENTS.md is emitted with the canonical global body first, followed by Codex rules, presentation labels, and the checklist contract; project AGENTS.md remains the more specific layer",
+  "rootInstructionContext": "AGENTS.md includes the canonical global body, Codex rules, a compact skill/agent routing entry, and presentation contract; the full routing index and detailed guide deploy beneath CODEX_HOME/all-about-agents/; project AGENTS.md remains the more specific layer",
   "nativeValidation": {
     "command": [
       "codex",

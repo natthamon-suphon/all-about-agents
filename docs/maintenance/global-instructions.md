@@ -103,7 +103,8 @@ content as files instead:
 ([memory docs](https://code.claude.com/docs/en/memory.md), checked 2026-09-27).
 
 `renderSharedGlobalInstructions` returns the shared body alone. The Claude
-renderer wraps that body in the marked block and adds nothing. The Codex and
+renderer wraps that body and the short skill/agent routes in the marked block.
+The Codex and
 Antigravity renderers build on the same function and add only their own
 sections below it. A contract test in
 `tests/contracts/claude-adapter.test.mjs` holds that every surface carries the
@@ -115,6 +116,56 @@ contract from the `SessionStart` bootstrap hook. Antigravity keeps the global
 instruction file as its single carrier even though Google now documents
 `SessionStart`. Windows Codex 0.152.1 failed plugin command hooks; the inlined
 contract preserves routing there. Check newer versions separately.
+
+## Skill and agent routing rules
+
+The [skills and agents guide](../reference/skills-and-agents.md) explains all
+bundled skills and roles. Short routing rows are generated from loaded skill
+descriptions and role `dispatchCriteria`. Do not edit another trigger catalog
+or copy those rows into the shared global source. Update a skill or role at
+its canonical source and review the matching guide section in the same change.
+
+| Tool | Short routing rules | Detailed guide after authorized registration |
+| --- | --- | --- |
+| Claude Code | Inside the managed global `CLAUDE.md` block | `<CLAUDE_CONFIG_DIR>/all-about-agents/skills-and-agents.md` |
+| Codex | Compact entry in global `AGENTS.md` links to `all-about-agents/skill-agent-routing.md` | `<CODEX_HOME>/all-about-agents/skills-and-agents.md` |
+| Antigravity CLI, Desktop, IDE | `config/rules/all-about-agents.md`, linked from global `GEMINI.md` | `<Gemini home>/all-about-agents/skills-and-agents.md` |
+
+Each row links to one `skill-<id>` or `agent-<id>` heading. Open only the
+matching section, then load the actual skill or role instructions. The index
+does not grant delegation authority, enable a missing capability, override a
+skill's trigger gate, or start a second bootstrap. Existing approvals and
+required inherited context remain in force.
+
+There is one guide source at `docs/reference/skills-and-agents.md`. Adapters
+package its exact bytes under `all-about-agents/skills-and-agents.md`.
+Registration checks managed source ownership and hashes, rejects unsafe
+paths, and copies only that guide file. The guide folder is outside
+always-loaded rules. Neighboring operator files remain unchanged. Staged
+global files use links relative to their final native global destination;
+they are deployment sources, not plugin-root instruction files.
+
+Antigravity's rules link two levels up to the same guide. Its `GEMINI.md`
+keeps a short pointer rather than another full index, preserving the
+12,000-byte package budget there and the rule file's 24,000-byte limit.
+Claude's `SessionStart` still delivers its existing bootstrap; the short
+index in `CLAUDE.md` is not another copy of that bootstrap.
+
+Codex keeps its full index in an on-demand reference, outside `AGENTS.md`.
+Its default instruction budget is 32 KiB for the combined global and project
+chain ([official guide](https://developers.openai.com/codex/guides/agents-md),
+checked 2026-10-21). A full inline index would crowd out preserved user and
+project text. A regression checks the generated block plus 10 KiB of user
+text and this repository's entrypoint. This is a representative check, not a
+guarantee for arbitrary operator text or every deeper project instruction.
+The change does not raise `project_doc_max_bytes` or remove user text.
+Codex registration copies the generated routing reference through the same
+owned source-hash and containment checks as the guide.
+
+Repository `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md` link to the source guide.
+The complete native indexes are renderer output. Repository checks verify
+coverage, anchors, deterministic output, and disposable guide delivery. They
+do not prove model routing, native loading, or activation.
 
 Antigravity stages its global file as `config/GEMINI.md` inside the package.
 Registration deploys it to `~/.gemini/GEMINI.md`. A plugin-root copy is never

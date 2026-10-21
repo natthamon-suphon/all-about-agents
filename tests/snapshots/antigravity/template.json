@@ -1,5 +1,5 @@
 {
-  "fileCount": 93,
+  "fileCount": 94,
   "files": [
     {
       "relativePath": "LICENSE",
@@ -47,18 +47,23 @@
       "mode": null
     },
     {
+      "relativePath": "all-about-agents/skills-and-agents.md",
+      "sha256": "fcc3de591bfa32483d45c8a96dcc178eeb65d1a2276dfa299042c2a657b3ec71",
+      "mode": null
+    },
+    {
       "relativePath": "config/GEMINI.md",
-      "sha256": "187cf15ab764f9fd40454a76309b9c48818464c81ee4ff26fd0debaac3f65e1e",
+      "sha256": "c684948a52cf40c63be3f32ae4f96be87c99cacf5b569de9943735bcb816bd23",
       "mode": null
     },
     {
       "relativePath": "config/rules/all-about-agents.md",
-      "sha256": "debb1af53a5952f2a6cd45a07f24df9ce4f1afbed603feb0e494cbd3a4e6e7e1",
+      "sha256": "06fff267b4e874693f0f0fd35ff0baf86c9b8162a052021f7cdfb24d9bf11747",
       "mode": null
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "ab92a6436252bdc81effa6eef33669d83a9f9f44e8df74ba5a1b6a7f83d2f848",
+      "sha256": "baae6f4bf1710c4c4c8a06ae642b7b0bef7c5127732e06816ecbb82f43f81276",
       "mode": null
     },
     {
@@ -505,16 +510,20 @@
       "sha256": "ee7faddf6060c00b93534f1547427543543994df37aaae51d2b793be107066d2"
     },
     {
+      "relativePath": "all-about-agents/skills-and-agents.md",
+      "sha256": "fcc3de591bfa32483d45c8a96dcc178eeb65d1a2276dfa299042c2a657b3ec71"
+    },
+    {
       "relativePath": "config/GEMINI.md",
-      "sha256": "187cf15ab764f9fd40454a76309b9c48818464c81ee4ff26fd0debaac3f65e1e"
+      "sha256": "c684948a52cf40c63be3f32ae4f96be87c99cacf5b569de9943735bcb816bd23"
     },
     {
       "relativePath": "config/rules/all-about-agents.md",
-      "sha256": "debb1af53a5952f2a6cd45a07f24df9ce4f1afbed603feb0e494cbd3a4e6e7e1"
+      "sha256": "06fff267b4e874693f0f0fd35ff0baf86c9b8162a052021f7cdfb24d9bf11747"
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "ab92a6436252bdc81effa6eef33669d83a9f9f44e8df74ba5a1b6a7f83d2f848"
+      "sha256": "baae6f4bf1710c4c4c8a06ae642b7b0bef7c5127732e06816ecbb82f43f81276"
     },
     {
       "relativePath": "plugin.json",

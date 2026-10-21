@@ -30,6 +30,7 @@ const BLOCK_BEGIN = "<!-- all-about-agents:begin (managed by setup; keep your ow
 const BLOCK_END = "<!-- all-about-agents:end -->";
 const MANAGED_INSTRUCTIONS = `${BLOCK_BEGIN}\n# Global instructions\n${BLOCK_END}\n`;
 const GLOBAL_RULES = "---\ntrigger: always_on\n---\n\n## Canonical repository rules\n";
+const ROUTING_GUIDE = "# Guide\n\n### skill-research\n\nRead primary sources.\n";
 
 async function generatedTempRoot(prefix) {
   const root = await makeTempRoot(prefix);
@@ -74,6 +75,8 @@ async function fixture(profile = "template", { layout = "own", packageName = "pa
   await mkdir(join(packageRoot, "config"), { recursive: true });
   await writeFile(join(packageRoot, "config", "CLAUDE.md"), MANAGED_INSTRUCTIONS);
   await writeFile(join(packageRoot, "all-about-agents", "statusline.json"), '{"schemaVersion":1,"displayName":"Test"}\n');
+  await writeFile(join(packageRoot, "all-about-agents", "skills-and-agents.md"), ROUTING_GUIDE);
+  await writeFile(join(packageRoot, "all-about-agents", "skill-agent-routing.md"), "# Routing\n\n[research](skills-and-agents.md#skill-research)\n");
   await writeFile(join(packageRoot, "statusline", "statusline.mjs"), "// renderer\n");
   await writeFile(join(packageRoot, "statusline", "track-tool.mjs"), "// tracker\n");
   await writeFile(join(packageRoot, "statusline", "statusline.ps1"), "# windows launcher\n");
@@ -175,11 +178,73 @@ test("planner creates deterministic known actions for every surface", async () =
   };
   for (const [surface, ids] of Object.entries(expected)) {
     const plan = base(input, surface);
-    assert.deepEqual(plan.actions.map((action) => action.id), ids);
+    assert.deepEqual(plan.actions.map((action) => action.id), ["routing-guide-deploy", ...(surface === "codex" ? ["codex-routing-rules-deploy"] : []), ...ids]);
     assert.equal(plan.schemaVersion, 1);
     assert.equal(plan.surface, surface);
     assert.equal(plan.lifecycle.registered.status, "not-run");
     assert.match(plan.lifecycle.rendered.evidence, /required marker regular files/iu);
+  }
+});
+
+test("registration plans and deploys the routing guide without changing neighboring operator files", async () => {
+  for (const surface of ["claude", "codex", "antigravity"]) {
+    const input = await fixture();
+    const folder = join(input.productRoot, "all-about-agents");
+    await mkdir(folder);
+    await writeFile(join(folder, "mine.md"), "operator text\n");
+    const plan = base(input, surface);
+    const action = plan.actions.find(({ id }) => id === "routing-guide-deploy");
+    assert.ok(action, `${surface} must deploy the guide linked by its instructions`);
+    assert.equal(action.sourcePath, join(input.packageRoot, "all-about-agents", "skills-and-agents.md"));
+    assert.equal(action.targetPath, join(folder, "skills-and-agents.md"));
+    await runNativeRegistration(plan, { mode: "dry-run" });
+    assert.equal(existsSync(action.targetPath), false);
+    const first = await runNativeRegistration(plan, { mode: "apply", runProcess: fakeProducts(input).run });
+    assert.equal(first.status, "complete");
+    assert.equal(await readFile(action.targetPath, "utf8"), ROUTING_GUIDE);
+    assert.equal(await readFile(join(folder, "mine.md"), "utf8"), "operator text\n");
+    const second = await runNativeRegistration(base(input, surface), { mode: "apply", runProcess: fakeProducts(input).run });
+    assert.equal(second.status, "complete");
+    assert.equal(await readFile(action.targetPath, "utf8"), ROUTING_GUIDE);
+  }
+});
+
+test("registration rejects a missing or changed routing guide before native commands", async () => {
+  for (const surface of ["claude", "codex", "antigravity"]) {
+    for (const kind of ["missing", "changed"]) {
+      const input = await fixture();
+      const source = join(input.packageRoot, "all-about-agents", "skills-and-agents.md");
+      if (kind === "missing") await rm(source);
+      else await writeFile(source, "tampered guide\n");
+      assert.throws(() => base(input, surface), /missing|hash|match|changed/iu, `${surface}/${kind}`);
+    }
+  }
+});
+
+test("Codex deploys its complete routing reference beside the guide", async () => {
+  const input = await fixture();
+  const plan = base(input, "codex");
+  const action = plan.actions.find(({ id }) => id === "codex-routing-rules-deploy");
+  assert.ok(action, "Codex's compact AGENTS.md needs its full routing reference deployed");
+  const report = await runNativeRegistration(plan, { mode: "apply", runProcess: fakeProducts(input).run });
+  assert.equal(report.status, "complete");
+  assert.equal(await readFile(action.targetPath, "utf8"), await readFile(action.sourcePath, "utf8"));
+  assert.equal(action.targetPath, join(input.productRoot, "all-about-agents", "skill-agent-routing.md"));
+});
+
+test("registration does not follow a linked routing guide destination", async (t) => {
+  const input = await fixture();
+  const outside = join(input.root, "outside");
+  await mkdir(outside);
+  try {
+    await symlink(outside, join(input.productRoot, "all-about-agents"), process.platform === "win32" ? "junction" : "dir");
+  } catch (error) {
+    if (skipIfLinkUnavailable(t, error)) return;
+    throw error;
+  }
+  for (const surface of ["claude", "codex", "antigravity"]) {
+    assert.throws(() => base(input, surface), /symlink|junction|unsafe/iu, `${surface} must reject the linked destination before commands`);
+    assert.deepEqual(await readdir(outside), []);
   }
 });
 
@@ -327,6 +392,7 @@ test("planner deploys the Claude and Codex runtime config needed by the installe
   const input = await fixture();
   const claudeCopies = base(input, "claude").actions.filter((action) => action.kind === "file-copy");
   assert.deepEqual(claudeCopies.map(({ sourcePath, targetPath, mode, transform }) => [relative(input.packageRoot, sourcePath), relative(input.productRoot, targetPath), mode, transform ?? null]), [
+    [join("all-about-agents", "skills-and-agents.md"), join("all-about-agents", "skills-and-agents.md"), null, null],
     [join("config", "CLAUDE.md"), "CLAUDE.md", null, null],
     [join("all-about-agents", "statusline.json"), join("all-about-agents", "statusline.json"), null, null],
     [join("statusline", "statusline.mjs"), join("statusline", "statusline.mjs"), 0o755, null],
@@ -337,7 +403,9 @@ test("planner deploys the Claude and Codex runtime config needed by the installe
   ]);
   assert.deepEqual([...new Set(claudeCopies.filter((action) => action.id.startsWith("claude-rule-")).map((action) => action.guard))], [null]);
   const codexCopies = base(input, "codex").actions.filter((action) => action.kind === "file-copy");
-  assert.deepEqual(codexCopies.slice(0, 3).map(({ sourcePath, targetPath }) => [relative(input.packageRoot, sourcePath), relative(input.productRoot, targetPath)]), [
+  assert.deepEqual(codexCopies.slice(0, 5).map(({ sourcePath, targetPath }) => [relative(input.packageRoot, sourcePath), relative(input.productRoot, targetPath)]), [
+    [join("all-about-agents", "skills-and-agents.md"), join("all-about-agents", "skills-and-agents.md")],
+    [join("all-about-agents", "skill-agent-routing.md"), join("all-about-agents", "skill-agent-routing.md")],
     ["AGENTS.md", "AGENTS.md"],
     ["config.toml", "config.toml"],
     ["terra-max.config.toml", "terra-max.config.toml"]
@@ -408,7 +476,7 @@ test("apply stops at the first required process failure and reports a partial re
     }
   });
   assert.equal(report.status, "partial");
-  assert.equal(report.completed.length, 11);
+  assert.equal(report.completed.length, 13);
   assert.equal(report.failed.action.id, "codex-plugin-install");
   assert.deepEqual(report.notAttempted.map((action) => action.id), ["codex-plugin-list", "codex-plugin-source-check", "codex-hooks-trust"]);
   assert.deepEqual(calls[0].args, ["plugin", "marketplace", "add", input.packageRoot, "--json"]);
@@ -478,7 +546,7 @@ test("successful reports keep manual actions out of completed execution", async 
   for (const [surface, executedIds] of cases) {
     const report = await runNativeRegistration(base(input, surface), { mode: "apply", runProcess: fakeProducts(input).run });
     assert.equal(report.status, "complete");
-    assert.deepEqual(report.completed.map((action) => action.id), executedIds);
+    assert.deepEqual(report.completed.map((action) => action.id), ["routing-guide-deploy", ...(surface === "codex" ? ["codex-routing-rules-deploy"] : []), ...executedIds]);
     assert.equal(report.actions.at(-1).status, "manual-required");
     assert.equal(report.completed.some((action) => action.kind === "manual"), false);
   }

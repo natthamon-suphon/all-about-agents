@@ -1,5 +1,5 @@
 {
-  "fileCount": 183,
+  "fileCount": 185,
   "files": [
     {
       "relativePath": ".agents/plugins/marketplace.json",
@@ -338,7 +338,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "5527dd4b1d074c61916f3b89da4aeaad1c924801149c5f0088b94e1c5c25749f",
+      "sha256": "b718fe8c5b4e689fa04dc116c166cff8e5f4d678daebdadcca63c1f705cb1b28",
       "mode": null
     },
     {
@@ -453,12 +453,22 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "81215b34e4520f858197fbf3c19cd373ec5fb04f6fd4535dd901cc5ff89d1ba9",
+      "sha256": "83966349507f632ccff930b0b28af0a1cf42dc2668cb5efe41d581121a1f23ee",
       "mode": null
     },
     {
       "relativePath": "LICENSE",
       "sha256": "d03652b98c7251626556ae8e3b369af34c6ec0bdceba4ac04a8c344221185e23",
+      "mode": null
+    },
+    {
+      "relativePath": "all-about-agents/skill-agent-routing.md",
+      "sha256": "ed3de1d405a6d7bd9c91b891c67373af1100c4b11b955543588f895faabddebf",
+      "mode": null
+    },
+    {
+      "relativePath": "all-about-agents/skills-and-agents.md",
+      "sha256": "fcc3de591bfa32483d45c8a96dcc178eeb65d1a2276dfa299042c2a657b3ec71",
       "mode": null
     },
     {
@@ -468,7 +478,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "bfcd899fda2c20470e9e249aa5b1f4aa1514ced0ea20eba1b74b8a82d2bdd8b9",
+      "sha256": "ae7b0a68dddb46d5f204b25a04ac30f43cfd07a2ef42fe0fd97a68c986487946",
       "mode": null
     },
     {
@@ -848,7 +858,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "5527dd4b1d074c61916f3b89da4aeaad1c924801149c5f0088b94e1c5c25749f",
+      "sha256": "b718fe8c5b4e689fa04dc116c166cff8e5f4d678daebdadcca63c1f705cb1b28",
       "mode": null
     },
     {
@@ -1188,7 +1198,7 @@
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "5527dd4b1d074c61916f3b89da4aeaad1c924801149c5f0088b94e1c5c25749f"
+      "sha256": "b718fe8c5b4e689fa04dc116c166cff8e5f4d678daebdadcca63c1f705cb1b28"
     },
     {
       "relativePath": ".agents/skills/using-all-about-agents/references/codex-tools.md",
@@ -1280,11 +1290,19 @@
     },
     {
       "relativePath": "AGENTS.md",
-      "sha256": "81215b34e4520f858197fbf3c19cd373ec5fb04f6fd4535dd901cc5ff89d1ba9"
+      "sha256": "83966349507f632ccff930b0b28af0a1cf42dc2668cb5efe41d581121a1f23ee"
     },
     {
       "relativePath": "LICENSE",
       "sha256": "d03652b98c7251626556ae8e3b369af34c6ec0bdceba4ac04a8c344221185e23"
+    },
+    {
+      "relativePath": "all-about-agents/skill-agent-routing.md",
+      "sha256": "ed3de1d405a6d7bd9c91b891c67373af1100c4b11b955543588f895faabddebf"
+    },
+    {
+      "relativePath": "all-about-agents/skills-and-agents.md",
+      "sha256": "fcc3de591bfa32483d45c8a96dcc178eeb65d1a2276dfa299042c2a657b3ec71"
     },
     {
       "relativePath": "config.toml",
@@ -1292,7 +1310,7 @@
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "bfcd899fda2c20470e9e249aa5b1f4aa1514ced0ea20eba1b74b8a82d2bdd8b9"
+      "sha256": "ae7b0a68dddb46d5f204b25a04ac30f43cfd07a2ef42fe0fd97a68c986487946"
     },
     {
       "relativePath": "hooks/activity-audit.json",
@@ -1596,7 +1614,7 @@
     },
     {
       "relativePath": "skills/using-all-about-agents/references/adapter-capability-guidance.md",
-      "sha256": "5527dd4b1d074c61916f3b89da4aeaad1c924801149c5f0088b94e1c5c25749f"
+      "sha256": "b718fe8c5b4e689fa04dc116c166cff8e5f4d678daebdadcca63c1f705cb1b28"
     },
     {
       "relativePath": "skills/using-all-about-agents/references/codex-tools.md",

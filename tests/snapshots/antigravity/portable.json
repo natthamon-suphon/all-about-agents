@@ -1,5 +1,5 @@
 {
-  "fileCount": 93,
+  "fileCount": 94,
   "files": [
     {
       "relativePath": "LICENSE",
@@ -47,18 +47,23 @@
       "mode": null
     },
     {
+      "relativePath": "all-about-agents/skills-and-agents.md",
+      "sha256": "fcc3de591bfa32483d45c8a96dcc178eeb65d1a2276dfa299042c2a657b3ec71",
+      "mode": null
+    },
+    {
       "relativePath": "config/GEMINI.md",
-      "sha256": "187cf15ab764f9fd40454a76309b9c48818464c81ee4ff26fd0debaac3f65e1e",
+      "sha256": "c684948a52cf40c63be3f32ae4f96be87c99cacf5b569de9943735bcb816bd23",
       "mode": null
     },
     {
       "relativePath": "config/rules/all-about-agents.md",
-      "sha256": "debb1af53a5952f2a6cd45a07f24df9ce4f1afbed603feb0e494cbd3a4e6e7e1",
+      "sha256": "06fff267b4e874693f0f0fd35ff0baf86c9b8162a052021f7cdfb24d9bf11747",
       "mode": null
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "00758937d6ff27831e6269fee4544e3ea51abc74373d2d5810071a9478bf05a7",
+      "sha256": "d16421c4042ff139ec38e7d19f4131e9c58c91bbafcbc2cd36784d1090cb17fd",
       "mode": null
     },
     {
@@ -505,16 +510,20 @@
       "sha256": "10399485ad8fdf0b15097109663d063a5e65b8777f9f3e7c2b62c340285f3369"
     },
     {
+      "relativePath": "all-about-agents/skills-and-agents.md",
+      "sha256": "fcc3de591bfa32483d45c8a96dcc178eeb65d1a2276dfa299042c2a657b3ec71"
+    },
+    {
       "relativePath": "config/GEMINI.md",
-      "sha256": "187cf15ab764f9fd40454a76309b9c48818464c81ee4ff26fd0debaac3f65e1e"
+      "sha256": "c684948a52cf40c63be3f32ae4f96be87c99cacf5b569de9943735bcb816bd23"
     },
     {
       "relativePath": "config/rules/all-about-agents.md",
-      "sha256": "debb1af53a5952f2a6cd45a07f24df9ce4f1afbed603feb0e494cbd3a4e6e7e1"
+      "sha256": "06fff267b4e874693f0f0fd35ff0baf86c9b8162a052021f7cdfb24d9bf11747"
     },
     {
       "relativePath": "docs/manual-desktop.md",
-      "sha256": "00758937d6ff27831e6269fee4544e3ea51abc74373d2d5810071a9478bf05a7"
+      "sha256": "d16421c4042ff139ec38e7d19f4131e9c58c91bbafcbc2cd36784d1090cb17fd"
     },
     {
       "relativePath": "plugin.json",

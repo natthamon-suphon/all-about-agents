@@ -30,6 +30,17 @@ are separate explicit actions. The managed global destinations are
 `~/.gemini/GEMINI.md` (`<AAA_ANTIGRAVITY_ROOT>/GEMINI.md` when that variable
 is set).
 
+Each package also owns `all-about-agents/skills-and-agents.md`. Registration
+copies that guide to the same relative path beneath the native instruction
+root, using source-hash and destination-containment checks. Global routes link
+to its individual skill and agent sections. The guide is outside always-on
+rules, and registration leaves neighboring operator files unchanged. An older
+package without the required guide must be rendered again before registration.
+See the [routing guide](../reference/skills-and-agents.md).
+Codex also deploys its generated `all-about-agents/skill-agent-routing.md`
+reference. Its compact `AGENTS.md` entry links there so the complete index
+does not consume the native instruction budget on every task.
+
 An authorized apply replaces only the marked all-about-agents block in
 `CLAUDE.md` and `AGENTS.md` and keeps the text around it; it creates no
 backup. A file with no intact block is left unchanged and reported

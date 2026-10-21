@@ -37,6 +37,22 @@ command asks for a display name when it is interactive. Use
 `--statusline-name "<YOUR_NAME>"` in a script. The name is trimmed, limited to
 64 Unicode code points, and rejects control and ANSI characters.
 
+The statusline does not read or display skill and agent activity labels.
+Line four contains only the configured display name, or `.` when it is empty.
+The tracker and activity audit keep their existing interfaces.
+
+The statusline reads the current Git branch and dirty state in one read-only
+query. It uses `workspace.current_dir`, then `cwd`, then `workspace.project_dir`.
+It also works outside a Claude worktree session. Detached HEAD shows its short
+commit ID. If Git is missing, fails, or exceeds 500 ms, it uses `worktree.branch`
+when available, otherwise `N/A`, and hides the clean/dirty mark. See the
+[native statusline fields](https://code.claude.com/docs/en/statusline).
+
+The package includes a 512 × 512 PNG at `.claude-plugin/icon.png`. Claude's
+directory validator finds it at that standard path. The manifest needs no
+`icon` field, so older clients do not warn about an unknown field. See the
+[manifest reference](https://code.claude.com/docs/en/plugins-reference).
+
 Some native behavior remains unsupported until a product session is observed.
 
 ## Global instructions and presentation

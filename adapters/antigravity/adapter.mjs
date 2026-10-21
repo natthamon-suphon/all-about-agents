@@ -11,7 +11,7 @@ import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
 import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeScope, nativeScopeDiagnostics } from "../../core/roles/contract.mjs";
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
-import { renderAntigravityGlobalInstructions, renderAntigravityGlobalRules } from "../shared/global-instructions.mjs";
+import { renderAntigravityGlobalInstructions, renderAntigravityGlobalRules, SKILL_AGENT_GUIDE, SKILL_AGENT_GUIDE_PATH } from "../shared/global-instructions.mjs";
 
 const ANTIGRAVITY_SURFACE = "antigravity";
 const LICENSE_SOURCE = readFileSync(new URL("../../LICENSE", import.meta.url));
@@ -186,6 +186,10 @@ function desktopInstructions(semanticProfile) {
     "`config/rules/all-about-agents.md` are not part of the plugin: registration",
     "deploys them to `~/.gemini/GEMINI.md` and",
     "`~/.gemini/config/rules/all-about-agents.md`.",
+    "The linked guide `all-about-agents/skills-and-agents.md` is also deployed",
+    "to `~/.gemini/all-about-agents/skills-and-agents.md`, outside always-on rules.",
+    "Without `agy`, copy those three global files to those exact destinations",
+    "only after reviewing the files and authorizing that configuration change.",
     "",
     "Do not also keep a copy in `<workspace>/.agents/plugins/all-about-agents/`.",
     "A workspace copy has a higher priority. The IDE's built-in guide says a",
@@ -335,6 +339,7 @@ export function renderAntigravity(input = {}) {
   files.push({ relativePath: "LICENSE", content: new Uint8Array(LICENSE_SOURCE), mode: null });
   addFile(files, "plugin.json", renderJson(pluginManifest()));
   addFile(files, "config/GEMINI.md", renderAntigravityGlobalInstructions(core));
+  addFile(files, SKILL_AGENT_GUIDE_PATH, SKILL_AGENT_GUIDE);
   addFile(files, "config/rules/all-about-agents.md", renderAntigravityGlobalRules(core, { canonicalRules: core.rules }));
   addFile(files, "README.md", packageReadme(semanticProfile));
   addFile(files, "docs/manual-desktop.md", desktopInstructions(semanticProfile));

@@ -17,11 +17,12 @@ import { assertNativeRoleRecords, assertNativeRoleSemantics, hasNarrowerNativeSc
 import { assertUnifiedSkillPortfolio, skillCompanionsFor } from "../../installers/lib/load-core.mjs";
 import { profileTranslation, resolveProfile } from "../../profiles/profile-contract.mjs";
 import { createNativeIntegrationRecord } from "../shared/native-state.mjs";
-import { renderClaudeGlobalInstructions } from "../shared/global-instructions.mjs";
+import { renderClaudeGlobalInstructions, SKILL_AGENT_GUIDE, SKILL_AGENT_GUIDE_PATH } from "../shared/global-instructions.mjs";
 import { renderPresentationCatalog } from "../../installers/lib/presentation-contract.mjs";
 
 const CLAUDE_SURFACE = "claude";
 const LICENSE_SOURCE = readFileSync(new URL("../../LICENSE", import.meta.url));
+const ICON_SOURCE = readFileSync(new URL("./templates/icon.png", import.meta.url));
 const MAX_STATUSLINE_NAME_CODE_POINTS = 64;
 const CONTROL_OR_ANSI = /[\u0000-\u001f\u007f]|\u001b\[[0-?]*[ -/]*[@-~]/u;
 const compareCodePoints = (left, right) => left === right ? 0 : left < right ? -1 : 1;
@@ -516,9 +517,11 @@ export function renderClaude(input = {}) {
   const roleRecords = new Map((Array.isArray(core.roles) ? core.roles : []).map((record) => [record.id || record.name, record]));
 
   const plugin = pluginManifest();
+  files.push({ relativePath: ".claude-plugin/icon.png", content: new Uint8Array(ICON_SOURCE), mode: null });
   addFile(files, ".claude-plugin/plugin.json", renderJson(plugin));
   addFile(files, ".claude-plugin/marketplace.json", renderJson(marketplaceManifest(plugin)));
   addFile(files, "config/CLAUDE.md", renderClaudeGlobalInstructions(core));
+  addFile(files, SKILL_AGENT_GUIDE_PATH, SKILL_AGENT_GUIDE);
   addFile(files, "config/settings.json", renderJson(settingsFor(semanticProfile, { statuslineCommand })));
   addFile(files, "config/statusline.json", renderJson({ schemaVersion: 1, displayName: statuslineName }));
   addFile(files, "docs/semantic-mappings.md", mappingsDocument());

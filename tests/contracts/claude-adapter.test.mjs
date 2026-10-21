@@ -169,6 +169,20 @@ test("Claude plugin relies on conventional hook discovery without duplicate mani
   assert.ok(hooks.SessionStart?.[0]?.hooks?.length > 0);
 });
 
+test("Claude packages a square PNG icon at the validator's conventional discovery path", () => {
+  for (const profile of ["portable", "template"]) {
+    const icon = resultFor(profile).files.find((file) => file.relativePath === ".claude-plugin/icon.png");
+    assert.ok(icon, `${profile} must include its listing icon`);
+    const bytes = Buffer.from(icon.content);
+    assert.deepEqual([...bytes.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+    assert.equal(bytes.subarray(12, 16).toString("ascii"), "IHDR");
+    const width = bytes.readUInt32BE(16);
+    assert.equal(width, bytes.readUInt32BE(20), "the icon must be square");
+    assert.ok(width >= 512 && width <= 2048);
+    assert.ok(bytes.length < 2 * 1024 * 1024);
+  }
+});
+
 test("template Claude render emits full-access settings without unsupported effortLevel", () => {
   const files = fileMap(resultFor("template"));
   const settings = JSON.parse(files.get("config/settings.json"));
