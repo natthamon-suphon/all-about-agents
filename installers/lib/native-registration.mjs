@@ -326,7 +326,7 @@ export function planNativeRegistration({ surface, packageRoot, productRoot, inst
 
   if (surface === "claude") {
     actions.push(deployFile("claude-instructions-deploy", "config/CLAUDE.md", "CLAUDE.md", { guard: "managed-block" }));
-    actions.push({ id: "claude-settings-deploy", kind: "settings-overlay", targetPath: join(product, "settings.json"), overlayPath: join(pkg, "settings.json"), expectedOverlayHash: managedPackage.ownership.get(`${managedPackage.ownershipPrefix}settings.json`), allowedRoot: product, transform: "claude-statusline-product-root", mutates: true, required: true, expectedProbe: "settings-merge", automaticWrite: true });
+    actions.push({ id: "claude-settings-deploy", kind: "settings-overlay", targetPath: join(product, "settings.json"), overlayPath: join(pkg, "settings.json"), expectedOverlayHash: managedPackage.ownership.get(`${managedPackage.ownershipPrefix}settings.json`), allowedRoot: product, transform: "claude-statusline-product-root", removeKeys: profile === "template" ? ["autoDreamEnabled", "fallbackModel"] : ["autoDreamEnabled"], mutates: true, required: true, expectedProbe: "settings-merge", automaticWrite: true });
     actions.push(deployFile("claude-statusline-config-deploy", "all-about-agents/statusline.json", "all-about-agents/statusline.json"));
     actions.push(deployFile("claude-statusline-renderer-deploy", "statusline/statusline.mjs", "statusline/statusline.mjs", { mode: 0o755 }));
     actions.push(deployFile("claude-statusline-tracker-deploy", "statusline/track-tool.mjs", "statusline/track-tool.mjs", { mode: 0o755 }));
@@ -712,7 +712,7 @@ export async function runNativeRegistration(plan, { mode = "dry-run", runProcess
       } else if (action.kind === "settings-overlay") {
         const transformOverlay = action.transform ? (bytes) => transformCopyContent(action, bytes, plan) : null;
         try {
-          overlay = await mergeSettingsOverlay({ targetPath: action.targetPath, overlayPath: action.overlayPath, expectedOverlayHash: action.expectedOverlayHash, allowedRoot: action.allowedRoot, transformOverlay, fileSystem });
+          overlay = await mergeSettingsOverlay({ targetPath: action.targetPath, overlayPath: action.overlayPath, expectedOverlayHash: action.expectedOverlayHash, allowedRoot: action.allowedRoot, transformOverlay, removeKeys: action.removeKeys, fileSystem });
         } catch (error) {
           if (error?.code !== "settings-permission-list-invalid") throw error;
           followUp ??= error.message;
@@ -817,6 +817,7 @@ export function formatNativeRegistrationText(report) {
   const lines = [`action=${report.action} mode=${report.mode} status=${report.status}`, `surface=${report.surface} profile=${report.profile}`, `productRoot=${report.productRoot ?? "<NONE>"} instructionRoot=${report.instructionRoot ?? "<NONE>"}`];
   for (const action of report.actions || []) {
     lines.push(`${action.status}\t${printable(action.id)}\t${action.kind}`);
+    if (action.removeKeys?.length) lines.push(`remove-keys\t${printable(action.id)}\t${action.removeKeys.map(printable).join(", ")}`);
     const note = action.reason ?? action.message;
     if (action.status === "manual-required" && note) lines.push(`reason\t${printable(action.id)}\t${printable(note)}`);
     for (const command of action.commands || []) lines.push(`run\t${printable(action.id)}\t${printable(command)}`);

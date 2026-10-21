@@ -39,6 +39,9 @@ demand, not loaded as another always-on rule or bootstrap hook. See
 
 ## Requirements
 
+The [Claude settings guide](docs/setup/claude-settings.md) lists the shared
+Opus/xhigh policy, session defaults, and update behavior for Windows and macOS.
+
 - Node.js **22.12.0 or newer** (`node --version`).
 - Windows: PowerShell and Node.js. See [Windows setup](docs/setup/windows.md).
 - macOS: Bash or another POSIX `sh` and Node.js. See [macOS setup](docs/setup/macos.md).

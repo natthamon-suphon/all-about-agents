@@ -83,6 +83,41 @@ Amended decision, on operator instruction: the template `model` is
 unchanged. `model.primary` in `adapters/claude/capabilities.json` now cites
 this amendment.
 
+## Settings refresh - 2026-10-21
+
+The operator requested the configuration audit recommendations in repository
+setup, so other Windows and macOS computers receive the same portable policy.
+The audit used Claude Code `2.1.306`. These decisions replace the older
+repository fallback decision above:
+
+- Keep `opus[1m]`, `CLAUDE_CODE_EFFORT_LEVEL=xhigh`, and the `fable` advisor.
+  The [model configuration guide](https://code.claude.com/docs/en/model-config)
+  confirms the rolling aliases and the effort setting. Alias targets can
+  differ by provider. Availability remains an account and provider condition.
+- Render no `fallbackModel` chain for `template`. Native registration removes
+  a saved chain when that profile is selected. The same guide separates
+  configured server-failure fallback from native content-based fallback.
+  Removing the former does not disable the latter.
+- Use the built-in `Concise` output style. The
+  [output styles guide](https://code.claude.com/docs/en/output-styles#concise)
+  says it retains normal engineering thoroughness while shortening replies;
+  it requires Claude Code `2.1.237` or later.
+- Set `idleCompaction: false`. The
+  [settings reference](https://code.claude.com/docs/en/settings-reference#idlecompaction)
+  documents this switch separately from normal auto compaction. It keeps
+  paused sessions from being summarized only because they are idle. Returning
+  after cache expiry can cost more tokens.
+- Keep normal auto compaction and auto memory enabled. Leave compaction
+  windows, shared memory directories, fixed thinking budgets, and output
+  limits unset in the renderer. Existing manual values survive a merge.
+- Remove undocumented `autoDreamEnabled` from rendered and registered settings.
+  Keep ultracode manual. Do not hardcode a reply language, credentials, proxy,
+  companion plugin paths, or host-specific environment values.
+
+The repository policy reference is now `approved-opus`; it replaces the old
+internal `approved-opus-sonnet` name. This is a configuration decision, not a
+claim that model accuracy improved. No model benchmark was run for this change.
+
 ## Unconfirmed
 
 - This session did not authenticate to Claude or make a model request.

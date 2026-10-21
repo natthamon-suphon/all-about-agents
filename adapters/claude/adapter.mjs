@@ -84,7 +84,6 @@ export const CLAUDE_MODEL_POLICY = Object.freeze({
   portable: Object.freeze({}),
   template: Object.freeze({
     model: "opus[1m]",
-    fallbackModel: Object.freeze(["sonnet"]),
     advisorModel: "fable",
     env: Object.freeze({ CLAUDE_CODE_EFFORT_LEVEL: "xhigh" })
   })
@@ -99,8 +98,11 @@ export const CLAUDE_MODEL_POLICY = Object.freeze({
  */
 export const CLAUDE_SESSION_DEFAULTS = Object.freeze({
   viewMode: "focus",
+  outputStyle: "Concise",
+  showThinkingSummaries: false,
+  autoCompactEnabled: true,
   autoMemoryEnabled: true,
-  autoDreamEnabled: true
+  idleCompaction: false
 });
 
 const EMERGENCY_DENIES = Object.freeze([
@@ -457,7 +459,7 @@ function capabilityGuidance(semanticProfile) {
   const policy = CLAUDE_MODEL_POLICY.template;
   const modelGuidance = semanticProfile.modelPolicies[CLAUDE_SURFACE] === "surface-default"
     ? "- The portable profile leaves the model and effort unchanged."
-    : `- The template profile sets ${code(policy.model)}, fallback ${policy.fallbackModel.map(code).join(", ")}, advisor ${code(policy.advisorModel)}, and \`CLAUDE_CODE_EFFORT_LEVEL\` ${code(policy.env.CLAUDE_CODE_EFFORT_LEVEL)} in \`settings.json\`. Account, organization, plan, provider, consent, and product-version conditions can limit advisor access.`;
+    : `- The template profile sets ${code(policy.model)}, advisor ${code(policy.advisorModel)}, and \`CLAUDE_CODE_EFFORT_LEVEL\` ${code(policy.env.CLAUDE_CODE_EFFORT_LEVEL)} in \`settings.json\`. Registration removes any saved \`fallbackModel\` chain. This does not disable native content-based fallback. Account, organization, plan, provider, consent, and product-version conditions can limit advisor access.`;
   return ensureText([
     "# Claude adapter capability guidance",
     "",
@@ -472,6 +474,7 @@ function capabilityGuidance(semanticProfile) {
     `- \`hooks/hooks.json\` runs \`node\` in exec form from \`\${CLAUDE_PLUGIN_ROOT}\`: ${claudeBootstrapTemplate.event} (${code(claudeBootstrapTemplate.nativeMatcher)}) adds this skill as session context, ${claudeActivityTemplate.event} writes the optional activity audit and statusline tracker, and ${claudeCheckpointTemplate.event} writes a checkpoint. No PreToolUse hook is rendered.`,
     `- \`settings.json\` sets \`permissions.defaultMode\` to ${code(semanticProfile.authority === "full" ? "bypassPermissions" : "default")} and keeps the emergency Bash deny rules. The statusline renders under \`statusline/\` and is wired through \`statusLine\`.`,
     modelGuidance,
+    "- Both profiles use `outputStyle: Concise`, `showThinkingSummaries: false`, `viewMode: focus`, `autoMemoryEnabled: true`, `autoCompactEnabled: true`, and `idleCompaction: false`. Memory directories and compaction windows stay at native defaults on a fresh install. Registration removes the undocumented `autoDreamEnabled` key and preserves unrelated settings. Ultracode stays a manual session choice; reply language follows the global instruction rules.",
     "",
     "If a selected Claude capability, path, syntax, or product surface is unavailable, report that condition and stop or ask for direction rather than inferring support.",
     ""
@@ -505,7 +508,7 @@ export function renderClaude(input = {}) {
   assertNativeRoleSemantics(core.roles);
   const semanticProfile = resolveProfile(input.profile ?? "portable", {
     surface: CLAUDE_SURFACE,
-    modelPolicyRefs: ["surface-default", "approved-opus-sonnet"]
+    modelPolicyRefs: ["surface-default", "approved-opus"]
   });
   const profile = semanticProfile.id;
   const statuslineName = validStatuslineName(input.statuslineName ?? "");
@@ -658,7 +661,7 @@ export function renderClaude(input = {}) {
         sourcePath: "core/inventory.json"
       })),
       ...(profile === "template"
-        ? [{ code: "fable-advisor-availability", severity: "warning", message: "Fable advisor is documented, but account, organization, plan, provider, consent, and product-version conditions can limit access; the primary/fallback chain remains unchanged.", sourcePath: "config/settings.json" }]
+        ? [{ code: "fable-advisor-availability", severity: "warning", message: "Fable advisor is documented, but account, organization, plan, provider, consent, and product-version conditions can limit access; the primary model remains unchanged.", sourcePath: "config/settings.json" }]
         : [])
     ],
     ownership: makeOwnership(files)

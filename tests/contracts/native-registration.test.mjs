@@ -797,6 +797,37 @@ test("apply atomically overwrites approved Claude and Codex config destinations"
   assert.equal(await readFile(join(input.productRoot, "agents", "reviewer.toml"), "utf8"), 'developer_instructions = "reviewer"\n');
 });
 
+test("Claude registration removes retired settings and only template removes a saved fallback", async () => {
+  for (const profile of ["portable", "template"]) {
+    const input = await fixture(profile);
+    const target = join(input.productRoot, "settings.json");
+    const original = {
+      autoDreamEnabled: true, fallbackModel: ["sonnet"],
+      env: { LOCAL_SETTING: "keep" }, enabledPlugins: { "companion@local": true },
+      hooks: { SessionStart: [{ hooks: [{ type: "command", command: "my-hook" }] }] },
+      permissions: { deny: ["Read(./.env)"] }
+    };
+    await writeFile(target, JSON.stringify(original));
+    const plan = planNativeRegistration({
+      surface: "claude", packageRoot: input.packageRoot, productRoot: input.productRoot,
+      profile, platform: process.platform
+    });
+    const dry = await runNativeRegistration(plan, { mode: "dry-run" });
+    const action = dry.actions.find((entry) => entry.id === "claude-settings-deploy");
+    assert.deepEqual(action.removeKeys, profile === "template" ? ["autoDreamEnabled", "fallbackModel"] : ["autoDreamEnabled"]);
+    assert.ok(formatNativeRegistrationText(dry).includes(`remove-keys\tclaude-settings-deploy\t${action.removeKeys.join(", ")}`));
+    assert.deepEqual(JSON.parse(await readFile(target, "utf8")), original);
+    const applied = await runNativeRegistration(plan, { mode: "apply", runProcess: fakeProducts(input).run });
+    assert.equal(applied.status, "complete");
+    const settings = JSON.parse(await readFile(target, "utf8"));
+    assert.equal(Object.hasOwn(settings, "autoDreamEnabled"), false);
+    if (profile === "portable") assert.deepEqual(settings.fallbackModel, ["sonnet"]);
+    else assert.equal(Object.hasOwn(settings, "fallbackModel"), false);
+    for (const key of ["env", "enabledPlugins", "hooks"]) assert.deepEqual(settings[key], original[key]);
+    assert.deepEqual(settings.permissions.deny, ["Read(./.env)", "Bash(rm -rf /)"]);
+  }
+});
+
 test("a linked Claude rules folder degrades to one manual step instead of blocking registration", async (t) => {
   for (const linkedPath of [["rules"], ["rules", "all-about-agents"]]) {
     const input = await fixture();

@@ -38,8 +38,10 @@ avoid that shell boundary on both operating systems.
 
 ## Selection and failure behavior
 
-- Claude uses the rolling `opus[1m]` alias. Rendered fallback `sonnet` and advisor
-  `fable` also follow their approved families. Provider, client version,
+- Claude uses the rolling `opus[1m]` alias and the `fable` advisor alias.
+  The template profile renders no `fallbackModel` chain and registration removes
+  any saved chain. Native content-based fallback is separate and remains under
+  Claude's own policy. Provider, client version,
   organization and account restrictions still apply. An alias does not promise
   the newest model across unrelated families or the greatest intelligence.
 - Codex queries the native App Server `model/list` API, including initialization

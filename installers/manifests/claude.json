@@ -52,12 +52,18 @@
     "source": "profiles/{profile}/profile.json",
     "modelPolicyRefs": [
       "surface-default",
-      "approved-opus-sonnet"
+      "approved-opus"
     ]
   },
   "profiles": {
     "portable": {
       "settings": {
+        "viewMode": "focus",
+        "outputStyle": "Concise",
+        "showThinkingSummaries": false,
+        "autoCompactEnabled": true,
+        "autoMemoryEnabled": true,
+        "idleCompaction": false,
         "permissions": {
           "defaultMode": "default",
           "deny": [
@@ -71,10 +77,13 @@
     },
     "template": {
       "settings": {
+        "viewMode": "focus",
+        "outputStyle": "Concise",
+        "showThinkingSummaries": false,
+        "autoCompactEnabled": true,
+        "autoMemoryEnabled": true,
+        "idleCompaction": false,
         "model": "opus[1m]",
-        "fallbackModel": [
-          "sonnet"
-        ],
         "advisorModel": "fable",
         "env": {
           "CLAUDE_CODE_EFFORT_LEVEL": "xhigh"

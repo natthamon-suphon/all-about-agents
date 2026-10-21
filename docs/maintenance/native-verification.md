@@ -185,7 +185,8 @@ authorized decision and after reviewing the dry-run report.
    when the session shows them.
 
 Fable access depends on account, plan, provider, consent, and product version.
-Sonnet is a documented server-failure fallback. Neither access nor a fallback
+The template profile configures no server-failure fallback chain. Claude's
+native content-based fallback is separate. Neither access nor a fallback
 event is proved by package output.
 
 ### Codex CLI

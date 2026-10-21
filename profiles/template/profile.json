@@ -7,7 +7,7 @@
   "advisor": "fable",
   "modelPolicies": {
     "antigravity": "approved-gemini-pro",
-    "claude": "approved-opus-sonnet",
+    "claude": "approved-opus",
     "codex": "approved-sol-terra"
   }
 }

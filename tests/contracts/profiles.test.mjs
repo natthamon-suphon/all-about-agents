@@ -67,7 +67,7 @@ test("template contains only semantic full-access, maximum-reasoning, model, and
   assert.equal(profiles.template.advisor, "fable");
   assert.deepEqual(profiles.template.modelPolicies, {
     antigravity: "approved-gemini-pro",
-    claude: "approved-opus-sonnet",
+    claude: "approved-opus",
     codex: "approved-sol-terra"
   });
   const body = JSON.stringify(profiles.template);
@@ -88,7 +88,7 @@ test("profile seam rejects unavailable model-policy evidence and inconsistent se
     ...profiles.template,
     modelPolicies: {
       codex: "approved-sol-terra",
-      claude: "approved-opus-sonnet",
+      claude: "approved-opus",
       antigravity: "approved-gemini-pro"
     }
   };
@@ -137,7 +137,7 @@ test("template renders approved native model contracts and Fable only where supp
   const outputs = Object.fromEntries(Object.entries(renderers).map(([surface, render]) => [surface, render(profiles.template)]));
   const claude = JSON.parse(files(outputs.claude).get("config/settings.json"));
   assert.equal(claude.model, "opus[1m]");
-  assert.deepEqual(claude.fallbackModel, ["sonnet"]);
+  assert.equal(Object.hasOwn(claude, "fallbackModel"), false);
   assert.equal(claude.advisorModel, "fable");
   assert.equal(claude.env.CLAUDE_CODE_EFFORT_LEVEL, "xhigh");
   assert.match(files(outputs.codex).get("config.toml"), /model = "gpt-6\.1-sol"[\s\S]*model_reasoning_effort = "xhigh"/u);

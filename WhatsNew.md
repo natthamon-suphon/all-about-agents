@@ -9,6 +9,12 @@ from there, and the Antigravity manifest names it in its description.
 
 ### Changed
 
+- Claude setup keeps Opus `opus[1m]` and `xhigh`, adds Concise output, and
+  disables idle compaction while keeping normal compaction and auto memory.
+  Ultracode remains a manual session choice on Windows and macOS.
+- Claude registration removes the undocumented `autoDreamEnabled` key and,
+  for `template`, any saved `fallbackModel` chain. Dry-run lists these removals.
+  Other settings, companion hooks/plugins, and permission rules are preserved.
 - Shared global instructions apply Karpathy's coding discipline while keeping
   the external skill optional. Cleanup stays within the task and preserves
   existing comments outside it.

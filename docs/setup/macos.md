@@ -11,6 +11,9 @@ Read [global instructions](../maintenance/global-instructions.md) for the
 shared rules and the two-layer model. Global behavior is followed by the more
 specific project and plugin layer.
 
+For Claude's shared model, session defaults, and update removals, read
+[Claude settings setup](claude-settings.md).
+
 For a receiving machine, keep this exact order:
 
 ```text

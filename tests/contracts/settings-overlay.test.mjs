@@ -63,6 +63,39 @@ test("mergeSettingsOverlay keeps the user's permission rules and adds the packag
   assert.equal(second.afterHash, first.afterHash);
 });
 
+test("mergeSettingsOverlay removes only declared top-level keys and remains idempotent", async () => {
+  const input = await fixture();
+  await writeFile(input.overlayPath, '{"model":"opus[1m]","outputStyle":"Concise"}\n');
+  await mkdir(join(input.root, "target"), { recursive: true });
+  await writeFile(input.targetPath, JSON.stringify({
+    model: "old", fallbackModel: ["sonnet"], autoDreamEnabled: true,
+    env: { LOCAL_SETTING: "keep" }, hooks: { SessionStart: [] },
+    permissions: { deny: ["Read(./.env)"] }, unknown: { autoDreamEnabled: "keep" }
+  }));
+  const options = { ...input, allowedRoot: input.root, removeKeys: ["fallbackModel", "autoDreamEnabled"] };
+  const first = await mergeSettingsOverlay(options);
+  assert.equal(first.changed, true);
+  assert.deepEqual(JSON.parse(await readFile(input.targetPath, "utf8")), {
+    model: "opus[1m]", outputStyle: "Concise", env: { LOCAL_SETTING: "keep" },
+    hooks: { SessionStart: [] }, permissions: { deny: ["Read(./.env)"] },
+    unknown: { autoDreamEnabled: "keep" }
+  });
+  const second = await mergeSettingsOverlay(options);
+  assert.equal(second.changed, false);
+  assert.equal(second.afterHash, first.afterHash);
+});
+
+test("mergeSettingsOverlay rejects invalid or conflicting removals without writing", async () => {
+  const input = await fixture();
+  await mkdir(join(input.root, "target"), { recursive: true });
+  const body = '{"unknown":"keep"}\n';
+  await writeFile(input.targetPath, body);
+  for (const removeKeys of [null, "model", [""], [7], ["__proto__"], ["constructor"], ["nested.new"], ["scalar"]]) {
+    await assert.rejects(() => mergeSettingsOverlay({ ...input, allowedRoot: input.root, removeKeys }), /removeKeys/u);
+    assert.equal(await readFile(input.targetPath, "utf8"), body);
+  }
+});
+
 test("mergeSettingsOverlay refuses a malformed user permission list and writes nothing", async () => {
   const input = await fixture();
   await writeFile(input.overlayPath, `${JSON.stringify({ permissions: { deny: ["Bash(rm -rf /)"], allow: ["Read(./docs/**)"] } })}\n`);

@@ -61,7 +61,7 @@
         "claude": {
           "enum": [
             "surface-default",
-            "approved-opus-sonnet"
+            "approved-opus"
           ]
         },
         "codex": {

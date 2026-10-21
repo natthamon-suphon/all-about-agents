@@ -179,12 +179,15 @@ async function readOptional(path, label, fileSystem) {
  * Merge one repository-owned sparse JSON overlay into one documented product
  * settings file. The target is replaced atomically and no backup is created.
  */
-export async function mergeSettingsOverlay({ targetPath, overlayPath, allowedRoot, expectedOverlayHash = null, transformOverlay = null, fileSystem = {} } = {}) {
+export async function mergeSettingsOverlay({ targetPath, overlayPath, allowedRoot, expectedOverlayHash = null, transformOverlay = null, removeKeys = [], fileSystem = {} } = {}) {
   validatePathInput(allowedRoot, "allowedRoot", "invalid-root");
   validatePathInput(targetPath, "targetPath", "invalid-target-path");
   validatePathInput(overlayPath, "overlayPath", "invalid-overlay-path");
   if (!(expectedOverlayHash === null || (typeof expectedOverlayHash === "string" && /^[0-9a-f]{64}$/u.test(expectedOverlayHash)))) {
     throw new TypeError("expectedOverlayHash must be null or a lower-case SHA-256 hash");
+  }
+  if (!Array.isArray(removeKeys) || removeKeys.some((key) => typeof key !== "string" || !/^[A-Za-z][A-Za-z0-9]*$/u.test(key) || FORBIDDEN_KEYS.has(key))) {
+    throw new TypeError("removeKeys must be an array of safe top-level setting names");
   }
 
   const root = resolve(allowedRoot);
@@ -215,6 +218,9 @@ export async function mergeSettingsOverlay({ targetPath, overlayPath, allowedRoo
   // The overlay is hash-checked as shipped; a transform then rewrites
   // machine-specific values such as an absolute product root.
   const overlayObject = parseJson(transformOverlay ? transformOverlay(overlayBytes) : overlayBytes, "settings overlay");
+  if (removeKeys.some((key) => Object.hasOwn(overlayObject, key))) {
+    throw new TypeError("removeKeys must not include a key set by the overlay");
+  }
 
   const targetBytes = await readOptional(target, "settings target", fileSystem);
   let targetObject = {};
@@ -229,6 +235,7 @@ export async function mergeSettingsOverlay({ targetPath, overlayPath, allowedRoo
     targetObject = parseJson(targetBytes, "settings target");
   }
 
+  for (const key of removeKeys) delete targetObject[key];
   const merged = merge(targetObject, overlayObject);
   const content = new TextEncoder().encode(`${JSON.stringify(merged, null, 2)}\n`);
   const afterHash = hashBytes(content);

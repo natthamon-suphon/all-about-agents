@@ -81,15 +81,17 @@ permissions. The `template` profile uses:
 
 - model `opus[1m]`, the alias for the latest Opus with a 1M-token context window;
 - `CLAUDE_CODE_EFFORT_LEVEL=xhigh`;
-- server-failure fallback rolling alias `sonnet` at the same effort level;
+- no configured server-failure fallback chain;
 - advisor rolling alias `fable` when the account and product permit it;
 - permission mode `bypassPermissions`.
 
 Fable access depends on account, organization, plan, provider, consent, and
 Claude Code version. Fable 5.1 needs Claude Code v2.1.255 or later. The
-package does not claim Fable access from a rendered file. Sonnet is a
-qualifying server-failure fallback. No permission or policy fallback is
-claimed.
+package does not claim Fable access from a rendered file. Registration removes
+any saved `fallbackModel` chain for `template`. The `portable` profile keeps
+personal model choices. Claude's native content-based fallback is a separate
+mechanism; removing a server-failure chain does not disable it. No permission
+or policy fallback is claimed.
 
 Full access does not remove the emergency denies. The profiles keep denies for
 `rm -rf /`, `rm -rf ~`, force-push, and hard-reset operations. These are
@@ -106,8 +108,22 @@ operator experience rather than a model or permission policy:
 | Key | Value | Effect |
 | --- | --- | --- |
 | `viewMode` | `focus` | Starts each session in the focus transcript view. |
+| `outputStyle` | `Concise` | Gives short replies while keeping the normal engineering work. |
+| `showThinkingSummaries` | `false` | Hides thinking summaries; it does not reduce effort. |
+| `autoCompactEnabled` | `true` | Allows context compaction when the session needs it. |
 | `autoMemoryEnabled` | `true` | Lets the session read and write its auto-memory store. |
-| `autoDreamEnabled` | `true` | Retained legacy preference; current public reference did not document this key. |
+| `idleCompaction` | `false` | Keeps a paused conversation from being compacted only because it is idle. |
+
+`autoDreamEnabled` is undocumented and is no longer rendered. Registration
+removes it from either profile. `idleCompaction: false` can use more tokens
+when you return after the prompt cache expires. It does not disable normal
+auto compaction or prove better model accuracy.
+
+`autoCompactWindow`, fixed thinking budgets, and output-token limits stay
+unset. A fresh install uses the native model and provider defaults. Updates
+preserve any manual values for these keys. Ultracode stays a manual session
+choice; this package sets no `ultracode` default. No `language` key is set,
+so global instructions can follow the session language.
 
 `autoMemoryDirectory` is deliberately not rendered. Leaving it unset keeps the
 per-project default `~/.claude/projects/<sanitized-cwd>/memory/`, so projects do
@@ -117,6 +133,9 @@ checked-in project settings file, so the user-level file written by
 
 These are settings values, not observed behavior. Record `active` only after a
 fresh session shows them.
+
+See [Claude settings setup](../setup/claude-settings.md) for the exact shared
+policy, update removals, and checks on another Windows or macOS computer.
 
 ## Registration and reload
 

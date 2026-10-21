@@ -32,12 +32,10 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-model-policy-claude.md",
-      "checkedAt": "2026-10-19",
-      "productVersion": "2.1.251",
-      "value": [
-        "sonnet"
-      ],
-      "notes": "Rolling Sonnet alias for qualifying server failures; provider/client/account restrictions still apply."
+      "checkedAt": "2026-10-21",
+      "productVersion": "2.1.306",
+      "value": [],
+      "notes": "Claude supports fallbackModel chains, but template renders none and registration removes any saved chain. Portable preserves the user's model choices. Native content-based fallback is a separate product behavior and is not disabled by this policy."
     },
     {
       "feature": "model.advisor",
@@ -54,13 +52,13 @@
       "support": "supported",
       "stability": "stable",
       "source": "docs/evaluations/research-model-policy-claude.md",
-      "checkedAt": "2026-09-02",
-      "productVersion": "2.1.258",
+      "checkedAt": "2026-10-21",
+      "productVersion": "2.1.306",
       "value": {
         "environment": "CLAUDE_CODE_EFFORT_LEVEL",
         "value": "xhigh"
       },
-      "notes": "Persistent xhigh effort is documented through the environment setting, not effortLevel. xhigh is the deepest adaptive-reasoning level, and Opus 5 always uses adaptive reasoning."
+      "notes": "Use CLAUDE_CODE_EFFORT_LEVEL to select persistent xhigh without duplicate effortLevel or per-model settings. The environment value takes precedence over those saved preferences. Model and provider support still apply."
     },
     {
       "feature": "agents.discovery",

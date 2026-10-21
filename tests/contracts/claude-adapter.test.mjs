@@ -76,7 +76,6 @@ function fileMap(result) {
 test("Claude model policy uses exact documented template fields", () => {
   assert.deepEqual(CLAUDE_MODEL_POLICY.template, {
     model: "opus[1m]",
-    fallbackModel: ["sonnet"],
     advisorModel: "fable",
     env: { CLAUDE_CODE_EFFORT_LEVEL: "xhigh" }
   });
@@ -183,11 +182,11 @@ test("Claude packages a square PNG icon at the validator's conventional discover
   }
 });
 
-test("template Claude render emits full-access settings without unsupported effortLevel", () => {
+test("template Claude render emits full-access settings without duplicate effort settings", () => {
   const files = fileMap(resultFor("template"));
   const settings = JSON.parse(files.get("config/settings.json"));
   assert.equal(settings.model, "opus[1m]");
-  assert.deepEqual(settings.fallbackModel, ["sonnet"]);
+  assert.equal(Object.hasOwn(settings, "fallbackModel"), false);
   assert.equal(settings.advisorModel, "fable");
   assert.equal(settings.env.CLAUDE_CODE_EFFORT_LEVEL, "xhigh");
   assert.equal(Object.hasOwn(settings, "effortLevel"), false);
@@ -195,15 +194,26 @@ test("template Claude render emits full-access settings without unsupported effo
   assert.ok(settings.permissions.deny.length > 0);
 });
 
-test("Claude settings deploy the focus view and auto-memory session defaults for both profiles", () => {
+test("Claude settings keep concise output and context defaults on both platforms and profiles", () => {
   for (const profile of ["portable", "template"]) {
-    const settings = JSON.parse(fileMap(resultFor(profile)).get("config/settings.json"));
-    assert.equal(settings.viewMode, "focus");
-    assert.equal(settings.autoMemoryEnabled, true);
-    assert.equal(settings.autoDreamEnabled, true);
-    // autoMemoryDirectory stays unset so each project keeps its own
-    // ~/.claude/projects/<sanitized-cwd>/memory/ store.
-    assert.equal(Object.hasOwn(settings, "autoMemoryDirectory"), false);
+    for (const platform of ["win32", "darwin"]) {
+      const overrides = platform === "darwin"
+        ? { platform, env: {}, homeDir: "/Users/tester" }
+        : { platform };
+      const settings = JSON.parse(fileMap(resultFor(profile, overrides)).get("config/settings.json"));
+      assert.equal(settings.viewMode, "focus");
+      assert.equal(settings.outputStyle, "Concise");
+      assert.equal(settings.showThinkingSummaries, false);
+      assert.equal(settings.autoCompactEnabled, true);
+      assert.equal(settings.autoMemoryEnabled, true);
+      assert.equal(settings.idleCompaction, false);
+      for (const key of ["autoDreamEnabled", "autoCompactWindow", "ultracode", "language", "alwaysThinkingEnabled", "effortLevel"]) {
+        assert.equal(Object.hasOwn(settings, key), false, `${platform}/${profile} must leave ${key} unset`);
+      }
+      // autoMemoryDirectory stays unset so each project keeps its own
+      // ~/.claude/projects/<sanitized-cwd>/memory/ store.
+      assert.equal(Object.hasOwn(settings, "autoMemoryDirectory"), false);
+    }
   }
 });
 
@@ -315,7 +325,7 @@ test("Claude template Fable diagnostic records documented availability limits", 
   assert.deepEqual(templateDiagnostics, [{
     code: "fable-advisor-availability",
     severity: "warning",
-    message: "Fable advisor is documented, but account, organization, plan, provider, consent, and product-version conditions can limit access; the primary/fallback chain remains unchanged.",
+    message: "Fable advisor is documented, but account, organization, plan, provider, consent, and product-version conditions can limit access; the primary model remains unchanged.",
     sourcePath: "config/settings.json"
   }]);
   assert.doesNotMatch(templateDiagnostics[0].message, /experimental/iu);
@@ -483,7 +493,7 @@ test("Claude bootstrap skill links to a resolvable factual capability guide", ()
   const portable = fileMap(resultFor("portable")).get(guidancePath);
   const template = fileMap(resultFor("template")).get(guidancePath);
   assert.match(portable, /leaves the model and effort unchanged/u);
-  for (const value of [CLAUDE_MODEL_POLICY.template.model, ...CLAUDE_MODEL_POLICY.template.fallbackModel, CLAUDE_MODEL_POLICY.template.advisorModel, CLAUDE_MODEL_POLICY.template.env.CLAUDE_CODE_EFFORT_LEVEL]) {
+  for (const value of [CLAUDE_MODEL_POLICY.template.model, CLAUDE_MODEL_POLICY.template.advisorModel, CLAUDE_MODEL_POLICY.template.env.CLAUDE_CODE_EFFORT_LEVEL]) {
     assert.ok(template.includes(`\`${value}\``), `template guidance names ${value}`);
     assert.equal(portable.includes(value), false, `portable guidance must not name ${value}`);
   }

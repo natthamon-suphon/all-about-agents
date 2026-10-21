@@ -122,8 +122,10 @@
     "statusline/track-tool.mjs"
   ],
   "settings": {
-    "autoDreamEnabled": true,
+    "autoCompactEnabled": true,
     "autoMemoryEnabled": true,
+    "idleCompaction": false,
+    "outputStyle": "Concise",
     "permissions": {
       "defaultMode": "default",
       "deny": [
@@ -133,6 +135,7 @@
         "Bash(git reset --hard*)"
       ]
     },
+    "showThinkingSummaries": false,
     "statusLine": {
       "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwAKACYAIAAnAEMAOgAvAGQAaQBzAHAAbwBzAGEAYgBsAGUALwBjAGwAYQB1AGQAZQAtAGMAbwBuAGYAaQBnAC8AcwB0AGEAdAB1AHMAbABpAG4AZQAvAHMAdABhAHQAdQBzAGwAaQBuAGUALgBwAHMAMQAnAAoAZQB4AGkAdAAgACQATABBAFMAVABFAFgASQBUAEMATwBEAEUACgA=",
       "padding": 0,
@@ -144,7 +147,7 @@
     ".claude-plugin/marketplace.json": "{\n  \"description\": \"Generated local development marketplace for the All About Agents package.\",\n  \"name\": \"all-about-agents\",\n  \"owner\": {\n    \"name\": \"All About Agents\"\n  },\n  \"plugins\": [\n    {\n      \"author\": {\n        \"name\": \"All About Agents\"\n      },\n      \"description\": \"Portable all-about-agents skills, agents, hooks, and rules for Claude Code.\",\n      \"name\": \"all-about-agents\",\n      \"source\": \"./\",\n      \"version\": \"2.4.0\"\n    }\n  ]\n}\n",
     ".claude-plugin/plugin.json": "{\n  \"author\": {\n    \"name\": \"All About Agents\"\n  },\n  \"description\": \"Portable all-about-agents skills, agents, hooks, and rules for Claude Code.\",\n  \"name\": \"all-about-agents\",\n  \"version\": \"2.4.0\"\n}\n",
     "agents/investigator.md": "---\nname: investigator\ndescription: \"Performs read-only forensic investigation and ranks falsifiable root-cause hypotheses.\"\nmodel: inherit\ntools:\n  - Glob\n  - Grep\n  - Read\ndisallowedTools:\n  - Agent\n  - Bash\n  - Edit\n  - Write\n---\n\n# Investigator\n\n## Mission\n\nExplain an internal failure before anyone changes code. Read the complete error, stack, input, and environment evidence; reproduce the behavior when possible; then trace the bad value backward to its origin.\n\n## Boundaries\n\nThis is a forensic role, not an implementation role. Do not edit files, apply a workaround, or turn an untested suspicion into a fix. Do not substitute external research for local reproduction when the failure is inside the repository.\n\n## Working method\n\nRecord observations first, compare a failing path with a known-working path, and rank three or fewer falsifiable hypotheses. For each hypothesis state the prediction, the check that would distinguish it, and the exact source location involved.\n\n## Evidence contract\n\nReport the reproduction command or explain why reproduction was unavailable, include the full evidence chain, label inference explicitly, and end with a handoff that an implementer can test without guessing. Route architecture questions to the architect and fresh black-box checking to the verifier.\n\n\nNative capability diagnostic: Role investigator capability evaluation is unavailable on claude: native mapping Bash is suppressed by the read-only policy. Safe read-only mapping retained: Read. Manual/fail-closed guidance: do not infer support; use a documented read-only alternative or stop and ask for direction.\n",
-    "config/settings.json": "{\n  \"autoDreamEnabled\": true,\n  \"autoMemoryEnabled\": true,\n  \"permissions\": {\n    \"defaultMode\": \"default\",\n    \"deny\": [\n      \"Bash(rm -rf /)\",\n      \"Bash(rm -rf ~)\",\n      \"Bash(git push --force*)\",\n      \"Bash(git reset --hard*)\"\n    ]\n  },\n  \"statusLine\": {\n    \"command\": \"powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwAKACYAIAAnAEMAOgAvAGQAaQBzAHAAbwBzAGEAYgBsAGUALwBjAGwAYQB1AGQAZQAtAGMAbwBuAGYAaQBnAC8AcwB0AGEAdAB1AHMAbABpAG4AZQAvAHMAdABhAHQAdQBzAGwAaQBuAGUALgBwAHMAMQAnAAoAZQB4AGkAdAAgACQATABBAFMAVABFAFgASQBUAEMATwBEAEUACgA=\",\n    \"padding\": 0,\n    \"type\": \"command\"\n  },\n  \"viewMode\": \"focus\"\n}\n",
+    "config/settings.json": "{\n  \"autoCompactEnabled\": true,\n  \"autoMemoryEnabled\": true,\n  \"idleCompaction\": false,\n  \"outputStyle\": \"Concise\",\n  \"permissions\": {\n    \"defaultMode\": \"default\",\n    \"deny\": [\n      \"Bash(rm -rf /)\",\n      \"Bash(rm -rf ~)\",\n      \"Bash(git push --force*)\",\n      \"Bash(git reset --hard*)\"\n    ]\n  },\n  \"showThinkingSummaries\": false,\n  \"statusLine\": {\n    \"command\": \"powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwAKACYAIAAnAEMAOgAvAGQAaQBzAHAAbwBzAGEAYgBsAGUALwBjAGwAYQB1AGQAZQAtAGMAbwBuAGYAaQBnAC8AcwB0AGEAdAB1AHMAbABpAG4AZQAvAHMAdABhAHQAdQBzAGwAaQBuAGUALgBwAHMAMQAnAAoAZQB4AGkAdAAgACQATABBAFMAVABFAFgASQBUAEMATwBEAEUACgA=\",\n    \"padding\": 0,\n    \"type\": \"command\"\n  },\n  \"viewMode\": \"focus\"\n}\n",
     "hooks/hooks.json": "{\n  \"hooks\": {\n    \"PostToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/activity-audit.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          },\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/statusline/track-tool.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"PreCompact\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.mjs\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \".*\"\n      }\n    ],\n    \"SessionStart\": [\n      {\n        \"hooks\": [\n          {\n            \"args\": [\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.mjs\",\n              \"--surface\",\n              \"claude\",\n              \"--skill-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/skills/using-all-about-agents/SKILL.md\",\n              \"--config-path\",\n              \"${CLAUDE_PLUGIN_ROOT}/hooks/bootstrap.json\"\n            ],\n            \"command\": \"node\",\n            \"timeout\": 10,\n            \"type\": \"command\"\n          }\n        ],\n        \"matcher\": \"startup|clear|compact\"\n      }\n    ]\n  }\n}\n"
   },
   "ownershipHashes": {
@@ -161,7 +164,7 @@
     "agents/verifier.md": "6d0177aa46cee131cdaa850f273ce323d142fa649762105506678546d5060ecf",
     "all-about-agents/skills-and-agents.md": "fcc3de591bfa32483d45c8a96dcc178eeb65d1a2276dfa299042c2a657b3ec71",
     "config/CLAUDE.md": "b6de64a1e05cb3ef1f844bce8e18c5b6919798ac4e0887839ef3258474b6c82b",
-    "config/settings.json": "116098166bb4da6ff08685c89e889a64c09fd25604ebc38cabdc455b6d537d98",
+    "config/settings.json": "527887133c01d7b6197da5f105f098af38a9bdbabcea52366442bf5b4783428b",
     "config/statusline.json": "93d4c71fbddf648936df1a555d1919fe9bff5a1e1d278b0dd0acf4fabf6d61ea",
     "docs/semantic-mappings.md": "b945ad5a550cb549235e2b0ea04263a0f34ce462193b23f9e15fe8469df6f69b",
     "hooks/activity-audit.json": "1f8177e9d48b3e46067736fb4d734a056bb9c0663e7434c14fefca02d341345a",
@@ -249,7 +252,7 @@
     "skills/threat-modeling-and-security/SKILL.md": "b20c061ab8b9551b76d41db156ca656cec2eb3e8da09402f38e2f7969871010d",
     "skills/threat-modeling-and-security/stride-checklist.md": "3ec34122e05503ba2999856cc5fc69187252fa01c5c8294fed59b539125cfed0",
     "skills/using-all-about-agents/SKILL.md": "7b4cb420673e7d9a0e1ca3b36078b7868f873e5e8db4b06d3fac0d031262c1fd",
-    "skills/using-all-about-agents/references/adapter-capability-guidance.md": "3e00c7c3e3a34f0165dfe288d9025e4d8d7a0ab74e8fe25f969575a89c18f956",
+    "skills/using-all-about-agents/references/adapter-capability-guidance.md": "c0b23f1823181a49a56b984c54dd6ca4a21eb1025e28209c7b22dc5c06d244dc",
     "skills/using-all-about-agents/references/codex-tools.md": "2145d998f586da8ae1f8208ab24fa26f886c957cfac0390018c55e5d048b5ae0",
     "skills/using-git-worktrees/SKILL.md": "0f7f7cbc0f09499beb4f3d406cab2342c4ea9dcfe5f5d89475fcfb6526b0c4f0",
     "skills/verification-before-completion/SKILL.md": "0ec5017c02dc4a8b827aa59bf9b7afae94050fd71b4d7ed356f6f75cfaac095f",

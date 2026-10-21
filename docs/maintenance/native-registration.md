@@ -233,7 +233,8 @@ other files in the list are overwritten whole.
 `settings.json` is not one of them. It is a shared product file that the user
 and other tools also write, so the plan merges into it instead of replacing it.
 Objects merge key by key: keys the package declares win, and every other key
-in the existing file is preserved. An array the package declares replaces the
+in the existing file is preserved, except for the explicit removals below.
+An array the package declares replaces the
 existing array, except `permissions.allow` and `permissions.deny`. For those
 two lists the plan keeps every existing rule in its order and appends each
 package rule that is not already present, so your own rules survive and the
@@ -241,7 +242,17 @@ emergency denies are added once. A rule that a later package drops stays in
 the file until you remove it. When your `permissions.allow` or
 `permissions.deny` is not an array of non-empty strings, the plan writes
 nothing to `settings.json` and the step reports `manual-required`; fix the
-list by hand, then register again. Before the merge, only `statusLine.command`
+list by hand, then register again.
+
+The registration action declares `removeKeys`. It removes `autoDreamEnabled`
+for both profiles and also removes `fallbackModel` for `template`. The
+`portable` profile preserves a personal fallback chain. These removals appear
+in both JSON and text dry-run reports, and run in the same atomic settings
+write as the merge. Other settings, environment values, plugins, hooks, and
+permission rules are preserved. A manual `autoCompactWindow` or memory
+directory is not removed. See [Claude settings setup](../setup/claude-settings.md).
+
+Before the merge, only `statusLine.command`
 in the rendered source is rebased to the selected `CLAUDE_CONFIG_DIR`; the
 other rendered-source fields stay unchanged.
 
